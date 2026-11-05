@@ -500,23 +500,33 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
         while (true) { now = nowMillis(); delay(1000) }
     }
 
-    val elapsed = liveElapsedMs(live, now)
+    val worked = liveWorkedMs(live, now)
+    val onBreak = isPaused(live)
+    val breakMs = pausedMs(live, now)
     val total = liveTotalCents(live)
-    val hours = elapsed / 3_600_000.0
+    val hours = worked / 3_600_000.0
 
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(baki.surfaceHigh).padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(baki.primary))
+            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(if (onBreak) baki.warn else baki.primary))
             Spacer(Modifier.width(8.dp))
-            Text("LIVE SHIFT", color = baki.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (onBreak) "ON BREAK" else "LIVE SHIFT",
+                color = if (onBreak) baki.warn else baki.primary,
+                fontSize = 11.sp, fontWeight = FontWeight.Bold,
+            )
             Spacer(Modifier.weight(1f))
             Text("since ${startClock(live.start)}", color = baki.muted, fontSize = 11.sp)
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(liveClock(elapsed), color = baki.onSurface, fontSize = 30.sp, fontWeight = FontWeight.Black)
+            Text(
+                liveClock(worked),
+                color = if (onBreak) baki.muted else baki.onSurface,
+                fontSize = 30.sp, fontWeight = FontWeight.Black,
+            )
             Spacer(Modifier.weight(1f))
             Text("RM ${rm(total)}", color = baki.onSurface, fontSize = 26.sp, fontWeight = FontWeight.Black)
         }
@@ -525,6 +535,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
                 if (hours > 0.05) append("RM ${rm(total / 100.0 / hours)}/hr · ")
                 append("${live.payouts.size} payout(s)")
                 if (live.km > 0.0) append(" · ${"%.1f".format(live.km)} km tracked")
+                if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
             },
             color = baki.muted, fontSize = 12.sp,
         )
@@ -533,14 +544,33 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
             Button(
                 onClick = onPayout,
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
-            ) { Text("+ Payout") }
+                shape = RoundedCornerShape(50), modifier = Modifier.weight(1.1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
+            ) { Text("+ Payout", fontSize = 12.sp, maxLines = 1, softWrap = false) }
+            Button(
+                enabled = !repo.readOnly,
+                onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
+                // tinted rather than filled: readable on every palette, including dynamic colour
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (onBreak) baki.warn.copy(alpha = 0.22f) else baki.surfaceHigh,
+                    contentColor = if (onBreak) baki.warn else baki.onSurface,
+                ),
+                shape = RoundedCornerShape(50), modifier = Modifier.weight(1.1f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    if (onBreak) "Resume" else "Pause",
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, softWrap = false,
+                )
+            }
             Button(
                 enabled = !repo.readOnly,
                 onClick = { scope.launch { repo.endLive() } },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
-            ) { Text("End shift", fontWeight = FontWeight.Bold) }
+                shape = RoundedCornerShape(50), modifier = Modifier.weight(0.9f),
+                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
+            ) { Text("End", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, softWrap = false) }
         }
     }
 }

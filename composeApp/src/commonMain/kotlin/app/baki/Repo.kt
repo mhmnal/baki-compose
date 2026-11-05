@@ -162,7 +162,31 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
     }
 
+    fun pauseLive() {
+        val current = live ?: return
+        if (isPaused(current)) return
+        live = current.copy(pauses = current.pauses + LivePause(from = nowMillis()))
+        saveLive(live)
+        PlatformEffects.tapFeedback()
+        live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+    }
+
+    fun resumeLive() {
+        val current = live ?: return
+        if (!isPaused(current)) return
+        val now = nowMillis()
+        live = current.copy(
+            pauses = current.pauses.mapIndexed { i, p ->
+                if (i == current.pauses.lastIndex && p.to == null) p.copy(to = now) else p
+            },
+        )
+        saveLive(live)
+        PlatformEffects.tapFeedback()
+        live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+    }
+
     fun addPayout(cents: Long) {
+        // a payout while paused is fine; it does not resume the break
         val current = live ?: return
         if (cents <= 0) return
         live = current.copy(payouts = current.payouts + Payout(cents, nowMillis()))
@@ -178,7 +202,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val total = liveTotalCents(current)
         val date = startDate(current.start)
         val start = startClock(current.start)
-        val hours = max(0.05, liveElapsedMs(current, now) / 3_600_000.0)
+        // breaks do not count as working time
+        val hours = max(0.05, liveWorkedMs(current, now) / 3_600_000.0)
         // real distance when the tracker saw enough movement, else the old hours × average guess
         val measuredKm = current.km
 

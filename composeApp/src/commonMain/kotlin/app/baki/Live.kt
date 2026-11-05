@@ -9,12 +9,17 @@ import kotlin.math.max
 
 /** A shift in progress: device-local until you end it, exactly like the web app. */
 @Serializable
+data class LivePause(val from: Long, val to: Long? = null)
+
+@Serializable
 data class LiveShift(
     val start: Long,
     val payouts: List<Payout> = emptyList(),
     val note: String = "",
     /** metres actually travelled, measured by the GPS tracker while the shift runs */
     val km: Double = 0.0,
+    /** breaks taken during the shift; time parked at lunch is not working time */
+    val pauses: List<LivePause> = emptyList(),
 )
 
 private const val LIVE_FILE = "live.json"
@@ -30,7 +35,19 @@ fun saveLive(l: LiveShift?) {
 }
 
 fun liveTotalCents(l: LiveShift): Long = l.payouts.sumOf { it.c }
+/** Wall-clock time since the shift started, breaks included. */
 fun liveElapsedMs(l: LiveShift, now: Long = nowMillis()): Long = max(0L, now - l.start)
+
+/** True while a break is open (no `to` yet). */
+fun isPaused(l: LiveShift): Boolean = l.pauses.lastOrNull()?.to == null && l.pauses.isNotEmpty()
+
+/** Total break time so far, counting the open break up to [now]. */
+fun pausedMs(l: LiveShift, now: Long = nowMillis()): Long =
+    l.pauses.sumOf { max(0L, (it.to ?: now) - it.from) }
+
+/** Time actually on the clock: elapsed minus breaks. */
+fun liveWorkedMs(l: LiveShift, now: Long = nowMillis()): Long =
+    max(0L, liveElapsedMs(l, now) - pausedMs(l, now))
 
 /** "3h 12m" — the same shape the web app's clock uses. */
 fun liveClock(elapsedMs: Long): String {
