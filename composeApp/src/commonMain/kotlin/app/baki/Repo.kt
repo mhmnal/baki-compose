@@ -40,6 +40,10 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     var status by mutableStateOf("local")
         private set
     var lastError by mutableStateOf<String?>(null)
+    /** when the last successful pull finished */
+    var lastSyncAt by mutableStateOf<Long?>(null)
+    /** when the last successful upload finished */
+    var lastPushAt by mutableStateOf<Long?>(null)
         private set
 
     val readOnly: Boolean get() = !config.allowWrites
@@ -99,6 +103,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 }
                 status = "synced"
                 lastError = null
+                lastSyncAt = nowMillis()
                 return@withLock
             }
             val merged = mergeStores(store, remote)
@@ -120,6 +125,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             }
             status = "synced"
             lastError = null
+            lastSyncAt = nowMillis()
         } catch (e: Exception) {
             status = if (store.entries.isEmpty() && store.shifts.isEmpty()) "offline" else "cached"
             lastError = e.message
@@ -344,7 +350,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     /** True when the last push failed, so the next sync retries instead of uploading blindly. */
-    private var pendingPush = false
+    var pendingPush by mutableStateOf(false)
+        private set
 
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
@@ -353,6 +360,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             saveLocal(store)
             status = "synced"
             pendingPush = false
+            lastPushAt = nowMillis()
             PlatformEffects.successFeedback()
         } catch (e: Exception) {
             status = "cached"

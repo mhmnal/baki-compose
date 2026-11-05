@@ -49,6 +49,8 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -82,6 +84,7 @@ private fun AppContent(repo: BakiRepo) {
     var entryType by remember { mutableStateOf("expense") }
     var presetCat by remember { mutableStateOf<String?>(null) }
     var editingBudgets by remember { mutableStateOf(false) }
+    var showDiagnostics by remember { mutableStateOf(false) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
     val hazeState = rememberHazeState()
     val hazeMode = when (glassTier) {
@@ -1059,6 +1062,69 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
                 shape = RoundedCornerShape(Radius.pill),
             ) { Text("Set limits") }
+        }
+        Spacer(Modifier.height(16.dp))
+        SectionTitle("DIAGNOSTICS")
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
+            val h = healthOf(repo)
+            val now = nowMillis()
+            val rows = buildList {
+                add("Sync" to when {
+                    h.status == "syncing" -> "syncing…"
+                    h.lastSyncAt == null -> "${h.status} · never"
+                    else -> "${h.status} · ${ago(now, h.lastSyncAt)}"
+                })
+                add("Upload" to when {
+                    h.pendingPush -> "pending — retries on next sync"
+                    h.lastPushAt == null -> if (h.readOnly) "read-only" else "never"
+                    else -> "ok · ${ago(now, h.lastPushAt)}"
+                })
+                add("GPS" to when {
+                    h.tracker.provider.contains("desktop") -> "unavailable on desktop"
+                    h.tracker.provider == "—" || h.tracker.fixes == 0 ->
+                        "idle — tracking starts with a live shift"
+                    else -> "${h.tracker.provider} · ${h.tracker.fixes} fixes · " +
+                        "${h.tracker.rejected} rejected · ${ago(now, h.tracker.lastFixAt)}"
+                })
+                if (h.live != null) {
+                    val paused = isPaused(h.live)
+                    add("Live" to (if (paused) "paused" else "running") + " · ${"%.1f".format(h.live.km)} km · ${ago(now, h.live.start)}")
+                }
+                if (h.gpsCorrection != 1.0) add("Correction" to "×${"%.2f".format(h.gpsCorrection)}")
+            }
+            rows.forEach { (k, v) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(k, color = baki.muted, style = BakiType.label)
+                    Text(v, color = baki.onSurface, style = BakiType.labelNumeric, modifier = Modifier.weight(1f).padding(start = 12.dp), textAlign = TextAlign.End)
+                }
+            }
+            h.lastError?.let { err ->
+                Spacer(Modifier.height(6.dp))
+                Text("last error: $err", color = baki.down, style = BakiType.caption, maxLines = 3)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val clipboard = LocalClipboardManager.current
+                TextButton(
+                    onClick = {
+                        val report = buildString {
+                            appendLine("Baki 0.1.9 diagnostics")
+                            appendLine("status: ${h.status}")
+                            appendLine("sync: ${ago(now, h.lastSyncAt)}  upload: ${ago(now, h.lastPushAt)} pending=${h.pendingPush}")
+                            appendLine("gps: ${h.tracker.provider} fixes=${h.tracker.fixes} rejected=${h.tracker.rejected}")
+                            appendLine("live: ${if (h.live != null) "yes" else "no"}  correction=${h.gpsCorrection}")
+                            appendLine("records: ${h.entries} entries, ${h.shifts} shifts, readOnly=${h.readOnly}")
+                            appendLine("error: ${h.lastError ?: "none"}")
+                        }
+                        clipboard.setText(AnnotatedString(report))
+                    },
+                    contentPadding = PaddingValues(0.dp),
+                ) { Text("Copy report", color = baki.primary, style = BakiType.labelStrong) }
+                TextButton(onClick = { scope.launch { repo.sync() } }, contentPadding = PaddingValues(0.dp)) {
+                    Text("Sync now", color = baki.primary, style = BakiType.labelStrong)
+                }
+            }
         }
         Spacer(Modifier.height(16.dp))
         SectionTitle("BACKUP")

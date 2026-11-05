@@ -43,7 +43,17 @@ object DistanceTracker {
     private var last: Location? = null
     private var metres: Double = 0.0
     private var lastPersistMs: Long = 0
+    private var fixCount: Int = 0
+    private var rejectedCount: Int = 0
+    private var lastFixAt: Long = 0
+    private var providerName: String = "—"
     private var lastPersistedKm: Double = -1.0
+
+    fun fixCountPublic() = fixCount
+    fun rejectedPublic() = rejectedCount
+    fun lastFixPublic() = lastFixAt
+    fun kmPublic() = metres / 1000.0
+    fun providerPublic() = providerName
 
     fun hasPermission(ctx: Context): Boolean =
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -72,6 +82,7 @@ object DistanceTracker {
             client.requestLocationUpdates(request, cb, Looper.getMainLooper())
             fused = client
             callback = cb
+            providerName = "fused"
             true
         }.getOrDefault(false)
 
@@ -94,6 +105,7 @@ object DistanceTracker {
             lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
             else -> return
         }
+        providerName = if (provider == LocationManager.GPS_PROVIDER) "gps" else "network"
         runCatching { lm.requestLocationUpdates(provider, 1_000L, 0f, l, ctx.mainLooper) }
     }
 
@@ -109,13 +121,15 @@ object DistanceTracker {
     }
 
     private fun accept(loc: Location) {
-        if (loc.accuracy > MAX_ACCURACY_M) return
+        fixCount++
+        lastFixAt = System.currentTimeMillis()
+        if (loc.accuracy > MAX_ACCURACY_M) { rejectedCount++; return }
         val prev = last
         if (prev == null) { last = loc; return }
 
         val step = distanceMetres(prev, loc)
         val seconds = (loc.time - prev.time) / 1000.0
-        if (seconds > 0 && step / seconds > MAX_SPEED_MPS) return   // a jump, not travel
+        if (seconds > 0 && step / seconds > MAX_SPEED_MPS) { rejectedCount++; return }   // a jump, not travel
 
         if (step >= MIN_MOVE_M) {
             metres += step
@@ -147,3 +161,13 @@ object DistanceTracker {
 }
 
 fun interface DistanceCallback { fun onDistance(km: Double) }
+
+
+/** Read by the diagnostics card in More. */
+actual fun trackerInfo(): TrackerInfo = TrackerInfo(
+    fixes = DistanceTracker.fixCountPublic(),
+    rejected = DistanceTracker.rejectedPublic(),
+    lastFixAt = DistanceTracker.lastFixPublic(),
+    km = DistanceTracker.kmPublic(),
+    provider = DistanceTracker.providerPublic(),
+)
