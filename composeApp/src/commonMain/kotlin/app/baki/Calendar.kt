@@ -65,8 +65,8 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette)
     val isToday = iso == today
 
     Box(
-        Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)).background(fill)
-            .then(if (isToday) Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(8.dp)) else Modifier),
+        Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.small)).background(fill)
+            .then(if (isToday) Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.small)) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Text(

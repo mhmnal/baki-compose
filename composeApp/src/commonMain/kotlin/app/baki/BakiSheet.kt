@@ -115,7 +115,7 @@ fun BakiSheet(
                     ) {
                         Box(
                             Modifier.size(width = 36.dp, height = 4.dp)
-                                .clip(RoundedCornerShape(50))
+                                .clip(RoundedCornerShape(Radius.pill))
                                 .background(baki.muted.copy(alpha = 0.5f)),
                         )
                     }

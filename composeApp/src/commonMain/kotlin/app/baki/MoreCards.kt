@@ -20,7 +20,7 @@ fun StatementCard(store: Store) {
     val baki = LocalBaki.current
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp),
     ) {
         Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
@@ -48,7 +48,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         repo.store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
     }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Spending categories", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
@@ -75,7 +75,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                     color = if (used > 0 || !editable) baki.muted.copy(alpha = 0.35f) else baki.down,
                     fontSize = 18.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
+                        .clip(RoundedCornerShape(Radius.pill))
                         .clickable(enabled = used == 0 && editable) {
                             scope.launch { repo.removeCategory(c.id) }
                         }

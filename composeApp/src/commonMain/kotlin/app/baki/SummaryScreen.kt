@@ -69,7 +69,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             val thisWeek = weekTotals(store, weekStartOf(todayIso()))
             val lastWeek = weekTotals(store, addDays(weekStartOf(todayIso()), -7))
             val delta = thisWeek.net - lastWeek.net
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
                 Text("THIS WEEK", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -122,7 +122,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         payoutDue(store)?.let { due ->
             item {
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -145,7 +145,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         }
 
         item {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
                 Text("FUNDS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 FundRow("Fuel", funds.fuel, baki)
@@ -166,10 +166,10 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                     Text("RM ${rm(cents)}", color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(4.dp))
-                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(baki.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh)) {
                     Box(
                         Modifier.fillMaxWidth((cents.toFloat() / maxCat).coerceIn(0.02f, 1f))
-                            .height(6.dp).clip(RoundedCornerShape(50)).background(baki.primary),
+                            .height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.primary),
                     )
                 }
             }
@@ -178,7 +178,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             val cost = remember(store, month) { monthCost(store, month) }
             val series = remember(store, month) { monthCostSeries(store, month, 4) }
             val peak = series.maxOfOrNull { it.perKm }?.coerceAtLeast(0.01) ?: 0.01
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
                 Text("COST PER KM", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("RM ${"%.2f".format(cost.perKm)}", color = baki.onSurface, fontSize = 28.sp, fontWeight = FontWeight.Black)
@@ -202,7 +202,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                                 Box(
                                     Modifier.fillMaxWidth()
                                         .fillMaxHeight(if (m.km > 0.01) (m.perKm / peak).toFloat().coerceIn(0.06f, 1f) else 0.04f)
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(RoundedCornerShape(Radius.tiny))
                                         .background(if (m.month == month) baki.primary else baki.primary.copy(alpha = 0.35f)),
                                 )
                             }
@@ -229,7 +229,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
 @Composable
 private fun StatTile(label: String, value: String, sub: String, tint: Color, modifier: Modifier = Modifier) {
     val baki = LocalBaki.current
-    Column(modifier.clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+    Column(modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
         Text(label, color = baki.muted, fontSize = 11.sp)
         Text(value, color = tint, fontSize = 20.sp, fontWeight = FontWeight.Black)
         if (sub.isNotEmpty()) Text(sub, color = baki.muted, fontSize = 11.sp)

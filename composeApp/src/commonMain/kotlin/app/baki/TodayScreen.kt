@@ -145,13 +145,13 @@ fun TodayScreen(
             item {
                 val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
                 Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(baki.container).padding(16.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(16.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("SHIFT NET · AFTER CAR COST", color = baki.muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Spacer(Modifier.weight(1f))
                         Box(
-                            Modifier.clip(RoundedCornerShape(50))
+                            Modifier.clip(RoundedCornerShape(Radius.pill))
                                 .background(bandColor(m.band, baki).copy(alpha = 0.18f))
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                         ) {
@@ -211,7 +211,7 @@ fun TodayScreen(
                 val presets = store.settings.cats.catsOut.filter { it.id != "grabfee" }
                 presets.forEach { c ->
                     Row(
-                        Modifier.clip(RoundedCornerShape(50)).background(baki.container)
+                        Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
                             .clickable { onPreset(c.id) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -289,7 +289,7 @@ fun TodayScreen(
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val baki = LocalBaki.current
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(baki.container).padding(vertical = 6.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, fontSize = 20.sp) }
@@ -309,7 +309,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
 @Composable
 private fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.clip(RoundedCornerShape(50)).background(bg).clickable { onClick() },
+        modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(label, color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold,
@@ -359,7 +359,7 @@ fun RowCardIcon(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp))
+                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.card))
                     .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
                     .padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -374,13 +374,13 @@ fun RowCardIcon(
         },
     ) {
     Row(
-        Modifier.fillMaxWidth().then(sharedMod).clip(RoundedCornerShape(18.dp)).background(baki.container)
+        Modifier.fillMaxWidth().then(sharedMod).clip(RoundedCornerShape(Radius.card)).background(baki.container)
             .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(baki.surfaceHigh),
+            Modifier.size(34.dp).clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(18.dp)) }
         Spacer(Modifier.width(12.dp))

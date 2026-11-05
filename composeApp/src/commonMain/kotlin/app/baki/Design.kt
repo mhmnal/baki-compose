@@ -26,13 +26,17 @@ object Space {
 }
 
 object Radius {
-    /** pills: chips, buttons, the nav bar */
+    /** M3 "full": chips, buttons, the nav bar */
     val pill = 50.dp
-    /** inputs, small surfaces */
-    val small = 12.dp
-    /** the standard card */
-    val card = 18.dp
-    /** bottom sheets */
+    /** M3 extraSmall */
+    val tiny = 4.dp
+    /** M3 small */
+    val small = 8.dp
+    /** M3 medium — inputs and small surfaces */
+    val input = 12.dp
+    /** M3 large — the standard card */
+    val card = 16.dp
+    /** M3 extraLarge — bottom sheets */
     val sheet = 28.dp
 }
 

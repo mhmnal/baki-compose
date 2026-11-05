@@ -41,7 +41,7 @@ fun WeekStrip(store: Store, endDay: String) {
                 val up = t.net >= 0
                 val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(baki.container).padding(vertical = 8.dp),
+                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
@@ -52,12 +52,12 @@ fun WeekStrip(store: Store, endDay: String) {
                     )
                     Spacer(Modifier.height(6.dp))
                     Box(
-                        Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(50)).background(baki.surfaceHigh),
+                        Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh),
                         contentAlignment = Alignment.BottomCenter,
                     ) {
                         Box(
                             Modifier.fillMaxWidth().fillMaxHeight(fraction)
-                                .clip(RoundedCornerShape(50))
+                                .clip(RoundedCornerShape(Radius.pill))
                                 .background(if (t.entryCount == 0 && t.shiftCount == 0) baki.surfaceHigh else if (up) baki.primary else baki.down),
                         )
                     }
@@ -96,11 +96,11 @@ fun TrendBars(store: Store, month: String) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (t.net >= 0) {
-                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(3.dp)).background(baki.primary))
+                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(Radius.tiny)).background(baki.primary))
                         Spacer(Modifier.fillMaxHeight(0.02f))
                     } else {
                         Box(Modifier.fillMaxHeight(fraction * 0.5f).fillMaxWidth())
-                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(3.dp)).background(baki.down))
+                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(Radius.tiny)).background(baki.down))
                     }
                 }
             }
@@ -145,7 +145,7 @@ fun HoursHeatmap(store: Store) {
                     val has = (cell?.hours ?: 0.0) >= 0.25
                     val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
                     Box(
-                        Modifier.weight(1f).height(16.dp).clip(RoundedCornerShape(4.dp))
+                        Modifier.weight(1f).height(16.dp).clip(RoundedCornerShape(Radius.tiny))
                             .background(if (has) baki.primary.copy(alpha = 0.15f + fraction * 0.85f) else baki.surfaceHigh),
                     )
                 }

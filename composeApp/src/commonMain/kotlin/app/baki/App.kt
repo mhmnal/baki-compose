@@ -230,7 +230,7 @@ private fun AppContent(repo: BakiRepo) {
     if (!sheetOpen) {
     GlassSurface(
         hazeState = hazeState,
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(Radius.pill),
         tier = glassTier,
         performanceMode = hazeMode,
         modifier = Modifier.align(Alignment.BottomCenter)
@@ -242,12 +242,12 @@ private fun AppContent(repo: BakiRepo) {
     if (tab == 0 && !repo.readOnly) {
         GlassSurface(
             hazeState = hazeState,
-            shape = RoundedCornerShape(50),
+            shape = RoundedCornerShape(Radius.pill),
             tier = glassTier,
             performanceMode = hazeMode,
             modifier = Modifier.align(Alignment.BottomEnd)
                 .padding(end = 18.dp).padding(bottom = barHeight + barGap + 6.dp).size(fabSize)
-                .shadow(10.dp, RoundedCornerShape(50)),
+                .shadow(10.dp, RoundedCornerShape(Radius.pill)),
         ) {
             Box(
                 Modifier.fillMaxSize().clickable { adding = 1 },
@@ -370,7 +370,7 @@ private fun Header(repo: BakiRepo) {
     val status = repo.status
     val baki = LocalBaki.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(baki.primary), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primary), contentAlignment = Alignment.Center) {
             Text("✓", color = baki.onPrimary, fontSize = 18.sp, fontWeight = FontWeight.Black)
         }
         Spacer(Modifier.width(12.dp))
@@ -385,7 +385,7 @@ private fun Header(repo: BakiRepo) {
             "syncing" -> baki.primary
             else -> baki.muted
         }
-        Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(dot))
+        Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
     }
 }
 
@@ -460,10 +460,10 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
 fun Chip(text: String, tint: Color) {
     val baki = LocalBaki.current
     Row(
-        Modifier.clip(RoundedCornerShape(50)).background(baki.container).padding(horizontal = 14.dp, vertical = 8.dp),
+        Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(7.dp).clip(RoundedCornerShape(50)).background(tint))
+        Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(tint))
         Spacer(Modifier.width(8.dp))
         Text(text, color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
     }
@@ -498,7 +498,7 @@ fun RowCard(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp))
+                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.card))
                     .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
                     .padding(horizontal = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -513,7 +513,7 @@ fun RowCard(
         },
     ) {
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container)
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container)
             .then(
                 if (onLongPress != null) Modifier.pointerInput(title) {
                     detectTapGestures(onLongPress = { onLongPress() })
@@ -579,10 +579,10 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
     val hours = worked / 3_600_000.0
 
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(baki.surfaceHigh).padding(16.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.surfaceHigh).padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(9.dp).clip(RoundedCornerShape(50)).background(if (onBreak) baki.warn else baki.primary))
+            Box(Modifier.size(9.dp).clip(RoundedCornerShape(Radius.pill)).background(if (onBreak) baki.warn else baki.primary))
             Spacer(Modifier.width(8.dp))
             Text(
                 if (onBreak) "ON BREAK" else "LIVE SHIFT",
@@ -627,7 +627,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
             Button(
                 onClick = onPayout,
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1.1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1.1f),
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
             ) { Text("+ Payout", fontSize = 12.sp, maxLines = 1, softWrap = false) }
             Button(
@@ -638,7 +638,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
                     containerColor = if (onBreak) baki.warn.copy(alpha = 0.22f) else baki.surfaceHigh,
                     contentColor = if (onBreak) baki.warn else baki.onSurface,
                 ),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1.1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1.1f),
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
             ) {
                 Text(
@@ -651,7 +651,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
                 enabled = !repo.readOnly,
                 onClick = { scope.launch { repo.endLive() } },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(0.9f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(0.9f),
                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
             ) { Text("End", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, softWrap = false) }
         }
@@ -663,7 +663,7 @@ private fun DayHeader(day: String, today: String, onChange: (String) -> Unit) {
     val baki = LocalBaki.current
     val atToday = day >= today
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(baki.container).padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = { onChange(addDays(day, -1)) }) {
@@ -775,7 +775,7 @@ private fun SpendingScreen(
         ) {
             if (envelopes.isNotEmpty()) {
                 item {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
                         Text("BUDGETS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Spacer(Modifier.height(8.dp))
                         envelopes.forEach { b ->
@@ -895,7 +895,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(18.dp))
         SectionTitle("SYNC")
         Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             Text("Server address", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Text("where the tracker server is running", color = baki.muted, fontSize = 11.sp)
             Spacer(Modifier.height(10.dp))
@@ -933,7 +933,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         SectionTitle("LIQUID GLASS")
         Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             Text("Nav bar & +", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 when (effectiveGlassTier(repo.config.glassMode, DeviceTier.level)) {
@@ -944,13 +944,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             )
             Spacer(Modifier.height(10.dp))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(baki.surfaceHigh).padding(4.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh).padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 listOf("auto" to "Auto", "on" to "On", "off" to "Off").forEach { (value, label) ->
                     val on = repo.config.glassMode == value
                     Box(
-                        Modifier.weight(1f).clip(RoundedCornerShape(50))
+                        Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
                             .background(if (on) baki.primaryContainer else Color.Transparent)
                             .clickable { repo.setGlassMode(value) }
                             .padding(vertical = 9.dp),
@@ -966,13 +966,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("APPEARANCE")
         Spacer(Modifier.height(8.dp))
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(baki.container).padding(4.dp),
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             listOf("auto" to "Auto", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
                 val on = repo.config.themeMode == value
                 Box(
-                    Modifier.weight(1f).clip(RoundedCornerShape(50))
+                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
                         .background(if (on) baki.primaryContainer else Color.Transparent)
                         .clickable { repo.setThemeMode(value) }
                         .padding(vertical = 9.dp),
@@ -994,7 +994,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("VEHICLE & TARGET")
         Spacer(Modifier.height(8.dp))
         val p = repo.store.settings.profit
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             Text("RM ${"%.2f".format(p.fuelPrice)}/L · ${"%.1f".format(p.kmPerLitre)} km/L · wear RM ${"%.2f".format(p.wearPerKm)}/km",
                 color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text("target RM ${"%.0f".format(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${"%.2f".format(p.grabInsurance)}",
@@ -1027,7 +1027,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 onClick = { editingProfit = true },
                 enabled = !repo.readOnly,
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
             ) { Text("Edit costs") }
         }
         Spacer(Modifier.height(16.dp))
@@ -1043,7 +1043,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         SectionTitle("BUDGETS")
         Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             Text("Monthly limits", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             val n = repo.store.settings.budgets.size
             Text(
@@ -1056,7 +1056,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 onClick = { onEditBudgets() },
                 enabled = !repo.readOnly,
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
             ) { Text("Set limits") }
         }
         Spacer(Modifier.height(16.dp))
@@ -1066,12 +1066,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             Button(
                 onClick = { PlatformEffects.exportFile("baki-backup-${todayStamp()}.json", "application/json", backupJson(repo.store)) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Backup (JSON)", fontSize = 12.sp) }
             Button(
                 onClick = { PlatformEffects.exportFile("baki-${todayStamp()}.csv", "text/csv", exportCsv(repo.store)) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Export (CSV)", fontSize = 12.sp) }
         }
         Spacer(Modifier.height(8.dp))
@@ -1080,12 +1080,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 onClick = { pickImport() },
                 enabled = !repo.readOnly,
                 colors = ButtonDefaults.buttonColors(containerColor = baki.surfaceHigh, contentColor = baki.onSurface),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Import JSON", fontSize = 12.sp) }
             Button(
                 onClick = { confirmReset = true },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.surfaceHigh, contentColor = baki.down),
-                shape = RoundedCornerShape(50), modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Reset device", fontSize = 12.sp) }
         }
         Spacer(Modifier.height(16.dp))
@@ -1136,7 +1136,7 @@ private fun SwitchRow(
 ) {
     val baki = LocalBaki.current
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -1175,7 +1175,7 @@ private fun AddChoiceDialog(
 @Composable
 private fun ChoiceTile(label: String, sub: String, bg: Color, ink: Color, onClick: () -> Unit) {
     Box(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bg).clickable { onClick() }.padding(16.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(bg).clickable { onClick() }.padding(16.dp),
     ) {
         Column {
             Text(label, color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -1239,7 +1239,7 @@ private fun EntryDialog(
                     cats.forEach { c ->
                         val on = c.id == cat
                         Box(
-                            Modifier.clip(RoundedCornerShape(50))
+                            Modifier.clip(RoundedCornerShape(Radius.pill))
                                 .background(if (on) baki.primaryContainer else baki.surfaceHigh)
                                 .clickable { cat = c.id }
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1276,7 +1276,7 @@ private fun EntryDialog(
                 enabled = cents > 0,
                 onClick = { onSave(type, cents, cat, note, date, odo.toIntOrNull()) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(
@@ -1291,7 +1291,7 @@ private fun EntryDialog(
 private fun SegButton(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val baki = LocalBaki.current
     Box(
-        modifier.clip(RoundedCornerShape(50))
+        modifier.clip(RoundedCornerShape(Radius.pill))
             .background(if (selected) baki.primaryContainer else baki.surfaceHigh)
             .clickable { onClick() }.padding(vertical = 9.dp),
         contentAlignment = Alignment.Center,
@@ -1403,7 +1403,7 @@ private fun ShiftDialog(
                 enabled = grossCents > 0 && hoursValue > 0,
                 onClick = { onSave(date, start, hoursValue, kmValue, grossCents, ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(), kmlValue, odoStart, odoEnd) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) { Text(if (existing == null) "Save shift" else "Save changes", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
         }
@@ -1492,7 +1492,7 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
             Button(
                 enabled = cents > 0, onClick = { onAdd(cents) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) { Text("Add RM ${rm(cents)}", fontWeight = FontWeight.Bold) }
         }
@@ -1521,7 +1521,7 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
                     onDismiss()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) { Text("Save limits", fontWeight = FontWeight.Bold) }
         },
