@@ -1,0 +1,18 @@
+# gradle / build output
+.gradle/
+build/
+composeApp/build/
+local.properties
+.kotlin/
+
+# ide
+.idea/
+*.iml
+
+# signed artefacts (regenerate with tools, don't store binaries)
+dist/
+*.apk
+*.jks
+
+# os noise
+.DS_Store

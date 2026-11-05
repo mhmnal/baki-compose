@@ -1,0 +1,55 @@
+package app.baki
+
+/**
+ * Same rule as mergeStores() in index.html: newest `updated` wins per id, tombstones win
+ * over everything, statements take the newest import per week, profit settings are last-writer.
+ */
+fun mergeStores(
+    a: Store,
+    b: Store,
+    dead: Set<String> = emptySet(),
+    deadCats: Set<String> = emptySet(),
+): Store {
+    // tombstones are authoritative: a record deleted on any client must not come back
+    val deadIds = dead + a.tomb.ids + b.tomb.ids
+    val deadCategories = deadCats + a.tomb.cats + b.tomb.cats
+    val entries = LinkedHashMap<String, Entry>()
+    for (e in a.entries + b.entries) {
+        if (e.id in deadIds) continue
+        val cur = entries[e.id]
+        if (cur == null || e.updated >= cur.updated) entries[e.id] = e
+    }
+    val shifts = LinkedHashMap<String, Shift>()
+    for (s in a.shifts + b.shifts) {
+        if (s.id in deadIds) continue
+        val cur = shifts[s.id]
+        if (cur == null || s.updated >= cur.updated) shifts[s.id] = s
+    }
+    val statements = LinkedHashMap<String, Statement>(b.statements)
+    for ((week, st) in a.statements) {
+        val cur = statements[week]
+        if (cur == null || st.importedAt > cur.importedAt) statements[week] = st
+    }
+    val catsIn = LinkedHashMap<String, Cat>()
+    for (c in a.settings.cats.catsIn + b.settings.cats.catsIn) if (c.id !in deadCategories) catsIn[c.id] = c
+    val catsOut = LinkedHashMap<String, Cat>()
+    for (c in a.settings.cats.catsOut + b.settings.cats.catsOut) if (c.id !in deadCategories) catsOut[c.id] = c
+
+    return Store(
+        v = 1,
+        updatedAt = b.updatedAt.ifEmpty { a.updatedAt },
+        entries = entries.values.toList(),
+        shifts = shifts.values.toList(),
+        statements = statements,
+        settings = Settings(
+            name = b.settings.name.ifEmpty { a.settings.name },
+            cats = Cats(catsIn.values.toList(), catsOut.values.toList()),
+            profit = b.settings.profit,
+        ),
+        // keep the union, so a removal is never forgotten by a later merge
+        tomb = Tomb(
+            ids = (a.tomb.ids + b.tomb.ids).distinct(),
+            cats = (a.tomb.cats + b.tomb.cats).distinct(),
+        ),
+    )
+}

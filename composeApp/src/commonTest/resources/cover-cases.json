@@ -1,0 +1,88 @@
+[
+ {
+  "name": "same day twice",
+  "ids": [
+   "a",
+   "b"
+  ],
+  "charged": [
+   "a"
+  ]
+ },
+ {
+  "name": "exactly 24h",
+  "ids": [
+   "c",
+   "d"
+  ],
+  "charged": [
+   "c",
+   "d"
+  ]
+ },
+ {
+  "name": "23h59m",
+  "ids": [
+   "e",
+   "f"
+  ],
+  "charged": [
+   "e"
+  ]
+ },
+ {
+  "name": "24h01m",
+  "ids": [
+   "g",
+   "h"
+  ],
+  "charged": [
+   "g",
+   "h"
+  ]
+ },
+ {
+  "name": "out of order",
+  "ids": [
+   "j",
+   "i"
+  ],
+  "charged": [
+   "i",
+   "j"
+  ]
+ },
+ {
+  "name": "overnight 22:00->00:30",
+  "ids": [
+   "k",
+   "l"
+  ],
+  "charged": [
+   "k"
+  ]
+ },
+ {
+  "name": "three across two days",
+  "ids": [
+   "m",
+   "n",
+   "o"
+  ],
+  "charged": [
+   "m",
+   "o"
+  ]
+ },
+ {
+  "name": "gap then charge",
+  "ids": [
+   "p",
+   "q"
+  ],
+  "charged": [
+   "p",
+   "q"
+  ]
+ }
+]

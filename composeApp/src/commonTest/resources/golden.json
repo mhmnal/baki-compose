@@ -1,0 +1,83 @@
+{
+ "cfg": {
+  "fuelPrice": 1.99,
+  "kmPerLitre": 11,
+  "wearPerKm": 0.09,
+  "targetRate": 18,
+  "avgSpeed": 30,
+  "grabInsurance": 7.5
+ },
+ "rows": [
+  {
+   "id": "a09b763a-16fe-405b-a91c-83eb11f19481",
+   "date": "2026-11-01",
+   "km": 110,
+   "fuel": 15.6357,
+   "wear": 9.9,
+   "net": 107.2243,
+   "hrs": 4,
+   "netHr": 26.8061,
+   "gross": 140.26,
+   "grabFee": 7.5,
+   "band": "peak"
+  },
+  {
+   "id": "ab299326-812f-4cf1-8462-7a332f543189",
+   "date": "2026-11-02",
+   "km": 90,
+   "fuel": 16.2818,
+   "wear": 8.1,
+   "net": 140.5682,
+   "hrs": 6,
+   "netHr": 23.428,
+   "gross": 164.95,
+   "grabFee": 0,
+   "band": "good"
+  },
+  {
+   "id": "f234436c-4dc7-4419-ab07-8be807f6369c",
+   "date": "2026-11-03",
+   "km": 46,
+   "fuel": 8.3218,
+   "wear": 4.14,
+   "net": 55.7182,
+   "hrs": 3,
+   "netHr": 18.5727,
+   "gross": 75.68,
+   "grabFee": 7.5,
+   "band": "steady"
+  },
+  {
+   "id": "f688ea46-9705-48ac-9b96-5d21e5847e15",
+   "date": "2026-11-04",
+   "km": 78,
+   "fuel": 14.1109,
+   "wear": 7.02,
+   "net": 61.2691,
+   "hrs": 2.53,
+   "netHr": 24.217,
+   "gross": 82.4,
+   "grabFee": 0,
+   "band": "good"
+  }
+ ],
+ "totalNet": 364.7798,
+ "totalHours": 15.53,
+ "blended": 23.4887,
+ "dayDate": "2026-11-04",
+ "dayTotals": {
+  "income": 8240,
+  "expense": 11280,
+  "net": -3040,
+  "count": 5,
+  "shiftCount": 1
+ },
+ "month": "2026-11",
+ "monthTotals": {
+  "income": 46329,
+  "expense": 33712,
+  "net": 12617,
+  "count": 23,
+  "shiftCount": 4
+ }
+}

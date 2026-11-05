@@ -1,0 +1,154 @@
+package app.baki
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+/** Month at a glance: totals, best/worst day, where the money went, funds. */
+@Composable
+fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
+    val baki = LocalBaki.current
+    val t = monthTotals(store, month)
+    val days = monthDays(store, month)
+    val best = days.maxByOrNull { it.second.net }
+    val worst = days.minByOrNull { it.second.net }
+    val funds = fundStats(store, month)
+    val cats = expensesByCategory(store, month)
+    val maxCat = cats.maxOfOrNull { it.second } ?: 1L
+    val avgDay = if (days.isEmpty()) 0L else t.expense / days.size
+
+    LazyColumn(
+        Modifier.fillMaxSize().padding(horizontal = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(top = 18.dp, bottom = 132.dp),
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
+                    Text("‹", color = baki.onSurface, fontSize = 20.sp)
+                }
+                Text(
+                    monthLabel(month), color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
+                    Text("›", color = baki.onSurface, fontSize = 20.sp)
+                }
+            }
+        }
+
+        item {
+            Column {
+                Text("this month", color = baki.muted, fontSize = 12.sp)
+                Text("RM ${rm(t.net)}", color = baki.onSurface, fontSize = 42.sp, fontWeight = FontWeight.Black)
+                Text(
+                    "${days.size} days · in ${rm(t.income)} · out ${rm(t.expense)} · avg ${rm(avgDay)}/day",
+                    color = baki.muted, fontSize = 12.sp,
+                )
+            }
+        }
+
+        item {
+            val thisWeek = weekTotals(store, weekStartOf(todayIso()))
+            val lastWeek = weekTotals(store, addDays(weekStartOf(todayIso()), -7))
+            val delta = thisWeek.net - lastWeek.net
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+                Text("THIS WEEK", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
+                        color = if (delta >= 0) baki.up else baki.down, fontSize = 11.sp,
+                    )
+                }
+                Text(
+                    "${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries · last week RM ${rm(lastWeek.net)}",
+                    color = baki.muted, fontSize = 11.sp,
+                )
+            }
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile("best day", best?.let { "RM ${rm(it.second.net)}" } ?: "—", best?.first?.takeLast(5) ?: "", baki.up, Modifier.weight(1f))
+                StatTile("worst day", worst?.let { "RM ${rm(it.second.net)}" } ?: "—", worst?.first?.takeLast(5) ?: "", baki.down, Modifier.weight(1f))
+            }
+        }
+
+        item {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+                Text("FUNDS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                FundRow("Fuel", funds.fuel, baki)
+                Spacer(Modifier.height(8.dp))
+                FundRow("Wear & tear", funds.wear, baki)
+                Spacer(Modifier.height(6.dp))
+                Text("accrued from km · drained by real spending", color = baki.muted, fontSize = 10.sp)
+            }
+        }
+
+        item {
+            Text("WHERE IT WENT", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        items(cats) { (cat, cents) ->
+            Column {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(cat, color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text("RM ${rm(cents)}", color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(4.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(baki.surfaceHigh)) {
+                    Box(
+                        Modifier.fillMaxWidth((cents.toFloat() / maxCat).coerceIn(0.02f, 1f))
+                            .height(6.dp).clip(RoundedCornerShape(50)).background(baki.primary),
+                    )
+                }
+            }
+        }
+        item { TrendBars(store, month); Spacer(Modifier.height(10.dp)) }
+        item { CalendarHeat(store, month); Spacer(Modifier.height(4.dp)) }
+        if (cats.isEmpty()) item {
+            Text("No expenses recorded this month.", color = baki.muted, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun StatTile(label: String, value: String, sub: String, tint: Color, modifier: Modifier = Modifier) {
+    val baki = LocalBaki.current
+    Column(modifier.clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+        Text(label, color = baki.muted, fontSize = 11.sp)
+        Text(value, color = tint, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        if (sub.isNotEmpty()) Text(sub, color = baki.muted, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(
+            "RM ${"%.2f".format(fund.balance)}",
+            color = if (fund.balance >= 0) baki.up else baki.down,
+            fontSize = 13.sp, fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("acc ${"%.2f".format(fund.accrued)} · spent ${"%.2f".format(fund.spent)}", color = baki.muted, fontSize = 10.sp)
+    }
+}

@@ -1,0 +1,454 @@
+{
+ "v": 1,
+ "updatedAt": "2026-11-05T07:34:58.649Z",
+ "entries": [
+  {
+   "id": "2cd88538-bbcb-4655-aba0-3a48dfe875c5",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1200,
+   "note": "",
+   "updated": "2026-11-02T12:40:54.453Z"
+  },
+  {
+   "id": "9a0a9f8e-7e67-4961-8ee7-62319b9ecfde",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "fuel",
+   "amount": 3000,
+   "note": "",
+   "updated": "2026-11-02T12:40:48.927Z"
+  },
+  {
+   "id": "6b086454-acbe-498b-aea5-ceb4189b9a84",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "food",
+   "amount": 300,
+   "note": "",
+   "updated": "2026-11-02T12:41:03.272Z"
+  },
+  {
+   "id": "83a44a03-162e-4236-8fd7-fce7db339e3c",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "food",
+   "amount": 360,
+   "note": "",
+   "updated": "2026-11-02T12:41:14.776Z"
+  },
+  {
+   "id": "a24c16f2-2ec0-4875-82f6-aa034eb7af58",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1900,
+   "note": "",
+   "updated": "2026-11-02T12:41:22.691Z"
+  },
+  {
+   "id": "ff1abe72-03f6-4824-b4b3-8b7483fe89ce",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1930,
+   "note": "",
+   "updated": "2026-11-02T12:41:30.902Z"
+  },
+  {
+   "id": "67c4ce4c-0513-4f8c-b49d-bf6de6621bd5",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "other",
+   "amount": 1200,
+   "note": "card fee bimb",
+   "updated": "2026-11-02T12:41:52.517Z"
+  },
+  {
+   "id": "5090a0f8-d580-442f-8479-a156346e83bc",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "auto-deepseek",
+   "amount": 904,
+   "note": "deepseek",
+   "updated": "2026-11-02T13:27:28.686Z"
+  },
+  {
+   "id": "bd0266ac-9244-4648-bfe3-aac90e2018f1",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "food",
+   "amount": 280,
+   "note": "",
+   "updated": "2026-11-02T12:43:10.876Z"
+  },
+  {
+   "id": "26409ea3-7e24-41fe-aef0-df3fa63a5598",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "food",
+   "amount": 800,
+   "note": "",
+   "updated": "2026-11-02T12:43:25.572Z"
+  },
+  {
+   "id": "897b310b-9e0a-4922-a1fa-11150a48e189",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "fuel",
+   "amount": 4000,
+   "note": "",
+   "updated": "2026-11-02T12:43:22.784Z"
+  },
+  {
+   "id": "e10b50f2-785b-42a8-848d-e11152ce3de3",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "food",
+   "amount": 250,
+   "note": "",
+   "updated": "2026-11-02T12:43:32.987Z"
+  },
+  {
+   "id": "44127bba-4d38-4316-944b-09873f953d8d",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1000,
+   "note": "",
+   "updated": "2026-11-02T12:43:37.617Z"
+  },
+  {
+   "id": "106a9212-b269-459f-8cc6-13bdb2d4cb54",
+   "date": "2026-11-02",
+   "type": "expense",
+   "cat": "auto-deepseek",
+   "amount": 904,
+   "note": "deepseek",
+   "updated": "2026-11-02T13:27:28.686Z"
+  },
+  {
+   "id": "fee-a09b763a-16fe-405b-a91c-83eb11f19481",
+   "date": "2026-11-01",
+   "type": "expense",
+   "cat": "grabfee",
+   "amount": 750,
+   "note": "Grab insurance",
+   "updated": "2026-11-05T07:34:58.584Z"
+  },
+  {
+   "id": "fee-f234436c-4dc7-4419-ab07-8be807f6369c",
+   "date": "2026-11-03",
+   "type": "expense",
+   "cat": "grabfee",
+   "amount": 750,
+   "note": "Grab insurance",
+   "updated": "2026-11-05T07:34:58.584Z"
+  },
+  {
+   "id": "633cf1f2-2dbe-4d06-9f4e-969a9f818206",
+   "date": "2026-11-03",
+   "type": "expense",
+   "cat": "food",
+   "amount": 2000,
+   "note": "",
+   "updated": "2026-11-03T11:33:29.693Z"
+  },
+  {
+   "id": "ded65857-bf4d-43ab-916a-efe5e4d02b8d",
+   "date": "2026-11-03",
+   "type": "expense",
+   "cat": "auto-deepseek",
+   "amount": 904,
+   "note": "",
+   "updated": "2026-11-03T12:14:10.784Z"
+  },
+  {
+   "id": "80b72df5-ae69-46c6-af05-cb98843a6233",
+   "date": "2026-11-04",
+   "type": "expense",
+   "cat": "fuel",
+   "amount": 4000,
+   "note": "",
+   "updated": "2026-11-03T20:27:14.258Z"
+  },
+  {
+   "id": "ac360b73-2389-45e1-9c98-6b2e1b268ffd",
+   "date": "2026-11-04",
+   "type": "expense",
+   "cat": "food",
+   "amount": 3980,
+   "note": "",
+   "updated": "2026-11-03T20:27:51.716Z"
+  },
+  {
+   "id": "fbd8e98a-e727-4957-b1b2-ca76e80bb1ed",
+   "date": "2026-11-04",
+   "type": "expense",
+   "cat": "food",
+   "amount": 850,
+   "note": "",
+   "updated": "2026-11-04T09:53:19.369Z"
+  },
+  {
+   "id": "f7cce568-d0c7-4596-a64a-7ada6775c23c",
+   "date": "2026-11-04",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1170,
+   "note": "",
+   "updated": "2026-11-04T11:14:03.434Z"
+  },
+  {
+   "id": "2a81e292-e800-4862-9fcb-dba6c050f322",
+   "date": "2026-11-04",
+   "type": "expense",
+   "cat": "food",
+   "amount": 1280,
+   "note": "",
+   "updated": "2026-11-04T17:48:54.554Z"
+  }
+ ],
+ "shifts": [
+  {
+   "id": "a09b763a-16fe-405b-a91c-83eb11f19481",
+   "date": "2026-11-01",
+   "start": "14:00",
+   "hours": 4,
+   "odoStart": 0,
+   "odoEnd": null,
+   "km": 110,
+   "gross": 14026,
+   "incentive": 0,
+   "extra": 0,
+   "kmPerLitre": 14,
+   "grabFee": 750,
+   "note": "",
+   "updated": "2026-11-02T15:05:15.101Z"
+  },
+  {
+   "id": "ab299326-812f-4cf1-8462-7a332f543189",
+   "date": "2026-11-02",
+   "start": "13:30",
+   "hours": 6,
+   "odoStart": 0,
+   "odoEnd": null,
+   "km": 90,
+   "gross": 16495,
+   "incentive": 0,
+   "extra": 0,
+   "kmPerLitre": 11,
+   "grabFee": 0,
+   "note": "",
+   "updated": "2026-11-02T15:05:15.101Z"
+  },
+  {
+   "id": "f234436c-4dc7-4419-ab07-8be807f6369c",
+   "date": "2026-11-03",
+   "start": "17:00",
+   "hours": 3,
+   "odoStart": 0,
+   "odoEnd": null,
+   "km": 46,
+   "gross": 7568,
+   "incentive": 0,
+   "extra": 0,
+   "kmPerLitre": null,
+   "grabFee": 750,
+   "note": "",
+   "updated": "2026-11-03T12:02:03.831Z"
+  },
+  {
+   "id": "f688ea46-9705-48ac-9b96-5d21e5847e15",
+   "date": "2026-11-04",
+   "start": "03:30",
+   "hours": 2.53,
+   "odoStart": null,
+   "odoEnd": null,
+   "km": 78,
+   "gross": 8240,
+   "incentive": 0,
+   "extra": 0,
+   "kmPerLitre": null,
+   "grabFee": 0,
+   "note": "",
+   "updated": "2026-11-04T13:43:43.198Z"
+  }
+ ],
+ "statements": {
+  "2026-10-26": {
+   "week_start": "2026-10-26",
+   "range_text": "26 Oktober 2026 – 1 November 2026",
+   "income": 507.34,
+   "deductions": -37.5,
+   "weekly": 469.84,
+   "transport_net": 488.7,
+   "pickup_fares": 101.2,
+   "trip_fares": 381.5,
+   "other_income": 6,
+   "incentives": 16.64,
+   "tips": 2,
+   "insurance_count": 5,
+   "consistent": true,
+   "imported_at": "2026-11-04T11:06:25.594Z"
+  }
+ },
+ "settings": {
+  "name": "",
+  "cats": {
+   "in": [
+    {
+     "id": "earnings",
+     "name": "Grab earnings",
+     "icon": "🟢"
+    },
+    {
+     "id": "tips",
+     "name": "Tips",
+     "icon": "💵"
+    },
+    {
+     "id": "bonus",
+     "name": "Bonus",
+     "icon": "🏆"
+    },
+    {
+     "id": "cash",
+     "name": "Cash fare",
+     "icon": "🪙"
+    },
+    {
+     "id": "otherin",
+     "name": "Other income",
+     "icon": "➕"
+    }
+   ],
+   "out": [
+    {
+     "id": "fuel",
+     "name": "Petrol",
+     "icon": "⛽"
+    },
+    {
+     "id": "toll",
+     "name": "Toll",
+     "icon": "🛣️"
+    },
+    {
+     "id": "parking",
+     "name": "Parking",
+     "icon": "🅿️"
+    },
+    {
+     "id": "carwash",
+     "name": "Car wash",
+     "icon": "🧼"
+    },
+    {
+     "id": "maintenance",
+     "name": "Maintenance",
+     "icon": "🔧"
+    },
+    {
+     "id": "roadtax",
+     "name": "Road tax",
+     "icon": "📄"
+    },
+    {
+     "id": "phone",
+     "name": "Phone / data",
+     "icon": "📱"
+    },
+    {
+     "id": "food",
+     "name": "Food",
+     "icon": "🍚"
+    },
+    {
+     "id": "other",
+     "name": "Other",
+     "icon": "📦"
+    },
+    {
+     "id": "auto-deepseek",
+     "name": "Deepseek",
+     "icon": "🤖",
+     "auto": true
+    },
+    {
+     "id": "grabfee",
+     "name": "Grab insurance",
+     "icon": "🧾"
+    }
+   ]
+  },
+  "profit": {
+   "fuelPrice": 1.99,
+   "kmPerLitre": 11,
+   "wearPerKm": 0.09,
+   "targetRate": 18,
+   "avgSpeed": 30,
+   "grabInsurance": 7.5
+  }
+ },
+ "tomb": {
+  "ids": [
+   "real1",
+   "sreal",
+   "bd308a52-0802-43ef-87d0-5cb73778db25",
+   "246ca3f5-56b4-4c17-9300-5d81c1b461d4",
+   "aef1b19e-5769-4076-9da2-2d5b6ecf2e73",
+   "3db2cced-3ac7-4167-a500-84d7e89e13b7",
+   "69d10f12-2b36-4999-b186-c0ca121d836d",
+   "025aa28e-aae0-45c3-8d70-0325025b7273",
+   "3c3f8af0-d878-4502-967f-281afda17e60",
+   "c2b43be8-8d9a-4f87-a979-9dde6a0dc4b0",
+   "51688610-fd27-4eb1-9923-3cedd260abef",
+   "b09a6b61-3472-4c0e-9849-3cdf0887a033",
+   "12e78cb2-389c-4ee2-8670-afee9abeef6f",
+   "77c59a3f-9b9b-4699-b3be-57211992d6b8",
+   "9faa44a0-3425-4a60-9054-3619713082d6",
+   "e2779636-9059-4cb5-8738-876e541b6c6d",
+   "bd1becfe-67b2-490f-abbf-e233b6c79188",
+   "079a7ec0-8903-4d7c-a922-04f2b18790ae",
+   "59fefe89-0e23-4a30-948e-620196d63dfc",
+   "e835e207-3674-4a6f-a830-f4cd7b2215f7",
+   "4d8192b3-904b-4013-a135-019e45e6719a",
+   "4e44c708-532b-45de-9a90-d2fe26d499e7",
+   "fee-4e44c708-532b-45de-9a90-d2fe26d499e7",
+   "20660374-df86-4435-b2e9-0e70e4fdfa0c",
+   "fee-20660374-df86-4435-b2e9-0e70e4fdfa0c",
+   "d282ed4b-aa6a-4e27-9d91-dc051284ef46",
+   "fee-d282ed4b-aa6a-4e27-9d91-dc051284ef46",
+   "696ae960-f7d3-4fd1-8b7a-07cecd0ee342",
+   "fee-696ae960-f7d3-4fd1-8b7a-07cecd0ee342",
+   "9cddc2ba-71c1-4da3-8672-8843c7a642c3",
+   "fee-9cddc2ba-71c1-4da3-8672-8843c7a642c3",
+   "c04db110-d9f9-4d03-b30b-0d2fce2f92b0",
+   "fee-c04db110-d9f9-4d03-b30b-0d2fce2f92b0",
+   "b77d6f84-acbe-429c-8ef6-49e6d9ad8b89",
+   "fee-b77d6f84-acbe-429c-8ef6-49e6d9ad8b89",
+   "fee-ab299326-812f-4cf1-8462-7a332f543189",
+   "4b27af8b-cf1f-46d1-abf7-f36126d68988",
+   "fee-4b27af8b-cf1f-46d1-abf7-f36126d68988",
+   "2f04d14d-f85d-4c1d-94c2-0f31a443e7b6",
+   "fee-2f04d14d-f85d-4c1d-94c2-0f31a443e7b6",
+   "fee-f688ea46-9705-48ac-9b96-5d21e5847e15",
+   "85f87c6a-0886-44dd-86a2-6c79654e9c2e",
+   "fee-85f87c6a-0886-44dd-86a2-6c79654e9c2e",
+   "5266247e-3071-4315-9405-aed1c3eeeb9e",
+   "fee-5266247e-3071-4315-9405-aed1c3eeeb9e",
+   "7158a388-18ad-477b-bdd6-1fe17c3ade92",
+   "a946f3d6-4f44-42e8-8ea7-92eca9149d00",
+   "fee-a946f3d6-4f44-42e8-8ea7-92eca9149d00",
+   "f115f289-4276-41e6-a9fc-2510c9278931",
+   "fee-f115f289-4276-41e6-a9fc-2510c9278931",
+   "c45d830d-697b-442c-91f5-4df4de9ea208",
+   "fee-c45d830d-697b-442c-91f5-4df4de9ea208"
+  ],
+  "cats": [
+   "insurance"
+  ]
+ }
+}

@@ -1,0 +1,36 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :composeApp
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:12:27: 'fun provideDelegate(thisRef: Any?, property: KProperty<*>): ExistingDomainObjectDelegate<KotlinSourceSet>' is deprecated. Use 'val element = getByName(name)' instead. See the Gradle 9.6 upgrading guide.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:12:27: 'fun <T : Any, U : NamedDomainObjectCollection<T>> U.getting(configuration: T.() -> Unit): NamedDomainObjectCollectionDelegateProvider<T>' is deprecated. Use 'val element = getByName(name) { }' instead. See the Gradle 9.6 upgrading guide.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:12:27: 'fun <T> ExistingDomainObjectDelegate<out T>.getValue(receiver: Any?, property: KProperty<*>): T' is deprecated. Use the named() API instead. See the Gradle 9.6 upgrading guide.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:14:40: 'val runtime: String' is deprecated. Specify dependency directly.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:15:40: 'val foundation: String' is deprecated. Specify dependency directly.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:16:40: 'val material3: String' is deprecated. Specify dependency directly.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:17:40: 'val ui: String' is deprecated. Specify dependency directly.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:24:28: 'fun provideDelegate(thisRef: Any?, property: KProperty<*>): ExistingDomainObjectDelegate<KotlinSourceSet>' is deprecated. Use 'val element = getByName(name)' instead. See the Gradle 9.6 upgrading guide.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:24:28: 'fun <T : Any, U : NamedDomainObjectCollection<T>> U.getting(configuration: T.() -> Unit): NamedDomainObjectCollectionDelegateProvider<T>' is deprecated. Use 'val element = getByName(name) { }' instead. See the Gradle 9.6 upgrading guide.
+w: file:///home/min/Documents/deepseek-harness/default-workspace/baki-compose/composeApp/build.gradle.kts:24:28: 'fun <T> ExistingDomainObjectDelegate<out T>.getValue(receiver: Any?, property: KProperty<*>): T' is deprecated. Use the named() API instead. See the Gradle 9.6 upgrading guide.
+
+> Task :composeApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :composeApp:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :composeApp:copyNonXmlValueResourcesForCommonMain NO-SOURCE
+> Task :composeApp:prepareComposeResourcesTaskForCommonMain NO-SOURCE
+> Task :composeApp:generateResourceAccessorsForCommonMain SKIPPED
+> Task :composeApp:convertXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :composeApp:copyNonXmlValueResourcesForDesktopMain NO-SOURCE
+> Task :composeApp:prepareComposeResourcesTaskForDesktopMain NO-SOURCE
+> Task :composeApp:generateResourceAccessorsForDesktopMain SKIPPED
+> Task :composeApp:generateActualResourceCollectorsForDesktopMain SKIPPED
+> Task :composeApp:generateComposeResClass SKIPPED
+> Task :composeApp:generateExpectResourceCollectorsForCommonMain SKIPPED
+> Task :composeApp:compileKotlinDesktop UP-TO-DATE
+> Task :composeApp:compileDesktopMainJava NO-SOURCE
+> Task :composeApp:assembleDesktopMainResources UP-TO-DATE
+> Task :composeApp:desktopProcessResources UP-TO-DATE
+> Task :composeApp:processDesktopMainResources SKIPPED
+> Task :composeApp:desktopMainClasses UP-TO-DATE
+> Task :composeApp:desktopJar UP-TO-DATE
+> Task :composeApp:prepareAppResources NO-SOURCE
+> Task :composeApp:run
