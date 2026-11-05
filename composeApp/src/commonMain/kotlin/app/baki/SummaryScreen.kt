@@ -42,14 +42,14 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
-                    Text("‹", color = baki.onSurface, fontSize = 20.sp)
+                    Text("‹", color = baki.onSurface, fontSize = 22.sp)
                 }
                 Text(
-                    monthLabel(month), color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                    monthLabel(month), color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
                 )
                 TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
-                    Text("›", color = baki.onSurface, fontSize = 20.sp)
+                    Text("›", color = baki.onSurface, fontSize = 22.sp)
                 }
             }
         }
@@ -73,7 +73,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 Text("THIS WEEK", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                    Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
@@ -127,9 +127,9 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text("AWAITING PAYOUT", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        Text("RM ${"%.2f".format(due)}", color = if (due > 0) baki.up else baki.muted, fontSize = 26.sp, fontWeight = FontWeight.Black)
+                        Text("RM ${"%.2f".format(due)}", color = if (due > 0) baki.up else baki.muted, fontSize = 28.sp, fontWeight = FontWeight.Black)
                         statementCoveredUntil(store)?.let {
-                            Text("earned after the statement covering up to $it", color = baki.muted, fontSize = 10.sp)
+                            Text("earned after the statement covering up to $it", color = baki.muted, fontSize = 11.sp)
                         }
                     }
                     Icon(BakiIcons.Wallet, contentDescription = null, tint = baki.up, modifier = Modifier.size(22.dp))
@@ -152,7 +152,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 FundRow("Wear & tear", funds.wear, baki)
                 Spacer(Modifier.height(6.dp))
-                Text("accrued from km · drained by real spending", color = baki.muted, fontSize = 10.sp)
+                Text("accrued from km · drained by real spending", color = baki.muted, fontSize = 11.sp)
             }
         }
 
@@ -162,8 +162,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         items(cats) { (cat, cents) ->
             Column {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(cat, color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    Text("RM ${rm(cents)}", color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(cat, color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text("RM ${rm(cents)}", color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(4.dp))
                 Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh)) {
@@ -189,7 +189,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                     if (cost.km > 0.01)
                         "running RM ${"%.2f".format(cost.running / cost.km)}/km · upkeep RM ${"%.2f".format(cost.upkeep / cost.km)}/km"
                     else "no distance recorded this month",
-                    color = baki.muted, fontSize = 10.sp,
+                    color = baki.muted, fontSize = 11.sp,
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -206,11 +206,11 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                                         .background(if (m.month == month) baki.primary else baki.primary.copy(alpha = 0.35f)),
                                 )
                             }
-                            Text(m.month.takeLast(2), color = baki.muted, fontSize = 9.sp)
+                            Text(m.month.takeLast(2), color = baki.muted, fontSize = 11.sp)
                             Text(
                                 if (m.km > 0.01) "%.2f".format(m.perKm) else "–",
                                 color = if (m.month == month) baki.onSurface else baki.muted,
-                                fontSize = 9.sp, fontWeight = if (m.month == month) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp, fontWeight = if (m.month == month) FontWeight.Bold else FontWeight.Normal,
                             )
                         }
                     }
@@ -221,7 +221,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         item { TrendBars(store, month); Spacer(Modifier.height(10.dp)) }
         item { CalendarHeat(store, month); Spacer(Modifier.height(4.dp)) }
         if (cats.isEmpty()) item {
-            Text("No expenses recorded this month.", color = baki.muted, fontSize = 13.sp)
+            Text("No expenses recorded this month.", color = baki.muted, fontSize = 12.sp)
         }
     }
 }
@@ -231,7 +231,7 @@ private fun StatTile(label: String, value: String, sub: String, tint: Color, mod
     val baki = LocalBaki.current
     Column(modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
         Text(label, color = baki.muted, fontSize = 11.sp)
-        Text(value, color = tint, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        Text(value, color = tint, fontSize = 22.sp, fontWeight = FontWeight.Black)
         if (sub.isNotEmpty()) Text(sub, color = baki.muted, fontSize = 11.sp)
     }
 }
@@ -239,13 +239,13 @@ private fun StatTile(label: String, value: String, sub: String, tint: Color, mod
 @Composable
 private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(label, color = baki.onSurface, fontSize = 12.sp, modifier = Modifier.weight(1f))
         Text(
             "RM ${"%.2f".format(fund.balance)}",
             color = if (fund.balance >= 0) baki.up else baki.down,
-            fontSize = 13.sp, fontWeight = FontWeight.Bold,
+            fontSize = 12.sp, fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.width(8.dp))
-        Text("acc ${"%.2f".format(fund.accrued)} · spent ${"%.2f".format(fund.spent)}", color = baki.muted, fontSize = 10.sp)
+        Text("acc ${"%.2f".format(fund.accrued)} · spent ${"%.2f".format(fund.spent)}", color = baki.muted, fontSize = 11.sp)
     }
 }

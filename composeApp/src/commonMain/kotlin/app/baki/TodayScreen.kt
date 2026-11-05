@@ -99,7 +99,7 @@ fun TodayScreen(
         item {
             Column {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM", color = baki.muted, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                    Text("RM", color = baki.muted, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp, end = 6.dp))
                     Text(rm(shownNet.toLong()), color = baki.onSurface, style = BakiType.displayNumeric)
                 }
@@ -148,7 +148,7 @@ fun TodayScreen(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(16.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SHIFT NET · AFTER CAR COST", color = baki.muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("SHIFT NET · AFTER CAR COST", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Spacer(Modifier.weight(1f))
                         Box(
                             Modifier.clip(RoundedCornerShape(Radius.pill))
@@ -163,7 +163,7 @@ fun TodayScreen(
                         Text("RM ${"%.2f".format(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
                         Spacer(Modifier.weight(1f))
                         m.netHr?.let {
-                            Text("RM ${"%.0f".format(it)}/hr", color = bandColor(m.band, baki), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text("RM ${"%.0f".format(it)}/hr", color = bandColor(m.band, baki), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                     Text(
@@ -294,7 +294,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, fontSize = 20.sp) }
+        TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, fontSize = 22.sp) }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(if (day == today) "Today" else prettyDate(day), color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Text(
@@ -303,7 +303,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
             )
         }
         TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
-            Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), fontSize = 20.sp)
+            Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), fontSize = 22.sp)
         }
     }
 }
@@ -314,7 +314,7 @@ private fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier 
         modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = ink, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+        Text(label, color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp))
     }
 }
@@ -370,7 +370,7 @@ fun RowCardIcon(
                 Text(
                     if (editing) "✎  Edit" else "Delete  🗑",
                     color = if (editing) baki.onPrimaryContainer else baki.down,
-                    fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 )
             }
         },
@@ -387,10 +387,10 @@ fun RowCardIcon(
         ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(18.dp)) }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             if (sub.isNotEmpty()) Text(sub, color = baki.muted, fontSize = 11.sp)
         }
-        Text(amount, color = tint, style = BakiType.labelNumeric.copy(fontSize = 15.sp))
+        Text(amount, color = tint, style = BakiType.labelNumeric.copy(fontSize = 16.sp))
     }
     }
 }

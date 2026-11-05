@@ -252,7 +252,7 @@ private fun AppContent(repo: BakiRepo) {
             Box(
                 Modifier.fillMaxSize().clickable { adding = 1 },
                 contentAlignment = Alignment.Center,
-            ) { Text("+", color = baki.primary, fontSize = 30.sp, fontWeight = FontWeight.Bold) }
+            ) { Text("+", color = baki.primary, fontSize = 28.sp, fontWeight = FontWeight.Bold) }
         }
     }
     }
@@ -371,7 +371,7 @@ private fun Header(repo: BakiRepo) {
     val baki = LocalBaki.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primary), contentAlignment = Alignment.Center) {
-            Text("✓", color = baki.onPrimary, fontSize = 18.sp, fontWeight = FontWeight.Black)
+            Text("✓", color = baki.onPrimary, fontSize = 16.sp, fontWeight = FontWeight.Black)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -429,7 +429,7 @@ private fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
                     // ellipsis rather than clipping: at 130% font scale "Spending" must degrade,
                     // not lose its last letter
                     Text(
-                        label, color = ink, fontSize = 9.sp,
+                        label, color = ink, fontSize = 11.sp,
                         fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
                         maxLines = 1, softWrap = false,
                         overflow = TextOverflow.Ellipsis,
@@ -465,7 +465,7 @@ fun Chip(text: String, tint: Color) {
     ) {
         Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(tint))
         Spacer(Modifier.width(8.dp))
-        Text(text, color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(text, color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -507,7 +507,7 @@ fun RowCard(
                 Text(
                     if (editing) "✎  Edit" else "Delete  🗑",
                     color = if (editing) baki.onPrimaryContainer else baki.down,
-                    fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 )
             }
         },
@@ -533,7 +533,7 @@ fun RowCard(
             Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
             if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
         }
-        Text(amount, color = ink, style = BakiType.labelNumeric.copy(fontSize = 15.sp))
+        Text(amount, color = ink, style = BakiType.labelNumeric.copy(fontSize = 16.sp))
     }
     }
 }
@@ -597,10 +597,10 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
             Text(
                 liveClock(worked),
                 color = if (onBreak) baki.muted else baki.onSurface,
-                fontSize = 30.sp, fontWeight = FontWeight.Black,
+                fontSize = 28.sp, fontWeight = FontWeight.Black,
             )
             Spacer(Modifier.weight(1f))
-            Text("RM ${rm(total)}", color = baki.onSurface, fontSize = 26.sp, fontWeight = FontWeight.Black)
+            Text("RM ${rm(total)}", color = baki.onSurface, fontSize = 28.sp, fontWeight = FontWeight.Black)
         }
         // break-even: what the shift has cost so far, and how far the payouts are from covering it
         val be = liveBreakEven(repo.store, live, now)
@@ -667,14 +667,14 @@ private fun DayHeader(day: String, today: String, onChange: (String) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextButton(onClick = { onChange(addDays(day, -1)) }) {
-            Text("‹", color = baki.onSurface, fontSize = 20.sp)
+            Text("‹", color = baki.onSurface, fontSize = 22.sp)
         }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (day == today) "Today" else day, color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text(if (day == today) day else "tap ‹ › to move", color = baki.muted, fontSize = 10.sp)
+            Text(if (day == today) "Today" else day, color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(if (day == today) day else "tap ‹ › to move", color = baki.muted, fontSize = 11.sp)
         }
         TextButton(enabled = !atToday, onClick = { onChange(addDays(day, 1)) }) {
-            Text("›", color = if (atToday) baki.muted.copy(alpha = 0.35f) else baki.onSurface, fontSize = 20.sp)
+            Text("›", color = if (atToday) baki.muted.copy(alpha = 0.35f) else baki.onSurface, fontSize = 22.sp)
         }
     }
 }
@@ -684,12 +684,12 @@ private fun MonthHeader(month: String, onChange: (String) -> Unit) {
     val baki = LocalBaki.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(onClick = { onChange(addDays("$month-01", -1).take(7)) }) {
-            Text("‹", color = baki.onSurface, fontSize = 20.sp)
+            Text("‹", color = baki.onSurface, fontSize = 22.sp)
         }
-        Text(monthLabel(month), color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+        Text(monthLabel(month), color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
         TextButton(onClick = { onChange(addDays(endOfMonth(month), 1).take(7)) }) {
-            Text("›", color = baki.onSurface, fontSize = 20.sp)
+            Text("›", color = baki.onSurface, fontSize = 22.sp)
         }
     }
 }
@@ -799,7 +799,7 @@ private fun SpendingScreen(
                                 Spacer(Modifier.width(10.dp))
                                 Column(Modifier.weight(1f)) {
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(name, color = baki.onSurface, style = BakiType.labelStrong.copy(fontSize = 13.sp))
+                                        Text(name, color = baki.onSurface, style = BakiType.labelStrong.copy(fontSize = 12.sp))
                                         Text(
                                             "RM ${"%.0f".format(b.spent)} / ${"%.0f".format(b.limit)}" +
                                                 if (b.over) " · RM ${"%.0f".format(-b.remaining)} over"
@@ -828,7 +828,7 @@ private fun SpendingScreen(
                 Text(
                     if (query.isNotBlank() || catFilter != "all") "Nothing matches that filter."
                     else "Nothing recorded this month.",
-                    color = baki.muted, fontSize = 13.sp,
+                    color = baki.muted, fontSize = 12.sp,
                 )
             }
         }
@@ -897,7 +897,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("SYNC")
         Spacer(Modifier.height(8.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
-            Text("Server address", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text("Server address", color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text("where the tracker server is running", color = baki.muted, fontSize = 11.sp)
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
@@ -935,7 +935,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("LIQUID GLASS")
         Spacer(Modifier.height(8.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
-            Text("Nav bar & +", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text("Nav bar & +", color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 when (effectiveGlassTier(repo.config.glassMode, DeviceTier.level)) {
                     0 -> "Material surface (default) · ${DeviceTier.reason}"
@@ -957,7 +957,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                             .padding(vertical = 9.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 13.sp,
+                        Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 12.sp,
                             fontWeight = if (on) FontWeight.Bold else FontWeight.Medium)
                     }
                 }
@@ -979,7 +979,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         .padding(vertical = 9.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 13.sp,
+                    Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 12.sp,
                         fontWeight = if (on) FontWeight.Bold else FontWeight.Medium)
                 }
             }
@@ -997,19 +997,19 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         val p = repo.store.settings.profit
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             Text("RM ${"%.2f".format(p.fuelPrice)}/L · ${"%.1f".format(p.kmPerLitre)} km/L · wear RM ${"%.2f".format(p.wearPerKm)}/km",
-                color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Text("target RM ${"%.0f".format(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${"%.2f".format(p.grabInsurance)}",
                 color = baki.muted, fontSize = 11.sp)
             if (repo.store.settings.gpsCorrection != 1.0) {
                 Text("GPS correction ×${"%.2f".format(repo.store.settings.gpsCorrection)} (from your odometer)",
-                    color = baki.muted, fontSize = 10.sp)
+                    color = baki.muted, fontSize = 11.sp)
             }
             // real economy, measured from fill-ups that carry an odometer reading
             measuredEconomy(repo.store)?.let { m ->
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "measured ${"%.1f".format(m.kml)} km/L over ${"%.0f".format(m.km)} km · ${m.fills} fills (${m.from} → ${m.to})",
-                    color = baki.muted, fontSize = 10.sp,
+                    color = baki.muted, fontSize = 11.sp,
                 )
                 if (kotlin.math.abs(m.kml - p.kmPerLitre) > 0.3) {
                     TextButton(
@@ -1045,7 +1045,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("BUDGETS")
         Spacer(Modifier.height(8.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
-            Text("Monthly limits", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text("Monthly limits", color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             val n = repo.store.settings.budgets.size
             Text(
                 if (n == 0) "none set — add caps for food, fuel, tolls"
@@ -1104,7 +1104,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             onDismissRequest = { confirmReset = false },
             containerColor = baki.container,
             title = { Text("Reset this device?", color = baki.onSurface, fontWeight = FontWeight.Bold) },
-            text = { Text("The local copy is forgotten and pulled again from the server. The server is not touched.", color = baki.muted, fontSize = 13.sp) },
+            text = { Text("The local copy is forgotten and pulled again from the server. The server is not touched.", color = baki.muted, fontSize = 12.sp) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmReset = false
@@ -1141,7 +1141,7 @@ private fun SwitchRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(title, color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(sub, color = if (warn) baki.warn else baki.muted, fontSize = 11.sp)
         }
         Switch(
@@ -1260,7 +1260,7 @@ private fun EntryDialog(
                         label = { Text("Odometer at fill-up (optional)") }, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
-                        supportingText = { Text("Add this and the app measures your real km/L", color = baki.muted, fontSize = 10.sp) },
+                        supportingText = { Text("Add this and the app measures your real km/L", color = baki.muted, fontSize = 11.sp) },
                     )
                 }
                 OutlinedTextField(
@@ -1282,7 +1282,7 @@ private fun EntryDialog(
             ) {
                 Text(
                     if (existing == null) "Add RM ${rm(cents)}" else "Save changes",
-                    fontWeight = FontWeight.Bold, fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold, fontSize = 16.sp,
                 )
             }
         }
@@ -1297,7 +1297,7 @@ private fun SegButton(label: String, selected: Boolean, modifier: Modifier = Mod
             .clickable { onClick() }.padding(vertical = 9.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, color = if (selected) baki.onPrimaryContainer else baki.muted, fontSize = 13.sp,
+        Text(label, color = if (selected) baki.onPrimaryContainer else baki.muted, fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
     }
 }
@@ -1370,7 +1370,7 @@ private fun ShiftDialog(
                 }
                 if (odoStart != null && odoEnd != null && odoEnd >= odoStart) {
                     Text("odometer says ${"%.1f".format(odoEnd - odoStart)} km — this wins over the Km field",
-                        color = baki.muted, fontSize = 10.sp)
+                        color = baki.muted, fontSize = 11.sp)
                 }
                 // reconciliation: GPS vs odometer on the same shift
                 val tracked = existing?.km?.takeIf { it > 0.5 }
@@ -1379,7 +1379,7 @@ private fun ShiftDialog(
                     val ratio = odo / tracked
                     Text(
                         "GPS tracked ${"%.1f".format(tracked)} km · odometer ${"%.1f".format(odo)} km · ×${"%.2f".format(ratio)}",
-                        color = baki.muted, fontSize = 10.sp,
+                        color = baki.muted, fontSize = 11.sp,
                     )
                     if (ratio in 0.5..2.0) {
                         TextButton(onClick = { onCalibrate(ratio) }) {
@@ -1406,7 +1406,7 @@ private fun ShiftDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-            ) { Text(if (existing == null) "Save shift" else "Save changes", fontWeight = FontWeight.Bold, fontSize = 15.sp) }
+            ) { Text(if (existing == null) "Save shift" else "Save changes", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
         }
 }
 
@@ -1437,11 +1437,11 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
                 ProfitField("Average speed km/h", speed, baki)
                 ProfitField("Grab insurance RM/day", cover, baki)
                 Spacer(Modifier.height(4.dp))
-                Text("Fixed costs, spread over the hours you drive", color = baki.muted, fontSize = 10.sp)
+                Text("Fixed costs, spread over the hours you drive", color = baki.muted, fontSize = 11.sp)
                 ProfitField("Car loan RM/month", loan, baki)
                 ProfitField("Road tax RM/year", roadTax, baki)
                 ProfitField("Car insurance RM/year", carIns, baki)
-                Text("Saving re-derives every shift's cost, cover and overhead.", color = baki.muted, fontSize = 10.sp)
+                Text("Saving re-derives every shift's cost, cover and overhead.", color = baki.muted, fontSize = 11.sp)
             }
         },
         confirmButton = {
@@ -1534,7 +1534,7 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(c.name, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text(c.name, color = baki.onSurface, fontSize = 12.sp, modifier = Modifier.weight(1f))
                 OutlinedTextField(
                     value = draft[c.id] ?: "",
                     onValueChange = { v -> draft[c.id] = v.filter { it.isDigit() || it == '.' } },

@@ -24,15 +24,15 @@ fun StatementCard(store: Store) {
     ) {
         Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
-        Text("RM ${"%.2f".format(st.income)} gross", color = baki.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Black)
+        Text("RM ${"%.2f".format(st.income)} gross", color = baki.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Black)
         Text(
             "${st.insuranceCount} insurance charge(s) · RM ${"%.2f".format(st.deductions)} deducted",
             color = baki.muted, fontSize = 11.sp,
         )
         if (st.rangeText.isNotEmpty()) {
-            Text(st.rangeText, color = baki.muted, fontSize = 10.sp)
+            Text(st.rangeText, color = baki.muted, fontSize = 11.sp)
         }
-        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, fontSize = 10.sp)
+        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, fontSize = 11.sp)
     }
 }
 
@@ -51,7 +51,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Spending categories", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text("Spending categories", color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text("${cats.size} categories · tap × to remove", color = baki.muted, fontSize = 11.sp)
             }
             TextButton(enabled = editable, onClick = { adding = true }) {
@@ -67,13 +67,13 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
             ) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(c.name, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                Text(c.name, color = baki.onSurface, fontSize = 12.sp, modifier = Modifier.weight(1f))
                 Text(if (used > 0) "$used" else "", color = baki.muted, fontSize = 11.sp)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "×",
                     color = if (used > 0 || !editable) baki.muted.copy(alpha = 0.35f) else baki.down,
-                    fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(Radius.pill))
                         .clickable(enabled = used == 0 && editable) {

@@ -26,7 +26,7 @@ fun CalendarHeat(store: Store, month: String) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach {
-                Text(it, color = baki.muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                Text(it, color = baki.muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
             }
         }
         Spacer(Modifier.height(4.dp))
@@ -72,7 +72,7 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette)
         Text(
             iso.takeLast(2),
             color = if (future) baki.muted.copy(alpha = 0.4f) else if (positive && magnitude >= 2) baki.onPrimary else baki.onSurface,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
         )
     }
