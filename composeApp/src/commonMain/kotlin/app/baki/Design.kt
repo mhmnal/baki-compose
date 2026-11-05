@@ -51,23 +51,30 @@ object Veil {
 object BakiType {
     private const val TNUM = "tnum"
 
-    /** the one hero number on a screen */
-    val display = TextStyle(fontSize = 56.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.5).sp)
-    /** secondary hero, e.g. the month total while a day is open */
-    val displaySmall = TextStyle(fontSize = 40.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
-    /** card headline */
-    val headline = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
-    /** list rows and dialog titles */
-    val title = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.3).sp)
-    val subtitle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-    val body = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Normal)
-    val bodyStrong = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-    val label = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    val labelStrong = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold)
-    val caption = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium)
+    // Sizes and line heights follow the M3 type scale (57/45/28/22/16/12/11).
+    // Weights run heavier than stock M3: the app's voice is a bold money figure.
+
+    /** the one hero number on a screen — M3 displayLarge */
+    val display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.5).sp)
+    /** secondary hero — M3 displaySmall */
+    val displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
+    /** card headline — M3 headlineMedium */
+    val headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+    /** dialog titles — M3 titleLarge */
+    val title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp)
+    /** M3 titleMedium */
+    val subtitle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
+    /** M3 bodyLarge */
+    val body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal)
+    val bodyStrong = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
+    /** M3 labelMedium */
+    val label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    val labelStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+    /** M3 labelSmall */
+    val caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
     /** all-caps section header */
-    val section = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-    val micro = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Medium)
+    val section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    val micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
 
     /**
      * Numeric variants carry tabular figures, so money keeps its width as digits change and

@@ -213,7 +213,9 @@ fun TodayScreen(
                     Row(
                         Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
                             .clickable { onPreset(c.id) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            // 48dp minimum touch target, per the accessibility guidance
+                            .heightIn(min = 48.dp)
+                            .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(

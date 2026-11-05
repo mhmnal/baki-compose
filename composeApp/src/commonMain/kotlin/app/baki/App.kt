@@ -748,7 +748,8 @@ private fun SpendingScreen(
                     Modifier.clip(RoundedCornerShape(Radius.pill))
                         .background(if (on) baki.primaryContainer else baki.container)
                         .clickable { catFilter = id }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .heightIn(min = 48.dp)
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (id != "all") {
