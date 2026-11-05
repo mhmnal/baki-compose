@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -62,9 +63,10 @@ fun TodayScreen(
     val baki = LocalBaki.current
     val store = repo.store
     val today = todayIso()
-    val t = dayTotals(store, day)
-    val entries = entriesOn(store, day).sortedByDescending { it.updated }
-    val shifts = shiftsOn(store, day)
+    // memoised: a sync tick or the 1s live tick must not re-scan the whole store
+    val t = remember(store, day) { dayTotals(store, day) }
+    val entries = remember(store, day) { entriesOn(store, day).sortedByDescending { it.updated } }
+    val shifts = remember(store, day) { shiftsOn(store, day) }
     val cfg = store.settings.profit
     val live = repo.live
     val shift = shifts.maxByOrNull { it.updated }
@@ -238,7 +240,7 @@ fun TodayScreen(
                 onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
             )
         }
-        items(entries) { e ->
+        items(entries, key = { it.id }) { e ->
             RowCardIcon(
                 icon = store.settings.cats.catsOut.firstOrNull { it.id == e.cat }?.icon
                     ?: store.settings.cats.catsIn.firstOrNull { it.id == e.cat }?.icon ?: "🏷",

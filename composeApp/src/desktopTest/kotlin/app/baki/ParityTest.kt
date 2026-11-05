@@ -12,7 +12,7 @@ class ParityTest {
 
     private suspend fun repo(): BakiRepo? {
         val client = TrackerClient(base)
-        return try { client.pull(); BakiRepo(ClientConfig(serverUrl = base, allowWrites = true)) } catch (e: Exception) {
+        return try { client.pull()!!; BakiRepo(ClientConfig(serverUrl = base, allowWrites = true)) } catch (e: Exception) {
             println("[parity] no server at $base — skipping (${e.message})"); null
         }
     }
@@ -21,7 +21,7 @@ class ParityTest {
     fun incomeCountsAsIncomeNotExpense() = runBlocking {
         val repo = repo() ?: return@runBlocking
         val client = TrackerClient(base)
-        val before = client.pull()
+        val before = client.pull()!!
         repo.sync()
 
         val day = "2026-12-10"
@@ -32,10 +32,10 @@ class ParityTest {
         assertEquals(beforeTotals.income + 2500, after.income, "income raised income")
         assertEquals(beforeTotals.expense, after.expense, "and did not touch expense")
 
-        val saved = client.pull().entries.firstOrNull { it.note == "tip run" }
+        val saved = client.pull()!!.entries.firstOrNull { it.note == "tip run" }
         assertTrue(saved != null && saved.type == "income", "server has it as income")
-        client.push(client.pull(), deletedIds = listOf(saved!!.id))
-        assertEquals(before.entries.size, client.pull().entries.size, "cleaned up")
+        client.push(client.pull()!!, deletedIds = listOf(saved!!.id))
+        assertEquals(before.entries.size, client.pull()!!.entries.size, "cleaned up")
     }
 
     @Test
@@ -49,14 +49,14 @@ class ParityTest {
         repo.updateEntry(created, "expense", 1750, "toll", "edited", "2026-12-11")
         repo.sync()
 
-        val saved = client.pull().entries.first { it.id == created.id }
+        val saved = client.pull()!!.entries.first { it.id == created.id }
         assertEquals(1750L, saved.amount, "amount changed")
         assertEquals("toll", saved.cat, "category changed")
         assertEquals("edited", saved.note, "note changed")
         assertTrue(saved.updated > created.updated, "newer timestamp so it wins the merge")
 
-        client.push(client.pull(), deletedIds = listOf(saved.id))
-        assertTrue(client.pull().entries.none { it.id == saved.id }, "cleaned up")
+        client.push(client.pull()!!, deletedIds = listOf(saved.id))
+        assertTrue(client.pull()!!.entries.none { it.id == saved.id }, "cleaned up")
     }
 
     @Test
@@ -71,7 +71,7 @@ class ParityTest {
         repo.updateShift(shift, "2026-12-12", "08:00", hours = 5.0, km = 90.0, grossCents = 12000, extraCents = 300, note = "longer", kmPerLitre = 14.0)
         repo.sync()
 
-        val saved = client.pull().shifts.first { it.id == shift.id }
+        val saved = client.pull()!!.shifts.first { it.id == shift.id }
         assertEquals(12000L, saved.gross)
         assertEquals(5.0, saved.hours)
         assertEquals(90.0, saved.km)
@@ -80,8 +80,8 @@ class ParityTest {
         assertTrue(m.fuel < 90.0 * 1.99 / 11.0, "14 km/L uses less fuel than 11 km/L")
 
         val feeId = "fee-${saved.id}"
-        client.push(client.pull(), deletedIds = listOf(saved.id, feeId))
-        assertTrue(client.pull().shifts.none { it.id == saved.id }, "cleaned up")
+        client.push(client.pull()!!, deletedIds = listOf(saved.id, feeId))
+        assertTrue(client.pull()!!.shifts.none { it.id == saved.id }, "cleaned up")
     }
 
     @Test
@@ -96,10 +96,10 @@ class ParityTest {
         repo.sync()
         val after = repo.store.shifts.map { shiftMetrics(it, repo.store.settings.profit).net }.sum()
         assertTrue(after < before, "dearer fuel lowers net everywhere")
-        assertEquals(3.50, client.pull().settings.profit.fuelPrice, "saved on the server")
+        assertEquals(3.50, client.pull()!!.settings.profit.fuelPrice, "saved on the server")
 
         repo.updateProfit(original)
         repo.sync()
-        assertEquals(original.fuelPrice, client.pull().settings.profit.fuelPrice, "restored")
+        assertEquals(original.fuelPrice, client.pull()!!.settings.profit.fuelPrice, "restored")
     }
 }

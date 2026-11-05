@@ -170,32 +170,54 @@ data class HourBlock(val day: Int, val block: Int, val hours: Double, val net: D
  * Day 0 = Monday, block 0 = 00:00-04:00.
  */
 fun hourHeatmap(store: Store): List<HourBlock> {
+    if (store.shifts.isEmpty()) return emptyList()
     val cfg = store.settings.profit
-    val acc = mutableMapOf<Pair<Int, Int>, DoubleArray>()
 
+    // One pass to total the hours per month, so the overhead lookup is a map read instead of
+    // scanning every shift once per shift (this was O(n^2): 12.7 ms for 520 shifts).
+    val hoursByMonth = HashMap<String, Double>(16)
+    for (sh in store.shifts) {
+        if (sh.hours > 0) {
+            val m = sh.date.substring(0, 7)
+            hoursByMonth[m] = (hoursByMonth[m] ?: 0.0) + sh.hours
+        }
+    }
+    val monthly = monthlyOverhead(cfg)
+
+    // date parsing and string splitting are the real cost per shift, so memoise both
+    val dowCache = HashMap<String, Int>(64)
+    val acc = HashMap<Int, DoubleArray>(64)   // key = day * 6 + block
     for (sh in store.shifts) {
         if (sh.hours <= 0) continue
-        val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
-        val dow = runCatching { LocalDate.parse(sh.date).dayOfWeek.ordinal }.getOrDefault(0)
-        val startHour = sh.start.split(":").let { p ->
-            (p.getOrNull(0)?.toIntOrNull() ?: 0) + (p.getOrNull(1)?.toIntOrNull() ?: 0) / 60.0
+        val month = sh.date.substring(0, 7)
+        val monthHours = hoursByMonth[month] ?: 0.0
+        val overheadd = if (monthHours > 0.0) monthly / monthHours else 0.0
+        val m = shiftMetrics(sh, cfg, overheadd)
+        val dow = dowCache.getOrPut(sh.date) {
+            runCatching { LocalDate.parse(sh.date).dayOfWeek.ordinal }.getOrDefault(0)
         }
+        // "HH:MM" — slicing avoids allocating a list per shift
+        val startHour = if (sh.start.length >= 2) {
+            (sh.start.substring(0, 2).toIntOrNull() ?: 0) +
+                (if (sh.start.length >= 5) (sh.start.substring(3, 5).toIntOrNull() ?: 0) / 60.0 else 0.0)
+        } else 0.0
         var remaining = sh.hours
         var cursor = startHour
+        val perHour = m.net / sh.hours
         while (remaining > 0.001) {
             val block = (cursor.toInt() / 4).coerceIn(0, 5)
             val blockEnd = (block + 1) * 4.0
             val take = minOf(remaining, blockEnd - cursor)
             if (take <= 0) break
-            val arr = acc.getOrPut(dow to block) { DoubleArray(2) }
+            val arr = acc.getOrPut(dow * 6 + block) { DoubleArray(2) }
             arr[0] += take
-            arr[1] += m.net * (take / sh.hours)
+            arr[1] += perHour * take
             cursor += take
             remaining -= take
-            if (cursor >= 24.0) break      // stop at midnight rather than wrap into another day
+            if (cursor >= 24.0) break
         }
     }
-    return acc.map { (k, v) -> HourBlock(k.first, k.second, v[0], v[1]) }
+    return acc.entries.map { (k, v) -> HourBlock(k / 6, k % 6, v[0], v[1]) }
 }
 
 /** The block with the best rate, once it has a believable sample. */

@@ -55,10 +55,39 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        // opt-in: build the same app under a separate package id purely to verify an
+        // R8-minified build on a device without touching the real installation's data
+        if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    buildTypes {
+        release {
+            // R8: drop unused code and shrink resources. The app ships Compose + Ktor +
+            // serialization, most of which the linker can prove is unreachable.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+    }
+    lint {
+        // MainActivity is a ComponentActivity, not a FragmentActivity; the check is a false
+        // positive that only fires now that R8 runs lintVital on release builds.
+        disable += "InvalidFragmentVersionForActivityResult"
+    }
+    packaging {
+        resources.excludes += setOf(
+            "/META-INF/{AL2.0,LGPL2.1}",
+            "META-INF/DEPENDENCIES",
+            "META-INF/INDEX.LIST",
+        )
+        // align uncompressed native libs to 16 KB pages (Play requirement)
+        jniLibs.useLegacyPackaging = false
     }
 }
 
@@ -74,4 +103,6 @@ tasks.withType<JavaExec>().configureEach {
 
 tasks.withType<Test>().configureEach {
     systemProperty("user.home", System.getProperty("java.io.tmpdir"))
+    // benchmarks print their numbers; keep them visible
+    testLogging { showStandardStreams = true }
 }

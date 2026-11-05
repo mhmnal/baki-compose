@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,7 +20,7 @@ import kotlin.math.abs
 fun WeekStrip(store: Store, endDay: String) {
     val baki = LocalBaki.current
     val days = (6 downTo 0).map { addDays(endDay, -it) }
-    val totals = days.map { dayTotals(store, it) }
+    val totals = remember(store, endDay) { days.map { dayTotals(store, it) } }
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
     val today = todayIso()
 
@@ -65,7 +66,7 @@ fun WeekStrip(store: Store, endDay: String) {
 @Composable
 fun TrendBars(store: Store, month: String) {
     val baki = LocalBaki.current
-    val days = monthDays(store, month)
+    val days = remember(store, month) { monthDays(store, month) }
     if (days.isEmpty()) return
     val peak = days.maxOfOrNull { abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
@@ -106,7 +107,7 @@ fun TrendBars(store: Store, month: String) {
 @Composable
 fun HoursHeatmap(store: Store) {
     val baki = LocalBaki.current
-    val blocks = hourHeatmap(store)
+    val blocks = remember(store) { hourHeatmap(store) }
     if (blocks.isEmpty()) return
     val peak = blocks.maxOf { it.rate }.coerceAtLeast(1.0)
     val days = listOf("M", "T", "W", "T", "F", "S", "S")

@@ -42,6 +42,8 @@ object DistanceTracker {
     private var listener: LocationListener? = null
     private var last: Location? = null
     private var metres: Double = 0.0
+    private var lastPersistMs: Long = 0
+    private var lastPersistedKm: Double = -1.0
 
     fun hasPermission(ctx: Context): Boolean =
         ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -120,9 +122,17 @@ object DistanceTracker {
             last = loc
         }
 
+        // Coalesce disk writes: each one is a JSON encode + AES-GCM encrypt + file write.
+        // 25 m of travel or 3 s, whichever comes first, is plenty for a live display.
         val live = loadLive() ?: return
         val km = metres / 1000.0
-        if (abs(km - live.km) >= 0.01) saveLive(live.copy(km = km))
+        val now = System.currentTimeMillis()
+        val farEnough = abs(km - lastPersistedKm) >= 0.025
+        if (farEnough && now - lastPersistMs >= 3_000) {
+            lastPersistMs = now
+            lastPersistedKm = km
+            saveLive(live.copy(km = km))
+        }
     }
 
     private fun distanceMetres(a: Location, b: Location): Double {

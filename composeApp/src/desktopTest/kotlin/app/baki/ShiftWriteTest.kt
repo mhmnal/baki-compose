@@ -13,7 +13,7 @@ class ShiftWriteTest {
     @Test
     fun loggingAShiftDerivesCoverAndCreatesTheFeeEntry() = runBlocking {
         val client = TrackerClient(base)
-        val before = try { client.pull() } catch (e: Exception) {
+        val before = try { client.pull()!! } catch (e: Exception) {
             println("[shift] no server at $base — skipping (${e.message})")
             return@runBlocking
         }
@@ -26,7 +26,7 @@ class ShiftWriteTest {
         val expectedCover = draftCoverCharge(repo.store, date, start)
         repo.addShift(date, start, hours = 4.0, km = 100.0, grossCents = 15000)
 
-        val after = client.pull()
+        val after = client.pull()!!
         val saved = after.shifts.firstOrNull { it.date == date && it.start == start }
         assertTrue(saved != null, "shift reached the server")
         assertEquals(expectedCover, saved!!.grabFee, "cover fee derived by the rule")
@@ -43,7 +43,7 @@ class ShiftWriteTest {
 
         // cleanup: remove the shift and its fee entry from the throwaway server
         client.push(after.copy(), deletedIds = listOfNotNull(saved.id, fee?.id))
-        val cleaned = client.pull()
+        val cleaned = client.pull()!!
         assertTrue(cleaned.shifts.none { it.date == date && it.start == start }, "test shift removed")
         assertEquals(before.shifts.size, cleaned.shifts.size, "server back to its original shifts")
     }

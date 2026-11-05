@@ -6,10 +6,13 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.Flow
@@ -46,8 +49,17 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
         }
     }
 
-    suspend fun pull(): Store {
-        val env = BakiJson.decodeFromString<DataEnvelope>(http.get("$baseUrl/api/data").bodyAsText())
+    /** ETag of the last successful pull, so an unchanged store costs a header round-trip only. */
+    private var etag: String? = null
+
+    /** null means "nothing changed since the last pull". */
+    suspend fun pull(): Store? {
+        val res = http.get("$baseUrl/api/data") {
+            etag?.let { header(HttpHeaders.IfNoneMatch, it) }
+        }
+        if (res.status == HttpStatusCode.NotModified) return null
+        res.headers[HttpHeaders.ETag]?.let { etag = it }
+        val env = BakiJson.decodeFromString<DataEnvelope>(res.bodyAsText())
         return env.data ?: throw IllegalStateException("server returned no data")
     }
 

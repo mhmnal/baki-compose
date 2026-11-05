@@ -16,7 +16,7 @@ class LiveTest {
     @Test
     fun sseDeliversAChangeEvent() = runBlocking {
         val client = TrackerClient(base)
-        val store = try { client.pull() } catch (e: Exception) {
+        val store = try { client.pull()!! } catch (e: Exception) {
             println("[live] no server at $base — skipping (${e.message})")
             return@runBlocking
         }

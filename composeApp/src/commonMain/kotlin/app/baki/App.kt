@@ -129,7 +129,7 @@ private fun AppContent(repo: BakiRepo) {
         snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = 108.dp)) },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            Header(repo.status)
+            Header(repo)
             // expressive motion: the emphasised curve, content rises slightly as it fades in
             val expressive = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
             AnimatedContent(
@@ -358,7 +358,9 @@ private fun AppContent(repo: BakiRepo) {
 }
 
 @Composable
-private fun Header(status: String) {
+private fun Header(repo: BakiRepo) {
+    // read the status here, not in the caller: a sync tick then re-draws only this row
+    val status = repo.status
     val baki = LocalBaki.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(baki.primary), contentAlignment = Alignment.Center) {
@@ -672,7 +674,7 @@ private fun SpendingScreen(
             query.isBlank() || (e.cat + " " + e.note + " " + (e.amount / 100.0)).lowercase().contains(query.lowercase())
         }
         .sortedByDescending { it.date }
-    val cats = repo.store.settings.cats.catsOut
+    val cats = remember(repo.store) { repo.store.settings.cats.catsOut }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Spacer(Modifier.height(10.dp))
@@ -700,12 +702,12 @@ private fun SpendingScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
+        // envelopes first: the categories with a cap are what you actually check
+        val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
-            // envelopes first: the categories with a cap are what you actually check
-            val envelopes = budgetUsage(repo.store, month)
             if (envelopes.isNotEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
@@ -740,7 +742,7 @@ private fun SpendingScreen(
                     }
                 }
             }
-            items(entries) { e ->
+            items(entries, key = { it.id }) { e ->
                 RowCard(
                     e.note.ifEmpty { e.cat },
                     e.date + " · swipe or hold to edit",
@@ -766,9 +768,13 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
     val baki = LocalBaki.current
     val store = repo.store
     val cfg = store.settings.profit
-    val rows = store.shifts.sortedByDescending { it.date }
-    val hours = rows.sumOf { it.hours }
-    val net = rows.sumOf { shiftMetrics(it, cfg, overheadPerHour(store, it.date.take(7))).net }
+    val rows = remember(store) {
+        val overheadByMonth = store.shifts.groupBy { it.date.take(7) }
+            .mapValues { (m, _) -> overheadPerHour(store, m) }
+        store.shifts.sortedByDescending { it.date }.map { it to shiftMetrics(it, cfg, overheadByMonth[it.date.take(7)] ?: 0.0) }
+    }
+    val hours = remember(store) { rows.sumOf { it.first.hours } }
+    val net = remember(store) { rows.sumOf { it.second.net } }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Spacer(Modifier.height(18.dp))
@@ -782,8 +788,9 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
-            items(rows) { sh ->
-                val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
+            items(rows, key = { it.first.id }) { row ->
+                val sh = row.first
+                val m = row.second
                 RowCard(
                     "${sh.date} ${sh.start}".trim(),
                     "${"%.1f".format(m.km)} km · ${m.band} · swipe or hold to edit",
@@ -1426,7 +1433,7 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
 private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
     val baki = LocalBaki.current
     val scope = rememberCoroutineScope()
-    val cats = repo.store.settings.cats.catsOut.filter { it.id != "grabfee" }
+    val cats = remember(repo.store) { repo.store.settings.cats.catsOut }.filter { it.id != "grabfee" }
     val draft = remember {
         mutableStateMapOf<String, String>().apply {
             repo.store.settings.budgets.forEach { (k, v) -> this[k] = "%.0f".format(v) }

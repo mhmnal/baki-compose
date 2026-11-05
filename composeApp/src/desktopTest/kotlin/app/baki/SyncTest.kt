@@ -17,7 +17,7 @@ class SyncTest {
     fun pullsTheLiveStore() = runBlocking {
         val client = TrackerClient(base)
         val remote = try {
-            client.pull()
+            client.pull()!!
         } catch (e: Exception) {
             println("[sync] no server at $base — skipping (${e.message})")
             return@runBlocking

@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,12 +23,13 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
     val baki = LocalBaki.current
-    val t = monthTotals(store, month)
-    val days = monthDays(store, month)
+    // aggregations are memoised per store+month: recomposition no longer re-scans everything
+    val t = remember(store, month) { monthTotals(store, month) }
+    val days = remember(store, month) { monthDays(store, month) }
     val best = days.maxByOrNull { it.second.net }
     val worst = days.minByOrNull { it.second.net }
-    val funds = fundStats(store, month)
-    val cats = expensesByCategory(store, month)
+    val funds = remember(store, month) { fundStats(store, month) }
+    val cats = remember(store, month) { expensesByCategory(store, month) }
     val maxCat = cats.maxOfOrNull { it.second } ?: 1L
     val avgDay = if (days.isEmpty()) 0L else t.expense / days.size
 
@@ -84,8 +86,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 // is the week clearing the rate you set? measured on shift earnings, not on net
                 // after spending — otherwise a fuel week would look like a slow week
                 run {
-                    val start = weekStartOf(todayIso())
-                    val weekShifts = store.shifts.filter { it.date >= start && it.date <= todayIso() }
+                    val start = remember(store) { weekStartOf(todayIso()) }
+                    val weekShifts = remember(store, start) { store.shifts.filter { it.date >= start && it.date <= todayIso() } }
                     val weekHours = weekShifts.sumOf { it.hours }
                     val cfg = store.settings.profit
                     val weekShiftNet = weekShifts.sumOf {
@@ -161,8 +163,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             }
         }
         item {
-            val cost = monthCost(store, month)
-            val series = monthCostSeries(store, month, 4)
+            val cost = remember(store, month) { monthCost(store, month) }
+            val series = remember(store, month) { monthCostSeries(store, month, 4) }
             val peak = series.maxOfOrNull { it.perKm }?.coerceAtLeast(0.01) ?: 0.01
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
                 Text("COST PER KM", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)

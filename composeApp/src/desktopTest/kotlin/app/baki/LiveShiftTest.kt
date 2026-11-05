@@ -13,7 +13,7 @@ class LiveShiftTest {
     @Test
     fun endingALiveShiftWritesItToTheServer() = runBlocking {
         val client = TrackerClient(base)
-        val before = try { client.pull() } catch (e: Exception) {
+        val before = try { client.pull()!! } catch (e: Exception) {
             println("[live-shift] no server at $base — skipping (${e.message})")
             return@runBlocking
         }
@@ -30,7 +30,7 @@ class LiveShiftTest {
         val expectedCover = draftCoverCharge(repo.store, startDate(start), startClock(start))
         repo.endLive(now = start + 3 * 3_600_000L)      // pretend it ran 3 hours
 
-        val after = client.pull()
+        val after = client.pull()!!
         val saved = after.shifts.maxByOrNull { it.updated }
         assertTrue(saved != null, "a shift reached the server")
         assertEquals(2000L, saved!!.gross, "payout total became the gross")
@@ -41,7 +41,7 @@ class LiveShiftTest {
         // clean up so the throwaway server stays as it was
         val feeId = "fee-${saved.id}"
         client.push(after.copy(), deletedIds = listOf(saved.id, feeId))
-        val cleaned = client.pull()
+        val cleaned = client.pull()!!
         assertEquals(before.shifts.size, cleaned.shifts.size, "server back to its original shifts")
     }
 }

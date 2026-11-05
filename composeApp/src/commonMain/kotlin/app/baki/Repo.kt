@@ -89,11 +89,35 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         status = "syncing"
         try {
             val remote = client.pull()
+            if (remote == null) {
+                // 304: the server has nothing we have not already merged
+                if (config.allowWrites && pendingPush) {
+                    val saved = client.push(store)
+                    store = mergeStores(store, saved)
+                    saveLocal(store)
+                    pendingPush = false
+                }
+                status = "synced"
+                lastError = null
+                return@withLock
+            }
             val merged = mergeStores(store, remote)
-            // push back so local edits reach the server; a no-op merge is harmless
-            val saved = if (config.allowWrites) client.push(merged) else merged
-            store = mergeStores(merged, saved)
-            saveLocal(store)
+            // no change means no disk write: serialising + encrypting the store is not free
+            val changed = merged.updatedAt != store.updatedAt ||
+                merged.entries.size != store.entries.size ||
+                merged.shifts.size != store.shifts.size ||
+                merged.tomb.ids.size != store.tomb.ids.size
+            if (changed) {
+                store = merged
+                saveLocal(store)
+            }
+            // upload only when we hold something the server did not get last time
+            if (config.allowWrites && pendingPush) {
+                val saved = client.push(store)
+                store = mergeStores(store, saved)
+                saveLocal(store)
+                pendingPush = false
+            }
             status = "synced"
             lastError = null
         } catch (e: Exception) {
@@ -319,16 +343,21 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(listOf(id))
     }
 
+    /** True when the last push failed, so the next sync retries instead of uploading blindly. */
+    private var pendingPush = false
+
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
             val saved = client.push(store, deletedIds = ids)
             store = mergeStores(store, saved)
             saveLocal(store)
             status = "synced"
+            pendingPush = false
             PlatformEffects.successFeedback()
         } catch (e: Exception) {
             status = "cached"
             lastError = e.message
+            pendingPush = true
         }
     }
 

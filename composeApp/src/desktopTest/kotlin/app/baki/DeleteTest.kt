@@ -13,7 +13,7 @@ class DeleteTest {
     @Test
     fun deletingAShiftRemovesItAndItsFeeEntry() = runBlocking {
         val client = TrackerClient(base)
-        val before = try { client.pull() } catch (e: Exception) {
+        val before = try { client.pull()!! } catch (e: Exception) {
             println("[delete] no server at $base — skipping (${e.message})")
             return@runBlocking
         }
@@ -28,7 +28,7 @@ class DeleteTest {
 
         repo.deleteShift(created.id)
 
-        val after = client.pull()
+        val after = client.pull()!!
         assertTrue(after.shifts.none { it.id == created.id }, "shift gone from the server")
         assertTrue(after.entries.none { it.id == feeId }, "linked fee entry gone too")
         assertTrue(after.tomb.ids.contains(created.id), "the deletion is remembered as a tombstone")
@@ -42,7 +42,7 @@ class DeleteTest {
     @Test
     fun deletingAnEntryIsTombstoned() = runBlocking {
         val client = TrackerClient(base)
-        val before = try { client.pull() } catch (e: Exception) { return@runBlocking }
+        val before = try { client.pull()!! } catch (e: Exception) { return@runBlocking }
 
         val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
         repo.sync()
@@ -51,7 +51,7 @@ class DeleteTest {
 
         repo.deleteEntry(e.id)
 
-        val after = client.pull()
+        val after = client.pull()!!
         assertTrue(after.entries.none { it.id == e.id }, "entry gone from the server")
         assertTrue(after.tomb.ids.contains(e.id), "tombstoned")
         assertEquals(before.entries.size, after.entries.size)
