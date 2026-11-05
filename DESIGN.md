@@ -124,8 +124,10 @@ the row into the sheet header instead of just sliding a panel up.
 
 The nav bar and FAB use **Backdrop** (`io.github.kyant0:backdrop`, Apache-2.0) for the liquid-glass
 effect: a lens effect that refracts the content at the rim, vibrancy, a light blur, and a specular
-highlight. It is multiplatform (Android + desktop) and renders on the Nothing phone, where Haze
-produced only a flat tint.
+highlight. It is multiplatform (Android + desktop) and renders on the test device — a Nothing Phone 3a
+(A059, Nothing OS 5.0, Android 17, 12 GB / 8 cores, Adreno) — where Haze produced only a flat
+tint. That is a Haze shader/sampling failure on capable hardware, not a weak-GPU fallback:
+Backdrop's AGSL lens renders on the same device at full quality (`DeviceTier` = 2).
 
 Content is captured once with `Modifier.layerBackdrop(backdrop)`; each glass surface samples it.
 `GlassTier` still decides: tier 0 falls back to a plain Material surface.
