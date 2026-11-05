@@ -1,6 +1,22 @@
 package app.baki
 
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
 import androidx.compose.animation.animateColorAsState
+import kotlin.math.abs
+import androidx.compose.ui.unit.round
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.scale
 import androidx.compose.animation.AnimatedContent
@@ -234,7 +250,7 @@ private fun AppContent(repo: BakiRepo) {
         modifier = Modifier.align(Alignment.BottomCenter)
             .fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = barGap).height(barHeight),
     ) {
-        BottomBar(tab) { tab = it }
+        BottomBar(tab, { tab = it }, liquid = glassTier > 0, backdrop = glassBackdrop)
     }
 
     if (tab == 0 && !repo.readOnly) {
@@ -387,52 +403,107 @@ private fun Header(repo: BakiRepo) {
 }
 
 @Composable
-private fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
+private fun BottomBar(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    liquid: Boolean = false,
+    backdrop: com.kyant.backdrop.Backdrop? = null,
+) {
     val baki = LocalBaki.current
     val items = listOf("Today", "Spending", "Shifts", "Summary", "More")
     val icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More)
-    Row(
-        Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        items.forEachIndexed { i, label ->
-            val on = i == selected
-            // pill colour and label ease with effects springs; the icon settles with a spatial one
-            val pill by animateColorAsState(
-                targetValue = if (on) baki.primaryContainer else Color.Transparent,
-                animationSpec = BakiMotion.effects(), label = "navPill",
+
+    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 6.dp)) {
+        val tabWidth = maxWidth / items.size
+        val shape = RoundedCornerShape(Radius.pill)
+
+        // The liquid selection.
+        // Motion follows the library's own LiquidBottomTabs example: one surface that flows
+        // between tabs, stretching along the direction of travel and squashing across it.
+        // The surface itself is glass (drawBackdrop + lens), so the refraction travels with it.
+        val flow = remember { Animatable(selected.toFloat()) }
+        LaunchedEffect(selected) {
+            flow.animateTo(
+                targetValue = selected.toFloat(),
+                animationSpec = spring(dampingRatio = 0.62f, stiffness = 240f),
             )
-            val ink by animateColorAsState(
-                targetValue = if (on) baki.onPrimaryContainer else baki.muted,
-                animationSpec = BakiMotion.effects(), label = "navInk",
-            )
-            val lift by animateFloatAsState(
-                targetValue = if (on) 1f else 0.94f,
-                animationSpec = BakiMotion.spatialFast(), label = "navLift",
-            )
-            Box(
-                Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(Radius.pill))
-                    .background(pill)
-                    .clickable { onSelect(i) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        icons[i], contentDescription = null, tint = ink,
-                        modifier = Modifier.size(18.dp).scale(lift),
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    // ellipsis rather than clipping: at 130% font scale "Spending" must degrade,
-                    // not lose its last letter
-                    Text(
-                        label, color = ink, fontSize = 11.sp,
-                        fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1, softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
+        }
+        val stretch by remember {
+            derivedStateOf { (abs(flow.velocity) / 1400f).coerceIn(0f, 0.42f) }
+        }
+
+        if (liquid) {
+            val pill = Modifier
+                .offset { IntOffset((tabWidth * flow.value).roundToPx(), 0) }
+                .width(tabWidth)
+                .fillMaxHeight()
+                .graphicsLayer {
+                    scaleX = 1f + stretch
+                    scaleY = 1f - stretch * 0.16f
+                }
+
+            if (backdrop != null) {
+                Box(
+                    pill
+                        .drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { shape },
+                            effects = {
+                                vibrancy()
+                                blur(1f.dp.toPx())
+                                lens(12f.dp.toPx(), 22f.dp.toPx())
+                            },
+                            highlight = { Highlight(width = 1.dp, blurRadius = 2.dp, alpha = 0.45f) },
+                        )
+                        .clip(shape)
+                        // a light tint so "selected" still reads through the glass
+                        .background(baki.primaryContainer.copy(alpha = 0.35f)),
+                )
+            } else {
+                Box(pill.clip(shape).background(baki.primaryContainer))
+            }
+        }
+
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            items.forEachIndexed { i, label ->
+                val on = i == selected
+                val ink by animateColorAsState(
+                    targetValue = if (on) baki.onPrimaryContainer else baki.muted,
+                    animationSpec = BakiMotion.effects(), label = "navInk",
+                )
+                val lift by animateFloatAsState(
+                    targetValue = if (on) 1f else 0.94f,
+                    animationSpec = BakiMotion.spatialFast(), label = "navLift",
+                )
+                Box(
+                    Modifier.weight(1f).height(52.dp)
+                        .clip(shape)
+                        .then(
+                            if (liquid) Modifier
+                            else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
+                        )
+                        .clickable { onSelect(i) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            icons[i], contentDescription = null, tint = ink,
+                            modifier = Modifier.size(18.dp).scale(lift),
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            label, color = ink, fontSize = 11.sp,
+                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1, softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
         }
