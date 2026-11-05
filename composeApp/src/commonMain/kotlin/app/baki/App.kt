@@ -425,11 +425,11 @@ private fun BottomBar(
         LaunchedEffect(selected) {
             flow.animateTo(
                 targetValue = selected.toFloat(),
-                animationSpec = spring(dampingRatio = 0.62f, stiffness = 240f),
+                animationSpec = spring(dampingRatio = 0.88f, stiffness = 320f),
             )
         }
         val stretch by remember {
-            derivedStateOf { (abs(flow.velocity) / 1400f).coerceIn(0f, 0.42f) }
+            derivedStateOf { (abs(flow.velocity) / 900f).coerceIn(0f, 0.70f) }
         }
 
         if (liquid) {
@@ -439,7 +439,7 @@ private fun BottomBar(
                 .fillMaxHeight()
                 .graphicsLayer {
                     scaleX = 1f + stretch
-                    scaleY = 1f - stretch * 0.16f
+                    scaleY = 1f - stretch * 0.22f
                 }
 
             if (backdrop != null) {
