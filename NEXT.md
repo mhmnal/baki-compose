@@ -56,6 +56,21 @@ replace the web one.
 `git init` — there is no version control here. A `/tmp` scratch file once cost the top of App.kt
 and it had to be reconstructed by hand.
 
+## Encrypted storage
+
+`store.json`, `config.json` and `live.json` are sealed with AES-256-GCM:
+
+- **Android**: key lives in the Keystore (alias `baki.store.v1`), hardware-bound where the device
+  has a TEE/secure element. Nothing exportable on disk.
+- **Desktop**: random 32-byte key file beside the data (0600). Weaker — same disk — documented.
+- Envelope: `BAKI1` + IV length + IV + ciphertext+tag (`StoreEnvelope`, unit-tested).
+- Legacy plaintext files are read, then re-sealed on first read (`migrateOnce`).
+- `android:allowBackup="false"`: a Keystore key does not travel with the file, so a restored backup
+  would be unreadable ciphertext anyway. The server remains the real backup.
+
+Limits, stated plainly: this protects the file at rest against `adb pull`, backups and casual
+extraction. It does not protect against a rooted device or the server, which stores plain JSON.
+
 ## Built
 
 - Read + write sync, live updates over SSE, offline-tolerant (8s timeouts, local-first writes)

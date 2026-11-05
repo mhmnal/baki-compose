@@ -7,23 +7,29 @@ actual object LocalStore {
         val home = System.getProperty("user.home") ?: "."
         File(home, ".local/share/baki").also { it.mkdirs() }
     }
-    private val file by lazy { File(dir, "store.json") }
 
-    actual fun read(): String? = if (file.exists()) file.readText() else null
+    private fun file(): File = File(dir, "store.json")
 
-    actual fun write(text: String) {
-        dir.mkdirs()
-        val tmp = File(dir, "store.json.tmp")
-        tmp.writeText(text)
-        tmp.renameTo(file)          // atomic-ish: never leave half a store behind
+    private fun readSealed(f: File): String? {
+        if (!f.exists()) return null
+        val plain = runCatching { StoreCipher.decrypt(f.readBytes()) }.getOrElse { return null }
+        return plain.decodeToString()
     }
 
-    actual fun path(): String = file.absolutePath
-
-    actual fun readText(name: String): String? = File(dir, name).takeIf { it.exists() }?.readText()
-
-    actual fun writeText(name: String, text: String) {
-        dir.mkdirs()
-        File(dir, name).writeText(text)
+    private fun writeSealed(f: File, text: String) {
+        f.parentFile?.mkdirs()
+        val tmp = File(f.parentFile, f.name + ".tmp")
+        tmp.writeBytes(StoreCipher.encrypt(text.encodeToByteArray()))
+        tmp.renameTo(f)
     }
+
+    actual fun read(): String? = readSealed(file())
+
+    actual fun write(text: String) = writeSealed(file(), text)
+
+    actual fun path(): String = file().absolutePath
+
+    actual fun readText(name: String): String? = readSealed(File(dir, name))
+
+    actual fun writeText(name: String, text: String) = writeSealed(File(dir, name), text)
 }
