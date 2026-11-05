@@ -241,11 +241,15 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     /** Edit an existing entry in place; a newer `updated` wins the merge. */
-    suspend fun updateEntry(entry: Entry, type: String, amountCents: Long, cat: String, note: String, date: String) =
+    suspend fun updateEntry(
+        entry: Entry, type: String, amountCents: Long, cat: String, note: String, date: String,
+        odo: Int? = null,
+    ) =
         mutex.withLock {
             if (blocked()) return@withLock
             val edited = entry.copy(
-                type = type, amount = amountCents, cat = cat, note = note, date = date, updated = nowIso(),
+                type = type, amount = amountCents, cat = cat, note = note, date = date,
+                odo = odo ?: entry.odo, updated = nowIso(),
             )
             store = store.copy(
                 entries = store.entries.map { if (it.id == entry.id) edited else it },
@@ -383,6 +387,29 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (factor <= 0.5 || factor >= 2.0) return@withLock   // refuse nonsense
         store = store.copy(
             settings = store.settings.copy(gpsCorrection = factor),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+    }
+
+    /** Set or clear (limit <= 0) a monthly cap for one category. */
+    suspend fun setBudget(cat: String, limit: Double) = mutex.withLock {
+        if (blocked()) return@withLock
+        val next = store.settings.budgets.toMutableMap()
+        if (limit <= 0.0) next.remove(cat) else next[cat] = limit
+        store = store.copy(
+            settings = store.settings.copy(budgets = next),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+    }
+
+    suspend fun setBudgets(all: Map<String, Double>) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(budgets = all.filterValues { it > 0.0 }),
             updatedAt = nowIso(),
         )
         saveLocal(store)

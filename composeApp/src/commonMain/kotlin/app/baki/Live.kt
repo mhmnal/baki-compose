@@ -68,3 +68,31 @@ fun startClock(startMs: Long): String {
 @OptIn(ExperimentalTime::class)
 fun startDate(startMs: Long): String =
     Instant.fromEpochMilliseconds(startMs).toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+
+/** What a shift in progress has cost so far, and how long until the payouts cover it. */
+data class LiveBreakEven(
+    val costs: Double,
+    val earned: Double,
+    val perHour: Double,
+    /** null once covered, or when there is no rate to project with. */
+    val minutesToGo: Double?,
+) { val covered: Boolean get() = earned >= costs }
+
+fun liveBreakEven(store: Store, live: LiveShift, now: Long = nowMillis()): LiveBreakEven {
+    val cfg = store.settings.profit
+    val rates = costRates(cfg)
+    val running = live.km * (rates.fuel + rates.wear)
+    val date = startDate(live.start)
+    val cover = draftCoverCharge(store, date, startClock(live.start)) / 100.0
+    val workedHours = liveWorkedMs(live, now) / 3_600_000.0
+    val overhead = overheadPerHour(store, date.take(7)) * workedHours
+    val costs = running + cover + overhead
+    val earned = liveTotalCents(live) / 100.0
+    val perHour = if (workedHours > 0.01) earned / workedHours else 0.0
+    val minutes = when {
+        earned >= costs -> null
+        perHour <= 0.01 -> null
+        else -> (costs - earned) / perHour * 60.0
+    }
+    return LiveBreakEven(costs, earned, perHour, minutes)
+}

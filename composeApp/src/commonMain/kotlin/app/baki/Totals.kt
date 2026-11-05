@@ -137,3 +137,123 @@ fun payoutDue(store: Store): Double? {
     if (pending.isEmpty()) return 0.0
     return pending.sumOf { it.gross } / 100.0
 }
+
+/** A fuel purchase that carries an odometer reading. */
+data class MeasuredEconomy(val km: Double, val litres: Double, val kml: Double, val fills: Int, val from: String, val to: String)
+
+/**
+ * Fuel economy from fill-ups that carry an odometer reading. Partial fills make tank-to-tank
+ * unreliable, so this spans first reading to last and counts every litre bought in between —
+ * same rule as the web app.
+ */
+fun measuredEconomy(store: Store): MeasuredEconomy? {
+    val price = store.settings.profit.fuelPrice.takeIf { it > 0 } ?: 1.99
+    val rows = store.entries
+        .filter { it.cat == "fuel" && (it.odo ?: 0) > 0 }
+        .sortedBy { it.date }
+    if (rows.size < 2) return null
+    val first = rows.first()
+    val last = rows.last()
+    val km = (last.odo!! - first.odo!!).toDouble()
+    val litres = rows.drop(1).sumOf { (it.amount / 100.0) / price }
+    if (km <= 0 || litres <= 0) return null
+    return MeasuredEconomy(km, litres, km / litres, rows.size, first.date, last.date)
+}
+
+/** One 4-hour block of a weekday, with the hours spent there and the money earned. */
+data class HourBlock(val day: Int, val block: Int, val hours: Double, val net: Double) {
+    val rate: Double get() = if (hours > 0) net / hours else 0.0
+}
+
+/**
+ * Spreads each shift's net across the clock so you can see which windows actually pay.
+ * Day 0 = Monday, block 0 = 00:00-04:00.
+ */
+fun hourHeatmap(store: Store): List<HourBlock> {
+    val cfg = store.settings.profit
+    val acc = mutableMapOf<Pair<Int, Int>, DoubleArray>()
+
+    for (sh in store.shifts) {
+        if (sh.hours <= 0) continue
+        val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
+        val dow = runCatching { LocalDate.parse(sh.date).dayOfWeek.ordinal }.getOrDefault(0)
+        val startHour = sh.start.split(":").let { p ->
+            (p.getOrNull(0)?.toIntOrNull() ?: 0) + (p.getOrNull(1)?.toIntOrNull() ?: 0) / 60.0
+        }
+        var remaining = sh.hours
+        var cursor = startHour
+        while (remaining > 0.001) {
+            val block = (cursor.toInt() / 4).coerceIn(0, 5)
+            val blockEnd = (block + 1) * 4.0
+            val take = minOf(remaining, blockEnd - cursor)
+            if (take <= 0) break
+            val arr = acc.getOrPut(dow to block) { DoubleArray(2) }
+            arr[0] += take
+            arr[1] += m.net * (take / sh.hours)
+            cursor += take
+            remaining -= take
+            if (cursor >= 24.0) break      // stop at midnight rather than wrap into another day
+        }
+    }
+    return acc.map { (k, v) -> HourBlock(k.first, k.second, v[0], v[1]) }
+}
+
+/** The block with the best rate, once it has a believable sample. */
+fun bestHourBlock(store: Store): HourBlock? =
+    hourHeatmap(store).filter { it.hours >= 0.5 }.maxByOrNull { it.rate }
+
+// ---------------------------------------------------------------- cost per km
+
+data class MonthCost(val month: String, val km: Double, val running: Double, val upkeep: Double) {
+    val total: Double get() = running + upkeep
+    val perKm: Double get() = if (km > 0.01) total / km else 0.0
+}
+
+/**
+ * What a kilometre cost that month: fuel + wear from the distance actually driven, plus real
+ * spending on upkeep (service, wash, road tax). Running cost is derived from km so a month with no
+ * fill-up does not look artificially cheap.
+ */
+fun monthCost(store: Store, month: String): MonthCost {
+    val cfg = store.settings.profit
+    val shifts = store.shifts.filter { it.date.startsWith(month) }
+    var km = 0.0
+    var running = 0.0
+    for (sh in shifts) {
+        val m = shiftMetrics(sh, cfg)
+        km += m.km
+        running += m.fuel + m.wear
+    }
+    val upkeepCats = setOf("maintenance", "carwash", "roadtax")
+    val upkeep = store.entries
+        .filter { it.type != "income" && it.cat in upkeepCats && it.date.startsWith(month) }
+        .sumOf { it.amount } / 100.0
+    return MonthCost(month, km, running, upkeep)
+}
+
+/** The last [count] months ending at [endMonth], oldest first. */
+fun monthCostSeries(store: Store, endMonth: String, count: Int = 4): List<MonthCost> =
+    (count - 1 downTo 0).map { back ->
+        val m = addDays("$endMonth-01", -back * 28).take(7)   // step back roughly a month
+        monthCost(store, m)
+    }.distinctBy { it.month }
+
+// ---------------------------------------------------------------- budgets
+
+data class BudgetUse(val cat: String, val limit: Double, val spent: Double) {
+    val remaining: Double get() = limit - spent
+    val fraction: Double get() = if (limit > 0) (spent / limit).coerceIn(0.0, 1.5) else 0.0
+    val over: Boolean get() = spent > limit
+}
+
+/** Envelopes for the month, worst first — the ones that need attention stay on top. */
+fun budgetUsage(store: Store, month: String): List<BudgetUse> {
+    val limits = store.settings.budgets
+    if (limits.isEmpty()) return emptyList()
+    val spent = store.entries
+        .filter { it.type != "income" && it.date.startsWith(month) }
+        .groupBy { it.cat }
+        .mapValues { (_, rows) -> rows.sumOf { it.amount } / 100.0 }
+    return limits.map { (cat, limit) -> BudgetUse(cat, limit, spent[cat] ?: 0.0) }
+        .sortedByDescending { it.fraction }
+}

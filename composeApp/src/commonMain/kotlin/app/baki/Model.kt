@@ -76,6 +76,8 @@ data class Settings(
      * curving route, so the raw track usually reads short; this is calibrated against the odometer.
      */
     val gpsCorrection: Double = 1.0,
+    /** Monthly spending caps in ringgit, keyed by category id. Empty = no budgets set. */
+    val budgets: Map<String, Double> = emptyMap(),
 )
 
 @Serializable

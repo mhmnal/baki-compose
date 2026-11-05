@@ -33,7 +33,11 @@ import kotlin.math.roundToInt
  * motion are the app's — a spring in, an emphasised slide out, 28dp top corners, drag to dismiss.
  */
 @Composable
-fun BakiSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+fun BakiSheet(
+    onDismiss: () -> Unit,
+    footer: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val baki = LocalBaki.current
     var visible by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
@@ -48,7 +52,8 @@ fun BakiSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit
         label = "corner",
     )
 
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val maxSheetHeight = maxHeight * 0.86f
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(tween(180)),
@@ -79,6 +84,8 @@ fun BakiSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit
                 shadowElevation = 24.dp,
                 modifier = Modifier
                     .fillMaxWidth()
+                    // never taller than the screen, or the last control ends up unreachable
+                    .heightIn(max = maxSheetHeight)
                     .offset { IntOffset(0, dragOffset.roundToInt()) },
             ) {
                 val visibility = this
@@ -115,13 +122,21 @@ fun BakiSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit
                     Column(
                         Modifier
                             .fillMaxWidth()
+                            .weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 28.dp),
+                            .padding(horizontal = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         content()
                         Spacer(Modifier.height(8.dp))
+                    }
+                    // pinned: a long list can never push the primary action off-screen
+                    if (footer != null) {
+                        Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 26.dp, top = 6.dp)) {
+                            footer()
+                        }
+                    } else {
+                        Spacer(Modifier.height(26.dp))
                     }
                 }
                 }

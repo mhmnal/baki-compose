@@ -160,6 +160,50 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 }
             }
         }
+        item {
+            val cost = monthCost(store, month)
+            val series = monthCostSeries(store, month, 4)
+            val peak = series.maxOfOrNull { it.perKm }?.coerceAtLeast(0.01) ?: 0.01
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+                Text("COST PER KM", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("RM ${"%.2f".format(cost.perKm)}", color = baki.onSurface, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                    Spacer(Modifier.width(8.dp))
+                    Text("${"%.0f".format(cost.km)} km", color = baki.muted, fontSize = 12.sp)
+                }
+                Text(
+                    if (cost.km > 0.01)
+                        "running RM ${"%.2f".format(cost.running / cost.km)}/km · upkeep RM ${"%.2f".format(cost.upkeep / cost.km)}/km"
+                    else "no distance recorded this month",
+                    color = baki.muted, fontSize = 10.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    series.forEach { m ->
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                Modifier.fillMaxWidth().height(38.dp),
+                                contentAlignment = Alignment.BottomCenter,
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth()
+                                        .fillMaxHeight(if (m.km > 0.01) (m.perKm / peak).toFloat().coerceIn(0.06f, 1f) else 0.04f)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (m.month == month) baki.primary else baki.primary.copy(alpha = 0.35f)),
+                                )
+                            }
+                            Text(m.month.takeLast(2), color = baki.muted, fontSize = 9.sp)
+                            Text(
+                                if (m.km > 0.01) "%.2f".format(m.perKm) else "–",
+                                color = if (m.month == month) baki.onSurface else baki.muted,
+                                fontSize = 9.sp, fontWeight = if (m.month == month) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item { HoursHeatmap(store); Spacer(Modifier.height(12.dp)) }
         item { TrendBars(store, month); Spacer(Modifier.height(10.dp)) }
         item { CalendarHeat(store, month); Spacer(Modifier.height(4.dp)) }
         if (cats.isEmpty()) item {

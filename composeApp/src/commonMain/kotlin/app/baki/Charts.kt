@@ -101,3 +101,54 @@ fun TrendBars(store: Store, month: String) {
         }
     }
 }
+
+/** Which hours actually pay: rows are weekdays, columns are 4-hour blocks. */
+@Composable
+fun HoursHeatmap(store: Store) {
+    val baki = LocalBaki.current
+    val blocks = hourHeatmap(store)
+    if (blocks.isEmpty()) return
+    val peak = blocks.maxOf { it.rate }.coerceAtLeast(1.0)
+    val days = listOf("M", "T", "W", "T", "F", "S", "S")
+
+    Column {
+        Text("BEST HOURS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Spacer(Modifier.width(14.dp))
+            listOf("00", "04", "08", "12", "16", "20").forEach {
+                Text(it, color = baki.muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
+            }
+        }
+        Spacer(Modifier.height(3.dp))
+        for (d in 0..6) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 1.dp),
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(days[d], color = baki.muted, fontSize = 9.sp, modifier = Modifier.width(14.dp))
+                for (b in 0..5) {
+                    val cell = blocks.firstOrNull { it.day == d && it.block == b }
+                    val rate = cell?.rate ?: 0.0
+                    val has = (cell?.hours ?: 0.0) >= 0.25
+                    val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
+                    Box(
+                        Modifier.weight(1f).height(16.dp).clip(RoundedCornerShape(4.dp))
+                            .background(if (has) baki.primary.copy(alpha = 0.15f + fraction * 0.85f) else baki.surfaceHigh),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        bestHourBlock(store)?.let { best ->
+            val start = "%02d:00".format(best.block * 4)
+            val end = "%02d:00".format((best.block + 1) * 4)
+            Text(
+                "best: ${listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")[best.day]} $start–$end · RM ${"%.0f".format(best.rate)}/hr over ${"%.1f".format(best.hours)}h",
+                color = baki.up, fontSize = 10.sp,
+            )
+        }
+        Text("darker = better rate · empty = not driven", color = baki.muted, fontSize = 9.sp)
+    }
+}

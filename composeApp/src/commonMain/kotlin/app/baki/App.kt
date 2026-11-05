@@ -13,6 +13,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -74,6 +76,7 @@ private fun AppContent(repo: BakiRepo) {
     var editingShift by remember { mutableStateOf<Shift?>(null) }
     var entryType by remember { mutableStateOf("expense") }
     var presetCat by remember { mutableStateOf<String?>(null) }
+    var editingBudgets by remember { mutableStateOf(false) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
     val hazeState = rememberHazeState()
     val hazeMode = when (glassTier) {
@@ -109,6 +112,14 @@ private fun AppContent(repo: BakiRepo) {
         val barGap = gestureInset + 14.dp
         val barTop = maxHeight - barHeight - barGap
         val fabTop = barTop - fabSize - 6.dp
+        val sheetOpen = adding != 0
+
+        // ---- level 1: the app itself, blurred while a sheet is up ----
+        Box(
+            Modifier.fillMaxSize().then(
+                if (sheetOpen) Modifier.blur(18.dp, BlurredEdgeTreatment.Unbounded) else Modifier,
+            ),
+        ) {
 
     Box(
         Modifier.fillMaxSize().then(if (glassTier > 0) Modifier.hazeSource(hazeState) else Modifier),
@@ -198,7 +209,7 @@ private fun AppContent(repo: BakiRepo) {
                     },
                 )
                 3 -> SummaryScreen(store = repo.store, month = month, onMonth = { month = it })
-                else -> MoreScreen(repo)
+                else -> MoreScreen(repo, onEditBudgets = { editingBudgets = true; adding = 5 })
             }
             }
             }
@@ -207,6 +218,9 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // ---- glass: the bar and the + float over a blurred copy of the content ----
+    // hidden while a sheet is open: the sheet is modal, and Haze's layer would otherwise
+    // composite above it
+    if (!sheetOpen) {
     GlassSurface(
         hazeState = hazeState,
         shape = RoundedCornerShape(50),
@@ -235,7 +249,9 @@ private fun AppContent(repo: BakiRepo) {
         }
     }
     }
+    }
 
+    // ---- level 2: the sheet sits above everything, on a scrim over the blurred app ----
     when (adding) {
         1 -> AddChoiceDialog(
             onDismiss = { adding = 0 },
@@ -250,21 +266,21 @@ private fun AppContent(repo: BakiRepo) {
             settings = repo.store.settings,
             day = day,
             onDismiss = { adding = 0; editingEntry = null; presetCat = null },
-            onSave = { type, cents, cat, note, date ->
+            onSave = { type, cents, cat, note, date, odoAtFill ->
                 presetCat = null
                 val target = editingEntry
                 adding = 0; editingEntry = null
                 scope.launch {
                     if (target == null) {
-                        repo.addEntry(type, cents, cat, note, date)
+                        repo.addEntry(type, cents, cat, note, date, odoAtFill)
                     } else {
-                        repo.updateEntry(target, type, cents, cat, note, date)
+                        repo.updateEntry(target, type, cents, cat, note, date, odoAtFill)
                         val res = snackbar.showSnackbar(
                             "Saved · was ${target.note.ifEmpty { target.cat }} RM ${rm(target.amount)}",
                             actionLabel = "Undo", duration = SnackbarDuration.Long,
                         )
                         if (res == SnackbarResult.ActionPerformed) {
-                            repo.updateEntry(target, target.type, target.amount, target.cat, target.note, target.date)
+                            repo.updateEntry(target, target.type, target.amount, target.cat, target.note, target.date, target.odo)
                         }
                     }
                 }
@@ -329,11 +345,16 @@ private fun AppContent(repo: BakiRepo) {
                 }
             },
         )
+        5 -> BudgetSheet(repo, onDismiss = { adding = 0; editingBudgets = false })
         4 -> AddPayoutDialog(
             onDismiss = { adding = 0 },
             onAdd = { cents -> repo.addPayout(cents); adding = 0 },
         )
     }
+
+    }
+
+
 }
 
 @Composable
@@ -531,6 +552,17 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
             Spacer(Modifier.weight(1f))
             Text("RM ${rm(total)}", color = baki.onSurface, fontSize = 26.sp, fontWeight = FontWeight.Black)
         }
+        // break-even: what the shift has cost so far, and how far the payouts are from covering it
+        val be = liveBreakEven(repo.store, live, now)
+        Text(
+            when {
+                be.covered -> "✓ costs covered (RM ${"%.2f".format(be.costs)})"
+                be.minutesToGo != null -> "costs RM ${"%.2f".format(be.costs)} · break-even in ${be.minutesToGo.toInt()} min"
+                else -> "costs so far RM ${"%.2f".format(be.costs)} · add a payout to start earning"
+            },
+            color = if (be.covered) baki.up else baki.muted,
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+        )
         Text(
             buildString {
                 if (hours > 0.05) append("RM ${rm(total / 100.0 / hours)}/hr · ")
@@ -672,6 +704,42 @@ private fun SpendingScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
+            // envelopes first: the categories with a cap are what you actually check
+            val envelopes = budgetUsage(repo.store, month)
+            if (envelopes.isNotEmpty()) {
+                item {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+                        Text("BUDGETS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Spacer(Modifier.height(8.dp))
+                        envelopes.forEach { b ->
+                            val name = repo.store.settings.cats.catsOut.firstOrNull { it.id == b.cat }?.name ?: b.cat
+                            val ink = when {
+                                b.over -> baki.down
+                                b.fraction >= 0.8 -> baki.warn
+                                else -> baki.up
+                            }
+                            Column(Modifier.padding(vertical = 5.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(name, color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "RM ${"%.0f".format(b.spent)} / ${"%.0f".format(b.limit)}" +
+                                            if (b.over) " · RM ${"%.0f".format(-b.remaining)} over"
+                                            else " · RM ${"%.0f".format(b.remaining)} left",
+                                        color = ink, fontSize = 11.sp,
+                                    )
+                                }
+                                Spacer(Modifier.height(3.dp))
+                                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(baki.surfaceHigh)) {
+                                    Box(
+                                        Modifier.fillMaxWidth(b.fraction.toFloat().coerceIn(0.02f, 1f))
+                                            .height(6.dp).clip(RoundedCornerShape(50)).background(ink),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             items(entries) { e ->
                 RowCard(
                     e.note.ifEmpty { e.cat },
@@ -730,7 +798,7 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
 }
 
 @Composable
-private fun MoreScreen(repo: BakiRepo) {
+private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val baki = LocalBaki.current
     var url by remember { mutableStateOf(repo.config.serverUrl) }
     var editingProfit by remember { mutableStateOf(false) }
@@ -857,6 +925,25 @@ private fun MoreScreen(repo: BakiRepo) {
                 Text("GPS correction ×${"%.2f".format(repo.store.settings.gpsCorrection)} (from your odometer)",
                     color = baki.muted, fontSize = 10.sp)
             }
+            // real economy, measured from fill-ups that carry an odometer reading
+            measuredEconomy(repo.store)?.let { m ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "measured ${"%.1f".format(m.kml)} km/L over ${"%.0f".format(m.km)} km · ${m.fills} fills (${m.from} → ${m.to})",
+                    color = baki.muted, fontSize = 10.sp,
+                )
+                if (kotlin.math.abs(m.kml - p.kmPerLitre) > 0.3) {
+                    TextButton(
+                        onClick = { scope.launch { repo.updateProfit(p.copy(kmPerLitre = m.kml)) } },
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            "Use ${"%.1f".format(m.kml)} km/L instead of ${"%.1f".format(p.kmPerLitre)}",
+                            color = baki.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { editingProfit = true },
@@ -875,6 +962,25 @@ private fun MoreScreen(repo: BakiRepo) {
         SectionTitle("CATEGORIES")
         Spacer(Modifier.height(8.dp))
         CategoriesCard(repo, editable = !repo.readOnly)
+        Spacer(Modifier.height(16.dp))
+        SectionTitle("BUDGETS")
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp)) {
+            Text("Monthly limits", color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            val n = repo.store.settings.budgets.size
+            Text(
+                if (n == 0) "none set — add caps for food, fuel, tolls"
+                else "$n categories capped · shown on Spending",
+                color = baki.muted, fontSize = 11.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = { onEditBudgets() },
+                enabled = !repo.readOnly,
+                colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
+                shape = RoundedCornerShape(50),
+            ) { Text("Set limits") }
+        }
         Spacer(Modifier.height(16.dp))
         SectionTitle("BACKUP")
         Spacer(Modifier.height(8.dp))
@@ -1009,7 +1115,7 @@ private fun EntryDialog(
     day: String,
     initialCat: String? = null,
     onDismiss: () -> Unit,
-    onSave: (String, Long, String, String, String) -> Unit,
+    onSave: (String, Long, String, String, String, Int?) -> Unit,
     onDelete: (Entry) -> Unit,
 ) {
     val baki = LocalBaki.current
@@ -1017,6 +1123,7 @@ private fun EntryDialog(
     var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
     var note by remember { mutableStateOf(existing?.note ?: "") }
     var date by remember { mutableStateOf(existing?.date ?: day) }
+    var odo by remember { mutableStateOf(existing?.odo?.toString() ?: "") }
     val cats = if (type == "income") settings.cats.catsIn else settings.cats.catsOut
     var cat by remember(type) { mutableStateOf(existing?.cat ?: initialCat ?: cats.firstOrNull()?.id ?: "other") }
     val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
@@ -1066,6 +1173,17 @@ private fun EntryDialog(
                     label = { Text("Note (optional)") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
                 )
+                // a fuel purchase with an odometer reading is what makes real km/L measurable
+                if (cat == "fuel" || odo.isNotEmpty()) {
+                    OutlinedTextField(
+                        value = odo,
+                        onValueChange = { odo = it.filter { c -> c.isDigit() } },
+                        label = { Text("Odometer at fill-up (optional)") }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                        supportingText = { Text("Add this and the app measures your real km/L", color = baki.muted, fontSize = 10.sp) },
+                    )
+                }
                 OutlinedTextField(
                     value = date, onValueChange = { date = it },
                     label = { Text("Date (YYYY-MM-DD)") }, singleLine = true,
@@ -1078,7 +1196,7 @@ private fun EntryDialog(
             }
             Button(
                 enabled = cents > 0,
-                onClick = { onSave(type, cents, cat, note, date) },
+                onClick = { onSave(type, cents, cat, note, date, odo.toIntOrNull()) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -1300,4 +1418,54 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) { Text("Add RM ${rm(cents)}", fontWeight = FontWeight.Bold) }
         }
+}
+
+
+
+@Composable
+private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
+    val baki = LocalBaki.current
+    val scope = rememberCoroutineScope()
+    val cats = repo.store.settings.cats.catsOut.filter { it.id != "grabfee" }
+    val draft = remember {
+        mutableStateMapOf<String, String>().apply {
+            repo.store.settings.budgets.forEach { (k, v) -> this[k] = "%.0f".format(v) }
+        }
+    }
+
+    BakiSheet(
+        onDismiss = onDismiss,
+        footer = {
+            Button(
+                onClick = {
+                    val limits = draft.mapNotNull { (k, v) -> v.toDoubleOrNull()?.takeIf { it > 0 }?.let { k to it } }.toMap()
+                    scope.launch { repo.setBudgets(limits) }
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+            ) { Text("Save limits", fontWeight = FontWeight.Bold) }
+        },
+    ) {
+        Text("Monthly limits", color = baki.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text("Leave a field blank for no cap. Applies to every month.", color = baki.muted, fontSize = 11.sp)
+        Spacer(Modifier.height(4.dp))
+        cats.forEach { c ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(c.icon, fontSize = 14.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(c.name, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                OutlinedTextField(
+                    value = draft[c.id] ?: "",
+                    onValueChange = { v -> draft[c.id] = v.filter { it.isDigit() || it == '.' } },
+                    placeholder = { Text("—", color = baki.muted, fontSize = 12.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.width(96.dp),
+                    colors = bakiFieldColors(),
+                )
+            }
+        }
+    }
 }
