@@ -5,28 +5,29 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import dev.chrisbanes.haze.HazeInput
-import dev.chrisbanes.haze.HazePerformanceMode
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.glass.GlassStyle
-import dev.chrisbanes.haze.glass.hazeGlass
+import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
 
 /**
- * Liquid glass via Haze's refraction engine. The content is captured once by
- * `hazeSource(hazeState)`; this surface samples it, so the bend is real.
+ * Liquid glass via Kyant's Backdrop: the surface samples the content behind it through a lens
+ * (real refraction at the rim), adds vibrancy and blur, and paints a specular highlight.
  *
- * LOW tier degrades to a plain Material surface and never touches Haze.
+ * Works on Android and desktop from the same code. LOW tier falls back to a plain Material
+ * surface so weak devices never pay for the shader.
  */
 @Composable
 fun GlassSurface(
-    hazeState: HazeState,
+    backdrop: Backdrop,
     shape: RoundedCornerShape,
     tier: Int,
     modifier: Modifier = Modifier,
-    performanceMode: HazePerformanceMode = HazePerformanceMode.Default,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val baki = LocalBaki.current
@@ -36,26 +37,28 @@ fun GlassSurface(
         return
     }
 
-    val style: GlassStyle = remember(tier) {
-        val base = if (tier >= 2) GlassStyle.regular else GlassStyle.clear
-        base.then {
-            shape(shape)
-            chromaticAberrationStrength(0.45f)
-            specularIntensity(0.7f)
-            surfaceProfile(dev.chrisbanes.haze.glass.SurfaceProfile.Lip)
-        }
-    }
-
+    val strong = tier >= 2
     Box(
-        modifier
-            .clip(shape)
-            // keep the content visible through the glass, but stop labels colliding with it
-            .background(baki.surface.copy(alpha = 0.45f))
-            .hazeGlass(
-                input = HazeInput.Sources(hazeState),
-                style = style,
-                performanceMode = performanceMode,
-            ),
+        modifier.drawBackdrop(
+            backdrop = backdrop,
+            shape = { shape },
+            effects = {
+                vibrancy()
+                blur(if (strong) 2f.dp.toPx() else 1f.dp.toPx())
+                // the rim bend: height controls how deep the edge distorts, amount how far it reaches
+                lens(
+                    if (strong) 18f.dp.toPx() else 10f.dp.toPx(),
+                    if (strong) 36f.dp.toPx() else 22f.dp.toPx(),
+                )
+            },
+            highlight = {
+                Highlight(
+                    width = 1.dp,
+                    blurRadius = if (strong) 2.dp else 1.dp,
+                    alpha = 0.35f,
+                )
+            },
+        ),
     ) {
         content()
     }

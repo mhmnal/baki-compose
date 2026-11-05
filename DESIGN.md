@@ -118,3 +118,14 @@ was chosen deliberately.
 a composition local, and `BakiSheet` publishes its own. An entry row carries
 `sharedBounds("entry-<id>")`, and the sheet header carries the same key — so editing an entry morphs
 the row into the sheet header instead of just sliding a panel up.
+
+
+## Glass
+
+The nav bar and FAB use **Backdrop** (`io.github.kyant0:backdrop`, Apache-2.0) for the liquid-glass
+effect: a lens effect that refracts the content at the rim, vibrancy, a light blur, and a specular
+highlight. It is multiplatform (Android + desktop) and renders on the Nothing phone, where Haze
+produced only a flat tint.
+
+Content is captured once with `Modifier.layerBackdrop(backdrop)`; each glass surface samples it.
+`GlassTier` still decides: tier 0 falls back to a plain Material surface.

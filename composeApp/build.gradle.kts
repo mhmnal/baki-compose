@@ -22,8 +22,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
                 implementation("io.ktor:ktor-client-core:3.0.3")
-                implementation("dev.chrisbanes.haze:haze:2.1.0")
-                implementation("dev.chrisbanes.haze:haze-glass:2.1.0")
+                implementation("io.github.kyant0:backdrop:2.0.1")
                 implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
             }
@@ -53,8 +52,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.1.9"
+        versionCode = 10
+        versionName = "0.2.2"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"

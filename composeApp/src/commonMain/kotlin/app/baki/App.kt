@@ -44,9 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import dev.chrisbanes.haze.HazePerformanceMode
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
@@ -56,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -86,12 +84,7 @@ private fun AppContent(repo: BakiRepo) {
     var editingBudgets by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
-    val hazeState = rememberHazeState()
-    val hazeMode = when (glassTier) {
-        2 -> HazePerformanceMode.Quality
-        1 -> HazePerformanceMode.Balanced
-        else -> HazePerformanceMode.Performance
-    }
+    val glassBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(Unit) { repo.start() }
@@ -134,7 +127,7 @@ private fun AppContent(repo: BakiRepo) {
         ) {
 
     Box(
-        Modifier.fillMaxSize().then(if (glassTier > 0) Modifier.hazeSource(hazeState) else Modifier),
+        Modifier.fillMaxSize().then(Modifier.layerBackdrop(glassBackdrop)),
     ) {
     Scaffold(
         containerColor = baki.surface,
@@ -232,14 +225,12 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // ---- glass: the bar and the + float over a blurred copy of the content ----
-    // hidden while a sheet is open: the sheet is modal, and Haze's layer would otherwise
-    // composite above it
+    // hidden while a sheet is open: the sheet is modal
     if (!sheetOpen) {
     GlassSurface(
-        hazeState = hazeState,
+        backdrop = glassBackdrop,
         shape = RoundedCornerShape(Radius.pill),
         tier = glassTier,
-        performanceMode = hazeMode,
         modifier = Modifier.align(Alignment.BottomCenter)
             .fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = barGap).height(barHeight),
     ) {
@@ -248,11 +239,10 @@ private fun AppContent(repo: BakiRepo) {
 
     if (tab == 0 && !repo.readOnly) {
         GlassSurface(
-            hazeState = hazeState,
+            backdrop = glassBackdrop,
             shape = RoundedCornerShape(Radius.pill),
             tier = glassTier,
-            performanceMode = hazeMode,
-            modifier = Modifier.align(Alignment.BottomEnd)
+                modifier = Modifier.align(Alignment.BottomEnd)
                 .padding(end = 18.dp).padding(bottom = barHeight + barGap + 6.dp).size(fabSize)
                 .shadow(10.dp, RoundedCornerShape(Radius.pill)),
         ) {
