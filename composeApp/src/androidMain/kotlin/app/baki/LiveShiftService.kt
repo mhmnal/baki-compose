@@ -86,6 +86,7 @@ class LiveShiftService : Service() {
 
     private fun build(startMs: Long, totalCents: Long): Notification {
         val open = action("open")
+        val paused = loadLive()?.let { isPaused(it) } ?: false
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_myplaces)
             .setContentTitle("RM ${rm(totalCents)} · live shift")
@@ -98,6 +99,7 @@ class LiveShiftService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(open)
             .addAction(0, "+ Payout", action("payout"))
+            .addAction(0, if (paused) "Resume" else "Pause", action("pause"))
             .addAction(0, "End shift", action("end"))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()

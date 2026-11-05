@@ -102,6 +102,10 @@ private fun AppContent(repo: BakiRepo) {
         when (pendingAction) {
             "payout" -> if (repo.live != null) adding = 4
             "end" -> if (repo.live != null) { PlatformEffects.tapFeedback(); repo.endLive() }
+            "pause" -> repo.live?.let { live ->
+                PlatformEffects.tapFeedback()
+                if (isPaused(live)) repo.resumeLive() else repo.pauseLive()
+            }
         }
         if (pendingAction != null) BakiIntents.pending = null
     }
