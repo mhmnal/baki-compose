@@ -34,7 +34,24 @@ data class ShiftMetrics(
     }
 }
 
-fun shiftMetrics(sh: Shift, cfg: Profit = Profit()): ShiftMetrics {
+/**
+ * Fixed costs per month: the loan instalment, plus road tax and car insurance spread evenly.
+ * These are real money that the per-shift maths used to ignore.
+ */
+fun monthlyOverhead(profit: Profit): Double =
+    profit.loanMonthly + profit.roadTaxYearly / 12.0 + profit.carInsuranceYearly / 12.0
+
+fun monthDrivenHours(store: Store, month: String): Double =
+    store.shifts.filter { it.date.startsWith(month) }.sumOf { it.hours }
+
+/** Fixed costs apportioned over the hours actually driven that month. */
+fun overheadPerHour(store: Store, month: String): Double {
+    val hours = monthDrivenHours(store, month)
+    if (hours <= 0.0) return 0.0
+    return monthlyOverhead(store.settings.profit) / hours
+}
+
+fun shiftMetrics(sh: Shift, cfg: Profit = Profit(), overheadPerHour: Double = 0.0): ShiftMetrics {
     val c = costRates(cfg, sh.kmPerLitre)
     val km = shiftKm(sh, cfg)
     val fuel = km * c.fuel
@@ -44,7 +61,7 @@ fun shiftMetrics(sh: Shift, cfg: Profit = Profit()): ShiftMetrics {
     val gross = sh.gross / 100.0 + sh.incentive / 100.0
     val extra = sh.extra / 100.0
     val grabFee = sh.grabFee?.let { it / 100.0 } ?: cfg.grabInsurance
-    val net = gross - running - extra - grabFee
+    val net = gross - running - extra - grabFee - overheadPerHour * sh.hours
     val netHr = if (sh.hours > 0) net / sh.hours else null
     return ShiftMetrics(km, fuel, wear, running, gross, extra, grabFee, net, sh.hours, netHr)
 }

@@ -84,6 +84,24 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             }
         }
 
+        payoutDue(store)?.let { due ->
+            item {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(baki.container).padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("AWAITING PAYOUT", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("RM ${"%.2f".format(due)}", color = if (due > 0) baki.up else baki.muted, fontSize = 26.sp, fontWeight = FontWeight.Black)
+                        statementCoveredUntil(store)?.let {
+                            Text("earned after the statement covering up to $it", color = baki.muted, fontSize = 10.sp)
+                        }
+                    }
+                    Text("💸", fontSize = 22.sp)
+                }
+            }
+        }
+
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile("best day", best?.let { "RM ${rm(it.second.net)}" } ?: "—", best?.first?.takeLast(5) ?: "", baki.up, Modifier.weight(1f))

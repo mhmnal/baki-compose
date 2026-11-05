@@ -135,7 +135,7 @@ fun TodayScreen(
 
         if (shift != null) {
             item {
-                val m = shiftMetrics(shift, cfg)
+                val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
                 Column(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(baki.container).padding(16.dp),
                 ) {
@@ -209,7 +209,7 @@ fun TodayScreen(
         }
 
         items(shifts) { sh ->
-            val m = shiftMetrics(sh, cfg)
+            val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
             RowCardIcon(
                 icon = "🚗",
                 title = "Shift ${sh.start.ifEmpty { sh.date }}",

@@ -120,3 +120,20 @@ fun weekdayShort(iso: String): String {
     val d = runCatching { LocalDate.parse(iso) }.getOrNull() ?: return ""
     return d.dayOfWeek.name.take(3)
 }
+
+/** The last day the newest imported statement already accounts for. */
+fun statementCoveredUntil(store: Store): String? {
+    val st = store.statements.values.maxByOrNull { it.weekStart } ?: return null
+    return addDays(st.weekStart, 6)
+}
+
+/**
+ * Money earned after the last statement period: Grab has not settled it yet.
+ * Returns null when there is no statement to anchor against.
+ */
+fun payoutDue(store: Store): Double? {
+    val covered = statementCoveredUntil(store) ?: return null
+    val pending = store.shifts.filter { it.date > covered }
+    if (pending.isEmpty()) return 0.0
+    return pending.sumOf { it.gross } / 100.0
+}

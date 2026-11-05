@@ -255,8 +255,18 @@ private fun AppContent(repo: BakiRepo) {
                 val target = editingEntry
                 adding = 0; editingEntry = null
                 scope.launch {
-                    if (target == null) repo.addEntry(type, cents, cat, note, date)
-                    else repo.updateEntry(target, type, cents, cat, note, date)
+                    if (target == null) {
+                        repo.addEntry(type, cents, cat, note, date)
+                    } else {
+                        repo.updateEntry(target, type, cents, cat, note, date)
+                        val res = snackbar.showSnackbar(
+                            "Saved · was ${target.note.ifEmpty { target.cat }} RM ${rm(target.amount)}",
+                            actionLabel = "Undo", duration = SnackbarDuration.Long,
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            repo.updateEntry(target, target.type, target.amount, target.cat, target.note, target.date)
+                        }
+                    }
                 }
             },
             onDelete = { entry ->
@@ -282,8 +292,22 @@ private fun AppContent(repo: BakiRepo) {
                 val target = editingShift
                 adding = 0; editingShift = null
                 scope.launch {
-                    if (target == null) repo.addShift(date, start, hours, km, gross, extra, odoStart = odoS, odoEnd = odoE)
-                    else repo.updateShift(target, date, start, hours, km, gross, extra, target.note, kmPerLitre, odoS, odoE)
+                    if (target == null) {
+                        repo.addShift(date, start, hours, km, gross, extra, odoStart = odoS, odoEnd = odoE)
+                    } else {
+                        repo.updateShift(target, date, start, hours, km, gross, extra, target.note, kmPerLitre, odoS, odoE)
+                        val res = snackbar.showSnackbar(
+                            "Shift saved · was RM ${rm(target.gross)}",
+                            actionLabel = "Undo", duration = SnackbarDuration.Long,
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            repo.updateShift(
+                                target, target.date, target.start, target.hours, target.km,
+                                target.gross, target.extra, target.note, target.kmPerLitre,
+                                target.odoStart, target.odoEnd,
+                            )
+                        }
+                    }
                 }
             },
             onDelete = { shift ->
@@ -645,7 +669,7 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
     val cfg = store.settings.profit
     val rows = store.shifts.sortedByDescending { it.date }
     val hours = rows.sumOf { it.hours }
-    val net = rows.sumOf { shiftMetrics(it, cfg).net }
+    val net = rows.sumOf { shiftMetrics(it, cfg, overheadPerHour(store, it.date.take(7))).net }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Spacer(Modifier.height(18.dp))
@@ -660,7 +684,7 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
             items(rows) { sh ->
-                val m = shiftMetrics(sh, cfg)
+                val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
                 RowCard(
                     "${sh.date} ${sh.start}".trim(),
                     "${"%.1f".format(m.km)} km · ${m.band} · swipe or hold to edit",
@@ -1080,7 +1104,7 @@ private fun ShiftDialog(
             gross = grossCents, extra = ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(),
             grabFee = charge, kmPerLitre = kmlValue, odoStart = odoStart, odoEnd = odoEnd,
         )
-        shiftMetrics(probe, store.settings.profit)
+        shiftMetrics(probe, store.settings.profit, overheadPerHour(store, date.take(7)))
     }
 
     BakiSheet(onDismiss = onDismiss) {
@@ -1145,6 +1169,9 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
     val target = field("target", profit.targetRate)
     val speed = field("speed", profit.avgSpeed)
     val cover = field("cover", profit.grabInsurance)
+    val loan = field("loan", profit.loanMonthly)
+    val roadTax = field("roadTax", profit.roadTaxYearly)
+    val carIns = field("carIns", profit.carInsuranceYearly)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1158,7 +1185,12 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
                 ProfitField("Target RM/hr", target, baki)
                 ProfitField("Average speed km/h", speed, baki)
                 ProfitField("Grab insurance RM/day", cover, baki)
-                Text("Saving re-derives every shift's cost and cover.", color = baki.muted, fontSize = 10.sp)
+                Spacer(Modifier.height(4.dp))
+                Text("Fixed costs, spread over the hours you drive", color = baki.muted, fontSize = 10.sp)
+                ProfitField("Car loan RM/month", loan, baki)
+                ProfitField("Road tax RM/year", roadTax, baki)
+                ProfitField("Car insurance RM/year", carIns, baki)
+                Text("Saving re-derives every shift's cost, cover and overhead.", color = baki.muted, fontSize = 10.sp)
             }
         },
         confirmButton = {
@@ -1171,6 +1203,9 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
                         targetRate = target.value.toDoubleOrNull() ?: profit.targetRate,
                         avgSpeed = speed.value.toDoubleOrNull() ?: profit.avgSpeed,
                         grabInsurance = cover.value.toDoubleOrNull() ?: profit.grabInsurance,
+                        loanMonthly = loan.value.toDoubleOrNull() ?: profit.loanMonthly,
+                        roadTaxYearly = roadTax.value.toDoubleOrNull() ?: profit.roadTaxYearly,
+                        carInsuranceYearly = carIns.value.toDoubleOrNull() ?: profit.carInsuranceYearly,
                     )
                 )
             }) { Text("Save", color = baki.primary, fontWeight = FontWeight.Bold) }

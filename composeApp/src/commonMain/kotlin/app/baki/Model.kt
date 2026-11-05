@@ -60,6 +60,10 @@ data class Profit(
     val targetRate: Double = 18.0,
     val avgSpeed: Double = 30.0,
     val grabInsurance: Double = 7.5,
+    /** fixed costs that exist whether you drive or not, spread over the hours you did drive */
+    val loanMonthly: Double = 0.0,
+    val roadTaxYearly: Double = 0.0,
+    val carInsuranceYearly: Double = 0.0,
 )
 
 @Serializable
