@@ -82,6 +82,9 @@ fun BakiTheme(matchWallpaper: Boolean = false, mode: String = "auto", content: @
     val fallback = if (dark) DarkPalette else LightPalette
     val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: fallback } else fallback
     CompositionLocalProvider(LocalBaki provides palette) {
-        MaterialTheme(colorScheme = schemeOf(palette), content = content)
+        MaterialTheme(
+            colorScheme = schemeOf(palette),
+            content = content,
+        )
     }
 }

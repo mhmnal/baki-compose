@@ -48,7 +48,7 @@ fun BakiSheet(
     // corners square off as the sheet is dragged down, like a sheet being pulled away
     val corner by animateDpAsState(
         targetValue = (28 * (1f - (dragOffset / dragPx).coerceIn(0f, 1f))).dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = BakiMotion.effects(),
         label = "corner",
     )
 
@@ -56,8 +56,8 @@ fun BakiSheet(
         val maxSheetHeight = maxHeight * 0.86f
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(tween(180)),
-            exit = fadeOut(tween(220)),
+            enter = fadeIn(BakiMotion.effectsSlow()),
+            exit = fadeOut(BakiMotion.effectsSlow()),
         ) {
             Box(
                 Modifier.fillMaxSize()
@@ -73,10 +73,10 @@ fun BakiSheet(
             visible = visible,
             modifier = Modifier.align(Alignment.BottomCenter),
             enter = slideInVertically(
-                animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                animationSpec = BakiMotion.spatial(),
                 initialOffsetY = { it },
-            ) + fadeIn(tween(120)),
-            exit = slideOutVertically(tween(200)) { it } + fadeOut(tween(160)),
+            ) + fadeIn(BakiMotion.effects()),
+            exit = slideOutVertically(BakiMotion.effectsSlow()) { it } + fadeOut(BakiMotion.effectsSlow()),
         ) {
             Surface(
                 color = baki.container,

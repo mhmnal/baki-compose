@@ -1,5 +1,8 @@
 package app.baki
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.scale
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -40,11 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -135,9 +140,11 @@ private fun AppContent(repo: BakiRepo) {
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
-                    (fadeIn(tween(260, easing = expressive)) +
-                        slideInVertically(tween(260, easing = expressive)) { it / 60 })
-                        .togetherWith(fadeOut(tween(140)))
+                    // spatial for movement, effects for opacity — the M3 rule that keeps
+                    // a spring from overshooting alpha
+                    (fadeIn(BakiMotion.effects()) +
+                        slideInVertically(BakiMotion.spatial()) { it / 60 })
+                        .togetherWith(fadeOut(BakiMotion.effectsFast()))
                 },
                 modifier = Modifier.fillMaxSize(),
                 label = "tab",
@@ -386,21 +393,50 @@ private fun Header(repo: BakiRepo) {
 private fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
     val baki = LocalBaki.current
     val items = listOf("Today", "Spending", "Shifts", "Summary", "More")
+    val icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More)
     Row(
-        Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         items.forEachIndexed { i, label ->
             val on = i == selected
+            // pill colour and label ease with effects springs; the icon settles with a spatial one
+            val pill by animateColorAsState(
+                targetValue = if (on) baki.primaryContainer else Color.Transparent,
+                animationSpec = BakiMotion.effects(), label = "navPill",
+            )
+            val ink by animateColorAsState(
+                targetValue = if (on) baki.onPrimaryContainer else baki.muted,
+                animationSpec = BakiMotion.effects(), label = "navInk",
+            )
+            val lift by animateFloatAsState(
+                targetValue = if (on) 1f else 0.94f,
+                animationSpec = BakiMotion.spatialFast(), label = "navLift",
+            )
             Box(
-                Modifier.weight(1f).height(46.dp).clip(RoundedCornerShape(50))
-                    .background(if (on) baki.primaryContainer else Color.Transparent)
+                Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(Radius.pill))
+                    .background(pill)
                     .clickable { onSelect(i) },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 13.sp,
-                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        icons[i], contentDescription = null, tint = ink,
+                        modifier = Modifier.size(18.dp).scale(lift),
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    // ellipsis rather than clipping: at 130% font scale "Spending" must degrade,
+                    // not lose its last letter
+                    Text(
+                        label, color = ink, fontSize = 9.sp,
+                        fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1, softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }
@@ -411,8 +447,12 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
     val baki = LocalBaki.current
     val ink = if (tint == Color.Unspecified) baki.onSurface else tint
     Column {
-        Text(label, color = baki.muted, fontSize = 12.sp)
-        Text("RM ${rm(amountCents)}", color = ink, fontSize = size.sp, fontWeight = FontWeight.Black)
+        Text(label, color = baki.muted, style = BakiType.label)
+        Text(
+            "RM ${rm(amountCents)}", color = ink,
+            // tabular figures: the hero number keeps its width as digits change
+            style = (if (size >= 40) BakiType.displayNumeric else BakiType.headlineNumeric),
+        )
     }
 }
 
@@ -435,6 +475,7 @@ fun RowCard(
     sub: String,
     amount: String,
     amountTint: Color = Color.Unspecified,
+    icon: ImageVector? = null,
     onLongPress: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
 ) {
@@ -481,11 +522,18 @@ fun RowCard(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            if (sub.isNotEmpty()) Text(sub, color = baki.muted, fontSize = 11.sp)
+        if (icon != null) {
+            Box(
+                Modifier.size(32.dp).clip(RoundedCornerShape(Radius.small)).background(baki.surfaceHigh),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(17.dp)) }
+            Spacer(Modifier.width(12.dp))
         }
-        Text(amount, color = ink, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Column(Modifier.weight(1f)) {
+            Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
+            if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+        }
+        Text(amount, color = ink, style = BakiType.labelNumeric.copy(fontSize = 15.sp))
     }
     }
 }
@@ -681,7 +729,10 @@ private fun SpendingScreen(
         MonthHeader(month, onMonth)
         Spacer(Modifier.height(6.dp))
         Hero("spent this month", t.expense, baki.down, 40)
-        Text("${t.entryCount} purchases · ${t.shiftCount} shifts · in ${rm(t.income)}", color = baki.muted, fontSize = 12.sp)
+        Text(
+            "${t.entryCount} purchases · ${t.shiftCount} shifts · in ${rm(t.income)}",
+            color = baki.muted, style = BakiType.captionNumeric,
+        )
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = query, onValueChange = { query = it },
@@ -693,12 +744,26 @@ private fun SpendingScreen(
             val chips = listOf("all" to "All") + cats.map { it.id to it.name }
             chips.forEach { (id, label) ->
                 val on = catFilter == id
-                Box(
-                    Modifier.clip(RoundedCornerShape(50))
+                Row(
+                    Modifier.clip(RoundedCornerShape(Radius.pill))
                         .background(if (on) baki.primaryContainer else baki.container)
                         .clickable { catFilter = id }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                ) { Text(label, color = if (on) baki.onPrimaryContainer else baki.muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (id != "all") {
+                        Icon(
+                            categoryIcon(id), contentDescription = null,
+                            tint = if (on) baki.onPrimaryContainer else baki.muted,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(
+                        label, color = if (on) baki.onPrimaryContainer else baki.muted,
+                        style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                }
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -720,22 +785,27 @@ private fun SpendingScreen(
                                 b.fraction >= 0.8 -> baki.warn
                                 else -> baki.up
                             }
-                            Column(Modifier.padding(vertical = 5.dp)) {
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(name, color = baki.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        "RM ${"%.0f".format(b.spent)} / ${"%.0f".format(b.limit)}" +
-                                            if (b.over) " · RM ${"%.0f".format(-b.remaining)} over"
-                                            else " · RM ${"%.0f".format(b.remaining)} left",
-                                        color = ink, fontSize = 11.sp,
-                                    )
-                                }
-                                Spacer(Modifier.height(3.dp))
-                                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(baki.surfaceHigh)) {
-                                    Box(
-                                        Modifier.fillMaxWidth(b.fraction.toFloat().coerceIn(0.02f, 1f))
-                                            .height(6.dp).clip(RoundedCornerShape(50)).background(ink),
-                                    )
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                ProgressRing(
+                                    progress = b.fraction.toFloat(),
+                                    color = ink,
+                                    track = baki.surfaceHigh,
+                                    size = 28.dp,
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(name, color = baki.onSurface, style = BakiType.labelStrong.copy(fontSize = 13.sp))
+                                        Text(
+                                            "RM ${"%.0f".format(b.spent)} / ${"%.0f".format(b.limit)}" +
+                                                if (b.over) " · RM ${"%.0f".format(-b.remaining)} over"
+                                                else " · RM ${"%.0f".format(b.remaining)} left",
+                                            color = ink, style = BakiType.captionNumeric,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -748,6 +818,7 @@ private fun SpendingScreen(
                     e.date + " · swipe or hold to edit",
                     (if (e.type == "income") "+" else "−") + rm(e.amount),
                     if (e.type == "income") baki.up else baki.down,
+                    icon = categoryIcon(e.cat),
                     onLongPress = { onEditEntry(e) },
                     onDelete = { onDeleteEntry(e) },
                 )
@@ -1460,7 +1531,7 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         cats.forEach { c ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(c.icon, fontSize = 14.sp)
+                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(c.name, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 OutlinedTextField(

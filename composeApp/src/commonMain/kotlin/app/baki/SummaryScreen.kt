@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,7 +57,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         item {
             Column {
                 Text("this month", color = baki.muted, fontSize = 12.sp)
-                Text("RM ${rm(t.net)}", color = baki.onSurface, fontSize = 42.sp, fontWeight = FontWeight.Black)
+                Text("RM ${rm(t.net)}", color = baki.onSurface, style = BakiType.displaySmallNumeric)
                 Text(
                     "${days.size} days · in ${rm(t.income)} · out ${rm(t.expense)} · avg ${rm(avgDay)}/day",
                     color = baki.muted, fontSize = 12.sp,
@@ -102,6 +103,17 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                                 "RM ${"%.0f".format(actual)}/hr vs target RM ${"%.0f".format(target)}/hr",
                             color = if (hit) baki.up else baki.down, fontSize = 11.sp,
                         )
+                        // the shape of the week, not just its total
+                        val last7 = remember(store, todayIso()) {
+                            (6 downTo 0).map { dayTotals(store, addDays(todayIso(), -it)).net / 100.0 }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Sparkline(
+                            values = last7,
+                            modifier = Modifier.fillMaxWidth().height(34.dp),
+                            line = baki.primary,
+                            fill = baki.primary,
+                        )
                     }
                 }
             }
@@ -120,7 +132,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                             Text("earned after the statement covering up to $it", color = baki.muted, fontSize = 10.sp)
                         }
                     }
-                    Text("💸", fontSize = 22.sp)
+                    Icon(BakiIcons.Wallet, contentDescription = null, tint = baki.up, modifier = Modifier.size(22.dp))
                 }
             }
         }

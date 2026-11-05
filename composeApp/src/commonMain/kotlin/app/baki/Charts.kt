@@ -11,6 +11,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
@@ -151,5 +161,70 @@ fun HoursHeatmap(store: Store) {
             )
         }
         Text("darker = better rate · empty = not driven", color = baki.muted, fontSize = 9.sp)
+    }
+}
+
+/** A week of net values as a line with a soft fill — the shape of the week at a glance. */
+@Composable
+fun Sparkline(
+    values: List<Double>,
+    modifier: Modifier = Modifier,
+    line: Color,
+    fill: Color,
+) {
+    Canvas(modifier) {
+        if (values.size < 2) return@Canvas
+        val min = values.min()
+        val max = values.max()
+        val span = (max - min).takeIf { kotlin.math.abs(it) > 0.001 } ?: 1.0
+        val stepX = size.width / (values.size - 1)
+        val top = size.height * 0.12f
+        val usable = size.height * 0.76f
+        val pts = values.mapIndexed { i, v ->
+            Offset(i * stepX, size.height - top - ((v - min) / span).toFloat() * usable)
+        }
+        val stroke = Path().apply {
+            moveTo(pts[0].x, pts[0].y)
+            for (i in 1 until pts.size) {
+                // gentle curve between points
+                val prev = pts[i - 1]
+                val cur = pts[i]
+                val midX = (prev.x + cur.x) / 2f
+                cubicTo(midX, prev.y, midX, cur.y, cur.x, cur.y)
+            }
+        }
+        val area = Path().apply {
+            addPath(stroke)
+            lineTo(pts.last().x, size.height)
+            lineTo(pts.first().x, size.height)
+            close()
+        }
+        drawPath(area, Brush.verticalGradient(listOf(fill.copy(alpha = 0.30f), Color.Transparent)))
+        drawPath(
+            stroke, line,
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+        )
+        // the latest point gets a dot, so the eye lands on "now"
+        drawCircle(line, radius = 2.5.dp.toPx(), center = pts.last())
+    }
+}
+
+/** Compact progress ring, used by budget envelopes. */
+@Composable
+fun ProgressRing(progress: Float, color: Color, track: Color, size: Dp = 30.dp, stroke: Dp = 3.dp) {
+    Canvas(Modifier.size(size)) {
+        val sw = stroke.toPx()
+        val inset = sw / 2
+        val arcSize = Size(this.size.width - sw, this.size.height - sw)
+        drawArc(
+            color = track, startAngle = -90f, sweepAngle = 360f, useCenter = false,
+            topLeft = Offset(inset, inset), size = arcSize,
+            style = Stroke(sw, cap = StrokeCap.Round),
+        )
+        drawArc(
+            color = color, startAngle = -90f, sweepAngle = 360f * progress.coerceIn(0f, 1f), useCenter = false,
+            topLeft = Offset(inset, inset), size = arcSize,
+            style = Stroke(sw, cap = StrokeCap.Round),
+        )
     }
 }

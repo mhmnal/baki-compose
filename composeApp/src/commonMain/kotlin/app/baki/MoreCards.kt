@@ -65,7 +65,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                 Modifier.fillMaxWidth().padding(vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(c.icon, fontSize = 14.sp)
+                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(c.name, color = baki.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
                 Text(if (used > 0) "$used" else "", color = baki.muted, fontSize = 11.sp)
