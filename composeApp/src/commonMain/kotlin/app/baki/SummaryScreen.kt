@@ -81,6 +81,27 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                     "${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries · last week RM ${rm(lastWeek.net)}",
                     color = baki.muted, fontSize = 11.sp,
                 )
+                // is the week clearing the rate you set? measured on shift earnings, not on net
+                // after spending — otherwise a fuel week would look like a slow week
+                run {
+                    val start = weekStartOf(todayIso())
+                    val weekShifts = store.shifts.filter { it.date >= start && it.date <= todayIso() }
+                    val weekHours = weekShifts.sumOf { it.hours }
+                    val cfg = store.settings.profit
+                    val weekShiftNet = weekShifts.sumOf {
+                        shiftMetrics(it, cfg, overheadPerHour(store, it.date.take(7))).net
+                    }
+                    val target = cfg.targetRate
+                    if (weekHours > 0) {
+                        val actual = weekShiftNet / weekHours
+                        val hit = actual >= target
+                        Text(
+                            (if (hit) "✓ " else "✗ ") +
+                                "RM ${"%.0f".format(actual)}/hr vs target RM ${"%.0f".format(target)}/hr",
+                            color = if (hit) baki.up else baki.down, fontSize = 11.sp,
+                        )
+                    }
+                }
             }
         }
 

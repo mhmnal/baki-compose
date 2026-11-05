@@ -162,6 +162,25 @@ fun TodayScreen(
                         "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km · fuel + wear RM ${"%.2f".format(m.running)}",
                         color = baki.muted, fontSize = 11.sp,
                     )
+                    // what this shift had to beat
+                    m.netHr?.let { rate ->
+                        val delta = rate - cfg.targetRate
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (delta >= 0) "✓" else "✗",
+                                color = if (delta >= 0) baki.up else baki.down,
+                                fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "target RM ${"%.0f".format(cfg.targetRate)}/hr · " +
+                                    if (delta >= 0) "RM ${"%.0f".format(delta)} above"
+                                    else "RM ${"%.0f".format(-delta)} short",
+                                color = if (delta >= 0) baki.up else baki.down,
+                                fontSize = 11.sp,
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PillButton("+ Add shift", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f), onAddShift)
