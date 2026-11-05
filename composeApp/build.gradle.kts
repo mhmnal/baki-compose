@@ -53,8 +53,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.1.8"
+        versionCode = 9
+        versionName = "0.1.9"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -92,7 +92,17 @@ android {
 }
 
 compose.desktop {
-    application { mainClass = "app.baki.MainKt" }
+    application {
+        mainClass = "app.baki.MainKt"
+        nativeDistributions {
+            targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.AppImage)
+            packageName = "Baki"
+            packageVersion = "1.0.0"
+            description = "What your shift really pays"
+            vendor = "Baki"
+            linux { iconFile.set(project.file("icons/baki.png")) }
+        }
+    }
 }
 
 // Skiko caches into user.home; in this sandbox that path is read-only.
