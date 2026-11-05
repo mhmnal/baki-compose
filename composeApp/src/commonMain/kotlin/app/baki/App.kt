@@ -310,6 +310,7 @@ private fun AppContent(repo: BakiRepo) {
                     }
                 }
             },
+            onCalibrate = { factor -> scope.launch { repo.setGpsCorrection(factor) } },
             onDelete = { shift ->
                 adding = 0; editingShift = null
                 scope.launch {
@@ -852,6 +853,10 @@ private fun MoreScreen(repo: BakiRepo) {
                 color = baki.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             Text("target RM ${"%.0f".format(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${"%.2f".format(p.grabInsurance)}",
                 color = baki.muted, fontSize = 11.sp)
+            if (repo.store.settings.gpsCorrection != 1.0) {
+                Text("GPS correction ×${"%.2f".format(repo.store.settings.gpsCorrection)} (from your odometer)",
+                    color = baki.muted, fontSize = 10.sp)
+            }
             Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { editingProfit = true },
@@ -1108,6 +1113,7 @@ private fun ShiftDialog(
     onDismiss: () -> Unit,
     onSave: (String, String, Double, Double, Long, Long, Double?, Double?, Double?) -> Unit,
     onDelete: (Shift) -> Unit,
+    onCalibrate: (Double) -> Unit = {},
 ) {
     val baki = LocalBaki.current
     var date by remember { mutableStateOf(existing?.date ?: todayIso()) }
@@ -1168,6 +1174,24 @@ private fun ShiftDialog(
                 if (odoStart != null && odoEnd != null && odoEnd >= odoStart) {
                     Text("odometer says ${"%.1f".format(odoEnd - odoStart)} km — this wins over the Km field",
                         color = baki.muted, fontSize = 10.sp)
+                }
+                // reconciliation: GPS vs odometer on the same shift
+                val tracked = existing?.km?.takeIf { it > 0.5 }
+                if (tracked != null && odoStart != null && odoEnd != null && odoEnd > odoStart) {
+                    val odo = odoEnd - odoStart
+                    val ratio = odo / tracked
+                    Text(
+                        "GPS tracked ${"%.1f".format(tracked)} km · odometer ${"%.1f".format(odo)} km · ×${"%.2f".format(ratio)}",
+                        color = baki.muted, fontSize = 10.sp,
+                    )
+                    if (ratio in 0.5..2.0) {
+                        TextButton(onClick = { onCalibrate(ratio) }) {
+                            Text(
+                                "Use ×${"%.2f".format(ratio)} for future tracking",
+                                color = baki.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
                 }
                 Text(
                     "cover RM ${rm(preview.grabFee)} · net RM ${rm(preview.net)}" +

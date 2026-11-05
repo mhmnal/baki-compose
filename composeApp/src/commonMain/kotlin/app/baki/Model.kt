@@ -71,6 +71,11 @@ data class Settings(
     val name: String = "",
     val cats: Cats = Cats(),
     val profit: Profit = Profit(),
+    /**
+     * Multiplier applied to GPS-tracked distance when a live shift ends. Chords under-measure a
+     * curving route, so the raw track usually reads short; this is calibrated against the odometer.
+     */
+    val gpsCorrection: Double = 1.0,
 )
 
 @Serializable

@@ -204,8 +204,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val start = startClock(current.start)
         // breaks do not count as working time
         val hours = max(0.05, liveWorkedMs(current, now) / 3_600_000.0)
-        // real distance when the tracker saw enough movement, else the old hours × average guess
-        val measuredKm = current.km
+        // real distance when the tracker saw enough movement, else the old hours × average guess.
+        // The correction makes up for chords cutting corners on a curving route.
+        val measuredKm = current.km * store.settings.gpsCorrection
 
         live = null
         saveLive(null)
@@ -374,6 +375,18 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         config = config.copy(glassMode = mode)
         saveConfig(config)
         PlatformEffects.tapFeedback()
+    }
+
+    /** Learn the GPS/odometer ratio from a shift where both are known. */
+    suspend fun setGpsCorrection(factor: Double) = mutex.withLock {
+        if (blocked()) return@withLock
+        if (factor <= 0.5 || factor >= 2.0) return@withLock   // refuse nonsense
+        store = store.copy(
+            settings = store.settings.copy(gpsCorrection = factor),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
     }
 
     fun setThemeMode(mode: String) {

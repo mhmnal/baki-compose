@@ -49,7 +49,7 @@ class LiveShiftService : Service() {
         // a location-typed FGS needs the permission at this moment, or the start is refused
         runCatching { startForeground(NOTIF_ID, build(start, total)) }
         if (DistanceTracker.hasPermission(this)) {
-            DistanceTracker.start(this) { /* distance is persisted by the tracker */ }
+            DistanceTracker.start(this)
         }
         return START_STICKY
     }

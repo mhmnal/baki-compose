@@ -33,6 +33,7 @@ kotlin {
             dependencies {
                 implementation("androidx.activity:activity-compose:1.9.3")
                 implementation("androidx.core:core-ktx:1.13.1")
+                implementation("com.google.android.gms:play-services-location:21.3.0")
                 implementation("io.ktor:ktor-client-okhttp:3.0.3")
             }
         }
