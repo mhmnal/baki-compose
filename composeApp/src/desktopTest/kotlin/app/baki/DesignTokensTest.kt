@@ -10,19 +10,19 @@ import kotlin.test.assertTrue
  */
 class DesignTokensTest {
 
-    private fun sourceDir(): File {
+    private fun sourceDirs(): List<File> {
         var dir = File(System.getProperty("user.dir"))
         repeat(4) {
-            val candidate = File(dir, "src/commonMain/kotlin/app/baki")
-            if (candidate.isDirectory) return candidate
+            val common = File(dir, "src/commonMain/kotlin/app/baki")
+            val desktop = File(dir, "src/desktopMain/kotlin/app/baki")
+            if (common.isDirectory) return listOfNotNull(common, desktop.takeIf { it.isDirectory })
             dir = dir.parentFile ?: dir
         }
-        error("cannot locate the commonMain sources from ${System.getProperty("user.dir")}")
+        error("cannot locate the UI sources from ${System.getProperty("user.dir")}")
     }
 
-    private fun offenders(pattern: Regex): List<String> = sourceDir().listFiles()
-        .orEmpty()
-        .filter { it.name.endsWith(".kt") && it.name != "Design.kt" }
+    private fun offenders(pattern: Regex): List<String> = sourceDirs().flatMap { it.listFiles().orEmpty().toList() }
+        .filter { file -> file.name.endsWith(".kt") && file.name != "Design.kt" }
         .flatMap { file ->
             file.readLines().withIndex()
                 .filter { (_, line) -> pattern.containsMatchIn(line) }

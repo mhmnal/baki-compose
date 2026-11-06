@@ -75,14 +75,16 @@ fun statementHtml(store: Store, month: String): String {
   th{text-align:left;font-size:10px;letter-spacing:.08em;color:#5c6657;border-bottom:1px solid #e2ddd0;padding:6px 4px}
   td{padding:6px 4px;border-bottom:1px solid #efeae0} td.n,th.n{text-align:right}
   h2{font-size:11px;letter-spacing:.08em;color:#5c6657;margin:24px 0 4px}
+  @page{size:A4;margin:18mm}
+  @media print{ body{margin:0} table{page-break-inside:auto} tr{page-break-inside:avoid} thead{display:table-header-group} h2{page-break-after:avoid} }
 </style>
 <h1>Baki · ${month}</h1><div class=sub>Shift logbook and spending</div>
 <div class=hero>RM ${rm(t.net)}</div>
 <div class=sub>${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}</div>
 <h2>SHIFTS</h2>
-<table><tr><th>Shift</th><th class=n>Hours</th><th class=n>KM</th><th class=n>Gross</th><th class=n>Net</th></tr>$shiftRows</table>
+<table><thead><tr><th>Shift</th><th class=n>Hours</th><th class=n>KM</th><th class=n>Gross</th><th class=n>Net</th></tr></thead><tbody>$shiftRows</tbody></table>
 <h2>ENTRIES</h2>
-<table><tr><th>Date</th><th>Category</th><th>Note</th><th class=n>Amount</th></tr>$rows</table>
+<table><thead><tr><th>Date</th><th>Category</th><th>Note</th><th class=n>Amount</th></tr></thead><tbody>$rows</tbody></table>
 <div class=sub>Generated ${todayIso()} — figures in Malaysian ringgit.</div>"""
 }
 

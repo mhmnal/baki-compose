@@ -214,3 +214,19 @@ it compiles to dex). `createDistributable` bundles the runtime it was built with
 needs nothing on the machine; only `./gradlew :composeApp:run` needs `JAVA_HOME` pointing at a 21 JDK.
 The floating command bar is the single glass surface: M3 for everything else, refraction where the
 phone keeps its nav bar.
+
+## Desktop: neumorphism
+
+The laptop is deliberately a different design language from the phone. Phone keeps Material 3 with a
+single liquid-glass nav bar; the desktop is **neumorphic** — one base colour, depth from two soft
+shadows only, no borders.
+
+- `Neumorphism.kt` derives everything from the active palette: `base` (canvas), `panel` (lifted),
+  `light` (base towards white) and `dark` (base towards ink). All three packs, light and dark.
+- `Modifier.raised` draws a blurred dark rrect offset down-right and a light one up-left, then paints
+  the panel colour on top; `Modifier.inset` clips the same shadows inside the shape for pressed
+  states, fields and the selected nav item.
+- Consequence: no dividers in tables, no outlines on inputs, no glass on desktop. The glass library
+  stays in the phone build only.
+- Depth is the only affordance, so selection and hover must remain visible: selected rows are inset
+  wells, hover adds a 5.5% accent wash.

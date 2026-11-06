@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.animation.togetherWith
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,9 +9,11 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +28,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -95,7 +98,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     var settingsOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val baki = LocalBaki.current
-    val backdrop = rememberLayerBackdrop()
+    val neu = neuOf(baki)
     val rootFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     androidx.compose.runtime.LaunchedEffect(Unit) {
         // the laptop is a full editor: writes must reach the server, not stop at the local store
@@ -113,6 +116,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
 
     Box(
         Modifier.fillMaxSize()
+            .background(neu.base)
             .focusRequester(rootFocus)
             .focusable()
             .onPreviewKeyEvent { e ->
@@ -131,14 +135,19 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     ) {
         // The content layer is what the glass samples. The glass surfaces themselves live OUTSIDE
         // it, or they would refract their own output (a segfault on the GPU path).
-        Box(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
+        Box(Modifier.fillMaxSize()) {
+            // an opaque child inside the layer: a background on the layer node itself is not
+            // captured, so the window would composite over the desktop and read grey
+            Box(Modifier.fillMaxSize().background(neu.base))
+            // an opaque wash built by blending against the surface, never with alpha, so the
+            // window can never composite over the desktop
             Box(
                 Modifier.fillMaxSize().background(
                     androidx.compose.ui.graphics.Brush.linearGradient(
                         listOf(
-                            baki.primary.copy(alpha = 0.13f),
+                            androidx.compose.ui.graphics.lerp(baki.surface, baki.primary, 0.07f),
                             baki.surface,
-                            baki.down.copy(alpha = 0.06f),
+                            androidx.compose.ui.graphics.lerp(baki.surface, baki.down, 0.05f),
                         ),
                     ),
                 ),
@@ -150,16 +159,24 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 Spacer(Modifier.width(RailWidth))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.m)) {
                     Spacer(Modifier.height(60.dp))
-                    Box(
-                        Modifier.weight(1f)
-                            .clip(RoundedCornerShape(Radius.sheet))
-                            .background(baki.surface),
-                    ) {
-                        when (tab) {
-                            0 -> Overview(store, month, onEdit = { editing = it }, onDelete = { deleting = it }, onOpen = { tab = 1 })
-                            1 -> EntriesView(store, month, onEdit = { editing = it }, onDelete = { deleting = it })
-                            2 -> ShiftsView(store, month)
-                            else -> YearView(store)
+                    NeuPanel(neu = neu, modifier = Modifier.weight(1f), corner = Radius.sheet) {
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = tab,
+                            transitionSpec = {
+                                androidx.compose.animation.fadeIn(
+                                    androidx.compose.animation.core.tween(140),
+                                ) togetherWith androidx.compose.animation.fadeOut(
+                                    androidx.compose.animation.core.tween(90),
+                                )
+                            },
+                            label = "tab",
+                        ) { current ->
+                            when (current) {
+                                0 -> Overview(store, month, onEdit = { editing = it }, onDelete = { deleting = it }, onOpen = { tab = 1 })
+                                1 -> EntriesView(store, month, onEdit = { editing = it }, onDelete = { deleting = it })
+                                2 -> ShiftsView(store, month)
+                                else -> YearView(store)
+                            }
                         }
                     }
                 }
@@ -167,14 +184,13 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
         }
 
         Box(Modifier.align(Alignment.TopStart).padding(Space.l)) {
-            GlassRail(backdrop, tab, { tab = it }, { settingsOpen = true })
+            GlassRail(tab, { tab = it }, { settingsOpen = true })
         }
         Box(
             Modifier.align(Alignment.TopStart)
                 .padding(start = Space.l + RailWidth + Space.m, top = Space.l, end = Space.l),
         ) {
             GlassTopBar(
-                backdrop = backdrop,
                 month = month,
                 onPrev = { month = shiftMonth(month, -1) },
                 onNext = { month = shiftMonth(month, 1) },
@@ -219,27 +235,23 @@ object DesktopActions {
     var applyTheme: (String) -> Unit = { }
 }
 
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun GlassRail(
-    backdrop: com.kyant.backdrop.Backdrop,
     selected: Int,
     onSelect: (Int) -> Unit,
     onSettings: () -> Unit,
 ) {
     val baki = LocalBaki.current
+    val neu = neuOf(baki)
     val items = listOf(
         "Overview" to BakiIcons.Today,
         "Entries" to BakiIcons.Receipt,
         "Shifts" to BakiIcons.Taxi,
         "Year" to BakiIcons.Insights,
     )
-    GlassSurface(
-        backdrop = backdrop,
-        shape = RoundedCornerShape(Radius.sheet),
-        tier = DeviceTier.level,
-        modifier = Modifier.width(RailWidth).fillMaxHeight(),
-    ) {
+    NeuPanel(neu = neuOf(LocalBaki.current), modifier = Modifier.width(RailWidth).fillMaxHeight()) {
         Column(
             Modifier.fillMaxHeight().padding(vertical = Space.l),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -251,6 +263,7 @@ internal fun GlassRail(
                 val on = selected == i
                 val hover = remember { MutableInteractionSource() }
                 val hovered by hover.collectIsHoveredAsState()
+                val focused by hover.collectIsFocusedAsState()
                 androidx.compose.foundation.TooltipArea(
                     tooltip = {
                         Box(
@@ -263,11 +276,12 @@ internal fun GlassRail(
                 ) {
                     Box(
                         Modifier.size(46.dp)
-                            .clip(RoundedCornerShape(Radius.input))
-                            .background(if (on) baki.onSurface.copy(alpha = 0.10f) else Color.Transparent)
+                            .then(if (on) Modifier.inset(neu, corner = Radius.input) else Modifier)
+                            .then(if (focused) Modifier.border(2.dp, baki.primary, RoundedCornerShape(Radius.input)) else Modifier)
                             .hoverable(hover)
+                            .focusable(interactionSource = hover)
                             .pointerHoverIcon(PointerIcon.Hand)
-                            .clickable { onSelect(i) },
+                            .clickable(interactionSource = hover, indication = null) { onSelect(i) },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -302,20 +316,15 @@ internal fun GlassRail(
 
 @Composable
 internal fun GlassTopBar(
-    backdrop: com.kyant.backdrop.Backdrop,
     month: String,
+    status: String = "synced",
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onStatement: () -> Unit,
     onNew: () -> Unit,
 ) {
     val baki = LocalBaki.current
-    GlassSurface(
-        backdrop = backdrop,
-        shape = RoundedCornerShape(Radius.sheet),
-        tier = DeviceTier.level,
-        modifier = Modifier.fillMaxWidth().height(60.dp),
-    ) {
+    NeuPanel(neu = neuOf(LocalBaki.current), modifier = Modifier.fillMaxWidth().height(60.dp)) {
         Row(
             Modifier.fillMaxSize().padding(horizontal = Space.m),
             verticalAlignment = Alignment.CenterVertically,
@@ -326,6 +335,13 @@ internal fun GlassTopBar(
                 modifier = Modifier.padding(horizontal = Space.s),
             )
             Chevron("›", onNext)
+            Spacer(Modifier.width(Space.m))
+            Box(
+                Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill))
+                    .background(if (status == "synced") baki.up else baki.warn),
+            )
+            Spacer(Modifier.width(Space.xs))
+            Text(status, color = baki.muted, style = BakiType.caption)
             Spacer(Modifier.weight(1f))
             GlassAction("Statement", onClick = onStatement)
             Spacer(Modifier.width(Space.xs))
@@ -339,17 +355,22 @@ internal fun GlassAction(label: String, primary: Boolean = false, onClick: () ->
     val baki = LocalBaki.current
     val hover = remember { MutableInteractionSource() }
     val hovered by hover.collectIsHoveredAsState()
+    val focused by hover.collectIsFocusedAsState()
+    val neuLocal = neuOf(baki)
     Box(
-        Modifier.clip(RoundedCornerShape(Radius.pill))
-            .background(if (primary) baki.primary else if (hovered) baki.onSurface.copy(alpha = 0.08f) else Color.Transparent)
+        Modifier
+            .then(if (focused) Modifier.border(2.dp, baki.primary, RoundedCornerShape(Radius.pill)) else Modifier)
+            .raised(neuLocal, corner = Radius.pill, offset = if (hovered) 2.dp else 4.dp, blur = 10.dp)
+            .clip(RoundedCornerShape(Radius.pill))
             .hoverable(hover)
+            .focusable(interactionSource = hover)
             .pointerHoverIcon(PointerIcon.Hand)
-            .clickable { onClick() }
+            .clickable(interactionSource = hover, indication = null) { onClick() }
             .padding(horizontal = Space.m, vertical = Space.s),
     ) {
         Text(
             label,
-            color = if (primary) baki.onPrimary else baki.onSurface,
+            color = if (primary) baki.primary else baki.onSurface,
             style = BakiType.labelStrong,
         )
     }
@@ -660,23 +681,65 @@ private fun FundsBlock(store: Store, month: String) {
 internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, onDelete: (Entry) -> Unit) {
     val baki = LocalBaki.current
     var query by remember { mutableStateOf("") }
+    var selected by remember { mutableStateOf<String?>(null) }
+    val tableFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     val entries = store.entries
         .filter { it.date.startsWith(month) }
         .filter { e -> query.isBlank() || (e.cat + " " + e.note).contains(query, ignoreCase = true) }
         .sortedByDescending { it.date }
-    Column(Modifier.fillMaxSize().padding(horizontal = Gutter)) {
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { tableFocus.requestFocus() } }
+
+    fun move(delta: Int) {
+        if (entries.isEmpty()) return
+        val current = entries.indexOfFirst { it.id == selected }
+        val next = when {
+            current < 0 -> 0
+            else -> (current + delta).coerceIn(0, entries.lastIndex)
+        }
+        selected = entries[next].id
+    }
+
+    Column(
+        Modifier.fillMaxSize().padding(horizontal = Gutter)
+            .focusRequester(tableFocus).focusable()
+            .onPreviewKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (e.key) {
+                    Key.DirectionDown -> { move(1); true }
+                    Key.DirectionUp -> { move(-1); true }
+                    Key.Enter, Key.NumPadEnter -> {
+                        entries.firstOrNull { it.id == selected }?.let { onEdit(it); true } ?: false
+                    }
+                    Key.Delete, Key.Backspace -> {
+                        entries.firstOrNull { it.id == selected }?.let { onDelete(it); true } ?: false
+                    }
+                    Key.Escape -> { selected = null; true }
+                    else -> false
+                }
+            },
+    ) {
         Text(
             "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
             color = baki.muted, style = BakiType.label,
         )
         Spacer(Modifier.height(Space.m))
-        OutlinedTextField(
-            value = query, onValueChange = { query = it },
-            placeholder = { Text("Filter by category or note", color = baki.muted, style = BakiType.label) },
-            singleLine = true, modifier = Modifier.width(320.dp), colors = bakiFieldColorsPublic(),
-        )
+        NeuField(query, { query = it }, "Filter by category or note", Modifier.width(340.dp))
         Spacer(Modifier.height(Space.m))
-        EntriesTable(store, entries, onEdit = onEdit, onDelete = onDelete, compact = false)
+        if (entries.isEmpty()) {
+            EmptyState(
+                "Nothing this month",
+                if (query.isBlank()) "Entries you log will appear here, newest first."
+                else "No entry matches that filter.",
+            )
+        } else {
+        EntriesTable(store, entries, onEdit = onEdit, onDelete = onDelete, compact = false,
+            selectedId = selected, onSelect = { selected = it })
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "↑ ↓ select · Enter edit · Delete remove",
+            color = baki.muted, style = BakiType.caption,
+        )
+        }
     }
 }
 
@@ -688,6 +751,8 @@ private fun EntriesTable(
     onEdit: (Entry) -> Unit,
     onDelete: (Entry) -> Unit,
     compact: Boolean,
+    selectedId: String? = null,
+    onSelect: (String) -> Unit = {},
 ) {
     val baki = LocalBaki.current
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
@@ -715,10 +780,17 @@ private fun EntriesTable(
                 val hover = remember { MutableInteractionSource() }
                 val hovered by hover.collectIsHoveredAsState()
                 var menu by remember { mutableStateOf(false) }
+                val isSelected = entry.id == selectedId
                 Box {
                     Row(
                         Modifier.fillMaxWidth()
-                            .background(if (hovered) baki.container.copy(alpha = 0.55f) else Color.Transparent)
+                            .then(
+                                when {
+                                    isSelected -> Modifier.inset(neuOf(baki), corner = Radius.small)
+                                    hovered -> Modifier.background(baki.primary.copy(alpha = 0.055f))
+                                    else -> Modifier
+                                },
+                            )
                             .hoverable(hover)
                             .pointerHoverIcon(PointerIcon.Hand)
                             .pointerInput(entry.id) {
@@ -733,7 +805,23 @@ private fun EntriesTable(
                                     }
                                 }
                             }
-                            .clickable { onEdit(entry) }
+                            .clickable { onSelect(entry.id) }
+                            .pointerInput(entry.id) {
+                                // double-click opens the editor, the way a desktop list behaves
+                                var last = 0L
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val e = awaitPointerEvent()
+                                        if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press &&
+                                            e.buttons.isPrimaryPressed
+                                        ) {
+                                            val now = System.currentTimeMillis()
+                                            if (now - last < 350) onEdit(entry)
+                                            last = now
+                                        }
+                                    }
+                                }
+                            }
                             .padding(vertical = Space.m),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -764,9 +852,36 @@ private fun EntriesTable(
                         DropdownMenuItem(text = { Text("Delete", style = BakiType.label) }, onClick = { menu = false; onDelete(entry) })
                     }
                 }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(hairline))
             }
         }
+    }
+}
+
+@Composable
+private fun NeuField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+) {
+    val baki = LocalBaki.current
+    NeuInset(neu = neuOf(baki), modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label, color = baki.muted, style = BakiType.caption) },
+            singleLine = singleLine,
+            textStyle = BakiType.label.copy(color = baki.onSurface),
+            colors = androidx.compose.material3.TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = baki.primary,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.s),
+        )
     }
 }
 
@@ -807,6 +922,9 @@ internal fun ShiftsView(store: Store, month: String) {
             HeaderCell("RATE", Modifier.weight(1f))
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(hairline))
+        if (shifts.isEmpty()) {
+            EmptyState("No shifts this month", "Shifts appear here once you start one on the phone.")
+        }
         Column {
             shifts.forEach { s ->
                 val m = shiftMetrics(s, store.settings.profit)
@@ -826,7 +944,6 @@ internal fun ShiftsView(store: Store, month: String) {
                     Text("RM ${rm((m.net * 100).toLong())}", color = baki.onSurface, style = BakiType.labelNumeric, modifier = Modifier.width(120.dp))
                     Text("RM ${"%.2f".format(m.net / s.hours)}/h", color = baki.muted, style = BakiType.labelNumeric)
                 }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(hairline))
             }
         }
     }
@@ -889,16 +1006,8 @@ private fun DesktopEntryDialog(
         Text(if (existing == null) "New entry" else "Edit entry", color = baki.onSurface, style = BakiType.title)
         Spacer(Modifier.height(Space.m))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            OutlinedTextField(
-                value = date, onValueChange = { date = it }, label = { Text("Date", style = BakiType.label) },
-                singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic(),
-            )
-            OutlinedTextField(
-                value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                label = { Text("Amount (RM)", style = BakiType.label) },
-                singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic(),
-            )
+            NeuField(date, { date = it }, "Date", Modifier.weight(1f))
+            NeuField(amount, { amount = it.filter { c -> c.isDigit() || c == '.' } }, "Amount (RM)", Modifier.weight(1f))
         }
         Spacer(Modifier.height(Space.s))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
@@ -916,10 +1025,7 @@ private fun DesktopEntryDialog(
             }
         }
         Spacer(Modifier.height(Space.s))
-        OutlinedTextField(
-            value = note, onValueChange = { note = it }, label = { Text("Note", style = BakiType.label) },
-            singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
-        )
+        NeuField(note, { note = it }, "Note", Modifier.fillMaxWidth())
         Spacer(Modifier.height(Space.m))
         TextButton(if (existing == null) "Add entry" else "Save changes", primary = true) {
             if (cents > 0) onSave(date, cat, cents, note)
@@ -1065,21 +1171,13 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
             Text("VEHICLE & TARGET", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.height(Space.s))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                OutlinedTextField(fuel, { fuel = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("RM / litre", style = BakiType.label) }, singleLine = true,
-                    modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic())
-                OutlinedTextField(kml, { kml = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("km / litre", style = BakiType.label) }, singleLine = true,
-                    modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic())
+                NeuField(fuel, { fuel = it.filter { c -> c.isDigit() || c == '.' } }, "RM / litre", Modifier.weight(1f))
+                NeuField(kml, { kml = it.filter { c -> c.isDigit() || c == '.' } }, "km / litre", Modifier.weight(1f))
             }
             Spacer(Modifier.height(Space.s))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                OutlinedTextField(wear, { wear = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("wear RM / km", style = BakiType.label) }, singleLine = true,
-                    modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic())
-                OutlinedTextField(target, { target = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("target RM / hour", style = BakiType.label) }, singleLine = true,
-                    modifier = Modifier.weight(1f), colors = bakiFieldColorsPublic())
+                NeuField(wear, { wear = it.filter { c -> c.isDigit() || c == '.' } }, "wear RM / km", Modifier.weight(1f))
+                NeuField(target, { target = it.filter { c -> c.isDigit() || c == '.' } }, "target RM / hour", Modifier.weight(1f))
             }
             Spacer(Modifier.height(Space.l))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
