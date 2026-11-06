@@ -264,36 +264,53 @@ private fun HeaderIdentity(neu: Neu) {
 
 @Composable
 private fun MonthStepper(neu: Neu, month: String, onPrev: () -> Unit, onNext: () -> Unit) {
-    Tip("Previous month") {
-        NeuIconButton(neu, Modifier.size(32.dp), onClick = onPrev) {
-            Icon(
-                BakiIcons.ArrowRight, contentDescription = "Previous month",
-                tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
-            )
+    // one raised object: a flat chevron at each end and a recessed display in the middle
+    Row(
+        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.low)
+            .padding(horizontal = Space.xs, vertical = Space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Tip("Previous month") {
+            NeuIconButton(neu, Modifier.size(30.dp), onClick = onPrev) {
+                Icon(
+                    BakiIcons.ArrowRight, contentDescription = "Previous month",
+                    tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
+                )
+            }
         }
-    }
-    Text(
-        monthLabel(month), color = neu.ink, style = BakiType.subtitle,
-        modifier = Modifier.padding(horizontal = Space.s),
-    )
-    Tip("Next month") {
-        NeuIconButton(neu, Modifier.size(32.dp), onClick = onNext) {
-            Icon(
-                BakiIcons.ArrowRight, contentDescription = "Next month",
-                tint = neu.ink, modifier = Modifier.size(IconSize.inline),
-            )
+        Box(
+            Modifier.height(30.dp)
+                .inset(neu, corner = Radius.small, offset = 2.dp)
+                .padding(horizontal = Space.m),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(monthLabel(month), color = neu.ink, style = BakiType.labelNumeric)
+        }
+        Tip("Next month") {
+            NeuIconButton(neu, Modifier.size(30.dp), onClick = onNext) {
+                Icon(
+                    BakiIcons.ArrowRight, contentDescription = "Next month",
+                    tint = neu.ink, modifier = Modifier.size(IconSize.inline),
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun SyncBadge(neu: Neu, status: String) {
-    Box(
-        Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill))
-            .background(if (status == "synced") neu.accent else neu.danger),
-    )
-    Spacer(Modifier.width(Space.xs))
-    Text(status, color = neu.muted, style = BakiType.caption)
+    Row(
+        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.low)
+            .padding(horizontal = Space.m, vertical = Space.xs + 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill))
+                .background(if (status == "synced") neu.accent else neu.danger),
+        )
+        Spacer(Modifier.width(Space.s))
+        Text(status, color = neu.ink, style = BakiType.caption)
+    }
 }
 
 @Composable

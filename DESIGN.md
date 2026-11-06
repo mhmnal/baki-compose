@@ -267,8 +267,11 @@ Neumorphism is the *only* design language on the desktop. The rules that make it
    white makes neumorphism look like paper with smudges. Dark packs keep the palette hue.
 5. **One accent, filled.** The active nav segment, primary button, selected chips and the rail logo
    use the palette accent with `onAccent` text; everything else is ink on base.
-6. **Compact chrome.** There is no sidebar and no toolbar bar: one header row carries the wordmark,
-   month stepper, a segmented navigation control, sync state and the two actions.
+6. **Floating chrome (v0.15.2).** There is no bar at all — not even a header band. Every control is
+   its own object resting on the canvas: the month is a raised capsule with a recessed display, sync
+   state is a raised chip, the navigation is an inset track with a raised thumb, and every icon
+   button and action is raised. The wordmark is the only flat thing, because it is a brand, not a
+   control.
 7. **A veil, not a shade.** Modal scrims are a darkened canvas (`Neu.scrim`); the shade colour is
    lighter than the base in light packs and would not dim anything.
 8. **Labels above fields.** A placeholder label disappears the moment you type; the label sits on
