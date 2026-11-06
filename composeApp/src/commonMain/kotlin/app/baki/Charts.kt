@@ -35,22 +35,20 @@ fun WeekStrip(store: Store, endDay: String) {
     val today = todayIso()
 
     Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             days.forEachIndexed { i, d ->
                 val t = totals[i]
                 val up = t.net >= 0
                 val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = 8.dp),
+                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = Space.s),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         d.takeLast(2),
                         color = if (d == today) baki.primary else baki.muted,
-                        fontSize = 11.sp,
-                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
-                    )
-                    Spacer(Modifier.height(6.dp))
+                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
+                    Spacer(Modifier.height(Space.s))
                     Box(
                         Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh),
                         contentAlignment = Alignment.BottomCenter,
@@ -61,11 +59,10 @@ fun WeekStrip(store: Store, endDay: String) {
                                 .background(if (t.entryCount == 0 && t.shiftCount == 0) baki.surfaceHigh else if (up) baki.primary else baki.down),
                         )
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(Space.xs))
                     Text(
                         if (t.entryCount == 0 && t.shiftCount == 0) "–" else (t.net / 100).toInt().toString(),
-                        color = baki.muted, fontSize = 11.sp,
-                    )
+                        color = baki.muted, style = BakiType.caption )
                 }
             }
         }
@@ -81,8 +78,8 @@ fun TrendBars(store: Store, month: String) {
     val peak = days.maxOfOrNull { abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
     Column {
-        Text("TREND", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
+        Text("TREND", color = baki.muted, style = BakiType.captionStrong )
+        Spacer(Modifier.height(Space.s))
         Row(
             Modifier.fillMaxWidth().height(96.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -105,10 +102,10 @@ fun TrendBars(store: Store, month: String) {
                 }
             }
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Space.xs))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(days.first().first.takeLast(5), color = baki.muted, fontSize = 11.sp)
-            Text(days.last().first.takeLast(5), color = baki.muted, fontSize = 11.sp)
+            Text(days.first().first.takeLast(5), color = baki.muted, style = BakiType.caption )
+            Text(days.last().first.takeLast(5), color = baki.muted, style = BakiType.caption )
         }
     }
 }
@@ -123,12 +120,12 @@ fun HoursHeatmap(store: Store) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column {
-        Text("BEST HOURS", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
+        Text("BEST HOURS", color = baki.muted, style = BakiType.captionStrong )
+        Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(Space.l))
             listOf("00", "04", "08", "12", "16", "20").forEach {
-                Text(it, color = baki.muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
             }
         }
         Spacer(Modifier.height(3.dp))
@@ -138,7 +135,7 @@ fun HoursHeatmap(store: Store) {
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(days[d], color = baki.muted, fontSize = 11.sp, modifier = Modifier.width(14.dp))
+                Text(days[d], color = baki.muted, modifier = Modifier.width(14.dp), style = BakiType.caption )
                 for (b in 0..5) {
                     val cell = blocks.firstOrNull { it.day == d && it.block == b }
                     val rate = cell?.rate ?: 0.0
@@ -151,16 +148,15 @@ fun HoursHeatmap(store: Store) {
                 }
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.s))
         bestHourBlock(store)?.let { best ->
             val start = "%02d:00".format(best.block * 4)
             val end = "%02d:00".format((best.block + 1) * 4)
             Text(
                 "best: ${listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")[best.day]} $start–$end · RM ${"%.0f".format(best.rate)}/hr over ${"%.1f".format(best.hours)}h",
-                color = baki.up, fontSize = 11.sp,
-            )
+                color = baki.up, style = BakiType.caption )
         }
-        Text("darker = better rate · empty = not driven", color = baki.muted, fontSize = 11.sp)
+        Text("darker = better rate · empty = not driven", color = baki.muted, style = BakiType.caption )
     }
 }
 

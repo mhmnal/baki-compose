@@ -110,7 +110,7 @@ fun BakiSheet(
                                     },
                                 )
                             }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Space.m),
                         contentAlignment = Alignment.Center,
                     ) {
                         Box(
@@ -124,15 +124,15 @@ fun BakiSheet(
                             .fillMaxWidth()
                             .weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                            .padding(horizontal = Space.ml),
+                        verticalArrangement = Arrangement.spacedBy(Space.m),
                     ) {
                         content()
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Space.s))
                     }
                     // pinned: a long list can never push the primary action off-screen
                     if (footer != null) {
-                        Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 26.dp, top = 6.dp)) {
+                        Box(Modifier.fillMaxWidth().padding(horizontal = Space.ml).padding(bottom = 26.dp, top = 6.dp)) {
                             footer()
                         }
                     } else {

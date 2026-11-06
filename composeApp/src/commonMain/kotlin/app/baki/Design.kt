@@ -1,5 +1,14 @@
 package app.baki
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.Color
@@ -27,6 +36,8 @@ object Space {
     val s = 8.dp
     val m = 12.dp
     val l = 16.dp
+    /** the 20 dp step the dialogs and cards already use */
+    val ml = 20.dp
     val xl = 24.dp
     val xxl = 32.dp
 }
@@ -47,6 +58,20 @@ object Radius {
 }
 
 /** Overlay opacities, named by intent so they stop being magic numbers. */
+/** The only four icon sizes: inline with text, leading a row, in the nav bar, and a hero glyph. */
+object IconSize {
+    val inline = 16.dp
+    val row = 20.dp
+    val bar = 24.dp
+    val hero = 40.dp
+}
+
+/** Control heights: one for primary actions, one for anything that must still clear 44 dp. */
+object Control {
+    val primary = 48.dp
+    val secondary = 44.dp
+}
+
 object Veil {
     const val hairline = 0.12f
     const val dim = 0.22f
@@ -81,6 +106,13 @@ object BakiType {
     /** all-caps section header */
     var section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     var micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    /** small print that still needs to shout: 11 sp, bold, no tracking */
+    var captionStrong = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+    /** compact rows and dense secondary copy */
+    var bodySmall = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal)
+    var bodySmallStrong = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
+    /** map attribution and other legal small print */
+    var nano = TextStyle(fontSize = 9.sp, lineHeight = 12.sp, fontWeight = FontWeight.Normal)
 
     /**
      * Numeric variants carry tabular figures, so money keeps its width as digits change and
@@ -94,6 +126,7 @@ object BakiType {
     var bodyNumeric = body.copy(fontFeatureSettings = TNUM)
     var labelNumeric = labelStrong.copy(fontFeatureSettings = TNUM)
     var captionNumeric = caption.copy(fontFeatureSettings = TNUM)
+    var bodySmallNumeric = bodySmall.copy(fontFeatureSettings = TNUM)
     private var family: FontFamily? = null
 
     /** Applied once at startup, before any text is composed. */
@@ -112,6 +145,10 @@ object BakiType {
         caption = caption.copy(fontFamily = f)
         section = section.copy(fontFamily = f)
         micro = micro.copy(fontFamily = f)
+        captionStrong = captionStrong.copy(fontFamily = f)
+        bodySmall = bodySmall.copy(fontFamily = f)
+        bodySmallStrong = bodySmallStrong.copy(fontFamily = f)
+        nano = nano.copy(fontFamily = f)
         displayNumeric = displayNumeric.copy(fontFamily = f)
         displaySmallNumeric = displaySmallNumeric.copy(fontFamily = f)
         headlineNumeric = headlineNumeric.copy(fontFamily = f)
@@ -120,6 +157,7 @@ object BakiType {
         bodyNumeric = bodyNumeric.copy(fontFamily = f)
         labelNumeric = labelNumeric.copy(fontFamily = f)
         captionNumeric = captionNumeric.copy(fontFamily = f)
+        bodySmallNumeric = bodySmallNumeric.copy(fontFamily = f)
     }
 }
 
@@ -155,4 +193,20 @@ data class BakiSemantic(val income: Color, val expense: Color, val warn: Color)
 fun bakiFontFamily(): FontFamily {
     val normal = Font(Res.font.inter_variable, FontWeight.Normal)
     return remember { FontFamily(normal) }
+}
+
+/**
+ * The one empty state: a short line, optionally a hint. Same voice everywhere, no trailing "."
+ * on the title, a real sentence in the hint.
+ */
+@Composable
+fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifier) {
+    val baki = LocalBaki.current
+    Column(modifier.fillMaxWidth().padding(vertical = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, color = baki.onSurface, style = BakiType.bodyStrong, textAlign = TextAlign.Center)
+        if (hint != null) {
+            Spacer(Modifier.height(Space.xs))
+            Text(hint, color = baki.muted, style = BakiType.label, textAlign = TextAlign.Center)
+        }
+    }
 }

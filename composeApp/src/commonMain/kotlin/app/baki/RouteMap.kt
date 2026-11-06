@@ -133,7 +133,7 @@ fun RouteMap(
             if (showAttribution) {
                 val layout = measurer.measure(
                     AnnotatedString("© OpenStreetMap"),
-                    TextStyle(color = baki.muted, fontSize = 8.sp),
+                    BakiType.nano.copy(color = baki.muted),
                 )
                 val pad = 6.dp.toPx()
                 drawRect(
@@ -160,7 +160,7 @@ private fun DrawScope.drawEndpoint(
     drawCircle(color, radius = 6.dp.toPx(), center = center)
     val layout = measurer.measure(
         AnnotatedString(label),
-        TextStyle(color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold),
+        BakiType.nano.copy(color = Color.White, fontWeight = FontWeight.Bold),
     )
     drawText(
         layout,
@@ -189,7 +189,7 @@ fun DayMapCard(
             .then(if (onOpen != null) Modifier.clickable { onOpen() } else Modifier),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -214,7 +214,7 @@ fun DayMapCard(
             modifier = Modifier.fillMaxWidth().height(168.dp),
             showAttribution = true,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Space.m))
     }
 }
 
@@ -225,7 +225,7 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
     val km = routes.sumOf { routeMetres(it.route.points) } / 1000.0
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
-            Modifier.fillMaxSize().background(baki.surface).padding(16.dp),
+            Modifier.fillMaxSize().background(baki.surface).padding(Space.l),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize()) {
@@ -240,18 +240,18 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
                     Text(
                         "Close", color = baki.primary, style = BakiType.labelStrong,
                         modifier = Modifier.clip(RoundedCornerShape(Radius.pill)).clickable { onDismiss() }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = Space.m, vertical = 8.dp),
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.m))
                 RouteMap(routes = routes, modifier = Modifier.fillMaxWidth().weight(1f))
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.m))
                 // legend: which colour is which shift
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     routes.forEach { mapRoute ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(mapRoute.color))
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(Space.s))
                             Text(mapRoute.label, color = baki.muted, style = BakiType.caption)
                             Spacer(Modifier.weight(1f))
                             Text(

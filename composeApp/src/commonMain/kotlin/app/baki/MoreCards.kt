@@ -20,19 +20,18 @@ fun StatementCard(store: Store) {
     val baki = LocalBaki.current
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
     ) {
-        Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(6.dp))
-        Text("RM ${"%.2f".format(st.income)} gross", color = baki.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, style = BakiType.captionStrong )
+        Spacer(Modifier.height(Space.s))
+        Text("RM ${"%.2f".format(st.income)} gross", color = baki.onSurface, style = BakiType.title )
         Text(
             "${st.insuranceCount} insurance charge(s) · RM ${"%.2f".format(st.deductions)} deducted",
-            color = baki.muted, fontSize = 11.sp,
-        )
+            color = baki.muted, style = BakiType.caption )
         if (st.rangeText.isNotEmpty()) {
-            Text(st.rangeText, color = baki.muted, fontSize = 11.sp)
+            Text(st.rangeText, color = baki.muted, style = BakiType.caption )
         }
-        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, fontSize = 11.sp)
+        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, style = BakiType.caption )
     }
 }
 
@@ -48,39 +47,37 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         repo.store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
     }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Spending categories", color = baki.onSurface, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("${cats.size} categories · tap × to remove", color = baki.muted, fontSize = 11.sp)
+                Text("Spending categories", color = baki.onSurface, style = BakiType.bodyStrong )
+                Text("${cats.size} categories · tap × to remove", color = baki.muted, style = BakiType.caption )
             }
             TextButton(enabled = editable, onClick = { adding = true }) {
                 Text("Add", color = if (editable) baki.primary else baki.muted, fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.s))
         cats.forEach { c ->
             val used = usage[c.id] ?: 0
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(c.name, color = baki.onSurface, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Text(if (used > 0) "$used" else "", color = baki.muted, fontSize = 11.sp)
-                Spacer(Modifier.width(8.dp))
+                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                Spacer(Modifier.width(Space.s))
+                Text(c.name, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label )
+                Text(if (used > 0) "$used" else "", color = baki.muted, style = BakiType.caption )
+                Spacer(Modifier.width(Space.s))
                 Text(
                     "×",
                     color = if (used > 0 || !editable) baki.muted.copy(alpha = 0.35f) else baki.down,
-                    fontSize = 16.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(Radius.pill))
                         .clickable(enabled = used == 0 && editable) {
                             scope.launch { repo.removeCategory(c.id) }
                         }
-                        .padding(horizontal = 10.dp),
-                )
+                        .padding(horizontal = Space.m), style = BakiType.bodyStrong )
             }
         }
     }

@@ -22,16 +22,16 @@ fun CalendarHeat(store: Store, month: String) {
     val today = todayIso()
 
     Column {
-        Text("CALENDAR", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("CALENDAR", color = baki.muted, style = BakiType.captionStrong )
+        Spacer(Modifier.height(Space.s))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach {
-                Text(it, color = baki.muted, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
             }
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Space.xs))
         cells.chunked(7).forEach { week ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                 week.forEach { iso ->
                     Box(Modifier.weight(1f).aspectRatio(1f)) {
                         if (iso != null) DayCell(iso, store, today, baki)
@@ -39,7 +39,7 @@ fun CalendarHeat(store: Store, month: String) {
                 }
                 repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Space.xs))
         }
     }
 }
@@ -72,8 +72,6 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette)
         Text(
             iso.takeLast(2),
             color = if (future) baki.muted.copy(alpha = 0.4f) else if (positive && magnitude >= 2) baki.onPrimary else baki.onSurface,
-            fontSize = 11.sp,
-            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-        )
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
     }
 }

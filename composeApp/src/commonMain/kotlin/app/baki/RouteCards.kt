@@ -88,7 +88,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
             .background(baki.container),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -111,7 +111,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
                 modifier = Modifier
                     .clip(RoundedCornerShape(Radius.pill))
                     .clickable { expanded = true }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = Space.m, vertical = 6.dp),
             )
         }
         RouteMap(

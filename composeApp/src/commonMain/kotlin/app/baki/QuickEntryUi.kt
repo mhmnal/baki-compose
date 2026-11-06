@@ -55,15 +55,15 @@ fun QuickEntryBar(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.pill))
             .background(baki.surfaceHigh)
-            .padding(start = 16.dp, end = 6.dp),
+            .padding(start = Space.l, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text("toll 4.20 parking 2", color = baki.muted, fontSize = 13.sp) },
+            placeholder = { Text("toll 4.20 parking 2", color = baki.muted, style = BakiType.body ) },
             singleLine = true,
-            textStyle = BakiType.body.copy(fontSize = 14.sp),
+            textStyle = BakiType.bodySmall,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
@@ -87,7 +87,7 @@ fun QuickEntryBar(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
             Icon(
                 BakiIcons.ArrowRight, contentDescription = "Add",
                 tint = if (text.isBlank()) baki.muted else baki.onPrimary,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(IconSize.inline),
             )
         }
     }
@@ -121,7 +121,7 @@ fun QuickEntrySheet(
             value = text,
             onValueChange = { text = it; removed = emptySet(); assigned = emptyMap() },
             singleLine = true,
-            textStyle = BakiType.body.copy(fontSize = 14.sp),
+            textStyle = BakiType.bodySmall,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = baki.surfaceHigh,
                 unfocusedContainerColor = baki.surfaceHigh,
@@ -134,12 +134,12 @@ fun QuickEntrySheet(
         if (parse.date != today) {
             Text(dateLabel(parse.date), color = baki.muted, style = BakiType.caption)
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Space.xs))
 
         kept.forEach { entry ->
             val index = parse.entries.indexOf(entry)
             Row(
-                Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                Modifier.fillMaxWidth().heightIn(min = Control.secondary),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -157,11 +157,11 @@ fun QuickEntrySheet(
 
         parse.loose.forEachIndexed { i, cents ->
             if (assigned[i] == null) {
-                Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
                     Text("RM ${rm(cents)} — which category?", color = baki.warn, style = BakiType.caption)
                     Row(
-                        Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        Modifier.fillMaxWidth().padding(top = Space.xs),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
                     ) {
                         cats.take(4).forEach { c ->
                             Text(
@@ -170,7 +170,7 @@ fun QuickEntrySheet(
                                     .clip(RoundedCornerShape(Radius.pill))
                                     .background(baki.container)
                                     .clickable { assigned = assigned + (i to c.name) }
-                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    .padding(horizontal = Space.m, vertical = 6.dp),
                             )
                         }
                     }

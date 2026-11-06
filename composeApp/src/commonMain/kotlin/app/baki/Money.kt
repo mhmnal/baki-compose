@@ -1,27 +1,18 @@
 package app.baki
 
-import kotlin.math.roundToLong
-
-import androidx.compose.ui.text.TextStyle
-
-import androidx.compose.ui.graphics.Color
-
-import androidx.compose.ui.Modifier
-
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-
-import androidx.compose.runtime.Composable
-
-import androidx.compose.material3.Text
-
-import androidx.compose.animation.core.spring
-
-import androidx.compose.animation.core.animateIntAsState
-
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import kotlin.math.roundToLong
 
 /** Fuel and wear per km, resolved against the shift's own km/L when it has one. */
 data class CostRates(val fuel: Double, val wear: Double, val kmPerLitre: Double) {

@@ -174,3 +174,18 @@ Two RemoteViews widgets, both drawn in the sage palette rather than Monet (the c
 - **Providers must attach the store themselves** — a widget can be updated in a fresh process with no
   Activity, where `LocalStore` is otherwise uninitialised and every read returns empty.
 - Idle state shows a headline ("Start a shift") rather than a stopped clock at 00:00.
+
+## Consistency rules
+
+Enforced by `DesignTokensTest`, which fails the build when a literal slips in.
+
+| Rule | Use | Never |
+|---|---|---|
+| Type | `BakiType.*` (display 57 · displaySmall 45 · headline 28 · title 22 · body 16 · bodySmall 14 · label 12 · caption/section 11 · nano 9, plus `*Numeric` for figures) | raw `fontSize = N.sp` |
+| Spacing | `Space.xxs/xs/s/m/l/ml/xl/xxl` (2/4/8/12/16/20/24/32) | raw dp in `padding`, `Spacer`, `spacedBy` |
+| Radii | `Radius.*` | raw `RoundedCornerShape(N.dp)` |
+| Icon size | `IconSize.inline/row/bar/hero` (16/20/24/40) | ad-hoc `size()` |
+| Control height | `Control.primary/secondary` (48/44) | 50 or 46 |
+| Money | `EasedMoney` for heroes (animates) · `rm()` inside sentences and rows (never animates) | `%.2f` for an amount |
+| Labels | Section headers and hero captions ALL-CAPS via `BakiType.section`; everything else sentence case | mixed casing |
+| Empty states | `EmptyState(title, hint)` — title without a full stop, hint a sentence | bespoke copy |

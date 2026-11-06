@@ -82,7 +82,7 @@ fun PayoutsSheet(
             },
             color = baki.muted, style = BakiType.captionNumeric,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.s))
 
         payouts.forEachIndexed { index, payout ->
             val dismiss = rememberSwipeToDismissBoxState()
@@ -95,7 +95,7 @@ fun PayoutsSheet(
                         Modifier.fillMaxSize()
                             .clip(RoundedCornerShape(Radius.card))
                             .background(baki.down.copy(alpha = 0.22f))
-                            .padding(horizontal = 20.dp),
+                            .padding(horizontal = Space.ml),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End,
                     ) {
@@ -109,7 +109,7 @@ fun PayoutsSheet(
                         .clip(RoundedCornerShape(Radius.card))
                         .background(baki.surfaceHigh)
                         .clickable(enabled = editable) { editing = index }
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .padding(horizontal = Space.l, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -117,11 +117,11 @@ fun PayoutsSheet(
                         color = baki.muted,
                         style = BakiType.captionNumeric,
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(Space.m))
                     Text(
                         "RM ${rm(payout.c)}",
                         color = baki.onSurface,
-                        style = BakiType.labelNumeric.copy(fontSize = 15.sp),
+                        style = BakiType.bodySmallNumeric,
                         modifier = Modifier.weight(1f),
                     )
                     if (editable) {
