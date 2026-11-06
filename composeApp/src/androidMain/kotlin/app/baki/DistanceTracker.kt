@@ -154,10 +154,17 @@ object DistanceTracker {
         val seconds = (loc.time - prev.time) / 1000.0
         if (seconds > 0 && step / seconds > MAX_SPEED_MPS) { rejectedCount++; return }   // a jump, not travel
 
-        if (step >= MIN_MOVE_M) {
-            metres += step
-            last = loc
-        }
+        // Count travel with the speed-assisted rule, and always move the anchor forward: a stale
+        // anchor turned slow traffic into nothing and made the next jump double-counted.
+        val travelled = travelMetres(
+            stepMeters = step.toDouble(),
+            seconds = seconds,
+            accuracyMeters = loc.accuracy.toDouble(),
+            speedMps = loc.speed.toDouble(),
+            hasSpeed = loc.hasSpeed(),
+        )
+        metres += travelled
+        last = loc
 
         // Coalesce disk writes: each one is a JSON encode + AES-GCM encrypt + file write.
         // 25 m of travel or 3 s, whichever comes first, is plenty for a live display.

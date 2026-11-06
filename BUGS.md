@@ -4,6 +4,11 @@ Kept here so nothing is lost between sessions. Ordered by what actually costs mo
 
 ## Fixed
 
+- **Tracked km under-counted in slow traffic** (v0.6.3). A fixed 3 m step gate ignored the fix's
+  Doppler speed and left the anchor stale, so stop-go driving lost real distance (reported: 50 km
+  tracked vs 75 km on the odometer). Travel is now speed-assisted with an accuracy-scaled noise floor
+  (`travelMetres`, 7 tests).
+
 - **In-progress route deleted on every app launch** (v0.6.2). `Repo.start()` swept orphaned paths
   using only the stored shifts, so opening the app during a shift purged the path being recorded and
   the day's map appeared to restart after a stop. The sweep now keeps the live shift's key.
