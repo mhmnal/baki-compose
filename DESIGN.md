@@ -131,3 +131,17 @@ Backdrop's AGSL lens renders on the same device at full quality (`DeviceTier` = 
 
 Content is captured once with `Modifier.layerBackdrop(backdrop)`; each glass surface samples it.
 `GlassTier` still decides: tier 0 falls back to a plain Material surface.
+
+
+## Routes
+
+Each completed shift can carry its recorded GPS path. Paths live in their own encrypted file
+(`routes.json`) and are **never synced** — a movement history is the most sensitive thing the app
+holds, and it would bloat every upload.
+
+- Captured by `DistanceTracker` at the same 2 s cadence as the distance maths (the phone charges in
+  the car), buffered and written in batches of 20 points / 30 s.
+- Simplified on shift end (Douglas–Peucker, 4 m) so a three-hour shift stays a few dozen KB.
+- Retention: 90 days, swept on app start and on every finalise.
+- Drawn read-only from OpenStreetMap raster tiles on a Compose Canvas (`RouteMap`): no gestures, no
+  pan/zoom, auto-fit to the day's bounds, A/B markers per shift, own colour per shift.

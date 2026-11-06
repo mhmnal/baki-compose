@@ -13,6 +13,8 @@ data class LivePause(val from: Long, val to: Long? = null)
 
 @Serializable
 data class LiveShift(
+    /** route key for this shift; also what the recorded path is filed under */
+    val id: String = "",
     val start: Long,
     val payouts: List<Payout> = emptyList(),
     val note: String = "",

@@ -14,6 +14,10 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -46,6 +50,25 @@ object DistanceTracker {
     private var fixCount: Int = 0
     private var rejectedCount: Int = 0
     private var lastFixAt: Long = 0
+
+    // ---- route capture -------------------------------------------------------
+    // Points are buffered and written in batches: each write is a JSON encode + AES-GCM + fsync,
+    // so writing per fix would be pathological for the battery.
+    private val routeBuffer = ArrayList<RoutePoint>(64)
+    private var lastFlushAt = 0L
+    private val writeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private const val BATCH_POINTS = 20
+    private const val BATCH_MS = 30_000L
+
+    /** Fixes recorded since the last flush, for the shift that is ending. */
+    fun drainBuffer(): List<RoutePoint> = synchronized(routeBuffer) {
+        if (routeBuffer.isEmpty()) return emptyList()
+        val copy = routeBuffer.toList()
+        routeBuffer.clear()
+        copy
+    }
+
     private var providerName: String = "—"
     private var lastPersistedKm: Double = -1.0
 
@@ -139,6 +162,29 @@ object DistanceTracker {
         // Coalesce disk writes: each one is a JSON encode + AES-GCM encrypt + file write.
         // 25 m of travel or 3 s, whichever comes first, is plenty for a live display.
         val live = loadLive() ?: return
+
+        // capture the path for this shift (2 s cadence is a deliberate choice: the phone is charging)
+        if (live.id.isNotBlank()) {
+            synchronized(routeBuffer) {
+                routeBuffer.add(
+                    RoutePoint(
+                        lat = loc.latitude,
+                        lon = loc.longitude,
+                        t = loc.time,
+                        speed = loc.speed.toDouble(),
+                    ),
+                )
+            }
+            val nowMs = System.currentTimeMillis()
+            if (routeBuffer.size >= BATCH_POINTS || nowMs - lastFlushAt >= BATCH_MS) {
+                lastFlushAt = nowMs
+                val batch = drainBuffer()
+                if (batch.isNotEmpty()) {
+                    writeScope.launch { RouteStore.append(live.id, startDate(live.start), batch) }
+                }
+            }
+        }
+
         val km = metres / 1000.0
         val now = System.currentTimeMillis()
         val farEnough = abs(km - lastPersistedKm) >= 0.025
