@@ -206,3 +206,11 @@ The laptop is not a big phone. `DesktopRoot` replaces the touch UI when `Caps.is
   dependency.
 - Phone-only affordances are absent by capability, not by accident: `Caps` reports no GPS, no routes,
   no widgets and no share sheet, so the desktop never renders them.
+
+### Desktop glass needs Java 21
+
+Kyant's Backdrop ships Java 21 bytecode, so the desktop app must run on 21+ (the phone is unaffected:
+it compiles to dex). `createDistributable` bundles the runtime it was built with, so the installed app
+needs nothing on the machine; only `./gradlew :composeApp:run` needs `JAVA_HOME` pointing at a 21 JDK.
+The floating command bar is the single glass surface: M3 for everything else, refraction where the
+phone keeps its nav bar.

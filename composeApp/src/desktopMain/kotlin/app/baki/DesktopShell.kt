@@ -1,7 +1,10 @@
 package app.baki
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -38,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -88,8 +101,34 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
         PlatformEffects.printStatement(statementHtml(repo.store, month))
     }
 
-    Box(Modifier.fillMaxSize().background(LocalBaki.current.surface)) {
-        Row(Modifier.fillMaxSize()) {
+    val baki = LocalBaki.current
+    val backdrop = rememberLayerBackdrop()
+    // the window owns a few shortcuts: month, filter, new entry, dismiss
+    val rootFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        runCatching { rootFocus.requestFocus() }
+    }
+    var statement by remember { mutableStateOf(false) }
+
+    Box(
+        Modifier.fillMaxSize().background(baki.surface)
+            .focusRequester(rootFocus)
+            .focusable()
+            .onPreviewKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when {
+                    e.isCtrlPressed && e.key == Key.DirectionLeft -> { month = shiftMonth(month, -1); true }
+                    e.isCtrlPressed && e.key == Key.DirectionRight -> { month = shiftMonth(month, 1); true }
+                    e.isCtrlPressed && e.key == Key.F -> { tab = 1; true }
+                    e.isCtrlPressed && e.key == Key.N -> { adding = true; true }
+                    e.key == Key.Escape -> {
+                        statement = false; adding = false; editing = null; deleting = null; true
+                    }
+                    else -> false
+                }
+            },
+    ) {
+        Row(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
             NavRail(
                 selected = tab,
                 onSelect = { tab = it },
@@ -111,6 +150,29 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 }
             }
         }
+
+        // the one liquid-glass moment on the desktop: a floating command bar over the content,
+        // exactly where the phone's glass nav bar lives
+        GlassSurface(
+            backdrop = backdrop,
+            shape = RoundedCornerShape(Radius.pill),
+            tier = DeviceTier.level,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Space.xl),
+        ) {
+            Row(
+                Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GlassAction("New entry", primary = true) { adding = true }
+                GlassAction("Statement") { statement = true }
+                GlassAction("Year") { tab = 3 }
+            }
+        }
+    }
+
+    if (statement) {
+        StatementPreview(store, month, onDismiss = { statement = false })
     }
 
     if (adding) {
@@ -143,6 +205,27 @@ object DesktopActions {
 }
 
 @Composable
+private fun GlassAction(label: String, primary: Boolean = false, onClick: () -> Unit) {
+    val baki = LocalBaki.current
+    val hover = remember { MutableInteractionSource() }
+    val hovered by hover.collectIsHoveredAsState()
+    Box(
+        Modifier.clip(RoundedCornerShape(Radius.pill))
+            .background(if (primary) baki.primary else if (hovered) baki.onSurface.copy(alpha = 0.06f) else Color.Transparent)
+            .hoverable(hover)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable { onClick() }
+            .padding(horizontal = Space.m, vertical = Space.s),
+    ) {
+        Text(
+            label,
+            color = if (primary) baki.onPrimary else baki.onSurface,
+            style = BakiType.labelStrong,
+        )
+    }
+}
+
+@Composable
 private fun NavRail(selected: Int, onSelect: (Int) -> Unit) {
     val baki = LocalBaki.current
     val items = listOf(
@@ -157,7 +240,8 @@ private fun NavRail(selected: Int, onSelect: (Int) -> Unit) {
             .padding(top = Space.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("B", color = baki.primary, style = BakiType.headline, modifier = Modifier.padding(bottom = Space.xl))
+        Text("Baki", color = baki.onSurface, style = BakiType.title, modifier = Modifier.padding(bottom = Space.xxs))
+        Text(APP_VERSION, color = baki.muted, style = BakiType.captionNumeric, modifier = Modifier.padding(bottom = Space.xl))
         items.forEachIndexed { i, (label, icon) ->
             val on = selected == i
             val hover = remember { MutableInteractionSource() }
@@ -279,9 +363,9 @@ private fun Overview(
                 }
             }
             Spacer(Modifier.height(Space.xl))
-            WeekStrip(repo.store, month)
+            WeekChart(repo.store, month)
             Spacer(Modifier.height(Space.xl))
-            TrendBars(repo.store, month)
+            MonthTrend(repo.store, month)
             Spacer(Modifier.height(Space.xl))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("RECENT", color = baki.muted, style = BakiType.section)
@@ -367,6 +451,83 @@ private fun WeekStrip(store: Store, month: String) {
         }
     }
 }
+
+@Composable
+private fun WeekChart(store: Store, month: String) {
+    val baki = LocalBaki.current
+    val today = todayIso()
+    val days = (6 downTo 0).map { back -> addDays(today, -back) to dayTotals(store, addDays(today, -back)) }
+    val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
+    Column {
+        Text("LAST 7 DAYS", color = baki.muted, style = BakiType.section)
+        Spacer(Modifier.height(Space.s))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m), verticalAlignment = Alignment.Bottom) {
+            days.forEach { (iso, t) ->
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
+                        color = if (t.net >= 0) baki.muted else baki.down,
+                        style = BakiType.captionNumeric,
+                    )
+                    Spacer(Modifier.height(Space.xs))
+                    Box(Modifier.fillMaxWidth().height(86.dp), contentAlignment = Alignment.BottomCenter) {
+                        val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
+                        Box(
+                            Modifier.fillMaxWidth(0.62f).height((86 * frac).dp)
+                                .clip(RoundedCornerShape(topStart = Radius.tiny, topEnd = Radius.tiny))
+                                .background(if (t.net >= 0) baki.primary else baki.down),
+                        )
+                    }
+                    Spacer(Modifier.height(Space.xs))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(hairline))
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        weekdayShort(iso), color = baki.muted, style = BakiType.caption,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthTrend(store: Store, month: String) {
+    val baki = LocalBaki.current
+    val days = monthDays(store, month)
+    if (days.isEmpty()) return
+    val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
+    Column {
+        Text("TREND", color = baki.muted, style = BakiType.section)
+        Spacer(Modifier.height(Space.s))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xxs), verticalAlignment = Alignment.Bottom) {
+            days.forEach { (iso, t) ->
+                Box(
+                    Modifier.weight(1f).height(120.dp),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.02f, 1f)
+                    Box(
+                        Modifier.fillMaxWidth().height((120 * frac).dp)
+                            .clip(RoundedCornerShape(topStart = Radius.tiny, topEnd = Radius.tiny))
+                            .background(if (t.net >= 0) baki.primary.copy(alpha = 0.8f) else baki.down.copy(alpha = 0.85f)),
+                    )
+                }
+            }
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(hairline))
+        Spacer(Modifier.height(Space.xs))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(days.first().first.takeLast(5), color = baki.muted, style = BakiType.captionNumeric)
+            Text("peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}", color = baki.muted, style = BakiType.captionNumeric)
+            Text(days.last().first.takeLast(5), color = baki.muted, style = BakiType.captionNumeric)
+        }
+    }
+}
+
+private fun weekdayShort(iso: String): String =
+    listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")[
+        (kotlinx.datetime.LocalDate.parse(iso).dayOfWeek.ordinal).coerceIn(0, 6),
+    ]
 
 @Composable
 private fun CategoriesBlock(store: Store, month: String) {
@@ -708,6 +869,83 @@ private fun DesktopEntryDialog(
         Spacer(Modifier.height(Space.m))
         TextButton(if (existing == null) "Add entry" else "Save changes", primary = true) {
             if (cents > 0) onSave(date, cat, cents, note)
+        }
+    }
+}
+
+/** The statement, in the app, as paper. The browser hand-off stays for a real PDF. */
+@Composable
+private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit) {
+    val baki = LocalBaki.current
+    val paper = Color(0xFFFBF7EF)
+    val ink = Color(0xFF1B2417)
+    val soft = Color(0xFF5C6657)
+    val t = monthTotals(store, month)
+    val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedBy { it.date }
+    val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
+
+    Box(
+        Modifier.fillMaxSize().background(baki.onSurface.copy(alpha = 0.35f))
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.width(760.dp).heightIn(max = 840.dp)
+                .clip(RoundedCornerShape(Radius.card))
+                .background(paper)
+                .clickable(enabled = false) {}
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 56.dp, vertical = 44.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Baki · statement", color = ink, style = BakiType.title)
+                    Text(monthLabel(month), color = soft, style = BakiType.label)
+                }
+                TextButton("Open in browser") { PlatformEffects.printStatement(statementHtml(store, month)) }
+                Spacer(Modifier.width(Space.s))
+                TextButton("Close") { onDismiss() }
+            }
+            Spacer(Modifier.height(Space.l))
+            Text("NET", color = soft, style = BakiType.section)
+            Text("RM ${rm(t.net)}", color = ink, style = BakiType.displayNumeric)
+            Text(
+                "${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
+                color = soft, style = BakiType.labelNumeric,
+            )
+            Spacer(Modifier.height(Space.l))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.15f)))
+            Spacer(Modifier.height(Space.m))
+            Text("SHIFTS", color = soft, style = BakiType.section)
+            Spacer(Modifier.height(Space.s))
+            shifts.forEach { sh ->
+                val m = shiftMetrics(sh, store.settings.profit)
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
+                    Text("${sh.date} ${sh.start}", color = ink, style = BakiType.labelNumeric, modifier = Modifier.width(150.dp))
+                    Text("${"%.1f".format(sh.hours)} h", color = soft, style = BakiType.labelNumeric, modifier = Modifier.width(70.dp))
+                    Text("${"%.1f".format(sh.km)} km", color = soft, style = BakiType.labelNumeric, modifier = Modifier.width(90.dp))
+                    Spacer(Modifier.weight(1f))
+                    Text("RM ${rm((m.net * 100).toLong())}", color = ink, style = BakiType.labelNumeric)
+                }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.08f)))
+            }
+            Spacer(Modifier.height(Space.m))
+            Text("ENTRIES", color = soft, style = BakiType.section)
+            Spacer(Modifier.height(Space.s))
+            entries.forEach { e ->
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
+                    Text(e.date, color = soft, style = BakiType.labelNumeric, modifier = Modifier.width(110.dp))
+                    Text(e.cat, color = ink, style = BakiType.label, modifier = Modifier.width(140.dp))
+                    Text(e.note.ifBlank { "—" }, color = soft, style = BakiType.label, modifier = Modifier.weight(1f))
+                    Text(
+                        (if (e.type == "income") "+" else "−") + "RM ${rm(e.amount)}",
+                        color = ink, style = BakiType.labelNumeric,
+                    )
+                }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.08f)))
+            }
+            Spacer(Modifier.height(Space.l))
+            Text("Generated ${todayIso()} · figures in Malaysian ringgit.", color = soft, style = BakiType.caption)
         }
     }
 }
