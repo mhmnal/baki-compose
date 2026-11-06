@@ -57,6 +57,7 @@ fun TodayScreen(
     onDay: (String) -> Unit,
     onPayout: () -> Unit,
     onPayouts: () -> Unit,
+    onQuickAdd: (String, Long) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onPreset: (String) -> Unit,
@@ -74,13 +75,8 @@ fun TodayScreen(
     val live = repo.live
     val shift = shifts.maxByOrNull { it.updated }
     val scope = rememberCoroutineScope()
+    val quick = remember(store) { quickAdds(store) }
 
-    // the hero number eases to its new value instead of snapping
-    val shownNet by animateIntAsState(
-        targetValue = t.net.toInt(),
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
-        label = "net",
-    )
 
     PullToRefreshBox(
         isRefreshing = repo.status == "syncing",
@@ -102,7 +98,11 @@ fun TodayScreen(
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("RM", color = baki.muted, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp, end = 6.dp))
-                    Text(rm(shownNet.toLong()), color = baki.onSurface, style = BakiType.displayNumeric)
+                    RollingAmount(
+                        text = rm(t.net),
+                        color = baki.onSurface,
+                        style = BakiType.displayNumeric,
+                    )
                 }
                 Text(
                     if (t.net >= 0) "KEPT FOR THE DAY" else "OUT OF POCKET",
@@ -209,6 +209,35 @@ fun TodayScreen(
 
         // the day's movement: between the shift card and the ledger
         item { TodayRouteCard(store = store, day = day, live = live) }
+
+        // what you keep buying, one tap away
+        if (quick.isNotEmpty()) item {
+            Column {
+                Text("QUICK ADD", color = baki.muted, style = BakiType.section)
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val cats = store.settings.cats.catsOut
+                    quick.forEach { q ->
+                        val name = cats.firstOrNull { it.id == q.cat }?.name ?: q.cat
+                        Row(
+                            Modifier.heightIn(min = 44.dp)
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .background(baki.surfaceHigh)
+                                .clickable { onQuickAdd(q.cat, q.cents) }
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(name, color = baki.onSurface, style = BakiType.labelStrong)
+                            Text("RM ${rm(q.cents)}", color = baki.primary, style = BakiType.captionNumeric)
+                        }
+                    }
+                }
+            }
+        }
 
         item {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

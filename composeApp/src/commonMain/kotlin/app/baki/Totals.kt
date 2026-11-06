@@ -279,3 +279,44 @@ fun budgetUsage(store: Store, month: String): List<BudgetUse> {
     return limits.map { (cat, limit) -> BudgetUse(cat, limit, spent[cat] ?: 0.0) }
         .sortedByDescending { it.fraction }
 }
+
+/**
+ * Consecutive days whose shift earnings beat the target rate, counting back from today.
+ * A day with no shift yet does not break the streak (it is still "alive" until midnight).
+ */
+fun targetStreak(store: Store, today: String): Int {
+    val cfg = store.settings.profit
+    val target = cfg.targetRate
+    if (target <= 0) return 0
+    val byDay = store.shifts.groupBy { it.date }
+    var day = if (byDay.containsKey(today)) today else addDays(today, -1)
+    var streak = 0
+    while (true) {
+        val shifts = byDay[day] ?: break
+        val hours = shifts.sumOf { it.hours }
+        if (hours <= 0.01) break
+        val net = shifts.sumOf {
+            shiftMetrics(it, cfg, overheadPerHour(store, day.substring(0, 7))).net
+        }
+        if (net / hours < target) break
+        streak++
+        day = addDays(day, -1)
+    }
+    return streak
+}
+
+/** One remembered shortcut: the same category at the same amount, used more than once. */
+data class QuickAdd(val cat: String, val cents: Long, val count: Int)
+
+/** The amounts you keep typing — the fastest possible entry is the one you repeat. */
+fun quickAdds(store: Store, limit: Int = 4, sinceDays: Int = 60): List<QuickAdd> {
+    val cutoff = addDays(todayIso(), -sinceDays)
+    return store.entries
+        .filter { it.type != "income" && it.amount > 0 && it.date >= cutoff }
+        .groupBy { it.cat to it.amount }
+        .map { (key, rows) -> QuickAdd(key.first, key.second, rows.size) }
+        .filter { it.count >= 2 }
+        .sortedByDescending { it.count }
+        .take(limit)
+}
+

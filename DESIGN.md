@@ -148,3 +148,16 @@ holds, and it would bloat every upload.
 - Retention: 90 days, swept on app start and on every finalise.
 - Drawn read-only from OpenStreetMap raster tiles on a Compose Canvas (`RouteMap`): no gestures, no
   pan/zoom, auto-fit to the day's bounds, A/B markers per shift, own colour per shift.
+
+## Colour packs
+
+Three packs share the same `BakiPalette` contract: **Sage** (the app's identity), **Night** (near-black,
+cool blue — glare-free after dark), **Paper** (warm off-white, ink-brown). Chosen in More → Appearance
+and stored in `ClientConfig.palette`. The mode selector (Auto/Light/Dark) still applies to Sage; Night
+is always dark and Paper always light.
+
+## Typeface
+
+Inter variable (`composeResources/font/inter_variable.ttf`) replaces the system face. `BakiType`
+exposes `install(family)`, called once at the top of `App()` before any text composes, so every style
+and its numeric variant picks up the family without touching call sites.

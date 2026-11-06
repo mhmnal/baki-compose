@@ -62,6 +62,13 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                     "${days.size} days · in ${rm(t.income)} · out ${rm(t.expense)} · avg ${rm(avgDay)}/day",
                     color = baki.muted, fontSize = 12.sp,
                 )
+                val streak = remember(store) { targetStreak(store, todayIso()) }
+                if (streak >= 2) {
+                    Text(
+                        "$streak days in a row above target",
+                        color = baki.up, style = BakiType.caption,
+                    )
+                }
             }
         }
 

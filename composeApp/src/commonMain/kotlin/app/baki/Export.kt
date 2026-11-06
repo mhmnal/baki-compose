@@ -29,3 +29,24 @@ private fun String.csv(): String =
     if (any { it == ',' || it == '"' || it == '\n' }) "\"" + replace("\"", "\"\"") + "\"" else this
 
 fun todayStamp(): String = todayIso().replace("-", "")
+
+/** GPX 1.1 for one day's routes: opens in any map or fitness tool. */
+fun exportGpx(date: String, routes: List<ShiftRoute>): String {
+    val sb = StringBuilder()
+    sb.appendLine("""<?xml version="1.0" encoding="UTF-8"?>""")
+    sb.appendLine("""<gpx version="1.1" creator="Baki" xmlns="http://www.topografix.com/GPX/1/1">""")
+    sb.appendLine("  <metadata><name>Baki $date</name></metadata>")
+    routes.forEachIndexed { i, route ->
+        sb.appendLine("  <trk>")
+        sb.appendLine("    <name>Shift ${i + 1} · ${route.date}</name>")
+        sb.appendLine("    <trkseg>")
+        route.points.forEach { p ->
+            val time = kotlinx.datetime.Instant.fromEpochMilliseconds(p.t).toString()
+            sb.appendLine("      <trkpt lat=\"${p.lat}\" lon=\"${p.lon}\"><time>$time</time></trkpt>")
+        }
+        sb.appendLine("    </trkseg>")
+        sb.appendLine("  </trk>")
+    }
+    sb.appendLine("</gpx>")
+    return sb.toString()
+}

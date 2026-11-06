@@ -8,7 +8,19 @@ import androidx.compose.runtime.setValue
  * Side effects that only make sense on a real device: the live-shift notification
  * and haptics. Desktop implements them as no-ops.
  */
+/** The haptic vocabulary: each kind means one thing, everywhere. */
+enum class Haptic {
+    /** navigation, selection, a chip press */
+    Tick,
+    /** something was saved or committed */
+    Confirm,
+    /** something was removed or a field is invalid */
+    Warn,
+}
+
 expect object PlatformEffects {
+    /** Fire one of the vocabulary haptics; a device without a vibrator simply does nothing. */
+    fun haptic(kind: Haptic)
     /** startMs = null means "no live shift": tear the notification down. */
     fun liveChanged(startMs: Long?, totalCents: Long)
     fun tapFeedback()

@@ -8,6 +8,7 @@ import android.os.VibratorManager
 
 actual object PlatformEffects {
 
+    @Suppress("unused")
     private fun vibrate(ms: Long, amplitude: Int) {
         val ctx = AppCtx.ctx ?: return
         val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -46,6 +47,30 @@ actual object PlatformEffects {
 
     actual fun dataChanged() { AppCtx.ctx?.let { BakiWidget.refresh(it) } }
     actual fun log(msg: String) { android.util.Log.i("BakiLive", msg) }
-    actual fun tapFeedback() = vibrate(10, VibrationEffect.DEFAULT_AMPLITUDE)
-    actual fun successFeedback() = vibrate(22, VibrationEffect.DEFAULT_AMPLITUDE)
+    actual fun haptic(kind: Haptic) {
+        val ctx = AppCtx.ctx ?: return
+        val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        } ?: return
+        if (!v.hasVibrator()) return
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val effect = when (kind) {
+                    Haptic.Tick -> VibrationEffect.EFFECT_TICK
+                    Haptic.Confirm -> VibrationEffect.EFFECT_CLICK
+                    Haptic.Warn -> VibrationEffect.EFFECT_DOUBLE_CLICK
+                }
+                v.vibrate(VibrationEffect.createPredefined(effect))
+            } else {
+                val ms = when (kind) { Haptic.Tick -> 8L; Haptic.Confirm -> 20L; Haptic.Warn -> 12L }
+                v.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+        }
+    }
+
+    actual fun tapFeedback() = haptic(Haptic.Tick)
+    actual fun successFeedback() = haptic(Haptic.Confirm)
 }

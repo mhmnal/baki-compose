@@ -76,7 +76,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun App(repo: BakiRepo = remember { BakiRepo() }) {
-    BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode) {
+    // install the typeface before anything composes text
+    BakiType.install(bakiFontFamily())
+    BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         SharedTransitionLayout {
             androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
                 AppContent(repo)
@@ -180,6 +182,20 @@ private fun AppContent(repo: BakiRepo) {
                     onDay = { day = it },
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
+                    onQuickAdd = { cat, cents ->
+                        scope.launch {
+                            val id = repo.addExpense(cents, cat, "", todayIso())
+                            if (id != null) {
+                                val name = repo.store.settings.cats.catsOut
+                                    .firstOrNull { it.id == cat }?.name ?: cat
+                                val res = snackbar.showSnackbar(
+                                    "Added $name RM ${rm(cents)}",
+                                    actionLabel = "Undo", duration = SnackbarDuration.Short,
+                                )
+                                if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
+                            }
+                        }
+                    },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
                     onDeleteEntry = { entry ->
                         scope.launch {
@@ -555,7 +571,7 @@ private fun BottomBar(
                             if (liquid) Modifier
                             else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
                         )
-                        .clickable { onSelect(i) },
+                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1124,6 +1140,28 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             }
         }
         Spacer(Modifier.height(10.dp))
+        // colour packs: same tokens, different voice
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper").forEach { (value, label) ->
+                val on = repo.config.palette == value
+                Box(
+                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
+                        .background(if (on) baki.primaryContainer else Color.Transparent)
+                        .clickable { repo.setPalette(value) }
+                        .padding(vertical = 9.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label, color = if (on) baki.onPrimaryContainer else baki.muted,
+                        fontSize = 12.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
         SwitchRow(
             title = "Match wallpaper",
             sub = "uses your Android theme colours on 12+",
@@ -1287,6 +1325,24 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Export (CSV)", fontSize = 12.sp) }
         }
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = {
+                scope.launch {
+                    val from = addDays(todayIso(), -30)
+                    val routes = runCatching { RouteStore.routesSince(from) }.getOrDefault(emptyList())
+                    if (routes.isNotEmpty()) {
+                        PlatformEffects.exportFile(
+                            "baki-routes-${todayStamp()}.gpx",
+                            "application/gpx+xml",
+                            exportGpx(from, routes),
+                        )
+                    }
+                }
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
+            shape = RoundedCornerShape(Radius.pill), modifier = Modifier.fillMaxWidth(),
+        ) { Text("Export routes (GPX · 30 days)", fontSize = 12.sp) }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(

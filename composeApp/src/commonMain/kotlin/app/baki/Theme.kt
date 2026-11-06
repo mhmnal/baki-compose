@@ -71,15 +71,50 @@ val LocalBaki = staticCompositionLocalOf { DarkPalette }
 /** Wallpaper-derived palette; null where the platform has no Monet (Android 12+, desktop). */
 expect fun dynamicPalette(dark: Boolean): BakiPalette?
 
+
+/** "Night Shift": near-black, cool accent, for driving after dark without glare. */
+val NightPalette = BakiPalette(
+    dark = true,
+    primary = Color(0xFF8FB6FF), onPrimary = Color(0xFF071018),
+    primaryContainer = Color(0xFF17243A), onPrimaryContainer = Color(0xFFD6E4FF),
+    accentStrong = Color(0xFF2A4A7A), onAccent = Color(0xFFEAF2FF),
+    surface = Color(0xFF05070A), container = Color(0xFF0D1219), surfaceHigh = Color(0xFF141B24),
+    onSurface = Color(0xFFE6EEF9), muted = Color(0xFF8C9BB0),
+    up = Color(0xFF74E0B0), down = Color(0xFFFF8F7A), warn = Color(0xFFFFC857),
+)
+
+/** "Paper": warm off-white, ink-brown accent, for daylight legibility. */
+val PaperPalette = BakiPalette(
+    dark = false,
+    primary = Color(0xFF6B5636), onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFEDE3CE), onPrimaryContainer = Color(0xFF2B2416),
+    accentStrong = Color(0xFF57452B), onAccent = Color(0xFFFFFFFF),
+    surface = Color(0xFFFBF7EF), container = Color(0xFFF3EDE1), surfaceHigh = Color(0xFFEAE2D2),
+    onSurface = Color(0xFF1C1913), muted = Color(0xFF6B6355),
+    up = Color(0xFF2C6E52), down = Color(0xFFA83E2A), warn = Color(0xFF7A5A00),
+)
+
+/** Resolves the user's chosen pack against light/dark. */
+fun paletteFor(pack: String, dark: Boolean): BakiPalette = when (pack) {
+    "night" -> NightPalette
+    "paper" -> PaperPalette
+    else -> if (dark) DarkPalette else LightPalette
+}
+
 /** Follows the system setting, exactly like the web app's Auto theme. */
 @Composable
-fun BakiTheme(matchWallpaper: Boolean = false, mode: String = "auto", content: @Composable () -> Unit) {
+fun BakiTheme(
+    matchWallpaper: Boolean = false,
+    mode: String = "auto",
+    pack: String = "sage",
+    content: @Composable () -> Unit,
+) {
     val dark = when (mode) {
         "light" -> false
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    val fallback = if (dark) DarkPalette else LightPalette
+    val fallback = paletteFor(pack, dark)
     val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: fallback } else fallback
     CompositionLocalProvider(LocalBaki provides palette) {
         MaterialTheme(

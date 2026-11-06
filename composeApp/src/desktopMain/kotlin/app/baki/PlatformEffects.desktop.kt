@@ -2,6 +2,7 @@ package app.baki
 
 /** Desktop has no shade and no vibration: the live shift lives in the window only. */
 actual object PlatformEffects {
+    actual fun haptic(kind: Haptic) {}
     actual fun liveChanged(startMs: Long?, totalCents: Long) = Unit
     actual fun log(msg: String) = println(msg)
     actual fun dataChanged() = Unit

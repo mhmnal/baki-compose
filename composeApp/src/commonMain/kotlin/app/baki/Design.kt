@@ -4,6 +4,12 @@ import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import baki_compose.composeapp.generated.resources.inter_variable
+import baki_compose.composeapp.generated.resources.Res
+import org.jetbrains.compose.resources.Font
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,39 +61,66 @@ object BakiType {
     // Weights run heavier than stock M3: the app's voice is a bold money figure.
 
     /** the one hero number on a screen — M3 displayLarge */
-    val display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.5).sp)
+    var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.5).sp)
     /** secondary hero — M3 displaySmall */
-    val displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
+    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
     /** card headline — M3 headlineMedium */
-    val headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+    var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
     /** dialog titles — M3 titleLarge */
-    val title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp)
+    var title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp)
     /** M3 titleMedium */
-    val subtitle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
+    var subtitle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
     /** M3 bodyLarge */
-    val body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal)
-    val bodyStrong = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
+    var body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal)
+    var bodyStrong = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
     /** M3 labelMedium */
-    val label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
-    val labelStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+    var label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    var labelStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     /** M3 labelSmall */
-    val caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    var caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
     /** all-caps section header */
-    val section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-    val micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    var section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    var micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
 
     /**
      * Numeric variants carry tabular figures, so money keeps its width as digits change and
      * columns line up. This is the single biggest "feels professional" detail in a money app.
      */
-    val displayNumeric = display.copy(fontFeatureSettings = TNUM)
-    val displaySmallNumeric = displaySmall.copy(fontFeatureSettings = TNUM)
-    val headlineNumeric = headline.copy(fontFeatureSettings = TNUM)
-    val titleNumeric = title.copy(fontFeatureSettings = TNUM)
-    val subtitleNumeric = subtitle.copy(fontFeatureSettings = TNUM)
-    val bodyNumeric = body.copy(fontFeatureSettings = TNUM)
-    val labelNumeric = labelStrong.copy(fontFeatureSettings = TNUM)
-    val captionNumeric = caption.copy(fontFeatureSettings = TNUM)
+    var displayNumeric = display.copy(fontFeatureSettings = TNUM)
+    var displaySmallNumeric = displaySmall.copy(fontFeatureSettings = TNUM)
+    var headlineNumeric = headline.copy(fontFeatureSettings = TNUM)
+    var titleNumeric = title.copy(fontFeatureSettings = TNUM)
+    var subtitleNumeric = subtitle.copy(fontFeatureSettings = TNUM)
+    var bodyNumeric = body.copy(fontFeatureSettings = TNUM)
+    var labelNumeric = labelStrong.copy(fontFeatureSettings = TNUM)
+    var captionNumeric = caption.copy(fontFeatureSettings = TNUM)
+    private var family: FontFamily? = null
+
+    /** Applied once at startup, before any text is composed. */
+    fun install(f: FontFamily) {
+        if (family === f) return
+        family = f
+        display = display.copy(fontFamily = f)
+        displaySmall = displaySmall.copy(fontFamily = f)
+        headline = headline.copy(fontFamily = f)
+        title = title.copy(fontFamily = f)
+        subtitle = subtitle.copy(fontFamily = f)
+        body = body.copy(fontFamily = f)
+        bodyStrong = bodyStrong.copy(fontFamily = f)
+        label = label.copy(fontFamily = f)
+        labelStrong = labelStrong.copy(fontFamily = f)
+        caption = caption.copy(fontFamily = f)
+        section = section.copy(fontFamily = f)
+        micro = micro.copy(fontFamily = f)
+        displayNumeric = displayNumeric.copy(fontFamily = f)
+        displaySmallNumeric = displaySmallNumeric.copy(fontFamily = f)
+        headlineNumeric = headlineNumeric.copy(fontFamily = f)
+        titleNumeric = titleNumeric.copy(fontFamily = f)
+        subtitleNumeric = subtitleNumeric.copy(fontFamily = f)
+        bodyNumeric = bodyNumeric.copy(fontFamily = f)
+        labelNumeric = labelNumeric.copy(fontFamily = f)
+        captionNumeric = captionNumeric.copy(fontFamily = f)
+    }
 }
 
 /**
@@ -115,3 +148,11 @@ object BakiMotion {
 /** Semantic colours that are not part of the sage palette but must stay coherent. */
 @androidx.compose.runtime.Immutable
 data class BakiSemantic(val income: Color, val expense: Color, val warn: Color)
+
+
+/** The app's typeface: one variable file, every weight. */
+@Composable
+fun bakiFontFamily(): FontFamily {
+    val normal = Font(Res.font.inter_variable, FontWeight.Normal)
+    return remember { FontFamily(normal) }
+}

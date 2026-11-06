@@ -15,6 +15,8 @@ data class ClientConfig(
     val allowWrites: Boolean = false,
     /** "auto" | "light" | "dark" — the web app's Auto/Light/Dark selector. */
     val themeMode: String = "auto",
+    /** "sage" | "night" | "paper" — the colour pack. */
+    val palette: String = "sage",
     /** "auto" | "on" | "off" — liquid glass, resolved against the device tier. */
     val glassMode: String = "auto",
 )

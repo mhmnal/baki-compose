@@ -96,6 +96,11 @@ object RouteStore {
         file.routes.values.filter { it.date == date }
     }
 
+    /** Every stored path from [fromDate] onwards, for export. */
+    suspend fun routesSince(fromDate: String): List<ShiftRoute> = mutex.withLock {
+        loadUnlocked().routes.values.filter { it.date >= fromDate }.sortedBy { it.date }
+    }
+
     suspend fun delete(shiftId: String) = mutex.withLock {
         val file = loadUnlocked()
         if (file.routes.containsKey(shiftId)) {

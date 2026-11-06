@@ -142,10 +142,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun addExpense(amountCents: Long, cat: String, note: String, date: String, odo: Int? = null) =
         addEntry("expense", amountCents, cat, note, date, odo)
 
+    /** Returns the new entry's id so a quick-add can offer undo. */
     suspend fun addEntry(
         type: String, amountCents: Long, cat: String, note: String, date: String, odo: Int? = null,
-    ) = mutex.withLock {
-        if (blocked()) return@withLock
+    ): String? = mutex.withLock {
+        if (blocked()) return@withLock null
         val entry = Entry(
             id = newId(), date = date, type = type, cat = cat, amount = amountCents,
             note = note, updated = nowIso(), odo = odo,
@@ -161,6 +162,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             status = "cached"
             lastError = e.message
         }
+        entry.id
     }
 
     /** Log a past shift. The cover fee is derived from the 24h rule, never typed. */
@@ -427,6 +429,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Removing a shift also removes its linked insurance entry and re-runs the cover rule. */
     suspend fun deleteShift(id: String) = mutex.withLock {
         if (blocked()) return@withLock
+        PlatformEffects.haptic(Haptic.Warn)
         val feeId = "fee-$id"
         val next = store.copy(
             shifts = store.shifts.filter { it.id != id },
@@ -444,6 +447,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     suspend fun deleteEntry(id: String) = mutex.withLock {
         if (blocked()) return@withLock
+        PlatformEffects.haptic(Haptic.Warn)
         val next = store.copy(
             entries = store.entries.filter { it.id != id },
             tomb = Tomb(ids = (store.tomb.ids + id).distinct(), cats = store.tomb.cats),
@@ -556,6 +560,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         saveLocal(store)
         pushWithTombs(emptyList())
+    }
+
+    fun setPalette(pack: String) {
+        config = config.copy(palette = pack)
+        saveConfig(config)
     }
 
     fun setThemeMode(mode: String) {
