@@ -907,13 +907,27 @@ private fun SpendingScreen(
         .sortedByDescending { it.date }
     val cats = remember(repo.store) { repo.store.settings.cats.catsOut }
 
+    // the headline follows the filter: a category view answers "how much on this?" not "how much at all"
+    val filtering = catFilter != "all" || query.isNotBlank()
+    val catName = cats.firstOrNull { it.id == catFilter }?.name
+    val shown = if (filtering) entries.filter { it.type != "income" }.sumOf { it.amount } else t.expense
+    val shownLabel = when {
+        catFilter != "all" -> "spent · ${catName ?: catFilter}"
+        query.isNotBlank() -> "spent · ${entries.size} match(es)"
+        else -> "spent this month"
+    }
+
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Spacer(Modifier.height(10.dp))
         MonthHeader(month, onMonth)
         Spacer(Modifier.height(6.dp))
-        Hero("spent this month", t.expense, baki.down, 40)
+        Hero(shownLabel, shown, baki.down, 40)
         Text(
-            "${t.entryCount} purchases · ${t.shiftCount} shifts · in ${rm(t.income)}",
+            if (filtering) {
+                "${entries.size} purchase(s)${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
+            } else {
+                "${t.entryCount} purchases · ${t.shiftCount} shifts · in ${rm(t.income)}"
+            },
             color = baki.muted, style = BakiType.captionNumeric,
         )
         Spacer(Modifier.height(10.dp))

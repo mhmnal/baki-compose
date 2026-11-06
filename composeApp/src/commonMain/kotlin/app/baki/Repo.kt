@@ -62,11 +62,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     fun start() {
-        // enforce retention and drop paths whose shift no longer exists, even if no shift is ended
+        // enforce retention and drop paths whose shift no longer exists, even if no shift is ended.
+        // The id of a shift in progress is NOT in store.shifts yet: sweeping without it deletes the
+        // path being recorded right now, which is what made a drive appear to restart after a stop.
         scope.launch {
             runCatching {
                 RouteStore.prune()
-                RouteStore.pruneOrphans(store.shifts.map { it.id }.toSet())
+                RouteStore.pruneOrphans(routeKeysInUse())
             }
         }
         live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
@@ -191,6 +193,10 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         made.map { it.id }
     }
+
+    /** Every route key that must survive a sweep: stored shifts plus the one being recorded. */
+    private fun routeKeysInUse(): Set<String> =
+        store.shifts.mapTo(mutableSetOf()) { it.id } + listOfNotNull(live?.id)
 
     /** Log a past shift. The cover fee is derived from the 24h rule, never typed. */
     suspend fun addShift(
@@ -383,7 +389,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         runCatching {
             RouteStore.rename(routeKey, shiftId)
             RouteStore.finalize(shiftId)
-            RouteStore.pruneOrphans(store.shifts.map { it.id }.toSet())
+            RouteStore.pruneOrphans(routeKeysInUse())
         }
         try {
             val saved = client.push(store)

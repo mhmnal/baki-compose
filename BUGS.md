@@ -2,6 +2,13 @@
 
 Kept here so nothing is lost between sessions. Ordered by what actually costs money or trust.
 
+## Fixed
+
+- **In-progress route deleted on every app launch** (v0.6.2). `Repo.start()` swept orphaned paths
+  using only the stored shifts, so opening the app during a shift purged the path being recorded and
+  the day's map appeared to restart after a stop. The sweep now keeps the live shift's key.
+- **Weekly review counted the wrong fuel category** (v0.6.1). `cat == "petrol"` vs `"fuel"`.
+
 ## Bugs
 
 1. **Quick entry ignores fuel aliases when the category id isn't `petrol`.**
