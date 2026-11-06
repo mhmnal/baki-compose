@@ -76,8 +76,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun App(repo: BakiRepo = remember { BakiRepo() }) {
-    // install the typeface before anything composes text
-    BakiType.install(bakiFontFamily())
+    // install the typefaces before anything composes text
+    val (textFace, displayFace, readoutFace) = bakiFontFamilies()
+    BakiType.install(textFace, displayFace, readoutFace)
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         if (Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme

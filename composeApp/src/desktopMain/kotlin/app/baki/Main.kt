@@ -12,8 +12,8 @@ import java.util.prefs.Preferences
 private val prefs = Preferences.userRoot().node("app/baki/window")
 
 fun main() = application {
-    val savedW = prefs.getInt("w", 1360)
-    val savedH = prefs.getInt("h", 900)
+    val savedW = prefs.getInt("w", 1440)
+    val savedH = prefs.getInt("h", 920)
     val savedX = prefs.getInt("x", Int.MIN_VALUE)
     val savedY = prefs.getInt("y", Int.MIN_VALUE)
     val state = rememberWindowState(
@@ -33,7 +33,7 @@ fun main() = application {
         title = "Baki — shift logbook",
         state = state,
     ) {
-        window.minimumSize = java.awt.Dimension(960, 640)
+        window.minimumSize = java.awt.Dimension(1080, 700)
         App()
     }
 }

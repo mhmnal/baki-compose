@@ -57,6 +57,36 @@ class ContrastTest {
     }
 
     @Test
+    fun canvasTextMeetsTheReadableFloors() {
+        // the neumorphic canvas is darker than the palette surface, so the derived colours must be
+        // checked against it, not against the palette
+        val failures = mutableListOf<String>()
+        packs.forEach { (name, p) ->
+            val n = neuOf(p)
+            listOf("ink/base" to (n.ink to n.base), "muted/base" to (n.muted to n.base))
+                .forEach { (pair, colors) ->
+                    val r = ratio(colors.first, colors.second)
+                    if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
+                }
+        }
+        assertTrue(failures.isEmpty(), "canvas contrast failures:\n" + failures.joinToString("\n"))
+    }
+
+    @Test
+    fun nonTextUiMeetsTheThreeToOneFloor() {
+        // WCAG 1.4.11: the accent ring, the danger colour and a focus indicator are UI components
+        val failures = mutableListOf<String>()
+        packs.forEach { (name, p) ->
+            listOf("accent/base" to (p.primary to p.surface), "danger/base" to (p.down to p.surface))
+                .forEach { (pair, colors) ->
+                    val r = ratio(colors.first, colors.second)
+                    if (r < 3.0) failures += "$name $pair = ${"%.2f".format(r)} (< 3.0)"
+                }
+        }
+        assertTrue(failures.isEmpty(), "non-text contrast failures:\n" + failures.joinToString("\n"))
+    }
+
+    @Test
     fun filledControlsStayReadable() {
         val failures = mutableListOf<String>()
         packs.forEach { (name, p) ->

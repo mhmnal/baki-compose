@@ -273,3 +273,40 @@ Neumorphism is the *only* design language on the desktop. The rules that make it
    lighter than the base in light packs and would not dim anything.
 8. **Labels above fields.** A placeholder label disappears the moment you type; the label sits on
    the canvas above an inset well.
+
+## Typefaces (v0.14)
+
+Three faces, three jobs — the hardware-panel flavour neumorphism asks for:
+
+| Face | Job | Why |
+|---|---|---|
+| **Space Grotesk** | display, headline, title | retro-futurist hardware lettering; distinctive `R`/`G`/`2` |
+| **JetBrains Mono** | every `*Numeric` style | money and chart labels read like an instrument readout |
+| **Inter** | body, labels, captions, sections | screen legibility at 11–16 sp |
+
+Weights follow the research: **body 500**, **labels 600**, **headings 700** — Regular and Thin bleed into
+soft backgrounds. Labels and section headers carry **+0.02–0.04 em** tracking so letters stay defined
+over shadow gradients (`section` = 0.44 sp at 11 sp). All numerals are tabular.
+
+## Shadow hierarchy (v0.14)
+
+There are exactly three levels, and each has one shadow model:
+
+| Level | What | Shadow |
+|---|---|---|
+| 0 | canvas | none |
+| 1 | cards | **dual emboss** — highlight up-left, shade down-right, both clipped to their half-planes so neither smudges the other corner. The face is one hair above the canvas (blend towards white: 0.10 light / 0.035 dark) so edges read without leaving the material; shadows are tinted — the shade runs to deep olive, the highlight to warm white |
+| 2 | recessed wells — chart plots, inputs, progress tracks, scrollbar groove | **inset** — the same pair drawn inside the shape |
+| 3 | floating — dialogs, menus, tooltips | **drop shadow only**, downward; a floating layer is above the canvas, not moulded from it |
+
+Data inside a cavity carries **no shadow** (chart bars are flat fills); that is what keeps a dense
+dashboard from turning into visual noise.
+
+The header is responsive: one row at ≥ 1180 dp, two rows below, window minimum 1080×700. The
+scrollbar is a first-class material object: inset groove, raised draggable thumb.
+
+## Material facts (v0.14, measured)
+
+Probed on the running app, light pack: canvas `#D6DCD1`, card face `#DAE0D6`, ink `#14180F`,
+secondary `#60655B`, no dark bleed above the card's lit corner. The same probes are repeatable with
+`/tmp/shot/Probe.java` against any screenshot.

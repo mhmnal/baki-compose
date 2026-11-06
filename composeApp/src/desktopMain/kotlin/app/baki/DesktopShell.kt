@@ -31,7 +31,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -76,7 +75,7 @@ private val Rail2 = 320.dp
 actual fun DesktopRoot(repo: BakiRepo): Boolean {
     val store = repo.store
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     // BAKI_VIEW lets the design be captured deterministically (entries/shifts/year/settings/statement)
     val preview = remember { System.getenv("BAKI_VIEW").orEmpty() }
     var month by remember { mutableStateOf(todayIso().substring(0, 7)) }
@@ -206,58 +205,102 @@ private fun Header(
     onNew: () -> Unit,
     onSettings: () -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
-        Text("Baki", color = neu.ink, style = BakiType.title)
-        Spacer(Modifier.width(Space.xl))
-
-        Tip("Previous month") {
-            NeuIconButton(neu, Modifier.size(32.dp), onClick = onPrev) {
-                Icon(
-                    BakiIcons.ArrowRight, contentDescription = "Previous month",
-                    tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val wide = maxWidth >= 1180.dp
+        if (wide) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HeaderIdentity(neu)
+                MonthStepper(neu, month, onPrev, onNext)
+                Spacer(Modifier.width(Space.l))
+                NeuSegmented(
+                    neu,
+                    listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
+                    tab,
+                    onSelect = onTab,
                 )
+                Spacer(Modifier.weight(1f))
+                SyncBadge(neu, status)
+                Spacer(Modifier.width(Space.l))
+                NeuButton(neu, "Statement", onClick = onStatement)
+                Spacer(Modifier.width(Space.s))
+                NeuButton(neu, "New entry", primary = true, onClick = onNew)
+                Spacer(Modifier.width(Space.s))
+                SettingsButton(neu, onSettings)
+            }
+        } else {
+            // narrow: identity and actions on one line, navigation on its own line
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HeaderIdentity(neu)
+                    MonthStepper(neu, month, onPrev, onNext)
+                    Spacer(Modifier.weight(1f))
+                    SyncBadge(neu, status)
+                    Spacer(Modifier.width(Space.m))
+                    NeuButton(neu, "New entry", primary = true, onClick = onNew)
+                    Spacer(Modifier.width(Space.s))
+                    SettingsButton(neu, onSettings)
+                }
+                Spacer(Modifier.height(Space.m))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NeuSegmented(
+                        neu,
+                        listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
+                        tab,
+                        onSelect = onTab,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    NeuButton(neu, "Statement", onClick = onStatement)
+                }
             }
         }
-        Text(
-            monthLabel(month), color = neu.ink, style = BakiType.subtitle,
-            modifier = Modifier.padding(horizontal = Space.s),
-        )
-        Tip("Next month") {
-            NeuIconButton(neu, Modifier.size(32.dp), onClick = onNext) {
-                Icon(
-                    BakiIcons.ArrowRight, contentDescription = "Next month",
-                    tint = neu.ink, modifier = Modifier.size(IconSize.inline),
-                )
-            }
+    }
+}
+
+@Composable
+private fun HeaderIdentity(neu: Neu) {
+    Text("Baki", color = neu.ink, style = BakiType.title)
+    Spacer(Modifier.width(Space.xl))
+}
+
+@Composable
+private fun MonthStepper(neu: Neu, month: String, onPrev: () -> Unit, onNext: () -> Unit) {
+    Tip("Previous month") {
+        NeuIconButton(neu, Modifier.size(32.dp), onClick = onPrev) {
+            Icon(
+                BakiIcons.ArrowRight, contentDescription = "Previous month",
+                tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
+            )
         }
-        Spacer(Modifier.width(Space.l))
+    }
+    Text(
+        monthLabel(month), color = neu.ink, style = BakiType.subtitle,
+        modifier = Modifier.padding(horizontal = Space.s),
+    )
+    Tip("Next month") {
+        NeuIconButton(neu, Modifier.size(32.dp), onClick = onNext) {
+            Icon(
+                BakiIcons.ArrowRight, contentDescription = "Next month",
+                tint = neu.ink, modifier = Modifier.size(IconSize.inline),
+            )
+        }
+    }
+}
 
-        // navigation is a selected control, not a bar: one inset track with a raised thumb
-        NeuSegmented(
-            neu,
-            listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
-            tab,
-            onSelect = onTab,
-        )
+@Composable
+private fun SyncBadge(neu: Neu, status: String) {
+    Box(
+        Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill))
+            .background(if (status == "synced") neu.accent else neu.danger),
+    )
+    Spacer(Modifier.width(Space.xs))
+    Text(status, color = neu.muted, style = BakiType.caption)
+}
 
-        Spacer(Modifier.weight(1f))
-
-        Box(
-            Modifier.size(7.dp).clip(RoundedCornerShape(50))
-                .background(if (status == "synced") neu.accent else neu.danger),
-        )
-        Spacer(Modifier.width(Space.xs))
-        Text(status, color = neu.muted, style = BakiType.caption)
-        Spacer(Modifier.width(Space.l))
-
-        NeuButton(neu, "Statement", onClick = onStatement)
-        Spacer(Modifier.width(Space.s))
-        NeuButton(neu, "New entry", primary = true, onClick = onNew)
-        Spacer(Modifier.width(Space.s))
-        Tip("Settings") {
-            NeuIconButton(neu, Modifier.size(36.dp), onClick = onSettings) {
-                Icon(BakiIcons.Settings, contentDescription = "Settings", tint = neu.ink, modifier = Modifier.size(IconSize.inline))
-            }
+@Composable
+private fun SettingsButton(neu: Neu, onSettings: () -> Unit) {
+    Tip("Settings") {
+        NeuIconButton(neu, Modifier.size(36.dp), onClick = onSettings) {
+            Icon(BakiIcons.Settings, contentDescription = "Settings", tint = neu.ink, modifier = Modifier.size(IconSize.inline))
         }
     }
 }
@@ -268,12 +311,13 @@ private fun Modifier.rotate180(): Modifier = this.then(Modifier.rotate(180f))
 @OptIn(ExperimentalComposeUiApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Tip(text: String, content: @Composable () -> Unit) {
-    val neu = neuOf(LocalBaki.current)
+    val neu = rememberNeu()
     TooltipArea(
         tooltip = {
             Box(
-                Modifier.raised(neu, corner = Radius.small, offset = Elevation.low)
+                Modifier.elevated(neu, corner = Radius.small, drop = Elevation.medium)
                     .clip(RoundedCornerShape(Radius.small))
+                    .background(neu.panel)
                     .padding(horizontal = Space.s, vertical = Space.xs),
             ) { Text(text, color = neu.ink, style = BakiType.caption) }
         },
@@ -292,11 +336,13 @@ private fun Overview(
     onOpen: () -> Unit,
 ) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
-    val t = monthTotals(store, month)
-    val entries = store.entries.filter { it.date.startsWith(month) }.sortedByDescending { it.date }
-    val week = latestWeekWithData(store, todayIso())
-    val streak = targetStreak(store, todayIso())
+    val neu = rememberNeu()
+    val t = remember(store, month) { monthTotals(store, month) }
+    val entries = remember(store, month) {
+        store.entries.filter { it.date.startsWith(month) }.sortedByDescending { it.date }
+    }
+    val week = remember(store) { latestWeekWithData(store, todayIso()) }
+    val streak = remember(store) { targetStreak(store, todayIso()) }
 
     Row(Modifier.fillMaxSize().padding(vertical = Space.s)) {
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
@@ -386,13 +432,20 @@ private fun WeekChart(store: Store, neu: Neu) {
     val today = todayIso()
     val days = (6 downTo 0).map { back -> addDays(today, -back) to dayTotals(store, addDays(today, -back)) }
     val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
+    val summary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
+
     Column {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        val weekSummary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
-        Column(Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $weekSummary" }) {
+        // the plot is a cavity; the bars are data sitting inside it, so they carry no shadow
+        NeuWell(
+            neu,
+            Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
+            corner = Radius.card,
+            offset = Elevation.medium,
+        ) {
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().padding(Space.m),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
                 verticalAlignment = Alignment.Bottom,
             ) {
@@ -407,8 +460,8 @@ private fun WeekChart(store: Store, neu: Neu) {
                         Box(Modifier.fillMaxWidth().height(88.dp), contentAlignment = Alignment.BottomCenter) {
                             val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.05f, 1f)
                             Box(
-                                Modifier.fillMaxWidth(0.62f).height((88 * frac).dp)
-                                    .raised(neu, corner = 10.dp, offset = 3.dp,
+                                Modifier.fillMaxWidth(0.6f).height((88 * frac).dp)
+                                    .raised(neu, corner = Radius.small, offset = Elevation.low,
                                         fill = if (t.net >= 0) neu.accent else neu.danger)
                                     .clip(RoundedCornerShape(Radius.small)),
                             )
@@ -427,14 +480,18 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
     val days = monthDays(store, month)
     if (days.isEmpty()) return
     val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
+    val peakValue = rm(days.maxOfOrNull { it.second.net } ?: 0)
+
     Column {
         Text("TREND", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        Column(
-            Modifier.fillMaxWidth().semantics {
-                contentDescription = "Month trend, peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}"
-            },
+        NeuWell(
+            neu,
+            Modifier.fillMaxWidth().semantics { contentDescription = "Month trend, peak RM $peakValue" },
+            corner = Radius.card,
+            offset = Elevation.medium,
         ) {
+            Column(Modifier.fillMaxWidth().padding(Space.m)) {
                 Row(
                     Modifier.fillMaxWidth().height(120.dp),
                     horizontalArrangement = Arrangement.spacedBy(Space.xxs),
@@ -445,7 +502,7 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                             val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.02f, 1f)
                             Box(
                                 Modifier.fillMaxWidth().height((120 * frac).dp)
-                                    .raised(neu, corner = 8.dp, offset = 2.dp,
+                                    .raised(neu, corner = Radius.small, offset = Elevation.low,
                                         fill = if (t.net >= 0) neu.accent else neu.danger)
                                     .clip(RoundedCornerShape(Radius.small)),
                             )
@@ -455,22 +512,23 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                 Spacer(Modifier.height(Space.s))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(days.first().first.takeLast(5), color = neu.muted, style = BakiType.captionNumeric)
-                    Text("peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}", color = neu.muted, style = BakiType.captionNumeric)
+                    Text("peak RM $peakValue", color = neu.muted, style = BakiType.captionNumeric)
                     Text(days.last().first.takeLast(5), color = neu.muted, style = BakiType.captionNumeric)
                 }
+            }
         }
     }
 }
 
 @Composable
 private fun CategoryBlock(store: Store, month: String, neu: Neu) {
-    val cats = store.settings.cats.catsOut.associateBy { it.id }
-    val rows = store.entries
+    val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
+    val rows = remember(store, month) { store.entries
         .filter { it.date.startsWith(month) && it.type != "income" }
         .groupBy { it.cat }
         .map { (id, list) -> (cats[id]?.name ?: id) to list.sumOf { it.amount } }
         .sortedByDescending { it.second }
-        .take(6)
+        .take(6) }
     val total = rows.sumOf { it.second }.coerceAtLeast(1)
     Text("WHERE IT WENT", color = neu.muted, style = BakiType.section)
     Spacer(Modifier.height(Space.s))
@@ -486,7 +544,7 @@ private fun CategoryBlock(store: Store, month: String, neu: Neu) {
     rows.forEachIndexed { i, (name, cents) ->
         Row(Modifier.fillMaxWidth().padding(vertical = Space.xxs), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(9.dp).clip(RoundedCornerShape(50))
+                Modifier.size(9.dp).clip(RoundedCornerShape(Radius.pill))
                     .raised(neu, corner = 6.dp, offset = 2.dp, fill = routeColorFor(LocalBaki.current, i)),
             )
             Spacer(Modifier.width(Space.s))
@@ -529,7 +587,7 @@ private fun FundsBlock(store: Store, month: String, neu: Neu) {
 @Composable
 internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, onDelete: (Entry) -> Unit) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<String?>(null) }
     val tableFocus = remember { FocusRequester() }
@@ -593,9 +651,10 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
             }
         }
     }
-        androidx.compose.foundation.VerticalScrollbar(
-            adapter = androidx.compose.foundation.rememberScrollbarAdapter(scroll),
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(Space.xs),
+        NeuScrollbar(
+            state = scroll,
+            neu = neu,
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
         )
     }
 }
@@ -603,7 +662,7 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
 @Composable
 internal fun ShiftsView(store: Store, month: String) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedByDescending { it.date }
     val net = shifts.sumOf { shiftMetrics(it, store.settings.profit).net }
     val scroll = rememberScrollState()
@@ -645,9 +704,10 @@ internal fun ShiftsView(store: Store, month: String) {
         }
         }
     }
-        androidx.compose.foundation.VerticalScrollbar(
-            adapter = androidx.compose.foundation.rememberScrollbarAdapter(scroll),
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(Space.xs),
+        NeuScrollbar(
+            state = scroll,
+            neu = neu,
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
         )
     }
 }
@@ -665,7 +725,7 @@ private fun EntryTable(
     onSelect: (String) -> Unit = {},
 ) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
     var sort by remember { mutableStateOf(TableSort.Date) }
     val sorted = remember(entries, sort) {
@@ -694,8 +754,7 @@ private fun EntryTable(
                         Modifier.fillMaxWidth()
                             .then(
                                 when {
-                                    isSelected -> Modifier.inset(neu, corner = Radius.input)
-                                    hovered -> Modifier.raised(neu, corner = Radius.input, offset = Elevation.low)
+                                    isSelected || hovered -> Modifier.inset(neu, corner = Radius.input)
                                     else -> Modifier
                                 },
                             )
@@ -745,7 +804,7 @@ private fun EntryTable(
                             onDismissRequest = { menu = false },
                             properties = androidx.compose.ui.window.PopupProperties(focusable = true),
                         ) {
-                            NeuPanel(neu, Modifier.width(170.dp), corner = Radius.small, offset = Elevation.high) {
+                            androidx.compose.foundation.layout.Box(Modifier.width(170.dp).elevated(neu, corner = Radius.small, drop = Elevation.high).clip(RoundedCornerShape(Radius.small)).background(neu.panel)) {
                                 Column(Modifier.padding(Space.xs)) {
                                     NeuMenuItem(neu, "Edit") { menu = false; onEdit(entry) }
                                     NeuMenuItem(neu, "Delete", danger = true) { menu = false; onDelete(entry) }
@@ -785,7 +844,7 @@ private fun Head(
     align: Alignment.Horizontal = Alignment.Start,
     onClick: (() -> Unit)? = null,
 ) {
-    val neu = neuOf(LocalBaki.current)
+    val neu = rememberNeu()
     Box(modifier, contentAlignment = if (align == Alignment.End) Alignment.CenterEnd else Alignment.CenterStart) {
         Text(
             text, color = neu.muted, style = BakiType.section,
@@ -799,11 +858,13 @@ private fun Head(
 @Composable
 internal fun YearView(store: Store) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     val year = todayIso().substring(0, 4).toIntOrNull() ?: 2026
-    val months = (1..12).map { m ->
-        val label = "%04d-%02d".format(year, m)
-        label to monthTotals(store, label)
+    val months = remember(store, year) {
+        (1..12).map { m ->
+            val label = "%04d-%02d".format(year, m)
+            label to monthTotals(store, label)
+        }
     }
     val peak = months.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
@@ -870,7 +931,7 @@ private fun NeuField(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    val neu = neuOf(LocalBaki.current)
+    val neu = rememberNeu()
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(modifier) {
@@ -891,7 +952,7 @@ private fun NeuField(
                 textStyle = BakiType.label.copy(color = neu.ink),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(neu.accent),
                 interactionSource = interaction,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s + 2.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s),
             )
         }
     }
@@ -905,7 +966,7 @@ private fun EntryDialog(
     onDismiss: () -> Unit,
     onSave: (date: String, cat: String, cents: Long, note: String) -> Unit,
 ) {
-    val neu = neuOf(LocalBaki.current)
+    val neu = rememberNeu()
     val cats = store.settings.cats.catsOut.filter { it.id != "grabfee" }
     var date by remember { mutableStateOf(existing?.date ?: todayIso()) }
     var amount by remember { mutableStateOf(existing?.amount?.let { "%.2f".format(it / 100.0) } ?: "") }
@@ -940,7 +1001,7 @@ private fun EntryDialog(
 
 @Composable
 private fun DeleteDialog(entry: Entry, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    val neu = neuOf(LocalBaki.current)
+    val neu = rememberNeu()
     NeuDialog(neu, onDismiss) {
         Text("Delete this entry?", color = neu.ink, style = BakiType.title)
         Spacer(Modifier.height(Space.s))
@@ -956,7 +1017,7 @@ private fun DeleteDialog(entry: Entry, onDismiss: () -> Unit, onConfirm: () -> U
 @Composable
 private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     val profit = repo.store.settings.profit
     var fuel by remember { mutableStateOf("%.2f".format(profit.fuelPrice)) }
     var kml by remember { mutableStateOf("%.1f".format(profit.kmPerLitre)) }
@@ -1013,7 +1074,7 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
 @Composable
 private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit) {
     val baki = LocalBaki.current
-    val neu = neuOf(baki)
+    val neu = rememberNeu()
     val t = monthTotals(store, month)
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedBy { it.date }
     val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
@@ -1026,12 +1087,12 @@ private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit)
     ) {
         Column(
             Modifier.width(780.dp).heightIn(max = 860.dp)
-                .raised(neu, corner = Radius.sheet)
+                .elevated(neu, corner = Radius.sheet, drop = Elevation.high)
                 .clip(RoundedCornerShape(Radius.sheet))
                 .background(neu.panel)
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 48.dp, vertical = 36.dp),
+                .padding(horizontal = Space.xxl + Space.l, vertical = Space.xxl + Space.xs),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

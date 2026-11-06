@@ -41,3 +41,42 @@ class DesignTokensTest {
         assertTrue(found.isEmpty(), "raw corner radius outside Design.kt:\n" + found.joinToString("\n"))
     }
 }
+
+/** Desktop-only rules: one material, one component set, no Material chrome left over. */
+class DesktopConsistencyTest {
+
+    private fun desktopDir(): File {
+        var dir = File(System.getProperty("user.dir"))
+        repeat(4) {
+            val candidate = File(dir, "src/desktopMain/kotlin/app/baki")
+            if (candidate.isDirectory) return candidate
+            dir = dir.parentFile ?: dir
+        }
+        error("cannot locate desktop sources")
+    }
+
+    private fun shell() = File(desktopDir(), "DesktopShell.kt").readText()
+
+    @Test
+    fun noMaterialChromeInTheDesktopShell() {
+        val forbidden = listOf(
+            "OutlinedTextField(", "DropdownMenu(", "androidx.compose.material3.Button(",
+            "BakiSheet(", "androidx.compose.material3.Switch(", "Slider(",
+        )
+        val found = forbidden.filter { shell().contains(it) }
+        assertTrue(found.isEmpty(), "Material components on the neumorphic shell: $found")
+    }
+
+    @Test
+    fun noRawHexColoursInTheDesktopShell() {
+        assertTrue(!shell().contains("Color(0x"), "raw colour literal in the shell")
+    }
+
+    @Test
+    fun pillShapesUseTheRadiusToken() {
+        listOf("DesktopShell.kt", "Neumorphism.kt").forEach { name ->
+            val text = File(desktopDir(), name).readText()
+            assertTrue(!text.contains("RoundedCornerShape(50)"), "$name hardcodes a pill radius")
+        }
+    }
+}

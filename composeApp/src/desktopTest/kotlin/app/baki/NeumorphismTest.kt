@@ -29,11 +29,13 @@ class NeumorphismTest {
     }
 
     @Test
-    fun everyElementIsTheSameMaterialAsTheBase() {
-        // the defining rule of neumorphism: no second surface colour, depth is shadow alone
+    fun cardFacesStayOneMaterialButRemainReadable() {
+        // one material, but the face is a hair above the canvas so edges do not melt away
         listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
             val n = neuOf(p)
-            assertEquals(n.base, n.panel, "a raised element must be the base colour")
+            val delta = lum(n.panel) - lum(n.base)
+            assertTrue(delta > 0.004f, "face barely lifts in pack dark=${p.dark}: $delta")
+            assertTrue(delta < 0.12f, "face left the material in pack dark=${p.dark}: $delta")
             assertTrue(lum(n.light) > lum(n.base), "highlight must be lighter than the base")
             assertTrue(lum(n.dark) < lum(n.base), "shade must be darker than the base")
         }

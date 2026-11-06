@@ -15,7 +15,16 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -58,7 +67,7 @@ import org.jetbrains.skia.RRect
 data class Neu(
     /** the window surface. Every element is painted this colour too; only shadow separates them */
     val base: Color,
-    /** kept equal to base: a raised element is the same material, not a lighter one */
+    /** the raised face: a hair above the base so the edge reads, still one material */
     val panel: Color,
     /** the directional highlight */
     val light: Color,
@@ -79,31 +88,34 @@ data class Neu(
 )
 
 fun neuOf(p: BakiPalette): Neu {
-    // the base is the palette's surface nudged towards its own accent, so the app still has an identity
     // a neumorphic canvas is a mid tone, not paper white: blend towards a soft grey-green
     val base = if (p.dark) {
         blend(p.surface, p.primary, 0.10f)
     } else {
         blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
     }
-    // the whole point: no second surface colour
-    val panel = base
-    // guidance: highlight +15-25%, shade -15-25%. Dark packs need a wider spread to read at all.
-    val light = blend(base, Color.White, if (p.dark) 0.16f else 0.80f)
-    val dark = blend(base, if (p.dark) Color.Black else p.onSurface, if (p.dark) 0.62f else 0.24f)
+    // a card face is a hair above the canvas — one material, but the edge still reads — and the
+    // shadows are *tinted* directions of that base: the shade runs to deep olive (ink warmed by the
+    // accent), the highlight to warm white. Never neutral grey.
+    val panel = blend(base, Color.White, if (p.dark) 0.035f else 0.10f)
+    val olive = blend(p.onSurface, p.primary, if (p.dark) 0.45f else 0.55f)
+    val light = blend(base, blend(Color.White, p.primary, 0.04f), if (p.dark) 0.12f else 0.80f)
+    val dark = blend(base, if (p.dark) Color.Black else olive, if (p.dark) 0.62f else 0.30f)
+    // secondary text is derived against the canvas, not the palette: the canvas is darker
+    val muted = blend(base, p.onSurface, if (p.dark) 0.60f else 0.66f)
     return Neu(
         base = base,
         panel = panel,
         light = light,
         dark = dark,
         ink = p.onSurface,
-        muted = p.muted,
+        muted = muted,
         accent = p.primary,
         onAccent = p.onPrimary,
         accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
         danger = p.down,
-        lightAlpha = if (p.dark) 0.30f else 1.0f,
-        darkAlpha = if (p.dark) 0.48f else 0.22f,
+        lightAlpha = if (p.dark) 0.34f else 1.0f,
+        darkAlpha = if (p.dark) 0.50f else 0.26f,
         scrim = if (p.dark) Color.Black.copy(alpha = 0.55f) else blend(base, p.onSurface, 0.45f).copy(alpha = 0.42f),
     )
 }
@@ -160,9 +172,58 @@ fun Modifier.raised(
 ): Modifier = this.drawBehind {
     val r = corner.toPx(); val o = offset.toPx(); val b = Elevation.blur(offset).toPx()
     if (o == 0f) { fillRect(r, fill); return@drawBehind }
-    softRect(o, o, size.width, size.height, r, neu.dark.copy(alpha = neu.darkAlpha), b * 0.75f)
-    softRect(-o, -o, size.width, size.height, r, neu.light.copy(alpha = neu.lightAlpha), b * 1.1f)
+    drawIntoCanvas { c ->
+        val canvas = c.nativeCanvas
+        val w = size.width
+        val h = size.height
+        // clip each shadow to the half-plane it belongs to: no smudge on the lit corner
+        canvas.save()
+        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(o, o, w + o + b, h + o + b))
+        val shade = Paint().apply {
+            isAntiAlias = true
+            color = neu.dark.copy(alpha = neu.darkAlpha).toArgb()
+            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.75f)
+        }
+        canvas.drawRRect(RRect.makeXYWH(o, o, w, h, r), shade)
+        canvas.restore()
+
+        canvas.save()
+        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(-o - b, -o - b, w - o, h - o))
+        val light = Paint().apply {
+            isAntiAlias = true
+            color = neu.light.copy(alpha = neu.lightAlpha).toArgb()
+            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 1.1f)
+        }
+        canvas.drawRRect(RRect.makeXYWH(-o, -o, w, h, r), light)
+        canvas.restore()
+    }
     fillRect(r, fill)
+}
+
+/**
+ * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
+ * it casts one soft shadow downwards. No opposing highlight, no side shadows.
+ */
+fun Modifier.elevated(
+    neu: Neu,
+    corner: Dp = Radius.sheet,
+    drop: Dp = Elevation.high,
+): Modifier = this.drawBehind {
+    val r = corner.toPx()
+    val d = drop.toPx()
+    drawIntoCanvas { c ->
+        val canvas = c.nativeCanvas
+        canvas.save()
+        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(-d * 2, 0f, size.width + d * 2, size.height + d * 3))
+        val paint = Paint().apply {
+            isAntiAlias = true
+            color = neu.dark.copy(alpha = (neu.darkAlpha * 1.6f).coerceAtMost(0.55f)).toArgb()
+            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, d)
+        }
+        canvas.drawRRect(RRect.makeXYWH(0f, d * 0.45f, size.width, size.height, r), paint)
+        canvas.restore()
+    }
+    fillRect(r, neu.panel)
 }
 
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
@@ -242,7 +303,7 @@ fun NeuButton(
     val hovered by interaction.collectIsHoveredAsState()
     val pressed by interaction.collectIsPressedAsState()
     val focused by interaction.collectIsFocusedAsState()
-    val shape = RoundedCornerShape(50)
+    val shape = RoundedCornerShape(Radius.pill)
     val ink = when {
         !enabled -> neu.muted
         primary -> neu.onAccent
@@ -320,7 +381,7 @@ fun <T> NeuSegmented(
                             if (on) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
                             else Modifier,
                         )
-                        .clip(RoundedCornerShape(50))
+                        .clip(RoundedCornerShape(Radius.pill))
                         .pointerHoverIcon(PointerIcon.Hand)
                         .clickable { onSelect(value) }
                         .padding(horizontal = Space.m, vertical = Space.xs + 2.dp),
@@ -351,10 +412,11 @@ fun NeuChip(
                 if (selected) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
                 else Modifier.raised(neu, corner = 50.dp, offset = Elevation.low),
             )
-            .clip(RoundedCornerShape(50))
+            .clip(RoundedCornerShape(Radius.pill))
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable { onClick() }
-            .padding(horizontal = Space.m, vertical = Space.xs + 2.dp),
+            .heightIn(min = 32.dp)
+            .padding(horizontal = Space.m, vertical = Space.xs),
     ) {
         Text(label, color = if (selected) neu.onAccent else neu.ink, style = BakiType.label)
     }
@@ -392,14 +454,14 @@ fun NeuBar(
             if (segments.isNullOrEmpty()) {
                 if (fraction <= 0f) return@Row
                 Box(
-                    Modifier.fillMaxSize(fraction.coerceIn(0.02f, 1f)).clip(RoundedCornerShape(50))
+                    Modifier.fillMaxSize(fraction.coerceIn(0.02f, 1f)).clip(RoundedCornerShape(Radius.pill))
                         .background(color),
                 )
             } else {
                 segments.filter { it.first > 0f }.forEach { (weight, tint) ->
                     Box(
                         Modifier.weight(weight.coerceAtLeast(0.0001f)).fillMaxSize()
-                            .clip(RoundedCornerShape(50)).background(tint),
+                            .clip(RoundedCornerShape(Radius.pill)).background(tint),
                     )
                 }
             }
@@ -440,7 +502,7 @@ fun NeuDialog(
         Column(
             Modifier
                 .width(width)
-                .raised(neu, corner = Radius.sheet, offset = Elevation.high)
+                .elevated(neu, corner = Radius.sheet, drop = Elevation.high)
                 .clip(RoundedCornerShape(Radius.sheet))
                 .background(neu.panel)
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}
@@ -450,5 +512,59 @@ fun NeuDialog(
     }
 }
 
+/** The material for the current palette, computed once per palette rather than per composable. */
+@Composable
+fun rememberNeu(): Neu {
+    val palette = LocalBaki.current
+    return remember(palette) { neuOf(palette) }
+}
+
 /** The active material, so deep components do not recompute it. */
 val LocalNeu = androidx.compose.runtime.staticCompositionLocalOf<Neu> { neuOf(DarkPalette) }
+
+
+/**
+ * The scrollbar, in the same material: an inset track with a raised thumb. Drag it, or let the wheel
+ * do the work — it reflects position either way. Hidden when there is nothing to scroll.
+ */
+@Composable
+fun NeuScrollbar(
+    state: androidx.compose.foundation.ScrollState,
+    neu: Neu,
+    modifier: Modifier = Modifier,
+) {
+    val max = state.maxValue
+    if (max <= 0 || state.viewportSize <= 0) return
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.width(12.dp).fillMaxHeight()) {
+        val track = maxHeight
+        val ratio = (state.viewportSize.toFloat() / (state.viewportSize + max)).coerceIn(0.08f, 1f)
+        val thumb = (track * ratio).coerceAtLeast(32.dp)
+        val travel = (track - thumb).coerceAtLeast(1.dp)
+        val offsetY = travel * (state.value.toFloat() / max)
+        // the groove
+        Box(
+            Modifier
+                .fillMaxSize()
+                .inset(neu, corner = Radius.pill, offset = 2.dp)
+                .clip(RoundedCornerShape(Radius.pill)),
+        )
+        // the thumb
+        Box(
+            Modifier
+                .offset(y = offsetY)
+                .height(thumb)
+                .width(8.dp)
+                .align(Alignment.TopCenter)
+                .raised(neu, corner = Radius.pill, offset = 2.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .pointerHoverIcon(PointerIcon.Hand)
+                .pointerInput(max, travel, thumb) {
+                    detectVerticalDragGestures { _, drag ->
+                        val perPx = max.toFloat() / travel.toPx()
+                        scope.launch { state.scrollBy(drag * perPx) }
+                    }
+                },
+        )
+    }
+}

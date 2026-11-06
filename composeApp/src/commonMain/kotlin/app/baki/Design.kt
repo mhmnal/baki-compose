@@ -14,6 +14,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.inter_variable
+import baki_compose.composeapp.generated.resources.jetbrains_mono
+import baki_compose.composeapp.generated.resources.space_grotesk
 import baki_compose.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.Font
 import androidx.compose.runtime.remember
@@ -86,25 +88,25 @@ object BakiType {
     // Weights run heavier than stock M3: the app's voice is a bold money figure.
 
     /** the one hero number on a screen — M3 displayLarge */
-    var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.5).sp)
+    var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.2).sp)
     /** secondary hero — M3 displaySmall */
-    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Black, letterSpacing = (-1).sp)
+    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
     /** card headline — M3 headlineMedium */
-    var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Black, letterSpacing = (-0.5).sp)
+    var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp)
     /** dialog titles — M3 titleLarge */
-    var title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.2).sp)
+    var title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)
     /** M3 titleMedium */
     var subtitle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
     /** M3 bodyLarge */
-    var body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal)
-    var bodyStrong = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
+    var body = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium)
+    var bodyStrong = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
     /** M3 labelMedium */
-    var label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    var label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.2.sp)
     var labelStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     /** M3 labelSmall */
-    var caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+    var caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.2.sp)
     /** all-caps section header */
-    var section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+    var section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.44.sp)
     var micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
     /** small print that still needs to shout: 11 sp, bold, no tracking */
     var captionStrong = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
@@ -127,37 +129,47 @@ object BakiType {
     var labelNumeric = labelStrong.copy(fontFeatureSettings = TNUM)
     var captionNumeric = caption.copy(fontFeatureSettings = TNUM)
     var bodySmallNumeric = bodySmall.copy(fontFeatureSettings = TNUM)
-    private var family: FontFamily? = null
+    private var textFamily: FontFamily? = null
+    private var displayFamily: FontFamily? = null
+    private var readoutFamily: FontFamily? = null
 
-    /** Applied once at startup, before any text is composed. */
-    fun install(f: FontFamily) {
-        if (family === f) return
-        family = f
-        display = display.copy(fontFamily = f)
-        displaySmall = displaySmall.copy(fontFamily = f)
-        headline = headline.copy(fontFamily = f)
-        title = title.copy(fontFamily = f)
-        subtitle = subtitle.copy(fontFamily = f)
-        body = body.copy(fontFamily = f)
-        bodyStrong = bodyStrong.copy(fontFamily = f)
-        label = label.copy(fontFamily = f)
-        labelStrong = labelStrong.copy(fontFamily = f)
-        caption = caption.copy(fontFamily = f)
-        section = section.copy(fontFamily = f)
-        micro = micro.copy(fontFamily = f)
-        captionStrong = captionStrong.copy(fontFamily = f)
-        bodySmall = bodySmall.copy(fontFamily = f)
-        bodySmallStrong = bodySmallStrong.copy(fontFamily = f)
-        nano = nano.copy(fontFamily = f)
-        displayNumeric = displayNumeric.copy(fontFamily = f)
-        displaySmallNumeric = displaySmallNumeric.copy(fontFamily = f)
-        headlineNumeric = headlineNumeric.copy(fontFamily = f)
-        titleNumeric = titleNumeric.copy(fontFamily = f)
-        subtitleNumeric = subtitleNumeric.copy(fontFamily = f)
-        bodyNumeric = bodyNumeric.copy(fontFamily = f)
-        labelNumeric = labelNumeric.copy(fontFamily = f)
-        captionNumeric = captionNumeric.copy(fontFamily = f)
-        bodySmallNumeric = bodySmallNumeric.copy(fontFamily = f)
+    /**
+     * Applied once at startup, before any text is composed.
+     *
+     * Three faces, three jobs: Space Grotesk for display, JetBrains Mono for readouts (money and
+     * chart labels, so figures read like an instrument), Inter for everything else.
+     */
+    fun install(text: FontFamily, displayFace: FontFamily, readoutFace: FontFamily) {
+        if (textFamily === text && displayFamily === displayFace && readoutFamily === readoutFace) return
+        textFamily = text; displayFamily = displayFace; readoutFamily = readoutFace
+
+        display = display.copy(fontFamily = displayFace)
+        displaySmall = displaySmall.copy(fontFamily = displayFace)
+        headline = headline.copy(fontFamily = displayFace)
+        title = title.copy(fontFamily = displayFace)
+
+        subtitle = subtitle.copy(fontFamily = text)
+        body = body.copy(fontFamily = text)
+        bodyStrong = bodyStrong.copy(fontFamily = text)
+        label = label.copy(fontFamily = text)
+        labelStrong = labelStrong.copy(fontFamily = text)
+        caption = caption.copy(fontFamily = text)
+        captionStrong = captionStrong.copy(fontFamily = text)
+        section = section.copy(fontFamily = text)
+        micro = micro.copy(fontFamily = text)
+        bodySmall = bodySmall.copy(fontFamily = text)
+        bodySmallStrong = bodySmallStrong.copy(fontFamily = text)
+        nano = nano.copy(fontFamily = text)
+
+        displayNumeric = display.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        displaySmallNumeric = displaySmall.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        headlineNumeric = headline.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        titleNumeric = title.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        subtitleNumeric = subtitle.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        bodyNumeric = body.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        labelNumeric = labelStrong.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        captionNumeric = caption.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
+        bodySmallNumeric = bodySmall.copy(fontFeatureSettings = TNUM, fontFamily = readoutFace)
     }
 }
 
@@ -189,10 +201,13 @@ data class BakiSemantic(val income: Color, val expense: Color, val warn: Color)
 
 
 /** The app's typeface: one variable file, every weight. */
+/** Three families, each with one job: Space Grotesk for display, JetBrains Mono for readouts. */
 @Composable
-fun bakiFontFamily(): FontFamily {
-    val normal = Font(Res.font.inter_variable, FontWeight.Normal)
-    return remember { FontFamily(normal) }
+fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
+    val text = Font(Res.font.inter_variable, FontWeight.Normal)
+    val display = Font(Res.font.space_grotesk, FontWeight.Normal)
+    val readout = Font(Res.font.jetbrains_mono, FontWeight.Normal)
+    return remember { Triple(FontFamily(text), FontFamily(display), FontFamily(readout)) }
 }
 
 /**
