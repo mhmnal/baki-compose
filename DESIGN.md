@@ -215,7 +215,7 @@ needs nothing on the machine; only `./gradlew :composeApp:run` needs `JAVA_HOME`
 The floating command bar is the single glass surface: M3 for everything else, refraction where the
 phone keeps its nav bar.
 
-## Desktop: neumorphism
+## Desktop: neumorphism (v0.11)
 
 The laptop is deliberately a different design language from the phone. Phone keeps Material 3 with a
 single liquid-glass nav bar; the desktop is **neumorphic** — one base colour, depth from two soft
@@ -230,3 +230,24 @@ shadows only, no borders.
   stays in the phone build only.
 - Depth is the only affordance, so selection and hover must remain visible: selected rows are inset
   wells, hover adds a 5.5% accent wash.
+
+### Desktop component set (v0.11)
+
+`Neumorphism.kt` is the whole desktop design system:
+
+| Piece | Use |
+|---|---|
+| `Neu` / `neuOf(palette)` | base, panel, light, dark, ink, muted, accent, danger — derived per pack |
+| `Modifier.raised` / `inset` | extrusion and carving; blur is always twice the offset |
+| `Modifier.groove` | dividers as pressed seams, never drawn lines |
+| `NeuPanel` / `NeuWell` | raised and inset surfaces |
+| `NeuButton` / `NeuIconButton` | raised, sinks when pressed, accent ring on keyboard focus |
+| `NeuSegmented` | inset track, raised thumb, accent label |
+| `NeuChip` | raised when available, sunk when chosen |
+| `NeuField` | inset well with the label above it (a label inside placeholder disappears once filled) |
+| `NeuBar` | inset track with a raised fill; segments for the category bar |
+| `NeuMetric` / `NeuEmpty` | right-rail figures, and emptiness carved like everything else |
+| `NeuDialog` | centred raised panel on a dim of the material's own shade |
+
+Set `BAKI_VIEW=entries|shifts|year|settings|statement` to open the app in that view — used to
+capture the design deterministically during review.
