@@ -41,6 +41,15 @@ class NeumorphismTest {
     }
 
     @Test
+    fun panelsSitAboveTheCanvasPerceptually() {
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
+            val n = neuOf(p)
+            val delta = lum(n.panel) - lum(n.base)
+            assertTrue(delta > 0.008f, "panel barely lifts off the base in pack dark=${p.dark}: $delta")
+        }
+    }
+
+    @Test
     fun shadowsKeepEnoughSeparationToRead() {
         listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
             val n = neuOf(p)

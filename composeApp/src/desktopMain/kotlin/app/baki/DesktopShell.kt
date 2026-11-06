@@ -7,10 +7,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +60,8 @@ import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -366,7 +370,12 @@ private fun WeekChart(store: Store, neu: Neu) {
     Column {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.card) {
+        val weekSummary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
+        NeuPanel(
+            neu,
+            Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $weekSummary" },
+            corner = Radius.card,
+        ) {
             Row(
                 Modifier.fillMaxWidth().padding(Space.m),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
@@ -406,7 +415,13 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
     Column {
         Text("TREND", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.card) {
+        NeuPanel(
+            neu,
+            Modifier.fillMaxWidth().semantics {
+                contentDescription = "Month trend, peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}"
+            },
+            corner = Radius.card,
+        ) {
             Column(Modifier.padding(Space.m)) {
                 Row(
                     Modifier.fillMaxWidth().height(120.dp),
@@ -523,8 +538,10 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
         selected = entries[next].id
     }
 
+    val scroll = rememberScrollState()
+    Box(Modifier.fillMaxSize()) {
     Column(
-        Modifier.fillMaxSize().padding(Gutter)
+        Modifier.fillMaxSize().padding(Gutter).verticalScroll(scroll)
             .focusRequester(tableFocus).focusable()
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -561,6 +578,11 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
             EntryTable(store, entries, onEdit, onDelete, compact = false, selectedId = selected, onSelect = { selected = it })
         }
     }
+        androidx.compose.foundation.VerticalScrollbar(
+            adapter = androidx.compose.foundation.rememberScrollbarAdapter(scroll),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(Space.xs),
+        )
+    }
 }
 
 @Composable
@@ -569,7 +591,9 @@ internal fun ShiftsView(store: Store, month: String) {
     val neu = neuOf(baki)
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedByDescending { it.date }
     val net = shifts.sumOf { shiftMetrics(it, store.settings.profit).net }
-    Column(Modifier.fillMaxSize().padding(Gutter)) {
+    val scroll = rememberScrollState()
+    Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().padding(Gutter).verticalScroll(scroll)) {
         Text("${shifts.size} shifts · net RM ${"%.2f".format(net)}", color = neu.muted, style = BakiType.label)
         Spacer(Modifier.height(Space.m))
         Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
@@ -591,7 +615,7 @@ internal fun ShiftsView(store: Store, month: String) {
                 Row(
                     Modifier.fillMaxWidth()
                         .then(if (hovered) Modifier.raised(neu, corner = Radius.input, offset = Elevation.low) else Modifier)
-                        .padding(horizontal = if (hovered) Space.s else 0.dp, vertical = Space.m),
+                        .padding(horizontal = Space.s, vertical = Space.m),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("${s.date} ${s.start}", color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(150.dp))
@@ -603,6 +627,11 @@ internal fun ShiftsView(store: Store, month: String) {
                 }
             }
         }
+    }
+        androidx.compose.foundation.VerticalScrollbar(
+            adapter = androidx.compose.foundation.rememberScrollbarAdapter(scroll),
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(Space.xs),
+        )
     }
 }
 
@@ -673,7 +702,7 @@ private fun EntryTable(
                                 }
                             }
                             .clickable(interactionSource = hover, indication = null) { onSelect(entry.id) }
-                            .padding(horizontal = if (hovered || isSelected) Space.s else 0.dp, vertical = Space.m),
+                            .padding(horizontal = Space.s, vertical = Space.m),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(entry.date, color = neu.muted, style = BakiType.labelNumeric, modifier = Modifier.width(120.dp))
@@ -784,17 +813,26 @@ private fun NeuField(
     modifier: Modifier = Modifier,
 ) {
     val neu = neuOf(LocalBaki.current)
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
     Column(modifier) {
         if (label.isNotEmpty()) {
             Text(label, color = neu.muted, style = BakiType.caption, modifier = Modifier.padding(bottom = Space.xxs))
         }
-        NeuWell(neu, Modifier.fillMaxWidth(), corner = Radius.input) {
+        NeuWell(
+            neu,
+            Modifier.fillMaxWidth().then(
+                if (focused) Modifier.border(2.dp, neu.accent, RoundedCornerShape(Radius.input)) else Modifier,
+            ),
+            corner = Radius.input,
+        ) {
             androidx.compose.foundation.text.BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
                 textStyle = BakiType.label.copy(color = neu.ink),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(neu.accent),
+                interactionSource = interaction,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s + 2.dp),
             )
         }
