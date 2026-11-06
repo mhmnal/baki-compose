@@ -74,6 +74,8 @@ data class Neu(
     /** shadow strength per mode: light packs lean on the highlight, dark packs on the shade */
     val lightAlpha: Float,
     val darkAlpha: Float,
+    /** the veil behind a modal: always a darkened canvas, never the shade colour */
+    val scrim: Color,
 )
 
 fun neuOf(p: BakiPalette): Neu {
@@ -102,6 +104,7 @@ fun neuOf(p: BakiPalette): Neu {
         danger = p.down,
         lightAlpha = if (p.dark) 0.30f else 1.0f,
         darkAlpha = if (p.dark) 0.48f else 0.22f,
+        scrim = if (p.dark) Color.Black.copy(alpha = 0.55f) else blend(base, p.onSurface, 0.45f).copy(alpha = 0.42f),
     )
 }
 
@@ -430,7 +433,7 @@ fun NeuDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
-        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.50f))
+        Modifier.fillMaxSize().background(neu.scrim)
             .clickable(interactionSource = MutableInteractionSource(), indication = null) { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {

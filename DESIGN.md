@@ -269,5 +269,7 @@ Neumorphism is the *only* design language on the desktop. The rules that make it
    use the palette accent with `onAccent` text; everything else is ink on base.
 6. **Compact chrome.** There is no sidebar and no toolbar bar: one header row carries the wordmark,
    month stepper, a segmented navigation control, sync state and the two actions.
-7. **Labels above fields.** A placeholder label disappears the moment you type; the label sits on
+7. **A veil, not a shade.** Modal scrims are a darkened canvas (`Neu.scrim`); the shade colour is
+   lighter than the base in light packs and would not dim anything.
+8. **Labels above fields.** A placeholder label disappears the moment you type; the label sits on
    the canvas above an inset well.

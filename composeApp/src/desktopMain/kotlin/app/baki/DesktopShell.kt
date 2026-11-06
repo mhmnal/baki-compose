@@ -298,7 +298,7 @@ private fun Overview(
     val week = latestWeekWithData(store, todayIso())
     val streak = targetStreak(store, todayIso())
 
-    Row(Modifier.fillMaxSize().padding(Gutter)) {
+    Row(Modifier.fillMaxSize().padding(vertical = Space.s)) {
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -552,7 +552,7 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
     Column(
-        Modifier.fillMaxSize().padding(Gutter).verticalScroll(scroll)
+        Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)
             .focusRequester(tableFocus).focusable()
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -608,7 +608,7 @@ internal fun ShiftsView(store: Store, month: String) {
     val net = shifts.sumOf { shiftMetrics(it, store.settings.profit).net }
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
-    Column(Modifier.fillMaxSize().padding(Gutter).verticalScroll(scroll)) {
+    Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
         SectionCard(neu) {
         Text("${shifts.size} shifts · net RM ${"%.2f".format(net)}", color = neu.muted, style = BakiType.label)
         Spacer(Modifier.height(Space.m))
@@ -807,19 +807,23 @@ internal fun YearView(store: Store) {
     }
     val peak = months.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
-    Column(Modifier.fillMaxSize().padding(Gutter).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(rememberScrollState())) {
         SectionCard(neu) {
             val best = months.maxByOrNull { it.second.net }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val yearShifts = store.shifts.filter { it.date.startsWith(year.toString()) }
+            Row(verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f)) {
                     Text("$year AT A GLANCE", color = neu.muted, style = BakiType.section)
                     Text("RM ${rm(months.sumOf { it.second.net })} net", color = neu.ink, style = BakiType.headlineNumeric)
                 }
-                best?.let {
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("BEST MONTH", color = neu.muted, style = BakiType.section)
-                        Text(monthLabel(it.first), color = neu.ink, style = BakiType.subtitle)
-                        Text("RM ${rm(it.second.net)}", color = neu.accent, style = BakiType.labelNumeric)
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
+                    NeuMetric(neu, "IN", "RM ${rm(months.sumOf { it.second.income })}")
+                    NeuMetric(neu, "OUT", "RM ${rm(months.sumOf { it.second.expense })}", valueColor = neu.danger)
+                    NeuMetric(neu, "HOURS", "${"%.1f".format(yearShifts.sumOf { it.hours })} h")
+                    NeuMetric(neu, "KM", "${"%.0f".format(yearShifts.sumOf { it.km })}")
+                    best?.let {
+                        NeuMetric(neu, "BEST MONTH", monthLabel(it.first).substringBefore(' '),
+                            detail = "RM ${rm(it.second.net)}", valueColor = neu.accent)
                     }
                 }
             }
@@ -829,7 +833,7 @@ internal fun YearView(store: Store) {
         months.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                 row.forEach { (label, t) ->
-                    Column(Modifier.weight(1f).padding(vertical = Space.s)) {
+                    Column(Modifier.weight(1f).padding(vertical = Space.m)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 monthLabel(label),
@@ -1015,7 +1019,7 @@ private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit)
     val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
 
     Box(
-        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.50f)).clickable(
+        Modifier.fillMaxSize().background(neu.scrim).clickable(
             interactionSource = MutableInteractionSource(), indication = null,
         ) { onDismiss() },
         contentAlignment = Alignment.Center,
