@@ -141,6 +141,9 @@ holds, and it would bloat every upload.
 
 - Captured by `DistanceTracker` at the same 2 s cadence as the distance maths (the phone charges in
   the car), buffered and written in batches of 20 points / 30 s.
+- Filed under the **live shift key** while driving, then renamed onto the id of the shift that is
+  stored when the shift ends. No route identity is synced: the server whitelists shift fields, so a
+  synced key would silently be stripped on the way back.
 - Simplified on shift end (Douglas–Peucker, 4 m) so a three-hour shift stays a few dozen KB.
 - Retention: 90 days, swept on app start and on every finalise.
 - Drawn read-only from OpenStreetMap raster tiles on a Compose Canvas (`RouteMap`): no gestures, no

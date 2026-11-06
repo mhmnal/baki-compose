@@ -1133,6 +1133,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(14.dp)) {
             val h = healthOf(repo)
+            var routeStats by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+            LaunchedEffect(h.entries, h.shifts) {
+                routeStats = runCatching { RouteStore.stats() }.getOrNull()
+            }
             val now = nowMillis()
             val rows = buildList {
                 add("Sync" to when {
@@ -1157,6 +1161,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     add("Live" to (if (paused) "paused" else "running") + " · ${"%.1f".format(h.live.km)} km · ${ago(now, h.live.start)}")
                 }
                 if (h.gpsCorrection != 1.0) add("Correction" to "×${"%.2f".format(h.gpsCorrection)}")
+                routeStats?.let { stats ->
+                    add(
+                        "Routes" to if (stats.first == 0) "none recorded"
+                        else "${stats.first} path(s) · ${stats.second} points",
+                    )
+                }
             }
             rows.forEach { (k, v) ->
                 Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {

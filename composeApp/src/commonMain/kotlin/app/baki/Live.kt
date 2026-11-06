@@ -29,7 +29,15 @@ private const val LIVE_FILE = "live.json"
 fun lifeOf(l: LiveShift?): LiveShift? = l
 fun loadLive(): LiveShift? {
     val raw = LocalStore.readText(LIVE_FILE) ?: return null
-    return runCatching { BakiJson.decodeFromString<LiveShift>(raw) }.getOrNull()
+    val decoded = runCatching { BakiJson.decodeFromString<LiveShift>(raw) }.getOrNull() ?: return null
+    // a live shift without an id cannot have its path filed against it; heal it on load so
+    // files written by older builds (or by a path that forgot to mint one) still record a route
+    if (decoded.id.isBlank()) {
+        val healed = decoded.copy(id = newId("r"))
+        saveLive(healed)
+        return healed
+    }
+    return decoded
 }
 fun saveLive(l: LiveShift?) {
     if (l == null) LocalStore.writeText(LIVE_FILE, "") else

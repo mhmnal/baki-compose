@@ -247,22 +247,27 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (total <= 0) return@withLock       // nothing earned: nothing to write
 
         val charge = draftCoverCharge(store, date, start)
-        // the tracker's buffer belongs to this shift; write it before the shift is stored
+        // The path is filed under the live shift key while driving; on completion it moves onto the
+        // id of the shift that ends up in the store. Nothing about routes is ever synced — the
+        // server whitelists shift fields, so a synced key would simply be stripped.
+        val shiftId = newId("s")
+        val routeKey = current.id.ifBlank { shiftId }
         val pending = drainRouteBuffer()
-        if (pending.isNotEmpty() && current.id.isNotBlank()) {
-            RouteStore.append(current.id, date, pending)
-        }
+        if (pending.isNotEmpty()) RouteStore.append(routeKey, date, pending)
         val shift = Shift(
-            id = newId("s"), date = date, start = start, hours = hours,
+            id = shiftId, date = date, start = start, hours = hours,
             km = if (measuredKm >= 0.3) measuredKm else 0.0,
             gross = total, grabFee = charge, updated = nowIso(),
             payouts = current.payouts,
-            routeId = current.id.ifBlank { null },
         )
         store = recomputeCover(store.copy(shifts = store.shifts + shift, updatedAt = nowIso())).first
         saveLocal(store)
-        // simplify the path now that the shift is closed, then enforce retention
-        if (current.id.isNotBlank()) runCatching { RouteStore.finalize(current.id) }
+        // move the path onto the shift id, simplify it, then enforce retention
+        runCatching {
+            RouteStore.rename(routeKey, shiftId)
+            RouteStore.finalize(shiftId)
+            RouteStore.pruneOrphans(store.shifts.map { it.id }.toSet())
+        }
         try {
             val saved = client.push(store)
             store = mergeStores(store, saved)
@@ -345,8 +350,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = recomputeCover(next).first
         saveLocal(store)
         // a deleted shift must not leave its movement history behind
-        store.shifts.firstOrNull { it.id == id }?.routeId?.let { runCatching { RouteStore.delete(it) } }
-            ?: runCatching { RouteStore.delete(id) }
+        runCatching { RouteStore.delete(id) }
         pushWithTombs(listOf(id, feeId))
     }
 

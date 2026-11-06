@@ -42,8 +42,6 @@ data class Shift(
     val updated: String = "",
     val payouts: List<Payout> = emptyList(),
     val sample: Boolean? = null,
-    /** key of this shift's path in the local encrypted route store; null when nothing was tracked */
-    val routeId: String? = null,
 )
 
 @Serializable data class Cat(val id: String, val name: String, val icon: String)

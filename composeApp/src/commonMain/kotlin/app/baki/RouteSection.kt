@@ -37,14 +37,13 @@ fun RouteDaysSection(store: Store, month: String, modifier: Modifier = Modifier)
 
     LaunchedEffect(store, month) {
         val byDate = store.shifts
-            .filter { it.date.startsWith(month) && !it.routeId.isNullOrBlank() }
+            .filter { it.date.startsWith(month) }
             .groupBy { it.date }
         val loaded = byDate.toList()
             .sortedByDescending { it.first }
             .map { (date, shifts) ->
                 val routes = shifts.sortedBy { it.start }.mapIndexedNotNull { i, shift ->
-                    val key = shift.routeId ?: return@mapIndexedNotNull null
-                    val route = RouteStore.route(key) ?: return@mapIndexedNotNull null
+                    val route = RouteStore.route(shift.id) ?: return@mapIndexedNotNull null
                     if (route.points.size < 2) return@mapIndexedNotNull null
                     MapRoute(route = route, color = routeColor(baki, i), label = "Shift ${i + 1}")
                 }

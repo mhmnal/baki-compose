@@ -22,7 +22,7 @@ class BakiTile : TileService() {
         val live = loadLive()
         when {
             live == null -> {
-                val started = LiveShift(start = nowMillis())
+                val started = LiveShift(id = newId("r"), start = nowMillis())
                 saveLive(started)
                 LiveShiftService.update(this, started.start, 0)
             }

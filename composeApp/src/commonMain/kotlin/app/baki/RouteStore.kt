@@ -66,6 +66,25 @@ object RouteStore {
         pruneUnlocked(file.copy(routes = file.routes + (shiftId to simplified)))
     }
 
+    /** Move a path onto the id of the shift that was just created for it. */
+    suspend fun rename(from: String, to: String) = mutex.withLock {
+        if (from == to || from.isBlank() || to.isBlank()) return@withLock
+        val file = loadUnlocked()
+        val route = file.routes[from] ?: return@withLock
+        writeUnlocked(
+            file.copy(
+                routes = (file.routes - from) + (to to route.copy(shiftId = to)),
+            ),
+        )
+    }
+
+    /** Drop paths whose shift no longer exists (deleted before the rename, or legacy keys). */
+    suspend fun pruneOrphans(liveShiftIds: Set<String>) = mutex.withLock {
+        val file = loadUnlocked()
+        val kept = file.routes.filterValues { it.shiftId in liveShiftIds }
+        if (kept.size != file.routes.size) writeUnlocked(file.copy(routes = kept))
+    }
+
     suspend fun route(shiftId: String): ShiftRoute? = mutex.withLock {
         val file = loadUnlocked()
         file.routes[shiftId]

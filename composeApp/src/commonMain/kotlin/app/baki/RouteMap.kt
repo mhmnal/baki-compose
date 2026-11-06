@@ -46,6 +46,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlin.math.roundToInt
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * Read-only day map: every shift of the day on one canvas, each with its own polyline and its own
@@ -252,10 +255,7 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
                             Text(mapRoute.label, color = baki.muted, style = BakiType.caption)
                             Spacer(Modifier.weight(1f))
                             Text(
-                                "%02d:%02d – %02d:%02d".format(
-                                    clockHour(mapRoute.route.start), clockMinute(mapRoute.route.start),
-                                    clockHour(mapRoute.route.end), clockMinute(mapRoute.route.end),
-                                ),
+                                "${clockLabel(mapRoute.route.start)} – ${clockLabel(mapRoute.route.end)}",
                                 color = baki.muted, style = BakiType.captionNumeric,
                             )
                         }
@@ -266,5 +266,10 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
     }
 }
 
-private fun clockHour(p: RoutePoint?): Int = p?.let { ((it.t / 3_600_000L) % 24).toInt() } ?: 0
-private fun clockMinute(p: RoutePoint?): Int = p?.let { ((it.t / 60_000L) % 60).toInt() } ?: 0
+/** Fix timestamps are epoch millis; the legend must read in the driver's local time, not UTC. */
+private fun clockLabel(p: RoutePoint?): String {
+    val point = p ?: return "--:--"
+    val local = Instant.fromEpochMilliseconds(point.t)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    return "%02d:%02d".format(local.hour, local.minute)
+}
