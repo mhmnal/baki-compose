@@ -105,6 +105,13 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     DesktopActions.newEntry = { adding = true }
     DesktopActions.applyTheme = { repo.setPalette(it) }
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.foundation.text.selection.LocalTextSelectionColors provides
+            androidx.compose.foundation.text.selection.TextSelectionColors(
+                handleColor = neu.accent,
+                backgroundColor = neu.accent.copy(alpha = 0.28f),
+            ),
+    ) {
     Box(
         Modifier
             .fillMaxSize()
@@ -173,6 +180,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     }
     deleting?.let { entry ->
         DeleteDialog(entry, { deleting = null }) { scope.launch { repo.deleteEntry(entry.id); deleting = null } }
+    }
     }
     return true
 }
@@ -723,15 +731,18 @@ private fun EntryTable(
                             textAlign = TextAlign.End,
                         )
                     }
-                    androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Edit", style = BakiType.label) },
-                            onClick = { menu = false; onEdit(entry) },
-                        )
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Delete", style = BakiType.label) },
-                            onClick = { menu = false; onDelete(entry) },
-                        )
+                    if (menu) {
+                        androidx.compose.ui.window.Popup(
+                            onDismissRequest = { menu = false },
+                            properties = androidx.compose.ui.window.PopupProperties(focusable = true),
+                        ) {
+                            NeuPanel(neu, Modifier.width(170.dp), corner = Radius.small) {
+                                Column(Modifier.padding(Space.xs)) {
+                                    NeuMenuItem(neu, "Edit") { menu = false; onEdit(entry) }
+                                    NeuMenuItem(neu, "Delete", danger = true) { menu = false; onDelete(entry) }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -740,6 +751,23 @@ private fun EntryTable(
 }
 
 private fun Modifier.hoverableRow(source: MutableInteractionSource): Modifier = this.hoverable(source)
+
+@Composable
+private fun NeuMenuItem(neu: Neu, label: String, danger: Boolean = false, onClick: () -> Unit) {
+    val hover = remember { MutableInteractionSource() }
+    val hovered by hover.collectIsHoveredAsState()
+    Box(
+        Modifier.fillMaxWidth()
+            .then(if (hovered) Modifier.inset(neu, corner = Radius.small) else Modifier)
+            .clip(RoundedCornerShape(Radius.small))
+            .hoverableRow(hover)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(interactionSource = hover, indication = null) { onClick() }
+            .padding(horizontal = Space.s, vertical = Space.s),
+    ) {
+        Text(label, color = if (danger) neu.danger else neu.ink, style = BakiType.label)
+    }
+}
 
 @Composable
 private fun Head(
@@ -961,7 +989,7 @@ private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit)
     val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
 
     Box(
-        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.38f)).clickable(
+        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.50f)).clickable(
             interactionSource = MutableInteractionSource(), indication = null,
         ) { onDismiss() },
         contentAlignment = Alignment.Center,

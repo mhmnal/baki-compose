@@ -411,7 +411,7 @@ fun NeuDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(
-        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.38f))
+        Modifier.fillMaxSize().background(neu.dark.copy(alpha = 0.50f))
             .clickable(interactionSource = MutableInteractionSource(), indication = null) { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {
