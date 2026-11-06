@@ -56,9 +56,9 @@ import org.jetbrains.skia.RRect
  * rather than inverted.
  */
 data class Neu(
-    /** the window surface; everything sits on it */
+    /** the window surface. Every element is painted this colour too; only shadow separates them */
     val base: Color,
-    /** a raised element's fill, a touch above the base */
+    /** kept equal to base: a raised element is the same material, not a lighter one */
     val panel: Color,
     /** the directional highlight */
     val light: Color,
@@ -68,13 +68,24 @@ data class Neu(
     val muted: Color,
     val accent: Color,
     val onAccent: Color,
+    /** accent at low alpha, for selected rows that must stay readable */
+    val accentSoft: Color,
     val danger: Color,
+    /** shadow strength per mode: light packs lean on the highlight, dark packs on the shade */
+    val lightAlpha: Float,
+    val darkAlpha: Float,
 )
 
 fun neuOf(p: BakiPalette): Neu {
     // the base is the palette's surface nudged towards its own accent, so the app still has an identity
-    val base = blend(p.surface, p.primary, if (p.dark) 0.10f else 0.06f)
-    val panel = blend(base, Color.White, if (p.dark) 0.035f else 0.32f)
+    // a neumorphic canvas is a mid tone, not paper white: blend towards a soft grey-green
+    val base = if (p.dark) {
+        blend(p.surface, p.primary, 0.10f)
+    } else {
+        blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
+    }
+    // the whole point: no second surface colour
+    val panel = base
     // guidance: highlight +15-25%, shade -15-25%. Dark packs need a wider spread to read at all.
     val light = blend(base, Color.White, if (p.dark) 0.16f else 0.80f)
     val dark = blend(base, if (p.dark) Color.Black else p.onSurface, if (p.dark) 0.62f else 0.24f)
@@ -87,7 +98,10 @@ fun neuOf(p: BakiPalette): Neu {
         muted = p.muted,
         accent = p.primary,
         onAccent = p.onPrimary,
+        accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
         danger = p.down,
+        lightAlpha = if (p.dark) 0.30f else 1.0f,
+        darkAlpha = if (p.dark) 0.48f else 0.22f,
     )
 }
 
@@ -101,11 +115,16 @@ fun blend(a: Color, b: Color, t: Float): Color = Color(
 
 /** Elevation tokens: offset with blur at twice the offset, which is what makes the light feel soft. */
 object Elevation {
+    /** nothing: text, table rows at rest */
     val flat = 0.dp
-    val low = 3.dp
-    val medium = 6.dp
-    val high = 8.dp
-    fun blur(offset: Dp): Dp = offset * 2
+    /** chips, icon buttons, menu rows */
+    val low = 4.dp
+    /** cards, charts, the rail and toolbar */
+    val medium = 8.dp
+    /** dialogs and menus that float above everything */
+    val high = 12.dp
+    /** the reference ratio: blur is twice the offset, which is what makes the light soft */
+    fun blur(offset: Dp): Dp = offset * 2.2f
 }
 
 private fun DrawScope.softRect(x: Float, y: Float, w: Float, h: Float, r: Float, color: Color, blur: Float) {
@@ -138,8 +157,8 @@ fun Modifier.raised(
 ): Modifier = this.drawBehind {
     val r = corner.toPx(); val o = offset.toPx(); val b = Elevation.blur(offset).toPx()
     if (o == 0f) { fillRect(r, fill); return@drawBehind }
-    softRect(o, o, size.width, size.height, r, neu.dark.copy(alpha = 0.55f), b)
-    softRect(-o, -o, size.width, size.height, r, neu.light.copy(alpha = 0.95f), b)
+    softRect(o, o, size.width, size.height, r, neu.dark.copy(alpha = neu.darkAlpha), b * 0.75f)
+    softRect(-o, -o, size.width, size.height, r, neu.light.copy(alpha = neu.lightAlpha), b * 1.1f)
     fillRect(r, fill)
 }
 
@@ -158,10 +177,10 @@ fun Modifier.inset(
         canvas.save()
         canvas.clipRRect(RRect.makeXYWH(0f, 0f, size.width, size.height, r), true)
         val paint = Paint().apply { isAntiAlias = true }
-        paint.maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b)
-        paint.color = neu.dark.copy(alpha = 0.45f).toArgb()
+        paint.maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.8f)
+        paint.color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f).toArgb()
         canvas.drawRRect(RRect.makeXYWH(o, o, size.width, size.height, r), paint)
-        paint.color = neu.light.copy(alpha = 0.90f).toArgb()
+        paint.color = neu.light.copy(alpha = neu.lightAlpha * 0.9f).toArgb()
         canvas.drawRRect(RRect.makeXYWH(-o, -o, size.width, size.height, r), paint)
         canvas.restore()
     }
@@ -223,7 +242,7 @@ fun NeuButton(
     val shape = RoundedCornerShape(50)
     val ink = when {
         !enabled -> neu.muted
-        primary -> neu.accent
+        primary -> neu.onAccent
         else -> neu.ink
     }
     Box(
@@ -234,8 +253,12 @@ fun NeuButton(
                 else Modifier.raised(
                     neu,
                     corner = 50.dp,
-                    offset = if (hovered) Elevation.low else Elevation.medium,
-                    fill = neu.panel,
+                    offset = Elevation.low,
+                    fill = when {
+                        primary -> neu.accent
+                        hovered -> neu.accentSoft
+                        else -> neu.base
+                    },
                 ),
             )
             .clip(shape)
@@ -291,7 +314,7 @@ fun <T> NeuSegmented(
                 Box(
                     Modifier
                         .then(
-                            if (on) Modifier.raised(neu, corner = 50.dp, offset = Elevation.medium, fill = neu.panel)
+                            if (on) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
                             else Modifier,
                         )
                         .clip(RoundedCornerShape(50))
@@ -301,7 +324,7 @@ fun <T> NeuSegmented(
                 ) {
                     Text(
                         label,
-                        color = if (on) neu.accent else neu.muted,
+                        color = if (on) neu.onAccent else neu.muted,
                         style = if (on) BakiType.labelStrong else BakiType.label,
                     )
                 }
@@ -322,7 +345,7 @@ fun NeuChip(
     Box(
         modifier
             .then(
-                if (selected) Modifier.inset(neu, corner = 50.dp)
+                if (selected) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
                 else Modifier.raised(neu, corner = 50.dp, offset = Elevation.low),
             )
             .clip(RoundedCornerShape(50))
@@ -330,11 +353,7 @@ fun NeuChip(
             .clickable { onClick() }
             .padding(horizontal = Space.m, vertical = Space.xs + 2.dp),
     ) {
-        Text(
-            label,
-            color = if (selected) neu.accent else neu.ink,
-            style = BakiType.label,
-        )
+        Text(label, color = if (selected) neu.onAccent else neu.ink, style = BakiType.label)
     }
 }
 
@@ -418,7 +437,7 @@ fun NeuDialog(
         Column(
             Modifier
                 .width(width)
-                .raised(neu, corner = Radius.sheet)
+                .raised(neu, corner = Radius.sheet, offset = Elevation.high)
                 .clip(RoundedCornerShape(Radius.sheet))
                 .background(neu.panel)
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}

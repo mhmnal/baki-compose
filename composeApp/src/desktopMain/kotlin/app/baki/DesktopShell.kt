@@ -68,7 +68,7 @@ import kotlinx.coroutines.launch
 
 /** The desktop's proportions. Everything derives from these, not from literals in screens. */
 private val RailWidth = 84.dp
-private val Gutter = 28.dp
+private val Gutter = 32.dp
 private val ToolbarHeight = 64.dp
 private val Rail2 = 320.dp
 
@@ -133,22 +133,21 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 }
             },
     ) {
-        Row(
-            Modifier.fillMaxSize().padding(Space.l),
-            horizontalArrangement = Arrangement.spacedBy(Space.m),
-        ) {
-            Rail(neu, tab, onSelect = { tab = it }, onSettings = { settingsOpen = true })
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-                Toolbar(
-                    neu = neu,
-                    month = month,
-                    status = repo.status,
-                    onPrev = { month = shiftMonth(month, -1) },
-                    onNext = { month = shiftMonth(month, 1) },
-                    onStatement = { statement = true },
-                    onNew = { adding = true },
-                )
-                NeuPanel(neu, Modifier.weight(1f), corner = Radius.sheet) {
+        Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.m)) {
+            Header(
+                neu = neu,
+                month = month,
+                status = repo.status,
+                tab = tab,
+                onTab = { tab = it },
+                onPrev = { month = shiftMonth(month, -1) },
+                onNext = { month = shiftMonth(month, 1) },
+                onStatement = { statement = true },
+                onNew = { adding = true },
+                onSettings = { settingsOpen = true },
+            )
+            Spacer(Modifier.height(Space.m))
+                Box(Modifier.weight(1f)) {
                     AnimatedContent(
                         targetState = tab,
                         transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
@@ -162,7 +161,6 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                         }
                     }
                 }
-            }
         }
     }
 
@@ -196,94 +194,81 @@ object DesktopActions {
 // ------------------------------------------------------------------ chrome
 
 @Composable
-private fun Rail(neu: Neu, selected: Int, onSelect: (Int) -> Unit, onSettings: () -> Unit) {
-    val items = listOf(
-        "Overview" to BakiIcons.Today,
-        "Entries" to BakiIcons.Receipt,
-        "Shifts" to BakiIcons.Taxi,
-        "Year" to BakiIcons.Insights,
-    )
-    NeuPanel(neu, Modifier.width(RailWidth).fillMaxHeight(), corner = Radius.sheet) {
-        Column(
-            Modifier.fillMaxHeight().padding(vertical = Space.l),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Space.s),
-        ) {
-            Text("B", color = neu.accent, style = BakiType.headline)
-            Spacer(Modifier.height(Space.s))
-            items.forEachIndexed { i, (label, icon) ->
-                Tip(label) {
-                    NeuIconButton(neu, Modifier.size(48.dp), active = selected == i, onClick = { onSelect(i) }) {
-                        Icon(
-                            icon, contentDescription = label,
-                            tint = if (selected == i) neu.accent else neu.ink,
-                            modifier = Modifier.size(IconSize.bar),
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            Tip("Settings") {
-                NeuIconButton(neu, Modifier.size(48.dp), onClick = onSettings) {
-                    Icon(BakiIcons.Settings, contentDescription = "Settings", tint = neu.ink, modifier = Modifier.size(IconSize.bar))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Toolbar(
+private fun Header(
     neu: Neu,
     month: String,
     status: String,
+    tab: Int,
+    onTab: (Int) -> Unit,
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onStatement: () -> Unit,
     onNew: () -> Unit,
+    onSettings: () -> Unit,
 ) {
-    NeuPanel(neu, Modifier.fillMaxWidth().height(ToolbarHeight), corner = Radius.sheet) {
-        Row(
-            Modifier.fillMaxSize().padding(horizontal = Space.m),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Tip("Previous month") {
-                NeuIconButton(neu, Modifier.size(40.dp), onClick = onPrev) {
-                    Icon(BakiIcons.ArrowRight, contentDescription = "Previous month", tint = neu.ink,
-                        modifier = Modifier.size(IconSize.inline).rotate180())
-                }
+    Row(Modifier.fillMaxWidth().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
+        Text("Baki", color = neu.ink, style = BakiType.title)
+        Spacer(Modifier.width(Space.xl))
+
+        Tip("Previous month") {
+            NeuIconButton(neu, Modifier.size(32.dp), onClick = onPrev) {
+                Icon(
+                    BakiIcons.ArrowRight, contentDescription = "Previous month",
+                    tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
+                )
             }
-            Text(
-                monthLabel(month), color = neu.ink, style = BakiType.subtitle,
-                modifier = Modifier.padding(horizontal = Space.m),
-            )
-            Tip("Next month") {
-                NeuIconButton(neu, Modifier.size(40.dp), onClick = onNext) {
-                    Icon(BakiIcons.ArrowRight, contentDescription = "Next month", tint = neu.ink,
-                        modifier = Modifier.size(IconSize.inline))
-                }
+        }
+        Text(
+            monthLabel(month), color = neu.ink, style = BakiType.subtitle,
+            modifier = Modifier.padding(horizontal = Space.s),
+        )
+        Tip("Next month") {
+            NeuIconButton(neu, Modifier.size(32.dp), onClick = onNext) {
+                Icon(
+                    BakiIcons.ArrowRight, contentDescription = "Next month",
+                    tint = neu.ink, modifier = Modifier.size(IconSize.inline),
+                )
             }
-            Spacer(Modifier.width(Space.l))
-            Box(
-                Modifier.size(8.dp).clip(RoundedCornerShape(50))
-                    .background(if (status == "synced") neu.accent else neu.danger),
-            )
-            Spacer(Modifier.width(Space.xs))
-            Text(status, color = neu.muted, style = BakiType.caption)
-            Spacer(Modifier.weight(1f))
-            NeuButton(neu, "Statement", onClick = onStatement)
-            Spacer(Modifier.width(Space.s))
-            NeuButton(neu, "New entry", primary = true, onClick = onNew)
+        }
+        Spacer(Modifier.width(Space.l))
+
+        // navigation is a selected control, not a bar: one inset track with a raised thumb
+        NeuSegmented(
+            neu,
+            listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
+            tab,
+            onSelect = onTab,
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Box(
+            Modifier.size(7.dp).clip(RoundedCornerShape(50))
+                .background(if (status == "synced") neu.accent else neu.danger),
+        )
+        Spacer(Modifier.width(Space.xs))
+        Text(status, color = neu.muted, style = BakiType.caption)
+        Spacer(Modifier.width(Space.l))
+
+        NeuButton(neu, "Statement", onClick = onStatement)
+        Spacer(Modifier.width(Space.s))
+        NeuButton(neu, "New entry", primary = true, onClick = onNew)
+        Spacer(Modifier.width(Space.s))
+        Tip("Settings") {
+            NeuIconButton(neu, Modifier.size(36.dp), onClick = onSettings) {
+                Icon(BakiIcons.Settings, contentDescription = "Settings", tint = neu.ink, modifier = Modifier.size(IconSize.inline))
+            }
         }
     }
 }
 
 private fun Modifier.rotate180(): Modifier = this.then(Modifier.rotate(180f))
 
+/** Tooltip surface: a small raised chip, same material as everything else. */
 @OptIn(ExperimentalComposeUiApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun Tip(text: String, content: @Composable () -> Unit) {
-    val neu = LocalBaki.current.let { neuOf(it) }
+    val neu = neuOf(LocalBaki.current)
     TooltipArea(
         tooltip = {
             Box(
@@ -315,30 +300,47 @@ private fun Overview(
 
     Row(Modifier.fillMaxSize().padding(Gutter)) {
         Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
-            Text("NET THIS MONTH", color = neu.muted, style = BakiType.section)
-            EasedMoney(t.net, neu.ink, BakiType.displayNumeric)
-            Spacer(Modifier.height(Space.xs))
-            Text(
-                "${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
-                color = neu.muted, style = BakiType.labelNumeric,
-            )
-            Spacer(Modifier.height(Space.xl))
-            WeekChart(store, neu)
-            Spacer(Modifier.height(Space.xl))
-            MonthTrend(store, month, neu)
-            Spacer(Modifier.height(Space.xl))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("RECENT", color = neu.muted, style = BakiType.section)
-                Spacer(Modifier.weight(1f))
-                NeuButton(neu, "All entries", onClick = onOpen)
+            SectionCard(neu) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Column(Modifier.weight(1f)) {
+                        Text("NET THIS MONTH", color = neu.muted, style = BakiType.section)
+                        EasedMoney(t.net, neu.ink, BakiType.displayNumeric)
+                        Spacer(Modifier.height(Space.xs))
+                        Text(
+                            "${t.entryCount} entries · ${t.shiftCount} shifts",
+                            color = neu.muted, style = BakiType.labelNumeric,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
+                        NeuMetric(neu, "IN", "RM ${rm(t.income)}")
+                        NeuMetric(neu, "OUT", "RM ${rm(t.expense)}", valueColor = neu.danger)
+                        val monthShifts = store.shifts.filter { it.date.startsWith(month) }
+                        val monthHours = monthShifts.sumOf { it.hours }
+                        if (monthHours > 0.05) {
+                            NeuMetric(neu, "PER HOUR", "RM ${"%.2f".format(t.net / 100.0 / monthHours)}")
+                        }
+                    }
+                }
             }
-            Spacer(Modifier.height(Space.s))
-            if (entries.isEmpty()) {
-                NeuEmpty(neu, "Nothing this month", "Entries you log will appear here, newest first.")
-            } else {
-                EntryTable(store, entries.take(9), onEdit, onDelete, compact = true)
+            Spacer(Modifier.height(Space.l + Space.xs))
+            SectionCard(neu) { WeekChart(store, neu) }
+            Spacer(Modifier.height(Space.l))
+            SectionCard(neu) { MonthTrend(store, month, neu) }
+            Spacer(Modifier.height(Space.l))
+            SectionCard(neu) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("RECENT", color = neu.muted, style = BakiType.section)
+                    Spacer(Modifier.weight(1f))
+                    NeuButton(neu, "All entries", onClick = onOpen)
+                }
+                Spacer(Modifier.height(Space.s))
+                if (entries.isEmpty()) {
+                    NeuEmpty(neu, "Nothing this month", "Entries you log will appear here, newest first.")
+                } else {
+                    EntryTable(store, entries.take(9), onEdit, onDelete, compact = true)
+                }
             }
-            Spacer(Modifier.height(Space.xl))
+            Spacer(Modifier.height(Space.l))
         }
         Spacer(Modifier.width(Gutter))
         Column(Modifier.width(Rail2).fillMaxHeight().verticalScroll(rememberScrollState())) {
@@ -358,11 +360,20 @@ private fun Overview(
                             "${"%.1f".format(r.hours)} h · RM ${rm(r.net)}",
                             detail = "RM ${"%.2f".format(r.perHour)}/h · ${prettyDate(start)}",
                         )
-                        if (streak >= 2) {
-                            Spacer(Modifier.height(Space.xs))
-                            Text("$streak days above target", color = neu.accent, style = BakiType.caption)
-                        }
+                        Spacer(Modifier.height(Space.l))
+                        Box(Modifier.fillMaxWidth().height(2.dp).groove(neu))
+                        Spacer(Modifier.height(Space.l))
                     }
+                    val days = store.shifts.filter { it.date.startsWith(month) }
+                    val hours = days.sumOf { it.hours }
+                    NeuMetric(neu, "HOURS", "${"%.1f".format(hours)} h", detail = "${days.size} shifts")
+                    Spacer(Modifier.height(Space.m))
+                    NeuMetric(
+                        neu, "STREAK",
+                        if (streak >= 2) "$streak days" else "—",
+                        detail = "above target, in a row",
+                        valueColor = if (streak >= 2) neu.accent else neu.ink,
+                    )
                 }
             }
             Spacer(Modifier.height(Space.xl))
@@ -379,13 +390,9 @@ private fun WeekChart(store: Store, neu: Neu) {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
         val weekSummary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
-        NeuPanel(
-            neu,
-            Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $weekSummary" },
-            corner = Radius.card,
-        ) {
+        Column(Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $weekSummary" }) {
             Row(
-                Modifier.fillMaxWidth().padding(Space.m),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
                 verticalAlignment = Alignment.Bottom,
             ) {
@@ -423,14 +430,11 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
     Column {
         Text("TREND", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        NeuPanel(
-            neu,
+        Column(
             Modifier.fillMaxWidth().semantics {
                 contentDescription = "Month trend, peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}"
             },
-            corner = Radius.card,
         ) {
-            Column(Modifier.padding(Space.m)) {
                 Row(
                     Modifier.fillMaxWidth().height(120.dp),
                     horizontalArrangement = Arrangement.spacedBy(Space.xxs),
@@ -454,7 +458,6 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                     Text("peak RM ${rm(days.maxOfOrNull { it.second.net } ?: 0)}", color = neu.muted, style = BakiType.captionNumeric)
                     Text(days.last().first.takeLast(5), color = neu.muted, style = BakiType.captionNumeric)
                 }
-            }
         }
     }
 }
@@ -565,17 +568,19 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
                 }
             },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            NeuField(query, { query = it }, "Filter", Modifier.width(320.dp))
-            Spacer(Modifier.width(Space.m))
-            Text(
-                "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
-                color = neu.muted, style = BakiType.label,
-            )
-            Spacer(Modifier.weight(1f))
-            Text("↑ ↓ select · Enter edit · Delete remove", color = neu.muted, style = BakiType.caption)
+        SectionCard(neu) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                NeuField(query, { query = it }, "Filter", Modifier.width(320.dp))
+                Spacer(Modifier.width(Space.m))
+                Text(
+                    "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
+                    color = neu.muted, style = BakiType.label,
+                )
+                Spacer(Modifier.weight(1f))
+                Text("↑ ↓ select · Enter edit · Delete remove", color = neu.muted, style = BakiType.caption)
+            }
         }
-        Spacer(Modifier.height(Space.m))
+        Spacer(Modifier.height(Space.l))
         if (entries.isEmpty()) {
             NeuEmpty(
                 neu,
@@ -583,7 +588,9 @@ internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, o
                 if (query.isBlank()) "Entries you log will appear here, newest first." else "No entry matches that filter.",
             )
         } else {
-            EntryTable(store, entries, onEdit, onDelete, compact = false, selectedId = selected, onSelect = { selected = it })
+            SectionCard(neu) {
+                EntryTable(store, entries, onEdit, onDelete, compact = false, selectedId = selected, onSelect = { selected = it })
+            }
         }
     }
         androidx.compose.foundation.VerticalScrollbar(
@@ -602,6 +609,7 @@ internal fun ShiftsView(store: Store, month: String) {
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().padding(Gutter).verticalScroll(scroll)) {
+        SectionCard(neu) {
         Text("${shifts.size} shifts · net RM ${"%.2f".format(net)}", color = neu.muted, style = BakiType.label)
         Spacer(Modifier.height(Space.m))
         Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
@@ -634,6 +642,7 @@ internal fun ShiftsView(store: Store, month: String) {
                     Text("RM ${"%.2f".format(m.net / s.hours)}/h", color = neu.muted, style = BakiType.labelNumeric)
                 }
             }
+        }
         }
     }
         androidx.compose.foundation.VerticalScrollbar(
@@ -736,7 +745,7 @@ private fun EntryTable(
                             onDismissRequest = { menu = false },
                             properties = androidx.compose.ui.window.PopupProperties(focusable = true),
                         ) {
-                            NeuPanel(neu, Modifier.width(170.dp), corner = Radius.small) {
+                            NeuPanel(neu, Modifier.width(170.dp), corner = Radius.small, offset = Elevation.high) {
                                 Column(Modifier.padding(Space.xs)) {
                                     NeuMenuItem(neu, "Edit") { menu = false; onEdit(entry) }
                                     NeuMenuItem(neu, "Delete", danger = true) { menu = false; onDelete(entry) }
@@ -799,8 +808,24 @@ internal fun YearView(store: Store) {
     val peak = months.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
     Column(Modifier.fillMaxSize().padding(Gutter).verticalScroll(rememberScrollState())) {
-        Text("$year AT A GLANCE", color = neu.muted, style = BakiType.section)
-        Spacer(Modifier.height(Space.m))
+        SectionCard(neu) {
+            val best = months.maxByOrNull { it.second.net }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("$year AT A GLANCE", color = neu.muted, style = BakiType.section)
+                    Text("RM ${rm(months.sumOf { it.second.net })} net", color = neu.ink, style = BakiType.headlineNumeric)
+                }
+                best?.let {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("BEST MONTH", color = neu.muted, style = BakiType.section)
+                        Text(monthLabel(it.first), color = neu.ink, style = BakiType.subtitle)
+                        Text("RM ${rm(it.second.net)}", color = neu.accent, style = BakiType.labelNumeric)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(Space.l))
+        SectionCard(neu) {
         months.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                 row.forEach { (label, t) ->
@@ -826,6 +851,7 @@ internal fun YearView(store: Store) {
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
             Spacer(Modifier.height(Space.m))
+        }
         }
         Spacer(Modifier.height(Space.xl))
     }
@@ -1071,3 +1097,11 @@ private fun weekdayShort(iso: String): String =
     listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")[
         kotlinx.datetime.LocalDate.parse(iso).dayOfWeek.ordinal.coerceIn(0, 6),
     ]
+
+/** A card: the base material extruded with the card tier of the shadow scale. */
+@Composable
+private fun SectionCard(neu: Neu, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.sheet, offset = Elevation.medium) {
+        Column(Modifier.padding(Space.xl), content = content)
+    }
+}

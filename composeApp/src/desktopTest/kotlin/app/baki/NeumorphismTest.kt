@@ -29,23 +29,23 @@ class NeumorphismTest {
     }
 
     @Test
-    fun lightPackLiftsPanelsAndDarkPackSinksThem() {
-        val light = neuOf(LightPalette)
-        assertTrue(lum(light.panel) > lum(light.base), "panel should sit above the base in light mode")
-        assertTrue(lum(light.light) > lum(light.base), "light shadow must be lighter than the base")
-        assertTrue(lum(light.dark) < lum(light.base), "dark shadow must be darker than the base")
-
-        val night = neuOf(NightPalette)
-        assertTrue(lum(night.dark) < lum(night.base))
-        assertTrue(lum(night.light) > lum(night.base))
+    fun everyElementIsTheSameMaterialAsTheBase() {
+        // the defining rule of neumorphism: no second surface colour, depth is shadow alone
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
+            val n = neuOf(p)
+            assertEquals(n.base, n.panel, "a raised element must be the base colour")
+            assertTrue(lum(n.light) > lum(n.base), "highlight must be lighter than the base")
+            assertTrue(lum(n.dark) < lum(n.base), "shade must be darker than the base")
+        }
     }
 
     @Test
-    fun panelsSitAboveTheCanvasPerceptually() {
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
-            val n = neuOf(p)
-            val delta = lum(n.panel) - lum(n.base)
-            assertTrue(delta > 0.008f, "panel barely lifts off the base in pack dark=${p.dark}: $delta")
+    fun elevationsAreOrderedAndBlurTracksOffset() {
+        assertTrue(Elevation.low < Elevation.medium)
+        assertTrue(Elevation.medium < Elevation.high)
+        listOf(Elevation.low, Elevation.medium, Elevation.high).forEach { offset ->
+            // the reference ratio: blur twice the offset
+            assertTrue(Elevation.blur(offset) > offset * 2f)
         }
     }
 

@@ -215,7 +215,7 @@ needs nothing on the machine; only `./gradlew :composeApp:run` needs `JAVA_HOME`
 The floating command bar is the single glass surface: M3 for everything else, refraction where the
 phone keeps its nav bar.
 
-## Desktop: neumorphism (v0.11)
+## Desktop: neumorphism (v0.13)
 
 The laptop is deliberately a different design language from the phone. Phone keeps Material 3 with a
 single liquid-glass nav bar; the desktop is **neumorphic** — one base colour, depth from two soft
@@ -251,3 +251,23 @@ shadows only, no borders.
 
 Set `BAKI_VIEW=entries|shifts|year|settings|statement` to open the app in that view — used to
 capture the design deterministically during review.
+
+### Doctrine (v0.13)
+
+Neumorphism is the *only* design language on the desktop. The rules that make it read:
+
+1. **One material.** `Neu.panel` equals `Neu.base`; every element is the same colour. A test asserts
+   it. Depth is shadow, nothing else. No borders, no glass, no second surface.
+2. **Elevation means something.** Raised is reserved for content cards, dialogs, menus, the primary
+   action and the selected control. Icon buttons and month chevrons are flat until hovered.
+3. **Three tiers only** — `Elevation.low` (buttons, chips, rows), `medium` (cards), `high` (dialogs,
+   menus). Blur is 2.2x offset; the shade uses a tighter blur than the highlight so it does not
+   smudge the top-left corner.
+4. **A toned canvas.** Light packs blend the palette surface with a soft grey-green, because pure
+   white makes neumorphism look like paper with smudges. Dark packs keep the palette hue.
+5. **One accent, filled.** The active nav segment, primary button, selected chips and the rail logo
+   use the palette accent with `onAccent` text; everything else is ink on base.
+6. **Compact chrome.** There is no sidebar and no toolbar bar: one header row carries the wordmark,
+   month stepper, a segmented navigation control, sync state and the two actions.
+7. **Labels above fields.** A placeholder label disappears the moment you type; the label sits on
+   the canvas above an inset well.
