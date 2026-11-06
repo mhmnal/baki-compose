@@ -62,7 +62,7 @@ fun fundStats(store: Store, month: String? = null): Funds {
         wearAcc += m.wear
     }
     val expenses = store.entries.filter { it.type != "income" && (month == null || it.date.startsWith(month)) }
-    val fuelSpent = expenses.filter { it.cat == "fuel" }.sumOf { it.amount } / 100.0
+    val fuelSpent = expenses.filter { isFuelCat(it.cat) }.sumOf { it.amount } / 100.0
     val wearSpent = expenses.filter { it.cat == "maintenance" || it.cat == "carwash" || it.cat == "roadtax" }
         .sumOf { it.amount } / 100.0
     return Funds(Fund(fuelAcc, fuelSpent), Fund(wearAcc, wearSpent))
@@ -151,7 +151,7 @@ data class MeasuredEconomy(val km: Double, val litres: Double, val kml: Double, 
 fun measuredEconomy(store: Store): MeasuredEconomy? {
     val price = store.settings.profit.fuelPrice.takeIf { it > 0 } ?: 1.99
     val rows = store.entries
-        .filter { it.cat == "fuel" && (it.odo ?: 0) > 0 }
+        .filter { isFuelCat(it.cat) && (it.odo ?: 0) > 0 }
         .sortedBy { it.date }
     if (rows.size < 2) return null
     val first = rows.first()
@@ -335,6 +335,12 @@ data class WeeklyReview(
 )
 
 /** The week that starts on [weekStart]; null when nothing was driven. */
+/**
+ * The fuel category is "fuel" in current stores and "petrol" in older ones. Every query that
+ * means "fuel" goes through here, so a store with either id reports fuel correctly.
+ */
+fun isFuelCat(id: String): Boolean = id == "fuel" || id == "petrol"
+
 fun weeklyReview(store: Store, weekStart: String): WeeklyReview? {
     val end = addDays(weekStart, 7)
     val shifts = store.shifts.filter { it.date >= weekStart && it.date < end }
@@ -346,7 +352,7 @@ fun weeklyReview(store: Store, weekStart: String): WeeklyReview? {
     val net = shifts.sumOf { shiftMetrics(it, cfg, overhead).net }
     val perHour = if (hours > 0.01) net / hours else 0.0
     val fuel = store.entries
-        .filter { it.date >= weekStart && it.date < end && it.type != "income" && it.cat == "petrol" }
+        .filter { it.date >= weekStart && it.date < end && it.type != "income" && isFuelCat(it.cat) }
         .sumOf { it.amount }
     val km = shifts.sumOf { it.km }
     val fuelPerKm = if (km > 0.5) fuel / 100.0 / km else 0.0
