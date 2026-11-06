@@ -220,8 +220,6 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         item { HoursHeatmap(store); Spacer(Modifier.height(12.dp)) }
         item { TrendBars(store, month); Spacer(Modifier.height(10.dp)) }
         item { CalendarHeat(store, month); Spacer(Modifier.height(4.dp)) }
-        // day maps come after the calendar: same chronological reading order
-        item { RouteDaysSection(store, month); Spacer(Modifier.height(8.dp)) }
         if (cats.isEmpty()) item {
             Text("No expenses recorded this month.", color = baki.muted, fontSize = 12.sp)
         }

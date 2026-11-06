@@ -62,8 +62,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     fun start() {
-        // enforce the 90-day route retention even if no shift is ended for a while
-        scope.launch { runCatching { RouteStore.prune() } }
+        // enforce retention and drop paths whose shift no longer exists, even if no shift is ended
+        scope.launch {
+            runCatching {
+                RouteStore.prune()
+                RouteStore.pruneOrphans(store.shifts.map { it.id }.toSet())
+            }
+        }
         live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
         // the location tracker writes to live.json from the service; pick it up in the UI
         scope.launch {
@@ -215,6 +220,89 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLive(live)
         PlatformEffects.tapFeedback()
         live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+    }
+
+    /** Correct a payout that was entered wrong, before the shift ends. */
+    suspend fun updatePayout(index: Int, cents: Long) = mutex.withLock {
+        val current = live ?: return@withLock
+        if (index !in current.payouts.indices || cents <= 0) return@withLock
+        val list = current.payouts.toMutableList()
+        list[index] = list[index].copy(c = cents)
+        live = current.copy(payouts = list)
+        saveLive(live)
+        live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+    }
+
+    /** Remove a payout; returns it so the caller can offer undo. */
+    suspend fun removePayout(index: Int): Payout? = mutex.withLock {
+        val current = live ?: return@withLock null
+        if (index !in current.payouts.indices) return@withLock null
+        val list = current.payouts.toMutableList()
+        val removed = list.removeAt(index)
+        live = current.copy(payouts = list)
+        saveLive(live)
+        live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+        removed
+    }
+
+    /** Put a removed payout back where it was (undo). */
+    suspend fun insertPayout(index: Int, payout: Payout) = mutex.withLock {
+        val current = live ?: return@withLock
+        val list = current.payouts.toMutableList()
+        list.add(index.coerceIn(0, list.size), payout)
+        live = current.copy(payouts = list)
+        saveLive(live)
+        live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
+    }
+
+    // ---- payouts on a shift that has already ended -------------------------
+    // The breakdown is synced, so a correction here reaches the other device too.
+    // Gross is recomputed from the payouts unless the list would be empty.
+
+    suspend fun updateShiftPayout(shiftId: String, index: Int, cents: Long) = mutex.withLock {
+        if (blocked()) return@withLock
+        val shift = store.shifts.firstOrNull { it.id == shiftId } ?: return@withLock
+        if (index !in shift.payouts.indices || cents <= 0) return@withLock
+        val list = shift.payouts.toMutableList()
+        list[index] = list[index].copy(c = cents)
+        storeShiftPayouts(shift, list)
+    }
+
+    suspend fun removeShiftPayout(shiftId: String, index: Int): Payout? = mutex.withLock {
+        if (blocked()) return@withLock null
+        val shift = store.shifts.firstOrNull { it.id == shiftId } ?: return@withLock null
+        if (index !in shift.payouts.indices) return@withLock null
+        val list = shift.payouts.toMutableList()
+        val removed = list.removeAt(index)
+        storeShiftPayouts(shift, list)
+        removed
+    }
+
+    suspend fun insertShiftPayout(shiftId: String, index: Int, payout: Payout) = mutex.withLock {
+        if (blocked()) return@withLock
+        val shift = store.shifts.firstOrNull { it.id == shiftId } ?: return@withLock
+        val list = shift.payouts.toMutableList()
+        list.add(index.coerceIn(0, list.size), payout)
+        storeShiftPayouts(shift, list)
+    }
+
+    suspend fun addShiftPayout(shiftId: String, cents: Long) = mutex.withLock {
+        if (blocked() || cents <= 0) return@withLock
+        val shift = store.shifts.firstOrNull { it.id == shiftId } ?: return@withLock
+        // a payout discovered after the fact is stamped with the shift's own start, not "now",
+        // so the week review is not told you were idle at 3am
+        val at = shiftStartMs(shift)
+        storeShiftPayouts(shift, shift.payouts + Payout(c = cents, at = at))
+    }
+
+    private suspend fun storeShiftPayouts(shift: Shift, payouts: List<Payout>) {
+        val gross = if (payouts.isNotEmpty()) payouts.sumOf { it.c } else shift.gross
+        val edited = shift.copy(payouts = payouts, gross = gross, updated = nowIso())
+        store = recomputeCover(
+            store.copy(shifts = store.shifts.map { if (it.id == shift.id) edited else it }, updatedAt = nowIso()),
+        ).first
+        saveLocal(store)
+        pushWithTombs(emptyList())
     }
 
     fun addPayout(cents: Long) {

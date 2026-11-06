@@ -85,6 +85,12 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     }
 }
 
+/** Which shift's payouts the sheet is showing. */
+private sealed interface PayoutsTarget {
+    data object Live : PayoutsTarget
+    data class Stored(val shiftId: String) : PayoutsTarget
+}
+
 @Composable
 private fun AppContent(repo: BakiRepo) {
     // read the palette *inside* the theme provider, or every colour falls back to dark
@@ -99,6 +105,7 @@ private fun AppContent(repo: BakiRepo) {
     var presetCat by remember { mutableStateOf<String?>(null) }
     var editingBudgets by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
+    var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
     val glassBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
     val scope = rememberCoroutineScope()
@@ -133,7 +140,7 @@ private fun AppContent(repo: BakiRepo) {
         val barGap = gestureInset + 14.dp
         val barTop = maxHeight - barHeight - barGap
         val fabTop = barTop - fabSize - 6.dp
-        val sheetOpen = adding != 0
+        val sheetOpen = adding != 0 || payoutsTarget != null
 
         // ---- level 1: the app itself, blurred while a sheet is up ----
         Box(
@@ -172,6 +179,7 @@ private fun AppContent(repo: BakiRepo) {
                     day = day,
                     onDay = { day = it },
                     onPayout = { adding = 4 },
+                    onPayouts = { payoutsTarget = PayoutsTarget.Live },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
                     onDeleteEntry = { entry ->
                         scope.launch {
@@ -271,7 +279,64 @@ private fun AppContent(repo: BakiRepo) {
     }
     }
 
-    // ---- level 2: the sheet sits above everything, on a scrim over the blurred app ----
+    // ---- level 2: the sheets sit above everything, on a scrim over the blurred app ----
+    payoutsTarget?.let { target ->
+        val liveShift = repo.live
+        val stored = (target as? PayoutsTarget.Stored)
+            ?.let { t -> repo.store.shifts.firstOrNull { it.id == t.shiftId } }
+        val payouts = when (target) {
+            PayoutsTarget.Live -> liveShift?.payouts.orEmpty()
+            is PayoutsTarget.Stored -> stored?.payouts.orEmpty()
+        }
+        val title = when (target) {
+            PayoutsTarget.Live -> "Shift payouts"
+            is PayoutsTarget.Stored -> "Payouts · ${prettyDate(stored?.date.orEmpty())}"
+        }
+        PayoutsSheet(
+            title = title,
+            payouts = payouts,
+            editable = !repo.readOnly,
+            onEdit = { index, cents ->
+                scope.launch {
+                    when (target) {
+                        PayoutsTarget.Live -> repo.updatePayout(index, cents)
+                        is PayoutsTarget.Stored -> repo.updateShiftPayout(target.shiftId, index, cents)
+                    }
+                }
+            },
+            onDelete = { index ->
+                scope.launch {
+                    val removed = when (target) {
+                        PayoutsTarget.Live -> repo.removePayout(index)
+                        is PayoutsTarget.Stored -> repo.removeShiftPayout(target.shiftId, index)
+                    }
+                    if (removed != null) {
+                        val res = snackbar.showSnackbar(
+                            "Payout removed · RM ${rm(removed.c)}",
+                            actionLabel = "Undo",
+                            duration = SnackbarDuration.Long,
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            when (target) {
+                                PayoutsTarget.Live -> repo.insertPayout(index, removed)
+                                is PayoutsTarget.Stored -> repo.insertShiftPayout(target.shiftId, index, removed)
+                            }
+                        }
+                    }
+                }
+            },
+            onAdd = { cents ->
+                scope.launch {
+                    when (target) {
+                        PayoutsTarget.Live -> repo.addPayout(cents)
+                        is PayoutsTarget.Stored -> repo.addShiftPayout(target.shiftId, cents)
+                    }
+                }
+            },
+            onDismiss = { payoutsTarget = null },
+        )
+    }
+
     when (adding) {
         1 -> AddChoiceDialog(
             onDismiss = { adding = 0 },
@@ -323,6 +388,10 @@ private fun AppContent(repo: BakiRepo) {
         3 -> ShiftDialog(
             store = repo.store,
             existing = editingShift,
+            onPayouts = { shift ->
+                adding = 0; editingShift = null
+                payoutsTarget = PayoutsTarget.Stored(shift.id)
+            },
             onDismiss = { adding = 0; editingShift = null },
             onSave = { date, start, hours, km, gross, extra, kmPerLitre, odoS, odoE ->
                 val target = editingShift
@@ -631,7 +700,7 @@ private fun bakiFieldColors(): TextFieldColors {
 }
 
 @Composable
-fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
+fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: () -> Unit = {}) {
     val baki = LocalBaki.current
     var now by remember { mutableStateOf(nowMillis()) }
     val scope = rememberCoroutineScope()
@@ -684,11 +753,13 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit) {
         Text(
             buildString {
                 if (hours > 0.05) append("RM ${rm(total / 100.0 / hours)}/hr · ")
-                append("${live.payouts.size} payout(s)")
+                append("${live.payouts.size} payout(s) →")
                 if (live.km > 0.0) append(" · ${"%.1f".format(live.km)} km tracked")
                 if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
             },
             color = baki.muted, fontSize = 12.sp,
+            // tapping the count opens the payout breakdown: correct a wrong amount, delete one
+            modifier = Modifier.clickable { onPayouts() },
         )
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1449,6 +1520,7 @@ private fun ShiftDialog(
     store: Store,
     existing: Shift?,
     onDismiss: () -> Unit,
+    onPayouts: (Shift) -> Unit = {},
     onSave: (String, String, Double, Double, Long, Long, Double?, Double?, Double?) -> Unit,
     onDelete: (Shift) -> Unit,
     onCalibrate: (Double) -> Unit = {},
@@ -1537,6 +1609,14 @@ private fun ShiftDialog(
                     color = baki.muted, fontSize = 11.sp,
                 )
             if (existing != null) {
+                if (existing.payouts.isNotEmpty()) {
+                    TextButton(onClick = { onPayouts(existing) }) {
+                        Text(
+                            "Payouts (${existing.payouts.size})",
+                            color = baki.primary, fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
                 TextButton(onClick = { onDelete(existing) }) {
                     Text("Delete shift", color = baki.down, fontWeight = FontWeight.Bold)
                 }

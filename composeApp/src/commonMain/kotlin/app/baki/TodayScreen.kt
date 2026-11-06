@@ -56,6 +56,7 @@ fun TodayScreen(
     day: String,
     onDay: (String) -> Unit,
     onPayout: () -> Unit,
+    onPayouts: () -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onPreset: (String) -> Unit,
@@ -118,7 +119,7 @@ fun TodayScreen(
         }
 
         if (live != null && day == today) {
-            item { LiveCard(repo, live, onPayout) }
+            item { LiveCard(repo, live, onPayout, onPayouts) }
         }
 
         item { WeekStrip(store, day) }
@@ -205,6 +206,9 @@ fun TodayScreen(
                 )
             }
         }
+
+        // the day's movement: between the shift card and the ledger
+        item { TodayRouteCard(store = store, day = day, live = live) }
 
         item {
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
