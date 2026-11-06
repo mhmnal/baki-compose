@@ -190,6 +190,29 @@ fun Modifier.elevated(
     .clip(RoundedCornerShape(corner))
     .background(neu.panel)
 
+/**
+ * A card casts one shadow, straight down. No highlight above it and no blur reaching over the top
+ * edge, because on a large face that reads as a smudge in the whitespace rather than as embossing.
+ */
+fun Modifier.cardSurface(
+    neu: Neu,
+    corner: Dp = 24.dp,
+    offset: Dp = Elevation.medium,
+    fill: Color = neu.panel,
+): Modifier = this
+    .boxShadow(
+        blurRadius = Elevation.blur(offset) * 0.9f,
+        spreadRadius = 0.dp,
+        offset = DpOffset(0.dp, offset * 0.9f),
+        color = neu.dark.copy(alpha = (neu.darkAlpha * 2.0f).coerceAtMost(0.42f)),
+        shape = RoundedCornerShape(corner),
+        clip = false,
+        inset = false,
+    )
+    .clip(RoundedCornerShape(corner))
+    .background(fill)
+    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.10f else 0.05f), RoundedCornerShape(corner))
+
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
 fun Modifier.inset(
     neu: Neu,
@@ -230,7 +253,7 @@ fun NeuPanel(
     fill: Color = neu.panel,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(modifier.raised(neu, corner, offset, fill).clip(RoundedCornerShape(corner)), content = content)
+    Box(modifier.cardSurface(neu, corner, offset, fill), content = content)
 }
 
 @Composable

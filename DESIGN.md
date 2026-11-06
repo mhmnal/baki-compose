@@ -340,3 +340,10 @@ cards, shade `#CED3CB` below, face `#DAE0D6` over canvas `#D6DCD1`.
   canvas instead of glowing into it.
 - **One instance.** A file lock in `~/.local/share/baki/instance.lock`; a second launch prints
   "Baki is already running" and exits, because stacked windows produce hard overlapping edges.
+
+## Cards drop, they do not bloom (v0.15.4)
+
+A card is one downward shadow (`cardSurface`): no highlight, nothing above the top edge. On a large
+face the dual-shadow highlight bloomed into the whitespace under the header and read as a grey
+smudge. Small controls (buttons, chips, the segmented thumb) keep the dual emboss, where it reads as
+embossing rather than bloom. Probe: canvas is flat `#D6DCD1` above a card, shade `#D3D9CC` below.
