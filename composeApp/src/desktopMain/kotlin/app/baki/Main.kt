@@ -11,7 +11,31 @@ import java.util.prefs.Preferences
 /** Remembers where the window was, like a desktop app should. */
 private val prefs = Preferences.userRoot().node("app/baki/window")
 
-fun main() = application {
+private var instanceLock: java.nio.channels.FileLock? = null
+private var instanceChannel: java.nio.channels.FileChannel? = null
+
+/** Two instances overlap and produce hard window edges over each other; only one may run. */
+private fun acquireSingleInstance(): Boolean {
+    val dir = java.io.File(System.getProperty("user.home"), ".local/share/baki")
+    dir.mkdirs()
+    val channel = java.nio.channels.FileChannel.open(
+        java.io.File(dir, "instance.lock").toPath(),
+        java.nio.file.StandardOpenOption.CREATE,
+        java.nio.file.StandardOpenOption.WRITE,
+    )
+    val lock = try { channel.tryLock() } catch (e: Exception) { null }
+    if (lock == null) { channel.close(); return false }
+    instanceChannel = channel
+    instanceLock = lock
+    return true
+}
+
+fun main() {
+    if (!acquireSingleInstance()) {
+        println("Baki is already running")
+        return
+    }
+    application {
     val savedW = prefs.getInt("w", 1440)
     val savedH = prefs.getInt("h", 920)
     val savedX = prefs.getInt("x", Int.MIN_VALUE)
@@ -36,4 +60,5 @@ fun main() = application {
         window.minimumSize = java.awt.Dimension(1080, 700)
         App()
     }
+}
 }

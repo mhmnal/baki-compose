@@ -394,11 +394,11 @@ private fun Overview(
                 Column(Modifier.padding(Space.l)) {
                     CategoryBlock(store, month, neu)
                     Spacer(Modifier.height(Space.l))
-                    Box(Modifier.fillMaxWidth().height(2.dp).groove(neu))
+                    Spacer(Modifier.height(Space.xs))
                     Spacer(Modifier.height(Space.l))
                     FundsBlock(store, month, neu)
                     Spacer(Modifier.height(Space.l))
-                    Box(Modifier.fillMaxWidth().height(2.dp).groove(neu))
+                    Spacer(Modifier.height(Space.xs))
                     Spacer(Modifier.height(Space.l))
                     week?.let { (start, r) ->
                         NeuMetric(
@@ -407,7 +407,7 @@ private fun Overview(
                             detail = "RM ${"%.2f".format(r.perHour)}/h · ${prettyDate(start)}",
                         )
                         Spacer(Modifier.height(Space.l))
-                        Box(Modifier.fillMaxWidth().height(2.dp).groove(neu))
+                        Spacer(Modifier.height(Space.xs))
                         Spacer(Modifier.height(Space.l))
                     }
                     val days = store.shifts.filter { it.date.startsWith(month) }
@@ -453,7 +453,7 @@ private fun WeekChart(store: Store, neu: Neu) {
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
-                            color = if (t.net >= 0) neu.muted else neu.danger,
+                            color = if (t.net >= 0) neu.ink else neu.danger,
                             style = BakiType.captionNumeric,
                         )
                         Spacer(Modifier.height(Space.xs))
@@ -461,13 +461,12 @@ private fun WeekChart(store: Store, neu: Neu) {
                             val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.05f, 1f)
                             Box(
                                 Modifier.fillMaxWidth(0.6f).height((88 * frac).dp)
-                                    .raised(neu, corner = Radius.small, offset = Elevation.low,
-                                        fill = if (t.net >= 0) neu.accent else neu.danger)
-                                    .clip(RoundedCornerShape(Radius.small)),
+                                    .background(if (t.net >= 0) neu.accent else neu.danger)
+                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)),
                             )
                         }
                         Spacer(Modifier.height(Space.xs))
-                        Text(weekdayShort(iso), color = neu.muted, style = BakiType.caption)
+                        Text(weekdayShort(iso), color = neu.ink, style = BakiType.caption)
                     }
                 }
             }
@@ -502,18 +501,17 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                             val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.02f, 1f)
                             Box(
                                 Modifier.fillMaxWidth().height((120 * frac).dp)
-                                    .raised(neu, corner = Radius.small, offset = Elevation.low,
-                                        fill = if (t.net >= 0) neu.accent else neu.danger)
-                                    .clip(RoundedCornerShape(Radius.small)),
+                                    .background(if (t.net >= 0) neu.accent else neu.danger)
+                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)),
                             )
                         }
                     }
                 }
                 Spacer(Modifier.height(Space.s))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(days.first().first.takeLast(5), color = neu.muted, style = BakiType.captionNumeric)
-                    Text("peak RM $peakValue", color = neu.muted, style = BakiType.captionNumeric)
-                    Text(days.last().first.takeLast(5), color = neu.muted, style = BakiType.captionNumeric)
+                    Text(days.first().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
+                    Text("peak RM $peakValue", color = neu.ink, style = BakiType.captionNumeric)
+                    Text(days.last().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
                 }
             }
         }
@@ -550,9 +548,9 @@ private fun CategoryBlock(store: Store, month: String, neu: Neu) {
             Spacer(Modifier.width(Space.s))
             Text(name, color = neu.ink, style = BakiType.label)
             Spacer(Modifier.weight(1f))
-            Text("RM ${rm(cents)}", color = neu.muted, style = BakiType.labelNumeric)
+            Text("RM ${rm(cents)}", color = neu.ink, style = BakiType.labelNumeric)
             Spacer(Modifier.width(Space.s))
-            Text("${"%.0f".format(cents * 100.0 / total)}%", color = neu.muted, style = BakiType.captionNumeric)
+            Text("${"%.0f".format(cents * 100.0 / total)}%", color = neu.ink, style = BakiType.captionNumeric)
         }
     }
 }

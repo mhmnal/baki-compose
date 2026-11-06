@@ -319,3 +319,16 @@ via JitPack as `shadow-jvm`): CSS-style `boxShadow(blur, spread, offset, colour,
 inside the shape, `elevated` is one downward shadow for floating layers. `ShadowEngineTest` fails the
 build if hand-rolled blur shaders reappear. Verified by pixel probe: highlight halo `#E2E6DF` above
 cards, shade `#CED3CB` below, face `#DAE0D6` over canvas `#D6DCD1`.
+
+## Crisp rules (v0.15.1)
+
+- **No drawn lines.** Separators are spacing (`Space.xs`), never 1 dp rectangles; the scrollbar is a
+  thumb only, with no groove, because a groove reads as a hard vertical line at the card edge.
+- **Bars are flat data.** Solid accent/danger fills, rounded on the *top* corners only
+  (`Radius.bar = 6.dp`), no shadow, no blur — the cavity alone implies the depth.
+- **Labels are solid ink.** Chart values, dates and category figures use `neu.ink` at full opacity,
+  never the blended secondary.
+- **Hairline edges.** Raised faces carry a 1 dp ink-at-5% border so they separate crisply from the
+  canvas instead of glowing into it.
+- **One instance.** A file lock in `~/.local/share/baki/instance.lock`; a second launch prints
+  "Baki is already running" and exits, because stacked windows produce hard overlapping edges.

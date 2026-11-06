@@ -52,6 +52,7 @@ object Radius {
     /** M3 small */
     val small = 8.dp
     /** M3 medium — inputs and small surfaces */
+    val bar = 6.dp
     val input = 12.dp
     /** M3 large — the standard card */
     val card = 16.dp

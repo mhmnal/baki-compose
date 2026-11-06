@@ -112,8 +112,8 @@ fun neuOf(p: BakiPalette): Neu {
         onAccent = p.onPrimary,
         accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
         danger = p.down,
-        lightAlpha = if (p.dark) 0.34f else 1.0f,
-        darkAlpha = if (p.dark) 0.50f else 0.26f,
+        lightAlpha = if (p.dark) 0.30f else 0.75f,
+        darkAlpha = if (p.dark) 0.38f else 0.18f,
         scrim = if (p.dark) Color.Black.copy(alpha = 0.55f) else blend(base, p.onSurface, 0.45f).copy(alpha = 0.42f),
     )
 }
@@ -167,6 +167,7 @@ fun Modifier.raised(
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
+    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.10f else 0.05f), RoundedCornerShape(corner))
 
 /**
  * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
@@ -217,12 +218,6 @@ fun Modifier.inset(
     .clip(RoundedCornerShape(corner))
     .background(fill)
 
-fun Modifier.groove(neu: Neu, thickness: Dp = 1.dp): Modifier = this.drawBehind {
-    val t = thickness.toPx()
-    val h = size.height / 2
-    drawRect(neu.dark.copy(alpha = 0.35f), topLeft = Offset(0f, h), size = Size(size.width, t))
-    drawRect(neu.light.copy(alpha = 0.75f), topLeft = Offset(0f, h + t), size = Size(size.width, t))
-}
 
 // ---------------------------------------------------------------- components
 
@@ -505,19 +500,12 @@ fun NeuScrollbar(
         val thumb = (track * ratio).coerceAtLeast(32.dp)
         val travel = (track - thumb).coerceAtLeast(1.dp)
         val offsetY = travel * (state.value.toFloat() / max)
-        // the groove
-        Box(
-            Modifier
-                .fillMaxSize()
-                .inset(neu, corner = Radius.pill, offset = 2.dp)
-                .clip(RoundedCornerShape(Radius.pill)),
-        )
-        // the thumb
+        // thumb only: a groove here reads as a hard vertical line at the card edge
         Box(
             Modifier
                 .offset(y = offsetY)
                 .height(thumb)
-                .width(8.dp)
+                .width(6.dp)
                 .align(Alignment.TopCenter)
                 .raised(neu, corner = Radius.pill, offset = 2.dp)
                 .clip(RoundedCornerShape(Radius.pill))
