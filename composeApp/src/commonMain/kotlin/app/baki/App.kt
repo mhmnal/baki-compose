@@ -629,10 +629,10 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
     val ink = if (tint == Color.Unspecified) baki.onSurface else tint
     Column {
         Text(label, color = baki.muted, style = BakiType.label)
-        Text(
-            "RM ${rm(amountCents)}", color = ink,
+        EasedMoney(
+            cents = amountCents, color = ink,
             // tabular figures: the hero number keeps its width as digits change
-            style = (if (size >= 40) BakiType.displayNumeric else BakiType.headlineNumeric),
+            style = if (size >= 40) BakiType.displayNumeric else BakiType.headlineNumeric,
         )
     }
 }

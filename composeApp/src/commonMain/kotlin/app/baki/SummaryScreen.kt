@@ -57,7 +57,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         item {
             Column {
                 Text("this month", color = baki.muted, fontSize = 12.sp)
-                Text("RM ${rm(t.net)}", color = baki.onSurface, style = BakiType.displaySmallNumeric)
+                EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
                 Text(
                     "${days.size} days · in ${rm(t.income)} · out ${rm(t.expense)} · avg ${rm(avgDay)}/day",
                     color = baki.muted, fontSize = 12.sp,
@@ -80,7 +80,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 Text("THIS WEEK", color = baki.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                    EasedMoney(thisWeek.net, baki.onSurface, BakiType.subtitle.copy(fontSize = 22.sp, fontWeight = FontWeight.Black))
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",

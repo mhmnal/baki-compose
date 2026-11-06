@@ -1,5 +1,28 @@
 package app.baki
 
+import kotlin.math.roundToLong
+
+import androidx.compose.ui.text.TextStyle
+
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.ui.Modifier
+
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+
+import androidx.compose.runtime.Composable
+
+import androidx.compose.material3.Text
+
+import androidx.compose.animation.core.spring
+
+import androidx.compose.animation.core.animateIntAsState
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+
 /** Fuel and wear per km, resolved against the shift's own km/L when it has one. */
 data class CostRates(val fuel: Double, val wear: Double, val kmPerLitre: Double) {
     val total: Double get() = fuel + wear
@@ -64,4 +87,35 @@ fun shiftMetrics(sh: Shift, cfg: Profit = Profit(), overheadPerHour: Double = 0.
     val net = gross - running - extra - grabFee - overheadPerHour * sh.hours
     val netHr = if (sh.hours > 0) net / sh.hours else null
     return ShiftMetrics(km, fuel, wear, running, gross, extra, grabFee, net, sh.hours, netHr)
+}
+
+/**
+ * The app's one animated figure: the value eases to its new amount so the digits change in place
+ * rather than snapping. Shared by every hero number so Spending, Shifts and Summary move exactly
+ * like Today does.
+ *
+ * It enters at zero, so opening a page counts the figure up instead of showing it already settled —
+ * and any later change (a category filter, a month) animates from wherever it was.
+ */
+@Composable
+fun EasedMoney(
+    cents: Long,
+    color: Color,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+    prefix: String = "RM ",
+) {
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(cents) {
+        shown.animateTo(
+            targetValue = cents.toFloat(),
+            animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+        )
+    }
+    Text(
+        prefix + rm(shown.value.roundToLong()),
+        color = color,
+        style = style,
+        modifier = modifier,
+    )
 }
