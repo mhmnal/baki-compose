@@ -50,3 +50,41 @@ fun exportGpx(date: String, routes: List<ShiftRoute>): String {
     sb.appendLine("</gpx>")
     return sb.toString()
 }
+
+/** A print-ready monthly statement: plain HTML, so any browser can PDF it without a dependency. */
+fun statementHtml(store: Store, month: String): String {
+    val t = monthTotals(store, month)
+    val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedBy { it.date }
+    val rows = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
+        .joinToString("") { e ->
+            "<tr><td>${e.date}</td><td>${e.cat}</td><td>${e.note.escapeHtml()}</td>" +
+                "<td class=n>${if (e.type == "income") "+" else "−"}RM ${rm(e.amount)}</td></tr>"
+        }
+    val shiftRows = shifts.joinToString("") { s ->
+        val m = shiftMetrics(s, store.settings.profit)
+        "<tr><td>${s.date} ${s.start}</td><td class=n>${"%.1f".format(s.hours)}</td>" +
+            "<td class=n>${"%.1f".format(s.km)}</td><td class=n>RM ${rm(s.gross)}</td>" +
+            "<td class=n>RM ${rm((m.net * 100).toLong())}</td></tr>"
+    }
+    return """<!doctype html><meta charset=utf-8><title>Baki · ${month}</title>
+<style>
+  body{font:13px/1.5 -apple-system,Segoe UI,Inter,sans-serif;color:#1b2417;max-width:760px;margin:40px auto;padding:0 24px}
+  h1{font-size:22px;margin:0 0 2px} .sub{color:#5c6657;margin-bottom:24px}
+  .hero{font-size:40px;font-weight:800;letter-spacing:-1px}
+  table{width:100%;border-collapse:collapse;margin:12px 0 28px}
+  th{text-align:left;font-size:10px;letter-spacing:.08em;color:#5c6657;border-bottom:1px solid #e2ddd0;padding:6px 4px}
+  td{padding:6px 4px;border-bottom:1px solid #efeae0} td.n,th.n{text-align:right}
+  h2{font-size:11px;letter-spacing:.08em;color:#5c6657;margin:24px 0 4px}
+</style>
+<h1>Baki · ${month}</h1><div class=sub>Shift logbook and spending</div>
+<div class=hero>RM ${rm(t.net)}</div>
+<div class=sub>${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}</div>
+<h2>SHIFTS</h2>
+<table><tr><th>Shift</th><th class=n>Hours</th><th class=n>KM</th><th class=n>Gross</th><th class=n>Net</th></tr>$shiftRows</table>
+<h2>ENTRIES</h2>
+<table><tr><th>Date</th><th>Category</th><th>Note</th><th class=n>Amount</th></tr>$rows</table>
+<div class=sub>Generated ${todayIso()} — figures in Malaysian ringgit.</div>"""
+}
+
+private fun String.escapeHtml(): String =
+    replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

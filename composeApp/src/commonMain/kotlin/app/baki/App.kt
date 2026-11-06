@@ -79,6 +79,8 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     // install the typeface before anything composes text
     BakiType.install(bakiFontFamily())
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
+        // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
+        if (Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
         SharedTransitionLayout {
             androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
                 AppContent(repo)

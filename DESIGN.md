@@ -189,3 +189,20 @@ Enforced by `DesignTokensTest`, which fails the build when a literal slips in.
 | Money | `EasedMoney` for heroes (animates) · `rm()` inside sentences and rows (never animates) | `%.2f` for an amount |
 | Labels | Section headers and hero captions ALL-CAPS via `BakiType.section`; everything else sentence case | mixed casing |
 | Empty states | `EmptyState(title, hint)` — title without a full stop, hint a sentence | bespoke copy |
+
+## Desktop shell
+
+The laptop is not a big phone. `DesktopRoot` replaces the touch UI when `Caps.isDesktop`:
+
+- **A window, not a frame**: 1360x900 default, 960x640 minimum, size/position remembered in Java
+  preferences; native menu bar (File: new entry, export CSV, statement, quit — View: colour pack).
+- **Navigation rail** (Overview / Entries / Shifts / Year) with hover states and pointer cursors.
+- **Overview** is a dashboard: month hero, a fixed seven-day strip, the trend chart, the recent
+  entries table, and a right rail with spend-by-category, funds and last-week figures.
+- **Entries and Shifts are tables**, not cards: aligned columns, hover rows, click-to-edit,
+  right-click for edit/delete.
+- **Year** shows twelve months at once — impossible on a phone.
+- **Statement** writes a print-ready HTML document and opens the browser (Ctrl+P → PDF), no extra
+  dependency.
+- Phone-only affordances are absent by capability, not by accident: `Caps` reports no GPS, no routes,
+  no widgets and no share sheet, so the desktop never renders them.

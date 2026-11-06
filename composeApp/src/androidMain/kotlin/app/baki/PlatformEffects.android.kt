@@ -77,6 +77,8 @@ actual object PlatformEffects {
     actual fun tapFeedback() = haptic(Haptic.Tick)
     actual fun successFeedback() = haptic(Haptic.Confirm)
 
+    actual fun printStatement(html: String) {}
+
     actual fun requestLiveWidget() {
         val ctx = AppCtx.ctx ?: return
         runCatching {
