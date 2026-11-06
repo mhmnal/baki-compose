@@ -2,6 +2,16 @@
 
 Kept here so nothing is lost between sessions. Ordered by what actually costs money or trust.
 
+## How distance is decided (v0.6.4)
+
+`odometer > GPS (speed-assisted) > hours x average speed`
+
+- `travelMetres` believes Doppler speed only when the fix reports a good speed accuracy, otherwise it
+  trusts position past a noise floor of 0.25 x accuracy. The anchor always advances.
+- `Calibration` learns the drift factor: when a finished shift's km is corrected to the car's own
+  figure, the raw-vs-real pair is stored locally; the median of the last 5 ratios (clamped 0.8-1.8,
+  from 2 samples up) becomes `gpsCorrection` automatically. No odometer at both ends is required.
+
 ## Fixed
 
 - **Tracked km under-counted in slow traffic** (v0.6.3). A fixed 3 m step gate ignored the fix's

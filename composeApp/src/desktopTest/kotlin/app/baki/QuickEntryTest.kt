@@ -70,3 +70,4 @@ class QuickEntryTest {
         assertTrue(q.loose.isEmpty())
     }
 }
+

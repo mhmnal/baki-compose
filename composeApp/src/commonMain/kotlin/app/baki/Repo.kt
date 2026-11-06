@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlin.math.abs
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.max
 import kotlin.random.Random
@@ -375,6 +376,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         // server whitelists shift fields, so a synced key would simply be stripped.
         val shiftId = newId("s")
         val routeKey = current.id.ifBlank { shiftId }
+        // keep the raw track: if this shift's km is later corrected to the car's number, the pair
+        // teaches the drift factor (see Calibration), so no odometer is needed every shift
+        runCatching { Calibration.rememberRaw(shiftId, current.km) }
         val pending = drainRouteBuffer()
         if (pending.isNotEmpty()) RouteStore.append(routeKey, date, pending)
         val shift = Shift(
@@ -434,12 +438,20 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         odoStart: Double? = null, odoEnd: Double? = null,
     ) = mutex.withLock {
         if (blocked()) return@withLock
+        // the driver replaced the tracked km with the car's own figure: learn from it
+        var learned: Double? = null
+        if (km > 0.0 && shift.km > 0.0 && abs(km - shift.km) / shift.km > 0.02) {
+            learned = runCatching { Calibration.learn(shift.id, km) }.getOrNull()
+        }
         val edited = shift.copy(
             date = date, start = start, hours = hours, km = km, gross = grossCents, extra = extraCents,
             note = note, kmPerLitre = kmPerLitre, odoStart = odoStart, odoEnd = odoEnd, updated = nowIso(),
         )
         store = store.copy(
             shifts = store.shifts.map { if (it.id == shift.id) edited else it },
+            settings = learned?.let { factor ->
+                store.settings.copy(gpsCorrection = factor)
+            } ?: store.settings,
             updatedAt = nowIso(),
         )
         store = recomputeCover(store).first

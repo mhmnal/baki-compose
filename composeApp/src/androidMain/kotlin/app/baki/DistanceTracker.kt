@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Looper
 import androidx.core.content.ContextCompat
@@ -162,6 +163,12 @@ object DistanceTracker {
             accuracyMeters = loc.accuracy.toDouble(),
             speedMps = loc.speed.toDouble(),
             hasSpeed = loc.hasSpeed(),
+            // API 26+: how good the Doppler speed is; NaN when the fix has no estimate
+            speedAccuracyMps = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                loc.speedAccuracyMetersPerSecond.toDouble()
+            } else {
+                Double.NaN
+            },
         )
         metres += travelled
         last = loc

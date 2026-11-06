@@ -42,6 +42,19 @@ class TravelTest {
     }
 
     @Test
+    fun aBadSpeedEstimateIsNotTrusted() {
+        // speed says 1.2 m/s but its own error is +/-4 m/s: refuse it, and the position is under noise
+        val d = travelMetres(2.0, 2.0, 12.0, 1.2, true, speedAccuracyMps = 4.0)
+        assertEquals(0.0, d)
+    }
+
+    @Test
+    fun aGoodSpeedEstimateIsTrusted() {
+        val d = travelMetres(2.0, 2.0, 12.0, 1.2, true, speedAccuracyMps = 0.3)
+        assertTrue(abs(d - 2.4) < 0.01, "expected 2.4 m, got $d")
+    }
+
+    @Test
     fun noElapsedTimeMeansNothing() {
         assertEquals(0.0, travelMetres(5.0, 0.0, 10.0, 3.0, true))
     }

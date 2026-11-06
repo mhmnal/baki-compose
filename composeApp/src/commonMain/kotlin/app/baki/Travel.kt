@@ -23,13 +23,18 @@ fun travelMetres(
     accuracyMeters: Double,
     speedMps: Double,
     hasSpeed: Boolean,
+    speedAccuracyMps: Double = Double.NaN,
 ): Double {
     if (seconds <= 0.0) return 0.0
     // jitter scales with accuracy: a 5 m fix can be trusted to ~1.5 m, a 30 m fix only to ~8 m
     val noiseFloor = (accuracyMeters * 0.25).coerceIn(1.5, 8.0)
     val byPosition = if (stepMeters >= noiseFloor) stepMeters else 0.0
-    // speed is only believed above walking pace, and capped so a bad sample cannot invent travel
-    val bySpeed = if (hasSpeed && speedMps > 0.7) {
+
+    // Believe the speed only when the fix also reports how good that speed is, and it is good.
+    // A speed of 1 m/s with +/-3 m/s error says nothing about travel.
+    val speedTrustworthy = hasSpeed && speedMps > 0.7 &&
+        (speedAccuracyMps.isNaN() || speedAccuracyMps <= max(0.6, speedMps * 0.6))
+    val bySpeed = if (speedTrustworthy) {
         (speedMps * seconds).coerceAtMost(stepMeters + 15.0)
     } else {
         0.0
