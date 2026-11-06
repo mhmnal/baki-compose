@@ -1,5 +1,7 @@
 package app.baki
 
+import kotlin.math.roundToLong
+
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
@@ -320,3 +322,54 @@ fun quickAdds(store: Store, limit: Int = 4, sinceDays: Int = 60): List<QuickAdd>
         .take(limit)
 }
 
+
+/** What one week of driving actually came to. */
+data class WeeklyReview(
+    val days: Int,
+    val hours: Double,
+    val net: Long,
+    val perHour: Double,
+    val fuelPerKm: Double,
+    val bestDay: String,
+    val bestNet: Long,
+)
+
+/** The week that starts on [weekStart]; null when nothing was driven. */
+fun weeklyReview(store: Store, weekStart: String): WeeklyReview? {
+    val end = addDays(weekStart, 7)
+    val shifts = store.shifts.filter { it.date >= weekStart && it.date < end }
+    if (shifts.isEmpty()) return null
+    val cfg = store.settings.profit
+    val month = weekStart.substring(0, 7)
+    val overhead = overheadPerHour(store, month)
+    val hours = shifts.sumOf { it.hours }
+    val net = shifts.sumOf { shiftMetrics(it, cfg, overhead).net }
+    val perHour = if (hours > 0.01) net / hours else 0.0
+    val fuel = store.entries
+        .filter { it.date >= weekStart && it.date < end && it.type != "income" && it.cat == "petrol" }
+        .sumOf { it.amount }
+    val km = shifts.sumOf { it.km }
+    val fuelPerKm = if (km > 0.5) fuel / 100.0 / km else 0.0
+    val byDay = shifts.groupBy { it.date }
+        .mapValues { (_, rows) -> rows.sumOf { shiftMetrics(it, cfg, overhead).net } }
+    val best = byDay.maxByOrNull { it.value }
+    return WeeklyReview(
+        days = byDay.size,
+        hours = hours,
+        net = (net * 100).roundToLong(),
+        perHour = perHour,
+        fuelPerKm = fuelPerKm,
+        bestDay = best?.key.orEmpty(),
+        bestNet = ((best?.value ?: 0.0) * 100).roundToLong(),
+    )
+}
+
+/** The most recent week that has at least one shift, so the card is never empty. */
+fun latestWeekWithData(store: Store, today: String): Pair<String, WeeklyReview>? {
+    var start = weekStartOf(today)
+    repeat(8) {
+        weeklyReview(store, start)?.let { return start to it }
+        start = addDays(start, -7)
+    }
+    return null
+}

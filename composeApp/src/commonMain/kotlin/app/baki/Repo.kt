@@ -165,6 +165,33 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         entry.id
     }
 
+    /**
+     * Commits several entries parsed from one sentence, in a single store write and one sync.
+     * Returns the new ids so the caller can offer one undo for the whole sentence.
+     */
+    suspend fun addMany(entries: List<QuickEntry>, date: String): List<String> = mutex.withLock {
+        if (blocked() || entries.isEmpty()) return@withLock emptyList()
+        val stamp = nowIso()
+        val made = entries.map { q ->
+            Entry(
+                id = newId(), date = date, type = "expense", cat = q.cat, amount = q.cents,
+                note = "", updated = stamp,
+            )
+        }
+        store = store.copy(entries = store.entries + made, updatedAt = stamp)
+        saveLocal(store)
+        try {
+            val saved = client.push(store)
+            store = mergeStores(store, saved)
+            saveLocal(store)
+            status = "synced"
+        } catch (e: Exception) {
+            status = "cached"
+            lastError = e.message
+        }
+        made.map { it.id }
+    }
+
     /** Log a past shift. The cover fee is derived from the 24h rule, never typed. */
     suspend fun addShift(
         date: String, start: String, hours: Double, km: Double,

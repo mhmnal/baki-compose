@@ -225,6 +225,43 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             }
         }
         item { HoursHeatmap(store); Spacer(Modifier.height(12.dp)) }
+        // the week, in sentences: numbers are cold, a sentence is memorable
+        latestWeekWithData(store, todayIso())?.let { (start, r) ->
+            item {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(baki.container)
+                        .padding(16.dp),
+                ) {
+                    Text(
+                        (if (start == weekStartOf(todayIso())) "THIS WEEK" else "LAST WEEK") +
+                            " · ${prettyDate(start)} – ${prettyDate(addDays(start, 6))}",
+                        color = baki.muted, style = BakiType.section,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "You drove ${"%.1f".format(r.hours)} h over ${r.days} day(s) and kept " +
+                            "RM ${rm(r.net)} — RM ${"%.2f".format(r.perHour)}/h.",
+                        color = baki.onSurface, style = BakiType.body,
+                    )
+                    if (r.fuelPerKm > 0.0) {
+                        Text(
+                            "Fuel took RM ${"%.2f".format(r.fuelPerKm)} of every km.",
+                            color = baki.muted, style = BakiType.caption,
+                        )
+                    }
+                    if (r.bestNet > 0) {
+                        Text(
+                            "Best day: ${prettyDate(r.bestDay)} at RM ${rm(r.bestNet)}.",
+                            color = baki.up, style = BakiType.caption,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+            }
+        }
+
         item { TrendBars(store, month); Spacer(Modifier.height(10.dp)) }
         item { CalendarHeat(store, month); Spacer(Modifier.height(4.dp)) }
         if (cats.isEmpty()) item {

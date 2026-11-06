@@ -58,6 +58,7 @@ fun TodayScreen(
     onPayout: () -> Unit,
     onPayouts: () -> Unit,
     onQuickAdd: (String, Long) -> Unit,
+    onQuickText: (String) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onPreset: (String) -> Unit,
@@ -76,6 +77,13 @@ fun TodayScreen(
     val shift = shifts.maxByOrNull { it.updated }
     val scope = rememberCoroutineScope()
     val quick = remember(store) { quickAdds(store) }
+
+    // the hero number eases to its new value instead of snapping: the digits count up in place
+    val shownNet by animateIntAsState(
+        targetValue = t.net.toInt(),
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+        label = "net",
+    )
 
 
     PullToRefreshBox(
@@ -98,11 +106,7 @@ fun TodayScreen(
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("RM", color = baki.muted, fontSize = 22.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp, end = 6.dp))
-                    RollingAmount(
-                        text = rm(t.net),
-                        color = baki.onSurface,
-                        style = BakiType.displayNumeric,
-                    )
+                    Text(rm(shownNet.toLong()), color = baki.onSurface, style = BakiType.displayNumeric)
                 }
                 Text(
                     if (t.net >= 0) "KEPT FOR THE DAY" else "OUT OF POCKET",
@@ -209,6 +213,9 @@ fun TodayScreen(
 
         // the day's movement: between the shift card and the ledger
         item { TodayRouteCard(store = store, day = day, live = live) }
+
+        // one line of free text: "toll 4.20 parking 2"
+        item { QuickEntryBar(onSubmit = onQuickText) }
 
         // what you keep buying, one tap away
         if (quick.isNotEmpty()) item {

@@ -108,6 +108,7 @@ private fun AppContent(repo: BakiRepo) {
     var editingBudgets by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
     var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
+    var quickText by remember { mutableStateOf<String?>(null) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
     val glassBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
     val scope = rememberCoroutineScope()
@@ -142,7 +143,7 @@ private fun AppContent(repo: BakiRepo) {
         val barGap = gestureInset + 14.dp
         val barTop = maxHeight - barHeight - barGap
         val fabTop = barTop - fabSize - 6.dp
-        val sheetOpen = adding != 0 || payoutsTarget != null
+        val sheetOpen = adding != 0 || payoutsTarget != null || quickText != null
 
         // ---- level 1: the app itself, blurred while a sheet is up ----
         Box(
@@ -182,6 +183,7 @@ private fun AppContent(repo: BakiRepo) {
                     onDay = { day = it },
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
+                    onQuickText = { quickText = it },
                     onQuickAdd = { cat, cents ->
                         scope.launch {
                             val id = repo.addExpense(cents, cat, "", todayIso())
@@ -296,6 +298,32 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // ---- level 2: the sheets sit above everything, on a scrim over the blurred app ----
+    quickText?.let { line ->
+        QuickEntrySheet(
+            initial = line,
+            cats = repo.store.settings.cats.catsOut,
+            today = todayIso(),
+            onConfirm = { entries, payouts, date ->
+                scope.launch {
+                    val ids = repo.addMany(entries, date)
+                    payouts.forEach { repo.addPayout(it) }
+                    quickText = null
+                    if (ids.isNotEmpty()) {
+                        val total = entries.sumOf { it.cents }
+                        val res = snackbar.showSnackbar(
+                            "Added ${ids.size} item(s) · RM ${rm(total)}",
+                            actionLabel = "Undo", duration = SnackbarDuration.Long,
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            ids.forEach { repo.deleteEntry(it) }
+                        }
+                    }
+                }
+            },
+            onDismiss = { quickText = null },
+        )
+    }
+
     payoutsTarget?.let { target ->
         val liveShift = repo.live
         val stored = (target as? PayoutsTarget.Stored)
