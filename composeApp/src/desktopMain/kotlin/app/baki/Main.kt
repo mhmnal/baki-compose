@@ -2,7 +2,6 @@ package app.baki
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
@@ -35,27 +34,6 @@ fun main() = application {
         state = state,
     ) {
         window.minimumSize = java.awt.Dimension(960, 640)
-        MenuBar {
-            Menu("File", mnemonic = 'F') {
-                Item("New entry", shortcut = androidx.compose.ui.input.key.KeyShortcut(
-                    androidx.compose.ui.input.key.Key.N,
-                    ctrl = true,
-                )) { DesktopActions.newEntry() }
-                Separator()
-                Item("Export CSV…") { DesktopActions.exportCsv() }
-                Item("Monthly statement…") { DesktopActions.statement() }
-                Separator()
-                Item("Quit", shortcut = androidx.compose.ui.input.key.KeyShortcut(
-                    androidx.compose.ui.input.key.Key.Q,
-                    ctrl = true,
-                )) { exitApplication() }
-            }
-            Menu("View", mnemonic = 'V') {
-                Item("Sage") { DesktopActions.applyTheme("sage") }
-                Item("Night") { DesktopActions.applyTheme("night") }
-                Item("Paper") { DesktopActions.applyTheme("paper") }
-            }
-        }
         App()
     }
 }
