@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -146,7 +147,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 onSettings = { settingsOpen = true },
             )
             Spacer(Modifier.height(Space.m))
-                Box(Modifier.weight(1f)) {
+                Box(Modifier.weight(1f).clipToBounds()) {
                     AnimatedContent(
                         targetState = tab,
                         transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
@@ -454,36 +455,51 @@ private fun WeekChart(store: Store, neu: Neu) {
     Column {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        // the plot is a cavity; the bars are data sitting inside it, so they carry no shadow
+        // a carved plot: bars stand on a baseline with a floor margin inside the cavity
         NeuWell(
             neu,
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
             corner = Radius.card,
             offset = Elevation.medium,
         ) {
-            Row(
-                Modifier.fillMaxWidth().padding(Space.m),
-                horizontalArrangement = Arrangement.spacedBy(Space.m),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                days.forEach { (iso, t) ->
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
-                            color = if (t.net >= 0) neu.ink else neu.danger,
-                            style = BakiType.captionNumeric,
-                        )
-                        Spacer(Modifier.height(Space.xs))
-                        Box(Modifier.fillMaxWidth().height(88.dp), contentAlignment = Alignment.BottomCenter) {
-                            val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.05f, 1f)
-                            Box(
-                                Modifier.fillMaxWidth(0.6f).height((88 * frac).dp)
-                                    .background(if (t.net >= 0) neu.accent else neu.danger)
-                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)),
+            Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
+                Row(
+                    Modifier.fillMaxWidth().height(92.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    days.forEach { (_, t) ->
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
+                                color = if (t.net >= 0) neu.ink else neu.danger,
+                                style = BakiType.captionNumeric,
                             )
+                            Spacer(Modifier.height(Space.xs))
+                            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
+                                val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.05f, 1f)
+                                Box(
+                                    Modifier.fillMaxWidth(0.58f).height((76 * frac).dp)
+                                        .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar))
+                                        .background(if (t.net >= 0) neu.accent else neu.danger),
+                                )
+                            }
                         }
-                        Spacer(Modifier.height(Space.xs))
-                        Text(weekdayShort(iso), color = neu.ink, style = BakiType.caption)
+                    }
+                }
+                Spacer(Modifier.height(Space.s))
+                // the baseline the bars stand on
+                Box(
+                    Modifier.fillMaxWidth().height(1.dp)
+                        .background(neu.ink.copy(alpha = 0.12f)),
+                )
+                Spacer(Modifier.height(Space.s))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                    days.forEach { (iso, _) ->
+                        Text(
+                            weekdayShort(iso), color = neu.ink, style = BakiType.caption,
+                            modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
                     }
                 }
             }
@@ -509,21 +525,23 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.m)) {
                 Row(
-                    Modifier.fillMaxWidth().height(120.dp),
+                    Modifier.fillMaxWidth().height(124.dp),
                     horizontalArrangement = Arrangement.spacedBy(Space.xxs),
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     days.forEach { (_, t) ->
-                        Box(Modifier.weight(1f).height(120.dp), contentAlignment = Alignment.BottomCenter) {
+                        Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
                             val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.02f, 1f)
                             Box(
-                                Modifier.fillMaxWidth().height((120 * frac).dp)
-                                    .background(if (t.net >= 0) neu.accent else neu.danger)
-                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)),
+                                Modifier.fillMaxWidth().height((108 * frac).dp)
+                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar))
+                                    .background(if (t.net >= 0) neu.accent else neu.danger),
                             )
                         }
                     }
                 }
+                Spacer(Modifier.height(Space.s))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(neu.ink.copy(alpha = 0.12f)))
                 Spacer(Modifier.height(Space.s))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(days.first().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)

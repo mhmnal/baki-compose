@@ -328,7 +328,12 @@ cards, shade `#CED3CB` below, face `#DAE0D6` over canvas `#D6DCD1`.
 - **No drawn lines.** Separators are spacing (`Space.xs`), never 1 dp rectangles; the scrollbar is a
   thumb only, with no groove, because a groove reads as a hard vertical line at the card edge.
 - **Bars are flat data.** Solid accent/danger fills, rounded on the *top* corners only
-  (`Radius.bar = 6.dp`), no shadow, no blur — the cavity alone implies the depth.
+  (`Radius.bar = 6.dp`), no shadow, no blur — the cavity alone implies the depth. Clip before fill
+  (`clip` then `background`) or the rounding never reaches the fill.
+- **Bars stand on a baseline.** Each plot has a 1 dp ink-at-12% line under the bars and 16 dp of
+  floor padding inside the cavity, so nothing collides with the inner shadow.
+- **Shadows stay inside.** Views draw inside `clipToBounds()`, so a card's glow can never escape
+  into the window margin below the wordmark.
 - **Labels are solid ink.** Chart values, dates and category figures use `neu.ink` at full opacity,
   never the blended secondary.
 - **Hairline edges.** Raised faces carry a 1 dp ink-at-5% border so they separate crisply from the
