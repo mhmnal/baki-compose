@@ -29,6 +29,8 @@ expect object PlatformEffects {
     /** Hand a file to the platform's share sheet (no-op on desktop). */
     fun exportFile(name: String, mime: String, content: String)
     fun successFeedback()
+    /** Ask the launcher to place the live widget; desktop has no home screen. */
+    fun requestLiveWidget()
 }
 
 /** Notification actions arrive as intents; the UI drains this (state, so Compose reacts). */

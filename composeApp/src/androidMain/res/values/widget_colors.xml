@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- widgets follow the sage identity rather than Monet: the app's colour is the product -->
+    <color name="widget_bg_dark">#101510</color>
+    <color name="widget_bg_light">#F5F7EE</color>
+    <color name="widget_ink_dark">#E8F2D6</color>
+    <color name="widget_ink_light">#1B2417</color>
+    <color name="widget_muted_dark">#9AA694</color>
+    <color name="widget_muted_light">#5C6657</color>
+    <color name="widget_accent_dark">#2E5A32</color>
+    <color name="widget_accent_light">#2E5A32</color>
+</resources>

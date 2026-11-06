@@ -1339,6 +1339,15 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             }
         }
         Spacer(Modifier.height(16.dp))
+        SectionTitle("HOME SCREEN")
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = { PlatformEffects.requestLiveWidget() },
+            colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
+            shape = RoundedCornerShape(Radius.pill), modifier = Modifier.fillMaxWidth(),
+        ) { Text("Add the live widget", fontSize = 12.sp) }
+
+        Spacer(Modifier.height(16.dp))
         SectionTitle("BACKUP")
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

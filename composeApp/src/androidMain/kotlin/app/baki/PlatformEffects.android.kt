@@ -26,6 +26,9 @@ actual object PlatformEffects {
         val ctx = AppCtx.ctx ?: return
         if (startMs == null) LiveShiftService.stop(ctx)
         else LiveShiftService.update(ctx, startMs, totalCents)
+        // the live widget mirrors the shift: start, pause, payout and end all land here
+        BakiLiveWidget.refresh(ctx)
+        BakiWidget.refresh(ctx)
     }
 
     actual fun exportFile(name: String, mime: String, content: String) {
@@ -45,7 +48,7 @@ actual object PlatformEffects {
         }
     }
 
-    actual fun dataChanged() { AppCtx.ctx?.let { BakiWidget.refresh(it) } }
+    actual fun dataChanged() { AppCtx.ctx?.let { BakiWidget.refresh(it); BakiLiveWidget.refresh(it) } }
     actual fun log(msg: String) { android.util.Log.i("BakiLive", msg) }
     actual fun haptic(kind: Haptic) {
         val ctx = AppCtx.ctx ?: return
@@ -73,4 +76,14 @@ actual object PlatformEffects {
 
     actual fun tapFeedback() = haptic(Haptic.Tick)
     actual fun successFeedback() = haptic(Haptic.Confirm)
+
+    actual fun requestLiveWidget() {
+        val ctx = AppCtx.ctx ?: return
+        runCatching {
+            val mgr = android.appwidget.AppWidgetManager.getInstance(ctx)
+            if (!mgr.isRequestPinAppWidgetSupported) return
+            val provider = android.content.ComponentName(ctx, BakiLiveWidget::class.java)
+            mgr.requestPinAppWidget(provider, null, null)
+        }
+    }
 }

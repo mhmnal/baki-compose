@@ -16,6 +16,7 @@ class BakiWidget : AppWidgetProvider() {
 
     companion object {
         fun refresh(ctx: Context) {
+            AppCtx.attach(ctx)
             val mgr = AppWidgetManager.getInstance(ctx)
             val ids = mgr.getAppWidgetIds(ComponentName(ctx, BakiWidget::class.java))
             if (ids.isEmpty()) return
@@ -23,6 +24,7 @@ class BakiWidget : AppWidgetProvider() {
         }
 
         private fun build(ctx: Context): RemoteViews {
+            AppCtx.attach(ctx)
             val views = RemoteViews(ctx.packageName, R.layout.baki_widget)
             val store = loadLocal()
             val today = todayIso()

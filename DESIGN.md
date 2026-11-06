@@ -161,3 +161,16 @@ is always dark and Paper always light.
 Inter variable (`composeResources/font/inter_variable.ttf`) replaces the system face. `BakiType`
 exposes `install(family)`, called once at the top of `App()` before any text composes, so every style
 and its numeric variant picks up the family without touching call sites.
+
+## Home-screen widgets
+
+Two RemoteViews widgets, both drawn in the sage palette rather than Monet (the colour is the identity):
+`BakiWidget` (kept today) and `BakiLiveWidget` (the shift in progress).
+
+- **The clock ticks without the app**: a `Chronometer` keeps its own time inside the launcher, base
+  converted from epoch to `elapsedRealtime`, so no periodic updates are needed.
+- **Pause works from the home screen**: the button broadcasts to `WidgetActions`, which attaches the
+  same encrypted store (`AppCtx.attach`), flips the pause, and refreshes both widgets.
+- **Providers must attach the store themselves** — a widget can be updated in a fresh process with no
+  Activity, where `LocalStore` is otherwise uninitialised and every read returns empty.
+- Idle state shows a headline ("Start a shift") rather than a stopped clock at 00:00.
