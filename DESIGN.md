@@ -310,3 +310,12 @@ scrollbar is a first-class material object: inset groove, raised draggable thumb
 Probed on the running app, light pack: canvas `#D6DCD1`, card face `#DAE0D6`, ink `#14180F`,
 secondary `#60655B`, no dark bleed above the card's lit corner. The same probes are repeatable with
 `/tmp/shot/Probe.java` against any screenshot.
+
+## Shadow engine (v0.15)
+
+The material delegates all shadow drawing to **`dev.lennartegb.compose:shadow` 0.1.2** (KMP, served
+via JitPack as `shadow-jvm`): CSS-style `boxShadow(blur, spread, offset, colour, shape, clip, inset)`.
+`raised` is two box shadows (highlight up-left, shade down-right), `inset` is the same pair drawn
+inside the shape, `elevated` is one downward shadow for floating layers. `ShadowEngineTest` fails the
+build if hand-rolled blur shaders reappear. Verified by pixel probe: highlight halo `#E2E6DF` above
+cards, shade `#CED3CB` below, face `#DAE0D6` over canvas `#D6DCD1`.

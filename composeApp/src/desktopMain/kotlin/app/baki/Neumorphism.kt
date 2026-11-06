@@ -37,21 +37,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import org.jetbrains.skia.FilterBlurMode
-import org.jetbrains.skia.MaskFilter
-import org.jetbrains.skia.Paint
-import org.jetbrains.skia.RRect
+import dev.lennartegb.shadows.boxShadow
 
 /**
  * Neumorphism, as a system rather than a style.
@@ -142,63 +140,33 @@ object Elevation {
     fun blur(offset: Dp): Dp = offset * 2.2f
 }
 
-private fun DrawScope.softRect(x: Float, y: Float, w: Float, h: Float, r: Float, color: Color, blur: Float) {
-    if (blur <= 0f) return
-    drawIntoCanvas { canvas ->
-        val paint = Paint().apply {
-            isAntiAlias = true
-            this.color = color.toArgb()
-            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, blur)
-        }
-        canvas.nativeCanvas.drawRRect(RRect.makeXYWH(x, y, w, h, r), paint)
-    }
-}
-
-private fun DrawScope.fillRect(r: Float, color: Color, w: Float = size.width, h: Float = size.height) {
-    drawIntoCanvas { c ->
-        c.nativeCanvas.drawRRect(
-            RRect.makeXYWH(0f, 0f, w, h, r),
-            Paint().apply { isAntiAlias = true; this.color = color.toArgb() },
-        )
-    }
-}
-
-/** Extruded: light above-left, shade below-right, body painted last so only soft edges show. */
 fun Modifier.raised(
     neu: Neu,
     corner: Dp = 20.dp,
     offset: Dp = Elevation.medium,
     fill: Color = neu.panel,
-): Modifier = this.drawBehind {
-    val r = corner.toPx(); val o = offset.toPx(); val b = Elevation.blur(offset).toPx()
-    if (o == 0f) { fillRect(r, fill); return@drawBehind }
-    drawIntoCanvas { c ->
-        val canvas = c.nativeCanvas
-        val w = size.width
-        val h = size.height
-        // clip each shadow to the half-plane it belongs to: no smudge on the lit corner
-        canvas.save()
-        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(o, o, w + o + b, h + o + b))
-        val shade = Paint().apply {
-            isAntiAlias = true
-            color = neu.dark.copy(alpha = neu.darkAlpha).toArgb()
-            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.75f)
-        }
-        canvas.drawRRect(RRect.makeXYWH(o, o, w, h, r), shade)
-        canvas.restore()
-
-        canvas.save()
-        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(-o - b, -o - b, w - o, h - o))
-        val light = Paint().apply {
-            isAntiAlias = true
-            color = neu.light.copy(alpha = neu.lightAlpha).toArgb()
-            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 1.1f)
-        }
-        canvas.drawRRect(RRect.makeXYWH(-o, -o, w, h, r), light)
-        canvas.restore()
-    }
-    fillRect(r, fill)
-}
+): Modifier = this
+    // the library's CSS-style box shadows: highlight up-left, shade down-right, blur 2x offset
+    .boxShadow(
+        blurRadius = Elevation.blur(offset),
+        spreadRadius = 0.dp,
+        offset = DpOffset(-offset, -offset),
+        color = neu.light.copy(alpha = neu.lightAlpha),
+        shape = RoundedCornerShape(corner),
+        clip = false,
+        inset = false,
+    )
+    .boxShadow(
+        blurRadius = Elevation.blur(offset),
+        spreadRadius = 0.dp,
+        offset = DpOffset(offset, offset),
+        color = neu.dark.copy(alpha = neu.darkAlpha),
+        shape = RoundedCornerShape(corner),
+        clip = false,
+        inset = false,
+    )
+    .clip(RoundedCornerShape(corner))
+    .background(fill)
 
 /**
  * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
@@ -208,23 +176,18 @@ fun Modifier.elevated(
     neu: Neu,
     corner: Dp = Radius.sheet,
     drop: Dp = Elevation.high,
-): Modifier = this.drawBehind {
-    val r = corner.toPx()
-    val d = drop.toPx()
-    drawIntoCanvas { c ->
-        val canvas = c.nativeCanvas
-        canvas.save()
-        canvas.clipRect(org.jetbrains.skia.Rect.makeLTRB(-d * 2, 0f, size.width + d * 2, size.height + d * 3))
-        val paint = Paint().apply {
-            isAntiAlias = true
-            color = neu.dark.copy(alpha = (neu.darkAlpha * 1.6f).coerceAtMost(0.55f)).toArgb()
-            maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, d)
-        }
-        canvas.drawRRect(RRect.makeXYWH(0f, d * 0.45f, size.width, size.height, r), paint)
-        canvas.restore()
-    }
-    fillRect(r, neu.panel)
-}
+): Modifier = this
+    .boxShadow(
+        blurRadius = drop,
+        spreadRadius = 0.dp,
+        offset = DpOffset(0.dp, drop * 0.45f),
+        color = neu.dark.copy(alpha = (neu.darkAlpha * 1.5f).coerceAtMost(0.5f)),
+        shape = RoundedCornerShape(corner),
+        clip = false,
+        inset = false,
+    )
+    .clip(RoundedCornerShape(corner))
+    .background(neu.panel)
 
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
 fun Modifier.inset(
@@ -232,33 +195,33 @@ fun Modifier.inset(
     corner: Dp = 16.dp,
     offset: Dp = Elevation.low,
     fill: Color = neu.base,
-): Modifier = this.drawBehind {
-    val r = corner.toPx(); val o = offset.toPx(); val b = Elevation.blur(offset).toPx()
-    fillRect(r, fill)
-    if (o == 0f) return@drawBehind
-    drawIntoCanvas { c ->
-        val canvas = c.nativeCanvas
-        canvas.save()
-        canvas.clipRRect(RRect.makeXYWH(0f, 0f, size.width, size.height, r), true)
-        val paint = Paint().apply { isAntiAlias = true }
-        paint.maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.8f)
-        paint.color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f).toArgb()
-        canvas.drawRRect(RRect.makeXYWH(o, o, size.width, size.height, r), paint)
-        paint.color = neu.light.copy(alpha = neu.lightAlpha * 0.9f).toArgb()
-        canvas.drawRRect(RRect.makeXYWH(-o, -o, size.width, size.height, r), paint)
-        canvas.restore()
-    }
-}
+): Modifier = this
+    .boxShadow(
+        blurRadius = Elevation.blur(offset),
+        spreadRadius = 0.dp,
+        offset = DpOffset(offset, offset),
+        color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f),
+        shape = RoundedCornerShape(corner),
+        clip = true,
+        inset = true,
+    )
+    .boxShadow(
+        blurRadius = Elevation.blur(offset),
+        spreadRadius = 0.dp,
+        offset = DpOffset(-offset, -offset),
+        color = neu.light.copy(alpha = neu.lightAlpha * 0.9f),
+        shape = RoundedCornerShape(corner),
+        clip = true,
+        inset = true,
+    )
+    .clip(RoundedCornerShape(corner))
+    .background(fill)
 
-/** Groove: a divider that reads as a pressed seam rather than a drawn line. */
 fun Modifier.groove(neu: Neu, thickness: Dp = 1.dp): Modifier = this.drawBehind {
-    val h = size.height
     val t = thickness.toPx()
-    drawIntoCanvas { c ->
-        val canvas = c.nativeCanvas
-        canvas.drawRect(org.jetbrains.skia.Rect.makeXYWH(0f, h / 2, size.width, t), Paint().apply { color = neu.dark.copy(alpha = 0.35f).toArgb() })
-        canvas.drawRect(org.jetbrains.skia.Rect.makeXYWH(0f, h / 2 + t, size.width, t), Paint().apply { color = neu.light.copy(alpha = 0.75f).toArgb() })
-    }
+    val h = size.height / 2
+    drawRect(neu.dark.copy(alpha = 0.35f), topLeft = Offset(0f, h), size = Size(size.width, t))
+    drawRect(neu.light.copy(alpha = 0.75f), topLeft = Offset(0f, h + t), size = Size(size.width, t))
 }
 
 // ---------------------------------------------------------------- components
