@@ -271,9 +271,9 @@ fun Modifier.inset(
                     val paint = Paint().apply {
                         isAntiAlias = true
                         this.color = color.copy(alpha = alpha).toArgb()
-                        maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.55f)
+                        maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.75f)
                         mode = org.jetbrains.skia.PaintMode.STROKE
-                        strokeWidth = b
+                        strokeWidth = b * 0.85f
                     }
                     val nc = canvas.nativeCanvas
                     nc.save()
@@ -281,8 +281,9 @@ fun Modifier.inset(
                     nc.drawRRect(RRect.makeXYWH(0f, 0f, size.width, size.height, r, r), paint)
                     nc.restore()
                 }
-                ring(neu.dark, neu.darkAlpha * 0.85f, o)     // shade from the top-left
-                ring(neu.light, neu.lightAlpha * 0.9f, -o)    // light from the bottom-right
+                // halved: the cavity should read as depth, not as a drawn border
+                ring(neu.dark, neu.darkAlpha * 0.42f, o)     // shade from the top-left
+                ring(neu.light, neu.lightAlpha * 0.45f, -o)  // light from the bottom-right
             }
         }
     }

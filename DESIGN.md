@@ -493,7 +493,9 @@ scrolling `Column` is the only change needed.
 The shadow library's `inset = true` leaked outside rounded corners: a dark crescent plus a bright
 seam at every well. The inset tier is therefore drawn locally (the only hand-rolled shadow left):
 two blurred strokes, dark from the top-left and light from the bottom-right, **clipped to the
-rounded path**, balanced save/restore so no canvas state leaks. Outer shadows (cards, controls,
+rounded path**, balanced save/restore so no canvas state leaks. Strength is half the outer tier
+(0.42 × darkAlpha, 0.45 × lightAlpha, stroke 0.85 × blur) so a cavity reads as depth rather than as a
+drawn border. Outer shadows (cards, controls,
 floating layers) still come from the library, inside their own graphics layers.
 `ShadowEngineTest` allows blur code only within `inset()` and requires the `clipPath`.
 
