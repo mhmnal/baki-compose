@@ -78,6 +78,8 @@ data class Neu(
     val onAccent: Color,
     /** accent at low alpha, for selected rows that must stay readable */
     val accentSoft: Color,
+    /** positive semantics: money in, above-target rate */
+    val up: Color,
     val danger: Color,
     /** shadow strength per mode: light packs lean on the highlight, dark packs on the shade */
     val lightAlpha: Float,
@@ -115,6 +117,7 @@ fun neuOf(p: BakiPalette): Neu {
         accent = p.primary,
         onAccent = p.onPrimary,
         accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
+        up = p.up,
         danger = p.down,
         lightAlpha = if (p.dark) 0.30f else 0.75f,
         darkAlpha = if (p.dark) 0.38f else 0.18f,

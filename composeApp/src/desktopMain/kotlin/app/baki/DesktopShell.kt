@@ -365,7 +365,7 @@ private fun Overview(
                         EasedMoney(t.net, neu.ink, BakiType.displayNumeric)
                         Spacer(Modifier.height(Space.xs))
                         Text(
-                            "${t.entryCount} entries · ${t.shiftCount} shifts",
+                            "${t.entryCount} entries · ${t.shiftCount} shifts · after all costs",
                             color = neu.muted, style = BakiType.labelNumeric,
                         )
                     }
@@ -698,61 +698,91 @@ internal fun EntriesView(store: Store, month: String) {
 
 @Composable
 internal fun ShiftsView(store: Store, month: String) {
-    val baki = LocalBaki.current
     val neu = rememberNeu()
+    val cfg = store.settings.profit
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedByDescending { it.date }
-    val net = shifts.sumOf { shiftMetrics(it, store.settings.profit).net }
+    val totals = shifts.map { it to shiftMetrics(it, cfg) }
+    val net = totals.sumOf { (_, m) -> (m.net * 100).toLong() } / 100.0
+    val sumHours = shifts.sumOf { it.hours }
+    val sumKm = shifts.sumOf { it.km }
+    val sumGross = shifts.sumOf { it.gross }
+    val avgRate = if (sumHours > 0.01) net / sumHours else 0.0
     val scroll = rememberScrollState()
+
+    fun rateColor(rate: Double) = if (rate >= cfg.targetRate) neu.up else neu.danger
+
     Box(Modifier.fillMaxSize()) {
-    Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
-        SectionCard(neu) {
-        val sumHours = shifts.sumOf { it.hours }
-        val avgRate = if (sumHours > 0.01) net / sumHours else 0.0
-        val avgKm = if (shifts.isNotEmpty()) shifts.sumOf { it.km } / shifts.size else 0.0
-        Text(
-            "${shifts.size} shifts · net RM ${"%.2f".format(net)} · avg RM ${"%.2f".format(avgRate)}/h · avg ${"%.0f".format(avgKm)} km",
-            color = neu.ink, style = BakiType.label,
-        )
-        Spacer(Modifier.height(Space.m))
-        Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-            Head("DATE", Modifier.width(150.dp))
-            Head("HOURS", Modifier.width(90.dp))
-            Head("KM", Modifier.width(90.dp))
-            Head("GROSS", Modifier.width(130.dp))
-            Head("NET", Modifier.width(130.dp))
-            Head("RATE", Modifier.weight(1f))
-        }
-        if (shifts.isEmpty()) {
-            NeuEmpty(neu, "No shifts this month", "Shifts appear here once you start one on the phone.")
-        }
-        Column {
-            shifts.forEach { s ->
-                val m = shiftMetrics(s, store.settings.profit)
-                val hover = remember { MutableInteractionSource() }
-                val hovered by hover.collectIsHoveredAsState()
-                Row(
-                    Modifier.fillMaxWidth()
-                        .then(if (hovered) Modifier.raised(neu, corner = Radius.input, offset = Elevation.low) else Modifier)
-                        .padding(horizontal = Space.s, vertical = Space.m),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("${s.date} ${s.start}", color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(150.dp))
-                    Text("${"%.1f".format(s.hours)}h", color = neu.muted, style = BakiType.labelNumeric, modifier = Modifier.width(90.dp))
-                    Text("${"%.1f".format(s.km)}", color = neu.muted, style = BakiType.labelNumeric, modifier = Modifier.width(90.dp))
-                    Text("RM ${rm(s.gross)}", color = neu.muted, style = BakiType.labelNumeric, modifier = Modifier.width(130.dp))
-                    Text("RM ${rm((m.net * 100).toLong())}", color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(130.dp))
-                    Text("RM ${"%.2f".format(m.net / s.hours)}/h", color = neu.muted, style = BakiType.labelNumeric)
+        Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
+            SectionCard(neu) {
+                Text(
+                    "${shifts.size} shifts · net RM ${"%.2f".format(net)} (after fuel & wear) · avg RM ${"%.2f".format(avgRate)}/h",
+                    color = neu.ink, style = BakiType.label,
+                )
+                Text(
+                    "rate coloured against target RM ${"%.2f".format(cfg.targetRate)}/h · Overview adds other expenses",
+                    color = neu.muted, style = BakiType.caption,
+                )
+                Spacer(Modifier.height(Space.m))
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+                    Head("DATE", Modifier.width(150.dp))
+                    Head("HOURS", Modifier.width(90.dp), Alignment.End)
+                    Head("KM", Modifier.width(90.dp), Alignment.End)
+                    Head("GROSS", Modifier.width(130.dp), Alignment.End)
+                    Head("NET", Modifier.width(130.dp), Alignment.End)
+                    Head("RATE", Modifier.weight(1f), Alignment.End)
+                }
+                if (shifts.isEmpty()) {
+                    NeuEmpty(neu, "No shifts this month", "Shifts appear here once you start one on the phone.")
+                }
+                Column {
+                    totals.forEach { (s, m) ->
+                        val hover = remember { MutableInteractionSource() }
+                        val hovered by hover.collectIsHoveredAsState()
+                        val rate = if (s.hours > 0.01) m.net / s.hours else 0.0
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .then(if (hovered) Modifier.raised(neu, corner = Radius.input, offset = Elevation.low) else Modifier)
+                                .padding(horizontal = Space.s, vertical = Space.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("${s.date} ${s.start}", color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(150.dp))
+                            Number("${"%.1f".format(s.hours)}h", neu.muted, Modifier.width(90.dp))
+                            Number("${"%.1f".format(s.km)}", neu.muted, Modifier.width(90.dp))
+                            Number("RM ${rm(s.gross)}", neu.muted, Modifier.width(130.dp))
+                            Number("RM ${rm((m.net * 100).toLong())}", neu.ink, Modifier.width(130.dp))
+                            Number("RM ${"%.2f".format(rate)}/h", rateColor(rate), Modifier.weight(1f))
+                        }
+                    }
+                }
+                if (shifts.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.s))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(neu.ink.copy(alpha = 0.12f)))
+                    Spacer(Modifier.height(Space.s))
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("TOTAL", color = neu.ink, style = BakiType.section, modifier = Modifier.width(150.dp))
+                        Number("${"%.1f".format(sumHours)}h", neu.ink, Modifier.width(90.dp))
+                        Number("${"%.1f".format(sumKm)}", neu.ink, Modifier.width(90.dp))
+                        Number("RM ${rm(sumGross)}", neu.ink, Modifier.width(130.dp))
+                        Number("RM ${rm((net * 100).toLong())}", neu.ink, Modifier.width(130.dp))
+                        Number("RM ${"%.2f".format(avgRate)}/h", rateColor(avgRate), Modifier.weight(1f))
+                    }
                 }
             }
         }
-        }
-    }
         NeuScrollbar(
             state = scroll,
             neu = neu,
             modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
         )
     }
+}
+
+@Composable
+private fun Number(text: String, color: Color, modifier: Modifier) {
+    Text(text, color = color, style = BakiType.labelNumeric, modifier = modifier, textAlign = TextAlign.End)
 }
 
 private enum class TableSort { Date, Category, Amount }
