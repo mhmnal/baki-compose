@@ -59,8 +59,10 @@ class ShadowEngineTest {
         var index = text.indexOf(".boxShadow(")
         var checked = 0
         while (index >= 0) {
-            val before = text.substring(0, index)
-            val chain = before.takeLast(400)
+            // each modifier function is one chain: a graphicsLayer anywhere before the first
+            // shadow in that function contains every shadow that follows it
+            val fnStart = text.lastIndexOf("): Modifier", index)
+            val chain = text.substring(fnStart.coerceAtLeast(0), index)
             assertTrue(
                 chain.contains(".graphicsLayer()"),
                 "shadow #${checked + 1} is not isolated in a graphicsLayer",

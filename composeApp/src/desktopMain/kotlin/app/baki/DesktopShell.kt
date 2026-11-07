@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +51,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
@@ -440,13 +443,15 @@ private fun Overview(
 private fun WeekChart(store: Store, neu: Neu) {
     val today = todayIso()
     val days = (6 downTo 0).map { back -> addDays(today, -back) to dayTotals(store, addDays(today, -back)) }
-    val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
+    val peakPos = days.maxOfOrNull { it.second.net.coerceAtLeast(0L) }?.coerceAtLeast(1L) ?: 1L
+    val peakNeg = days.maxOfOrNull { (-it.second.net).coerceAtLeast(0L) }?.coerceAtLeast(1L) ?: 1L
     val summary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
+    val plot = 96.dp
+    val half = plot / 2
 
     Column {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        // a carved plot: bars stand on a baseline with a floor margin inside the cavity
         NeuWell(
             neu,
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
@@ -455,11 +460,13 @@ private fun WeekChart(store: Store, neu: Neu) {
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
                 Row(
-                    Modifier.fillMaxWidth().height(92.dp),
+                    Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Space.m),
-                    verticalAlignment = Alignment.Bottom,
                 ) {
-                    days.forEach { (_, t) ->
+                    days.forEach { (iso, t) ->
+                        val g = SignedBars.of(t.net, peakPos, peakNeg)
+                        val h = (half * g.fraction).coerceAtLeast(0.dp)
+                        val offsetY = if (g.positive) half - h else half
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
@@ -467,30 +474,31 @@ private fun WeekChart(store: Store, neu: Neu) {
                                 style = BakiType.captionNumeric,
                             )
                             Spacer(Modifier.height(Space.xs))
-                            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.BottomCenter) {
-                                val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.05f, 1f)
+                            // bars stand on the zero line: gains above, losses hanging below
+                            Box(Modifier.fillMaxWidth().height(plot)) {
                                 Box(
-                                    Modifier.fillMaxWidth(0.58f).height((76 * frac).dp)
-                                        .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar))
-                                        .background(if (t.net >= 0) neu.accent else neu.danger),
+                                    Modifier.align(Alignment.TopCenter).fillMaxWidth().height(1.dp)
+                                        .offset(y = half - 0.5.dp)
+                                        .background(neu.ink.copy(alpha = 0.14f)),
                                 )
+                                if (!g.zero) {
+                                    Box(
+                                        Modifier
+                                            .align(Alignment.TopCenter)
+                                            .offset(y = offsetY)
+                                            .fillMaxWidth(0.58f)
+                                            .height(h.coerceAtLeast(2.dp))
+                                            .clip(
+                                                if (g.positive) RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)
+                                                else RoundedCornerShape(bottomStart = Radius.bar, bottomEnd = Radius.bar),
+                                            )
+                                            .background(if (g.positive) neu.accent else neu.danger),
+                                    )
+                                }
                             }
+                            Spacer(Modifier.height(Space.xs))
+                            Text(weekdayShort(iso), color = neu.ink, style = BakiType.caption)
                         }
-                    }
-                }
-                Spacer(Modifier.height(Space.s))
-                // the baseline the bars stand on
-                Box(
-                    Modifier.fillMaxWidth().height(1.dp)
-                        .background(neu.ink.copy(alpha = 0.12f)),
-                )
-                Spacer(Modifier.height(Space.s))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                    days.forEach { (iso, _) ->
-                        Text(
-                            weekdayShort(iso), color = neu.ink, style = BakiType.caption,
-                            modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        )
                     }
                 }
             }
@@ -502,42 +510,56 @@ private fun WeekChart(store: Store, neu: Neu) {
 private fun MonthTrend(store: Store, month: String, neu: Neu) {
     val days = monthDays(store, month)
     if (days.isEmpty()) return
-    val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
-    val peakValue = rm(days.maxOfOrNull { it.second.net } ?: 0)
+    var running = 0L
+    val points = days.map { (iso, t) -> iso to (running + t.net).also { running = it } }
+    val last = points.last().second
+    val low = minOf(0L, points.minOf { it.second })
+    val high = maxOf(0L, points.maxOf { it.second })
 
     Column {
-        Text("TREND", color = neu.muted, style = BakiType.section)
+        Text("MONTH TRAJECTORY", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
         NeuWell(
             neu,
-            Modifier.fillMaxWidth().semantics { contentDescription = "Month trend, peak RM $peakValue" },
+            Modifier.fillMaxWidth().semantics {
+                contentDescription = "Cumulative net through $month, ending at RM ${rm(last)}"
+            },
             corner = Radius.card,
             offset = Elevation.medium,
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.m)) {
-                Row(
-                    Modifier.fillMaxWidth().height(124.dp),
-                    horizontalArrangement = Arrangement.spacedBy(Space.xxs),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    days.forEach { (_, t) ->
-                        Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.BottomCenter) {
-                            val frac = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.02f, 1f)
-                            Box(
-                                Modifier.fillMaxWidth().height((108 * frac).dp)
-                                    .clip(RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar))
-                                    .background(if (t.net >= 0) neu.accent else neu.danger),
-                            )
-                        }
+                Canvas(Modifier.fillMaxWidth().height(132.dp)) {
+                    val span = (high - low).coerceAtLeast(1L).toFloat()
+                    fun y(v: Long): Float = size.height - ((v - low).toFloat() / span) * size.height
+                    drawLine(
+                        color = neu.ink.copy(alpha = 0.14f),
+                        start = androidx.compose.ui.geometry.Offset(0f, y(0L)),
+                        end = androidx.compose.ui.geometry.Offset(size.width, y(0L)),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                    val step = if (points.size > 1) size.width / (points.size - 1) else size.width
+                    val path = Path()
+                    points.forEachIndexed { i, (_, v) ->
+                        val x = if (points.size > 1) i * step else size.width / 2
+                        if (i == 0) path.moveTo(x, y(v)) else path.lineTo(x, y(v))
                     }
+                    drawPath(
+                        path = path,
+                        color = neu.accent,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(
+                            width = 2.dp.toPx(),
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                            join = androidx.compose.ui.graphics.StrokeJoin.Round,
+                        ),
+                    )
+                    val endX = if (points.size > 1) size.width else size.width / 2
+                    drawCircle(neu.accent, radius = 3.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(endX, y(last)))
                 }
                 Spacer(Modifier.height(Space.s))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(neu.ink.copy(alpha = 0.12f)))
-                Spacer(Modifier.height(Space.s))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(days.first().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
-                    Text("peak RM $peakValue", color = neu.ink, style = BakiType.captionNumeric)
-                    Text(days.last().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
+                    Text(points.first().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
+                    Text("now RM ${rm(last)}", color = if (last >= 0) neu.accent else neu.danger, style = BakiType.captionNumeric)
+                    Text(points.last().first.takeLast(5), color = neu.ink, style = BakiType.captionNumeric)
                 }
             }
         }
@@ -603,13 +625,8 @@ private fun FundsBlock(store: Store, month: String, neu: Neu) {
             )
         }
         val delta = accrued - spent
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("accrued RM ${rm(accrued)} · spent RM ${rm(spent)}", color = neu.muted, style = BakiType.captionNumeric)
-            if (delta < 0) {
-                Spacer(Modifier.width(Space.s))
-                Text("SHORTFALL", color = neu.danger, style = BakiType.section)
-            }
-        }
+        Text("accrued RM ${rm(accrued)} · spent RM ${rm(spent)}", color = neu.muted, style = BakiType.captionNumeric)
+        if (delta < 0) Text("shortfall", color = neu.danger, style = BakiType.caption)
         Spacer(Modifier.height(Space.xs))
     }
 }

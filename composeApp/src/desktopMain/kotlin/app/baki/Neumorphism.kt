@@ -104,7 +104,7 @@ fun neuOf(p: BakiPalette): Neu {
     val light = blend(base, blend(Color.White, p.primary, 0.04f), if (p.dark) 0.12f else 0.80f)
     val dark = blend(base, if (p.dark) Color.Black else olive, if (p.dark) 0.62f else 0.30f)
     // secondary text is derived against the canvas, not the palette: the canvas is darker
-    val muted = blend(base, p.onSurface, if (p.dark) 0.60f else if (p.softUi) 0.74f else 0.66f)
+    val muted = blend(base, p.onSurface, if (p.dark) 0.64f else if (p.softUi) 0.78f else 0.72f)
     return Neu(
         base = base,
         panel = panel,
@@ -175,7 +175,7 @@ fun Modifier.raised(
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
-    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.10f else 0.05f), RoundedCornerShape(corner))
+    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.14f else 0.10f), RoundedCornerShape(corner))
 
 /**
  * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
@@ -212,6 +212,18 @@ fun Modifier.cardSurface(
     fill: Color = neu.panel,
 ): Modifier = this
     .graphicsLayer()
+    // a crisp emboss rim, not a bloom: 2dp out, 3dp blur, so it never reaches into the whitespace
+    .then(
+        Modifier.boxShadow(
+            blurRadius = 3.dp,
+            spreadRadius = 0.dp,
+            offset = DpOffset(-2.dp, -2.dp),
+            color = neu.light.copy(alpha = if (neu.lightAlpha > 0.6f) 0.55f else 0.25f),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ),
+    )
     .then(
         Modifier.boxShadow(
             blurRadius = Elevation.blur(offset) * 0.9f,
@@ -225,7 +237,7 @@ fun Modifier.cardSurface(
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
-    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.10f else 0.05f), RoundedCornerShape(corner))
+    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.14f else 0.10f), RoundedCornerShape(corner))
 
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
 fun Modifier.inset(

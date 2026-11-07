@@ -425,3 +425,17 @@ faces and a blue accent, with **no green tint**.
   clears 4.5:1 on the neutral canvas.
 - Available on both clients: Settings → Colour → **Mist**. Contrast and material tests cover both
   variants.
+
+## Critique pass (v0.18.1)
+
+- **A crisp emboss rim.** Cards gain a tight top-left highlight (offset −2 dp, blur 3 dp, so it rises
+  1 dp past the edge) — the dual-shadow read without the bloom that used to smear into the header.
+- **Secondary text one notch darker.** Canvas secondary mixed 0.72 (sage/paper) / 0.78 (mist); 0.64 in
+  dark packs. Section labels, captions, inactive tabs all inherit it.
+- **Signed bars.** Losses hang *below* a zero line instead of being drawn upward: −60 no longer looks
+  bigger than +39. `SignedBars` is pure and unit-tested; rounding flips with the sign.
+- **Trend is now a trajectory.** The old daily bars duplicated "Last 7 Days"; the card plots
+  **cumulative net through the month** as a line, ending at `now RM …`.
+- **"shortfall" unwrapped** onto its own caption line under Fuel/Wear.
+- **Clearer affordance.** Raised controls carry a stronger hairline (ink 10% light / 14% dark) and
+  secondary button labels are semibold.
