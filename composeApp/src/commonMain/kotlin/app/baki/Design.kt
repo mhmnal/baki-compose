@@ -105,17 +105,17 @@ object BakiType {
     var label = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.2.sp)
     var labelStrong = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
     /** M3 labelSmall */
-    var caption = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.2.sp)
+    var caption = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.15.sp)
     /** all-caps section header */
     var section = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.44.sp)
     var micro = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
     /** small print that still needs to shout: 11 sp, bold, no tracking */
-    var captionStrong = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold)
+    var captionStrong = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Bold)
     /** compact rows and dense secondary copy */
     var bodySmall = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal)
     var bodySmallStrong = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
     /** map attribution and other legal small print */
-    var nano = TextStyle(fontSize = 9.sp, lineHeight = 12.sp, fontWeight = FontWeight.Normal)
+    var nano = TextStyle(fontSize = 10.sp, lineHeight = 13.sp, fontWeight = FontWeight.Normal)
 
     /**
      * Numeric variants carry tabular figures, so money keeps its width as digits change and
