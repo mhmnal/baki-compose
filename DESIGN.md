@@ -479,7 +479,8 @@ The first card's 16 dp blur was being cut by the scroll viewport's top edge, whi
 clipping the design. The header was never the cause — it has no bar. Fixes:
 
 - the scroll content carries a 32 dp top inset **inside** the scroll (so it moves with the content),
-  giving the 9/16 emboss its full 25 dp of room;
+  giving the 9/16 emboss its full 25 dp of room. v0.19.2: Overview and the right rail were missed by
+  the first pass (they use their own `verticalScroll` call); every scroll container is now audited;
 - the header's own 5/10 capsules get 16 dp of window padding (their reach is 15 dp);
 - an 18 dp gradient from canvas to transparent sits at the viewport edge, so a card scrolled under it
   fades instead of being sliced.

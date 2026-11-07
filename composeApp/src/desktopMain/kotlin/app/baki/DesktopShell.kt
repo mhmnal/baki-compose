@@ -368,7 +368,7 @@ private fun Overview(
     val streak = remember(store) { targetStreak(store, todayIso()) }
 
     Row(Modifier.fillMaxSize().padding(vertical = Space.s)) {
-        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(top = Space.xxl, bottom = Space.xl)) {
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) {
@@ -412,7 +412,7 @@ private fun Overview(
             Spacer(Modifier.height(Space.l))
         }
         Spacer(Modifier.width(Gutter))
-        Column(Modifier.width(Rail2).fillMaxHeight().verticalScroll(rememberScrollState())) {
+        Column(Modifier.width(Rail2).fillMaxHeight().verticalScroll(rememberScrollState()).padding(top = Space.xxl, bottom = Space.xl)) {
             NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.card) {
                 Column(Modifier.padding(Space.l)) {
                     CategoryBlock(store, month, neu)
@@ -1028,7 +1028,7 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                     NeuButton(neu, "Pull") { reload++ }
                 }
                 Spacer(Modifier.height(Space.s))
-                Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(top = Space.s)) {
                     shifts.forEach { s ->
                         val has = routes.containsKey(s.id)
                         val m = shiftMetrics(s, store.settings.profit)
