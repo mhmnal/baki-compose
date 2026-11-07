@@ -156,6 +156,12 @@ object Elevation {
     /** Floating layers keep their own drop. */
     val floating = 12.dp
 
+    /**
+     * How strongly a cavity carves. One place to tune: 0 = flat, 1 = the outer shadow's strength.
+     * 0.62 reads as depth without looking like a drawn border.
+     */
+    const val INSET_STRENGTH = 0.72f
+
     /** Dark packs need shorter distances; 40% less keeps the edges readable without glare. */
     fun distance(neu: Neu, base: Dp): Dp = if (neu.isDark) base * 0.6f else base
     fun blur(neu: Neu, base: Dp): Dp = if (neu.isDark) base * 0.6f else base
@@ -271,9 +277,9 @@ fun Modifier.inset(
                     val paint = Paint().apply {
                         isAntiAlias = true
                         this.color = color.copy(alpha = alpha).toArgb()
-                        maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.75f)
+                        maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.6f)
                         mode = org.jetbrains.skia.PaintMode.STROKE
-                        strokeWidth = b * 0.85f
+                        strokeWidth = b
                     }
                     val nc = canvas.nativeCanvas
                     nc.save()
@@ -281,9 +287,10 @@ fun Modifier.inset(
                     nc.drawRRect(RRect.makeXYWH(0f, 0f, size.width, size.height, r, r), paint)
                     nc.restore()
                 }
-                // halved: the cavity should read as depth, not as a drawn border
-                ring(neu.dark, neu.darkAlpha * 0.42f, o)     // shade from the top-left
-                ring(neu.light, neu.lightAlpha * 0.45f, -o)  // light from the bottom-right
+                // BAKI_INSET lets the strength be judged live without a rebuild
+                val strength = System.getenv("BAKI_INSET")?.toFloatOrNull() ?: Elevation.INSET_STRENGTH
+                ring(neu.dark, neu.darkAlpha * strength, o)          // shade from the top-left
+                ring(neu.light, neu.lightAlpha * (strength + 0.05f), -o) // light from below-right
             }
         }
     }
