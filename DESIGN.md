@@ -507,3 +507,14 @@ The chart plots (Last 7 days, Month trajectory) are **flat trays**: `NeuWell(ins
 cavity added no information there and was the only place the corner artifact showed. Every other
 well keeps its inset — text fields, the segmented nav track, table hover, pressed controls and the
 scrollbar groove.
+
+## Insurance backfill (v0.19.7)
+
+The renewal rule changed, but historical fees were derived under the old start-only rule and are only
+recomputed on a write. Audited against the live store: 8 shifts, 4 fees (RM 30.00) recorded, while the
+renewal rule wants 6 windows (RM 45.00). Backfilled with `recomputeCover` through the normal merge path
+(`InsuranceBackfillLiveTest`, opt-in via `BAKI_BACKFILL=1`), after discovering one needed fee entry was
+**tombstoned** from the old rule and therefore rejected by the server.
+
+`pushWithTombs` now undeletes any `grabfee` entry that recompute legitimately re-creates, so a fee can
+never be silently dropped by an old tombstone again.

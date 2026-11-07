@@ -557,8 +557,16 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
-            val saved = client.push(store, deletedIds = ids)
+            // A fee entry can be legitimately re-derived after it was tombstoned (the cover rule
+            // changed, or a renewal now applies). Tombstones are authoritative on the server, so a
+            // re-created id must be undeleted or the ledger silently loses that fee.
+            val neededFees = store.entries.filter { it.cat == "grabfee" }.map { it.id }
+            val resurrect = neededFees.filter { it in store.tomb.ids }
+            val saved = client.push(store, deletedIds = ids, undeleteIds = resurrect)
             store = mergeStores(store, saved)
+            if (resurrect.isNotEmpty()) {
+                store = store.copy(tomb = store.tomb.copy(ids = store.tomb.ids - resurrect.toSet()))
+            }
             saveLocal(store)
             status = "synced"
             pendingPush = false
