@@ -77,7 +77,14 @@ class ShadowEngineTest {
     fun shadowsComeFromTheLibrary() {
         val m = material()
         assertTrue(m.contains("dev.lennartegb.shadows.boxShadow"), "the material must use the library modifier")
-        assertTrue(!m.contains("MaskFilter") && !m.contains("makeBlur"), "hand-rolled blur shaders crept back in")
+        // the one exception is the inset tier: the library's inset leaked past rounded corners, so it
+        // is drawn by hand and clipped to the shape. Hand-rolled blur is allowed *only* there.
+        val insetStart = m.indexOf("fun Modifier.inset(")
+        val insetEnd = m.indexOf("\nfun ", insetStart + 10).let { if (it < 0) m.length else it }
+        val outside = (m.substring(0, insetStart) + m.substring(insetEnd))
+            .lines().filterNot { it.trimStart().startsWith("import ") }.joinToString("\n")
+        assertTrue(!outside.contains("MaskFilter") && !outside.contains("makeBlur"), "hand-rolled blur shaders crept back in")
+        assertTrue(m.substring(insetStart, insetEnd).contains("clipPath"), "the inset must clip its shadows to the shape")
         // every surface tier is expressed through the library
         listOf("fun Modifier.raised", "fun Modifier.inset", "fun Modifier.elevated").forEach { fn ->
             assertTrue(m.contains(fn), "$fn missing")

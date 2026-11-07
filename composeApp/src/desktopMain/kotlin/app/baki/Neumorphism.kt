@@ -41,9 +41,18 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import org.jetbrains.skia.RRect
+import org.jetbrains.skia.Paint
+import org.jetbrains.skia.MaskFilter
+import org.jetbrains.skia.FilterBlurMode
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextAlign
@@ -160,19 +169,8 @@ fun Modifier.raised(
     fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
-    .then(
-        Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
-            color = neu.light.copy(alpha = neu.lightAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ),
-    )
-    .then(
-        Modifier.boxShadow(
+    // shade first, highlight last: the lit corner must not be tinted by the shade
+    .then(Modifier.boxShadow(
             blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
             offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
@@ -180,8 +178,16 @@ fun Modifier.raised(
             shape = RoundedCornerShape(corner),
             clip = false,
             inset = false,
-        ),
-    )
+        ))
+    .then(Modifier.boxShadow(
+            blurRadius = Elevation.blur(neu, blur),
+            spreadRadius = 0.dp,
+            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
+            color = neu.light.copy(alpha = neu.lightAlpha),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ))
     .clip(RoundedCornerShape(corner))
     .background(fill)
 
@@ -221,19 +227,7 @@ fun Modifier.cardSurface(
     fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
-    .then(
-        Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
-            color = neu.light.copy(alpha = neu.lightAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ),
-    )
-    .then(
-        Modifier.boxShadow(
+    .then(Modifier.boxShadow(
             blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
             offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
@@ -241,8 +235,16 @@ fun Modifier.cardSurface(
             shape = RoundedCornerShape(corner),
             clip = false,
             inset = false,
-        ),
-    )
+        ))
+    .then(Modifier.boxShadow(
+            blurRadius = Elevation.blur(neu, blur),
+            spreadRadius = 0.dp,
+            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
+            color = neu.light.copy(alpha = neu.lightAlpha),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ))
     .clip(RoundedCornerShape(corner))
     .background(fill)
 
@@ -255,33 +257,35 @@ fun Modifier.inset(
     fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
-    .then(
-        Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
-            color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f),
-            shape = RoundedCornerShape(corner),
-            clip = true,
-            inset = true,
-        ),
-    )
-    .then(
-        Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
-            color = neu.light.copy(alpha = neu.lightAlpha * 0.9f),
-            shape = RoundedCornerShape(corner),
-            clip = true,
-            inset = true,
-        ),
-    )
-    .clip(RoundedCornerShape(corner))
-    .background(fill)
-
-
-// ---------------------------------------------------------------- components
+    .drawBehind {
+        val r = corner.toPx()
+        val o = Elevation.distance(neu, offset).toPx()
+        val b = Elevation.blur(neu, blur).toPx()
+        val shape = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, r, r)) }
+        drawPath(shape, fill)
+        // inner shadows painted as blurred strokes *clipped to the shape*: nothing can leak past a
+        // rounded corner, which is what the library's inset did (dark crescents and a bright seam)
+        clipPath(shape) {
+            drawIntoCanvas { canvas ->
+                fun ring(color: Color, alpha: Float, dx: Float) {
+                    val paint = Paint().apply {
+                        isAntiAlias = true
+                        this.color = color.copy(alpha = alpha).toArgb()
+                        maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.55f)
+                        mode = org.jetbrains.skia.PaintMode.STROKE
+                        strokeWidth = b
+                    }
+                    val nc = canvas.nativeCanvas
+                    nc.save()
+                    nc.translate(dx, dx)
+                    nc.drawRRect(RRect.makeXYWH(0f, 0f, size.width, size.height, r, r), paint)
+                    nc.restore()
+                }
+                ring(neu.dark, neu.darkAlpha * 0.85f, o)     // shade from the top-left
+                ring(neu.light, neu.lightAlpha * 0.9f, -o)    // light from the bottom-right
+            }
+        }
+    }
 
 @Composable
 fun NeuPanel(
