@@ -166,7 +166,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                             2 -> ShiftsView(store, month)
                             3 -> RoutesView(repo, month, neu)
                             4 -> CompareView(store, month, neu)
-                            else -> YearView(store)
+                            else -> YearView(store) { month = it; tab = 0 }
                         }
                     }
                 }
@@ -869,7 +869,7 @@ private fun Head(
 // -------------------------------------------------------------------- year
 
 @Composable
-internal fun YearView(store: Store) {
+internal fun YearView(store: Store, onMonth: (String) -> Unit) {
     val baki = LocalBaki.current
     val neu = rememberNeu()
     val year = todayIso().substring(0, 4).toIntOrNull() ?: 2026
@@ -907,20 +907,32 @@ internal fun YearView(store: Store) {
         months.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                 row.forEach { (label, t) ->
-                    Column(Modifier.weight(1f).padding(vertical = Space.m)) {
-                        val idle = t.entryCount == 0 && t.shiftCount == 0
-                        val best = label == months.maxByOrNull { it.second.net }?.first && !idle
+                    val idle = t.entryCount == 0 && t.shiftCount == 0
+                    val future = label > todayIso().substring(0, 7)
+                    val best = label == months.maxByOrNull { it.second.net }?.first && !idle && !future
+                    val hover = remember { MutableInteractionSource() }
+                    val hovered by hover.collectIsHoveredAsState()
+                    Column(
+                        Modifier.weight(1f).padding(vertical = Space.m)
+                            .then(if (hovered) Modifier.inset(neu, corner = Radius.input) else Modifier)
+                            .clip(RoundedCornerShape(Radius.input))
+                            .hoverable(hover)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable(interactionSource = hover, indication = null) { onMonth(label) }
+                            .padding(horizontal = Space.s, vertical = Space.xs),
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 monthLabel(label),
-                                color = (if (idle) neu.muted else neu.ink).copy(alpha = if (idle) 0.55f else 1f),
+                                color = (if (idle || future) neu.muted else neu.ink)
+                                    .copy(alpha = if (idle || future) 0.55f else 1f),
                                 style = BakiType.label, modifier = Modifier.weight(1f),
                             )
                             Text(
-                                "RM ${rm(t.net)}",
+                                if (future) "—" else "RM ${rm(t.net)}",
                                 color = when {
                                     best -> neu.accent
-                                    idle -> neu.muted.copy(alpha = 0.55f)
+                                    idle || future -> neu.muted.copy(alpha = 0.55f)
                                     else -> neu.ink
                                 },
                                 style = BakiType.labelNumeric,
