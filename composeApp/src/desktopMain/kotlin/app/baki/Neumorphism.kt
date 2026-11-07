@@ -88,20 +88,23 @@ data class Neu(
 
 fun neuOf(p: BakiPalette): Neu {
     // a neumorphic canvas is a mid tone, not paper white: blend towards a soft grey-green
-    val base = if (p.dark) {
-        blend(p.surface, p.primary, 0.10f)
-    } else {
-        blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
+    val base = when {
+        // classic soft UI: the canvas is the palette's own cool grey, only slightly deepened
+        p.softUi && !p.dark -> blend(p.surface, p.onSurface, 0.06f)
+        p.dark -> blend(p.surface, p.primary, 0.10f)
+        else -> blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
     }
     // a card face is a hair above the canvas — one material, but the edge still reads — and the
     // shadows are *tinted* directions of that base: the shade runs to deep olive (ink warmed by the
     // accent), the highlight to warm white. Never neutral grey.
     val panel = blend(base, Color.White, if (p.dark) 0.035f else 0.10f)
-    val olive = blend(p.onSurface, p.primary, if (p.dark) 0.45f else 0.55f)
+    // shadows take the palette's own temperature: olive for sage, blue-grey for mist
+    val olive = if (p.softUi) blend(p.onSurface, p.primary, 0.18f)
+    else blend(p.onSurface, p.primary, if (p.dark) 0.45f else 0.55f)
     val light = blend(base, blend(Color.White, p.primary, 0.04f), if (p.dark) 0.12f else 0.80f)
     val dark = blend(base, if (p.dark) Color.Black else olive, if (p.dark) 0.62f else 0.30f)
     // secondary text is derived against the canvas, not the palette: the canvas is darker
-    val muted = blend(base, p.onSurface, if (p.dark) 0.60f else 0.66f)
+    val muted = blend(base, p.onSurface, if (p.dark) 0.60f else if (p.softUi) 0.74f else 0.66f)
     return Neu(
         base = base,
         panel = panel,

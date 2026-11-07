@@ -34,6 +34,8 @@ class ContrastTest {
         "sage dark" to DarkPalette,
         "night" to NightPalette,
         "paper" to PaperPalette,
+        "mist light" to MistLight,
+        "mist dark" to MistDark,
     )
 
     @Test

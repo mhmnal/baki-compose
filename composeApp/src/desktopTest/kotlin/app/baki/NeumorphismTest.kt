@@ -31,7 +31,7 @@ class NeumorphismTest {
     @Test
     fun cardFacesStayOneMaterialButRemainReadable() {
         // one material, but the face is a hair above the canvas so edges do not melt away
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
             val n = neuOf(p)
             val delta = lum(n.panel) - lum(n.base)
             assertTrue(delta > 0.004f, "face barely lifts in pack dark=${p.dark}: $delta")
@@ -53,7 +53,7 @@ class NeumorphismTest {
 
     @Test
     fun shadowsKeepEnoughSeparationToRead() {
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette).forEach { p ->
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
             val n = neuOf(p)
             val spread = abs(lum(n.light) - lum(n.dark))
             assertTrue(spread > 0.05, "shadows too close in pack ${p.dark}: $spread")

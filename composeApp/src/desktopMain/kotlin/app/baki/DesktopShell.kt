@@ -100,6 +100,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     LaunchedEffect(Unit) {
         // capture/test hook: configure route sync without touching the encrypted config file
         System.getenv("BAKI_ROUTE_SECRET")?.takeIf { it.isNotBlank() }?.let { repo.setRouteSync(true, it) }
+        System.getenv("BAKI_PALETTE")?.takeIf { it.isNotBlank() }?.let { repo.setPalette(it) }
         repo.start()
         runCatching { rootFocus.requestFocus() }
     }
@@ -1188,7 +1189,7 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
         Spacer(Modifier.height(Space.s))
         NeuSegmented(
             neu,
-            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper"),
+            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper", "mist" to "Mist"),
             repo.config.palette,
         ) { repo.setPalette(it) }
         Spacer(Modifier.height(Space.l))

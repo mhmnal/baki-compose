@@ -410,3 +410,18 @@ confined to that layer. `ShadowEngineTest.everyShadowIsDrawnInItsOwnLayer` fails
 `.boxShadow(` appears. Verified by a magenta marker: the dialog's drawn bounds went from
 (573,147)-(1709,1015) to the window's own (270,133)-(1709,1015), and the scrim is uniform
 `#969B91` on both sides.
+
+## Mist: the soft-UI pack (v0.18)
+
+A fourth palette, taken from the classic soft-UI board: a neutral cool-grey canvas, near-white raised
+faces and a blue accent, with **no green tint**.
+
+- `MistLight` surface `#E9EDF2`, canvas derived as `blend(surface, onSurface, 0.06)` → `#DEE2E7`,
+  face one hair above it; `onSurface` `#2A3038`; accent `#2E6BD6` (the board's `#5B8DEF` darkened so
+  white text clears AA); terracotta `#A8432C`; green `#1F6B4B`.
+- `MistDark` is the same recipe at night: `#14171C` canvas, `#8FB0F2` accent.
+- `BakiPalette.softUi` switches the material recipe: neutral canvas instead of accent-toned, and
+  shadows tinted grey-blue instead of olive. The derived secondary is mixed 0.74 (not 0.66) so it
+  clears 4.5:1 on the neutral canvas.
+- Available on both clients: Settings → Colour → **Mist**. Contrast and material tests cover both
+  variants.

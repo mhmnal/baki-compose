@@ -32,6 +32,8 @@ data class BakiPalette(
     val up: Color,
     val down: Color,
     val warn: Color,
+    /** Neutral grey soft-UI canvas and grey shadows, instead of toning the canvas with the accent. */
+    val softUi: Boolean = false,
 )
 
 val DarkPalette = BakiPalette(
@@ -94,10 +96,35 @@ val PaperPalette = BakiPalette(
     up = Color(0xFF2C6E52), down = Color(0xFFA83E2A), warn = Color(0xFF7A5A00),
 )
 
+/** "Mist": the classic soft-UI board — neutral cool grey, near-white faces, blue accent. */
+val MistLight = BakiPalette(
+    dark = false,
+    // a soft-UI blue, darkened from the board's #5B8DEF so white text on it clears AA
+    primary = Color(0xFF2E6BD6), onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFDCE8FB), onPrimaryContainer = Color(0xFF14263F),
+    accentStrong = Color(0xFF2459B8), onAccent = Color(0xFFFFFFFF),
+    surface = Color(0xFFE9EDF2), container = Color(0xFFF2F5F9), surfaceHigh = Color(0xFFDDE3EA),
+    onSurface = Color(0xFF2A3038), muted = Color(0xFF4E5A68),
+    up = Color(0xFF1F6B4B), down = Color(0xFFA8432C), warn = Color(0xFF7A5A00),
+    softUi = true,
+)
+
+val MistDark = BakiPalette(
+    dark = true,
+    primary = Color(0xFF8FB0F2), onPrimary = Color(0xFF0B1626),
+    primaryContainer = Color(0xFF243649), onPrimaryContainer = Color(0xFFD9E6FF),
+    accentStrong = Color(0xFF2C4A77), onAccent = Color(0xFFEAF1FF),
+    surface = Color(0xFF14171C), container = Color(0xFF1C2027), surfaceHigh = Color(0xFF23282F),
+    onSurface = Color(0xFFE7EBF1), muted = Color(0xFF9AA6B4),
+    up = Color(0xFF6FD6AB), down = Color(0xFFFF9379), warn = Color(0xFFF2C24E),
+    softUi = true,
+)
+
 /** Resolves the user's chosen pack against light/dark. */
 fun paletteFor(pack: String, dark: Boolean): BakiPalette = when (pack) {
     "night" -> NightPalette
     "paper" -> PaperPalette
+    "mist" -> if (dark) MistDark else MistLight
     else -> if (dark) DarkPalette else LightPalette
 }
 

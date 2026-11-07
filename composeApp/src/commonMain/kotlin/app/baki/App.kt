@@ -1205,7 +1205,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(Space.xs),
             horizontalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
-            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper").forEach { (value, label) ->
+            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper", "mist" to "Mist").forEach { (value, label) ->
                 val on = repo.config.palette == value
                 Box(
                     Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
