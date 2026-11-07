@@ -439,3 +439,36 @@ faces and a blue accent, with **no green tint**.
 - **"shortfall" unwrapped** onto its own caption line under Fuel/Wear.
 - **Clearer affordance.** Raised controls carry a stronger hairline (ink 10% light / 14% dark) and
   secondary button labels are semibold.
+
+## True neumorphism (v0.19)
+
+The desk now implements the material literally instead of a soft approximation.
+
+| Tier | Distance / blur |
+|---|---|
+| Card | **9 dp / 16 dp** |
+| Control (button, chip, segmented thumb) | **5 dp / 10 dp** |
+| Well, input, track | **4 dp / 8 dp, inset** |
+| Floating layer (dialog, menu) | one downward drop |
+
+- **Face == canvas.** `Neu.panel` equals `Neu.base` in every pack; a test asserts it. Depth is only
+  light and shade.
+- **Light source top-left, always.** Highlight up-left, shade down-right, tinted: near-white
+  `#F8FBFF` mixed into the canvas, and a blue-grey shade (`#2E3C4C`, or `#070A0E` in dark packs).
+  No black-with-alpha anywhere.
+- **Dark packs reduce distances by 40%** (`Elevation.distance/blur` scale by 0.6).
+- **Selected states are carved:** the active segment and chip are *inset* with the flat accent fill;
+  pressed buttons are inset; Refresh, the active tab and bars keep flat solid fills.
+- **Room to breathe:** 32 dp gutter and 32 dp between cards (≥ blur + distance = 25 dp), and the
+  content pane no longer clips, so a card's emboss is never cut.
+- The emboss-rim experiment is gone.
+
+Shadow-clipping ancestors, audited: the content `Box.clipToBounds()` was removed; the only remaining
+clip is the **vertical scroll viewport** (inherent to scrolling — a card scrolled to the edge loses
+its outer shadow), plus components clipping their own content (`NeuPanel`, wells, dialogs), which is
+self-clipping, not an ancestor.
+
+Captured all four packs in both modes (`BAKI_PALETTE`/`BAKI_MODE`): above every card the first
+deviation from the canvas is **lighter** (+0.008…+0.011 luminance), never a dark smudge; dark packs
+show no deviation at all. Paper and Night are single-mode packs by design — Colour and Appearance are
+separate axes, which the Settings explainer now states.

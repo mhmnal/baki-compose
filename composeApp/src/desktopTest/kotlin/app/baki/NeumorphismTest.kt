@@ -29,26 +29,35 @@ class NeumorphismTest {
     }
 
     @Test
-    fun cardFacesStayOneMaterialButRemainReadable() {
-        // one material, but the face is a hair above the canvas so edges do not melt away
+    fun theFaceIsTheCanvasExactly() {
+        // true neumorphism: depth is shadow alone, the face carries no second colour
         listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
             val n = neuOf(p)
-            val delta = lum(n.panel) - lum(n.base)
-            assertTrue(delta > 0.004f, "face barely lifts in pack dark=${p.dark}: $delta")
-            assertTrue(delta < 0.12f, "face left the material in pack dark=${p.dark}: $delta")
+            assertEquals(n.base, n.panel, "raised face must equal the canvas in pack dark=${p.dark}")
             assertTrue(lum(n.light) > lum(n.base), "highlight must be lighter than the base")
             assertTrue(lum(n.dark) < lum(n.base), "shade must be darker than the base")
+            // tints, not black-alpha: the shade keeps some colour in every channel
+            assertTrue(n.dark.blue > 0.05f && n.dark.green > 0.05f, "shade collapsed to near-black")
         }
     }
 
     @Test
-    fun elevationsAreOrderedAndBlurTracksOffset() {
-        assertTrue(Elevation.low < Elevation.medium)
-        assertTrue(Elevation.medium < Elevation.high)
-        listOf(Elevation.low, Elevation.medium, Elevation.high).forEach { offset ->
-            // the reference ratio: blur twice the offset
-            assertTrue(Elevation.blur(offset) > offset * 2f)
-        }
+    fun tiersFollowTheSpecifiedDistances() {
+        assertEquals(9f, Elevation.card.value)
+        assertEquals(16f, Elevation.cardBlur.value)
+        assertEquals(5f, Elevation.control.value)
+        assertEquals(10f, Elevation.controlBlur.value)
+        assertEquals(4f, Elevation.inset.value)
+        assertEquals(8f, Elevation.insetBlur.value)
+    }
+
+    @Test
+    fun darkThemesShortenDistances() {
+        val light = neuOf(LightPalette)
+        val dark = neuOf(DarkPalette)
+        assertEquals(9f, Elevation.distance(light, Elevation.card).value, 0.01f)
+        assertEquals(5.4f, Elevation.distance(dark, Elevation.card).value, 0.01f)
+        assertEquals(9.6f, Elevation.blur(dark, Elevation.cardBlur).value, 0.01f)
     }
 
     @Test

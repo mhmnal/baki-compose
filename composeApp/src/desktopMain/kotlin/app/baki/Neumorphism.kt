@@ -86,26 +86,25 @@ data class Neu(
     val darkAlpha: Float,
     /** the veil behind a modal: always a darkened canvas, never the shade colour */
     val scrim: Color,
+    /** true for dark packs, so shadow distances can shorten */
+    val isDark: Boolean = false,
 )
 
 fun neuOf(p: BakiPalette): Neu {
-    // a neumorphic canvas is a mid tone, not paper white: blend towards a soft grey-green
+    // a neumorphic canvas is a mid tone, not paper white
     val base = when {
-        // classic soft UI: the canvas is the palette's own cool grey, only slightly deepened
         p.softUi && !p.dark -> blend(p.surface, p.onSurface, 0.06f)
         p.dark -> blend(p.surface, p.primary, 0.10f)
         else -> blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
     }
-    // a card face is a hair above the canvas — one material, but the edge still reads — and the
-    // shadows are *tinted* directions of that base: the shade runs to deep olive (ink warmed by the
-    // accent), the highlight to warm white. Never neutral grey.
-    val panel = blend(base, Color.White, if (p.dark) 0.035f else 0.10f)
-    // shadows take the palette's own temperature: olive for sage, blue-grey for mist
-    val olive = if (p.softUi) blend(p.onSurface, p.primary, 0.18f)
-    else blend(p.onSurface, p.primary, if (p.dark) 0.45f else 0.55f)
-    val light = blend(base, blend(Color.White, p.primary, 0.04f), if (p.dark) 0.12f else 0.80f)
-    val dark = blend(base, if (p.dark) Color.Black else olive, if (p.dark) 0.62f else 0.30f)
-    // secondary text is derived against the canvas, not the palette: the canvas is darker
+    // true neumorphism: the face is the canvas. Only light and shade define the form.
+    val panel = base
+    // one light source, top-left: a cool near-white highlight and a blue-grey shade, both tinted
+    // directions of the canvas — never black with alpha
+    val light = blend(base, Color(0xFFF8FBFF), if (p.dark) 0.16f else 0.82f)
+    val dark = if (p.dark) blend(base, Color(0xFF070A0E), 0.60f)
+    else blend(base, Color(0xFF2E3C4C), 0.42f)
+    // secondary text is derived against the canvas, not the palette
     val muted = blend(base, p.onSurface, if (p.dark) 0.64f else if (p.softUi) 0.78f else 0.72f)
     return Neu(
         base = base,
@@ -119,9 +118,10 @@ fun neuOf(p: BakiPalette): Neu {
         accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
         up = p.up,
         danger = p.down,
-        lightAlpha = if (p.dark) 0.30f else 0.75f,
-        darkAlpha = if (p.dark) 0.38f else 0.18f,
+        lightAlpha = if (p.dark) 0.30f else 0.85f,
+        darkAlpha = if (p.dark) 0.42f else 0.55f,
         scrim = if (p.dark) Color.Black.copy(alpha = 0.70f) else blend(base, p.onSurface, 0.55f).copy(alpha = 0.60f),
+        isDark = p.dark,
     )
 }
 
@@ -135,30 +135,36 @@ fun blend(a: Color, b: Color, t: Float): Color = Color(
 
 /** Elevation tokens: offset with blur at twice the offset, which is what makes the light feel soft. */
 object Elevation {
-    /** nothing: text, table rows at rest */
-    val flat = 0.dp
-    /** chips, icon buttons, menu rows */
-    val low = 4.dp
-    /** cards, charts, the rail and toolbar */
-    val medium = 8.dp
-    /** dialogs and menus that float above everything */
-    val high = 12.dp
-    /** the reference ratio: blur is twice the offset, which is what makes the light soft */
-    fun blur(offset: Dp): Dp = offset * 2.2f
+    /** Cards: 9dp out, 16dp blur. */
+    val card = 9.dp
+    val cardBlur = 16.dp
+    /** Controls (buttons, chips, segmented thumb): 5dp out, 10dp blur. */
+    val control = 5.dp
+    val controlBlur = 10.dp
+    /** Wells, inputs, tracks: carved 4dp with an 8dp blur. */
+    val inset = 4.dp
+    val insetBlur = 8.dp
+    /** Floating layers keep their own drop. */
+    val floating = 12.dp
+
+    /** Dark packs need shorter distances; 40% less keeps the edges readable without glare. */
+    fun distance(neu: Neu, base: Dp): Dp = if (neu.isDark) base * 0.6f else base
+    fun blur(neu: Neu, base: Dp): Dp = if (neu.isDark) base * 0.6f else base
 }
 
 fun Modifier.raised(
     neu: Neu,
     corner: Dp = 20.dp,
-    offset: Dp = Elevation.medium,
-    fill: Color = neu.panel,
+    offset: Dp = Elevation.control,
+    blur: Dp = Elevation.controlBlur,
+    fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
     .then(
         Modifier.boxShadow(
-            blurRadius = Elevation.blur(offset),
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(-offset, -offset),
+            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
             color = neu.light.copy(alpha = neu.lightAlpha),
             shape = RoundedCornerShape(corner),
             clip = false,
@@ -167,9 +173,9 @@ fun Modifier.raised(
     )
     .then(
         Modifier.boxShadow(
-            blurRadius = Elevation.blur(offset),
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(offset, offset),
+            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
             color = neu.dark.copy(alpha = neu.darkAlpha),
             shape = RoundedCornerShape(corner),
             clip = false,
@@ -178,7 +184,6 @@ fun Modifier.raised(
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
-    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.14f else 0.10f), RoundedCornerShape(corner))
 
 /**
  * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
@@ -187,7 +192,7 @@ fun Modifier.raised(
 fun Modifier.elevated(
     neu: Neu,
     corner: Dp = Radius.sheet,
-    drop: Dp = Elevation.high,
+    drop: Dp = Elevation.floating,
 ): Modifier = this
     .graphicsLayer()
     .then(
@@ -195,7 +200,7 @@ fun Modifier.elevated(
             blurRadius = drop,
             spreadRadius = 0.dp,
             offset = DpOffset(0.dp, drop * 0.45f),
-            color = neu.dark.copy(alpha = (neu.darkAlpha * 1.5f).coerceAtMost(0.5f)),
+            color = neu.dark.copy(alpha = (neu.darkAlpha * 0.9f).coerceAtMost(0.5f)),
             shape = RoundedCornerShape(corner),
             clip = false,
             inset = false,
@@ -205,23 +210,23 @@ fun Modifier.elevated(
     .background(neu.panel)
 
 /**
- * A card casts one shadow, straight down. No highlight above it and no blur reaching over the top
- * edge, because on a large face that reads as a smudge in the whitespace rather than as embossing.
+ * A card casts the full pair: the 9/16 emboss that makes the face sit in the material. The face is the
+ * canvas colour, so the only thing separating it from the page is the light and the shade.
  */
 fun Modifier.cardSurface(
     neu: Neu,
     corner: Dp = 24.dp,
-    offset: Dp = Elevation.medium,
-    fill: Color = neu.panel,
+    offset: Dp = Elevation.card,
+    blur: Dp = Elevation.cardBlur,
+    fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
-    // a crisp emboss rim, not a bloom: 2dp out, 3dp blur, so it never reaches into the whitespace
     .then(
         Modifier.boxShadow(
-            blurRadius = 3.dp,
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(-2.dp, -2.dp),
-            color = neu.light.copy(alpha = if (neu.lightAlpha > 0.6f) 0.55f else 0.25f),
+            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
+            color = neu.light.copy(alpha = neu.lightAlpha),
             shape = RoundedCornerShape(corner),
             clip = false,
             inset = false,
@@ -229,10 +234,10 @@ fun Modifier.cardSurface(
     )
     .then(
         Modifier.boxShadow(
-            blurRadius = Elevation.blur(offset) * 0.9f,
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(0.dp, offset * 0.9f),
-            color = neu.dark.copy(alpha = (neu.darkAlpha * 2.0f).coerceAtMost(0.42f)),
+            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
+            color = neu.dark.copy(alpha = neu.darkAlpha),
             shape = RoundedCornerShape(corner),
             clip = false,
             inset = false,
@@ -240,21 +245,21 @@ fun Modifier.cardSurface(
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
-    .border(1.dp, neu.ink.copy(alpha = if (neu.darkAlpha > 0.30f) 0.14f else 0.10f), RoundedCornerShape(corner))
 
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
 fun Modifier.inset(
     neu: Neu,
     corner: Dp = 16.dp,
-    offset: Dp = Elevation.low,
+    offset: Dp = Elevation.inset,
+    blur: Dp = Elevation.insetBlur,
     fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
     .then(
         Modifier.boxShadow(
-            blurRadius = Elevation.blur(offset),
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(offset, offset),
+            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
             color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f),
             shape = RoundedCornerShape(corner),
             clip = true,
@@ -263,9 +268,9 @@ fun Modifier.inset(
     )
     .then(
         Modifier.boxShadow(
-            blurRadius = Elevation.blur(offset),
+            blurRadius = Elevation.blur(neu, blur),
             spreadRadius = 0.dp,
-            offset = DpOffset(-offset, -offset),
+            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
             color = neu.light.copy(alpha = neu.lightAlpha * 0.9f),
             shape = RoundedCornerShape(corner),
             clip = true,
@@ -283,11 +288,11 @@ fun NeuPanel(
     neu: Neu,
     modifier: Modifier = Modifier,
     corner: Dp = 24.dp,
-    offset: Dp = Elevation.medium,
-    fill: Color = neu.panel,
+    offset: Dp = Elevation.card,
+    fill: Color = neu.base,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(modifier.cardSurface(neu, corner, offset, fill), content = content)
+    Box(modifier.cardSurface(neu, corner = corner, offset = offset, fill = fill), content = content)
 }
 
 @Composable
@@ -295,7 +300,7 @@ fun NeuWell(
     neu: Neu,
     modifier: Modifier = Modifier,
     corner: Dp = 16.dp,
-    offset: Dp = Elevation.low,
+    offset: Dp = Elevation.inset,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(modifier.inset(neu, corner, offset).clip(RoundedCornerShape(corner)), content = content)
@@ -328,11 +333,11 @@ fun NeuButton(
         modifier
             .then(if (focused) Modifier.border(2.dp, neu.accent, shape) else Modifier)
             .then(
-                if (pressed || !enabled) Modifier.inset(neu, corner = 50.dp, offset = Elevation.low)
+                if (pressed || !enabled) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset)
                 else Modifier.raised(
                     neu,
                     corner = 50.dp,
-                    offset = Elevation.low,
+                    offset = Elevation.control,
                     fill = when {
                         primary -> neu.accent
                         hovered -> neu.accentSoft
@@ -368,7 +373,7 @@ fun NeuIconButton(
             .then(if (focused) Modifier.border(2.dp, neu.accent, shape) else Modifier)
             .then(
                 if (active) Modifier.inset(neu, corner = 16.dp)
-                else Modifier.raised(neu, corner = 16.dp, offset = if (hovered) Elevation.low else Elevation.medium),
+                else Modifier.raised(neu, corner = 16.dp, offset = if (hovered) Elevation.control else Elevation.card),
             )
             .clip(shape)
             .pointerHoverIcon(PointerIcon.Hand)
@@ -386,14 +391,14 @@ fun <T> NeuSegmented(
     modifier: Modifier = Modifier,
     onSelect: (T) -> Unit,
 ) {
-    NeuWell(neu, modifier, corner = 50.dp, offset = Elevation.low) {
+    NeuWell(neu, modifier, corner = 50.dp, offset = Elevation.inset) {
         Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             options.forEach { (value, label) ->
                 val on = value == selected
                 Box(
                     Modifier
                         .then(
-                            if (on) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
+                            if (on) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset, fill = neu.accent)
                             else Modifier,
                         )
                         .clip(RoundedCornerShape(Radius.pill))
@@ -424,8 +429,8 @@ fun NeuChip(
     Box(
         modifier
             .then(
-                if (selected) Modifier.raised(neu, corner = 50.dp, offset = Elevation.low, fill = neu.accent)
-                else Modifier.raised(neu, corner = 50.dp, offset = Elevation.low),
+                if (selected) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset, fill = neu.accent)
+                else Modifier.raised(neu, corner = 50.dp, offset = Elevation.control),
             )
             .clip(RoundedCornerShape(Radius.pill))
             .pointerHoverIcon(PointerIcon.Hand)
@@ -517,7 +522,7 @@ fun NeuDialog(
         Column(
             Modifier
                 .width(width)
-                .elevated(neu, corner = Radius.sheet, drop = Elevation.high)
+                .elevated(neu, corner = Radius.sheet, drop = Elevation.floating)
                 .clip(RoundedCornerShape(Radius.sheet))
                 .background(neu.panel)
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}

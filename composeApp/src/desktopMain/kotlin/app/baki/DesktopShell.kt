@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -106,6 +105,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
         // capture/test hook: configure route sync without touching the encrypted config file
         System.getenv("BAKI_ROUTE_SECRET")?.takeIf { it.isNotBlank() }?.let { repo.setRouteSync(true, it) }
         System.getenv("BAKI_PALETTE")?.takeIf { it.isNotBlank() }?.let { repo.setPalette(it) }
+        System.getenv("BAKI_MODE")?.takeIf { it.isNotBlank() }?.let { repo.setThemeMode(it) }
         repo.start()
         runCatching { rootFocus.requestFocus() }
     }
@@ -155,8 +155,8 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                     onRefresh = { scope.launch { repo.sync() } },
                     onSettings = { settingsOpen = true },
                 )
-                Spacer(Modifier.height(Space.m))
-                Box(Modifier.weight(1f).clipToBounds()) {
+                Spacer(Modifier.height(Space.xxl))
+                Box(Modifier.weight(1f)) {
                     AnimatedContent(
                         targetState = tab,
                         transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
@@ -265,7 +265,7 @@ private fun HeaderIdentity(neu: Neu) {
 private fun MonthStepper(neu: Neu, month: String, onPrev: () -> Unit, onNext: () -> Unit) {
     // one raised object: a flat chevron at each end and a recessed display in the middle
     Row(
-        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.low)
+        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.control)
             .padding(horizontal = Space.xs, vertical = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -299,7 +299,7 @@ private fun MonthStepper(neu: Neu, month: String, onPrev: () -> Unit, onNext: ()
 @Composable
 private fun SyncBadge(neu: Neu, status: String) {
     Row(
-        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.low)
+        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.control)
             .padding(horizontal = Space.m, vertical = Space.xs + 1.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -331,7 +331,7 @@ private fun Tip(text: String, content: @Composable () -> Unit) {
     TooltipArea(
         tooltip = {
             Box(
-                Modifier.elevated(neu, corner = Radius.small, drop = Elevation.medium)
+                Modifier.elevated(neu, corner = Radius.small, drop = Elevation.floating)
                     .clip(RoundedCornerShape(Radius.small))
                     .background(neu.panel)
                     .padding(horizontal = Space.s, vertical = Space.xs),
@@ -382,7 +382,7 @@ private fun Overview(
                     }
                 }
             }
-            Spacer(Modifier.height(Space.l + Space.xs))
+            Spacer(Modifier.height(Space.xxl))
             SectionCard(neu) { WeekChart(store, neu) }
             Spacer(Modifier.height(Space.l))
             SectionCard(neu) { MonthTrend(store, month, neu) }
@@ -457,7 +457,7 @@ private fun WeekChart(store: Store, neu: Neu) {
             neu,
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
             corner = Radius.card,
-            offset = Elevation.medium,
+            offset = Elevation.card,
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
                 Row(
@@ -528,7 +528,7 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                 contentDescription = "Cumulative net through $month, ending at RM ${rm(last)}"
             },
             corner = Radius.card,
-            offset = Elevation.medium,
+            offset = Elevation.card,
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.m)) {
                 Canvas(Modifier.fillMaxWidth().height(132.dp)) {
@@ -752,7 +752,7 @@ internal fun ShiftsView(store: Store, month: String) {
                         val rate = if (s.hours > 0.01) m.net / s.hours else 0.0
                         Row(
                             Modifier.fillMaxWidth()
-                                .then(if (hovered) Modifier.raised(neu, corner = Radius.input, offset = Elevation.low) else Modifier)
+                                .then(if (hovered) Modifier.raised(neu, corner = Radius.input, offset = Elevation.control) else Modifier)
                                 .padding(horizontal = Space.s, vertical = Space.m),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -917,7 +917,7 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(Space.l))
+        Spacer(Modifier.height(Space.xxl))
         SectionCard(neu) {
         months.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
@@ -1027,7 +1027,7 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                         Row(
                             Modifier.fillMaxWidth()
                                 .then(
-                                    if (isSel) Modifier.inset(neu, corner = Radius.input, offset = Elevation.medium)
+                                    if (isSel) Modifier.inset(neu, corner = Radius.input, offset = Elevation.inset)
                                     else Modifier,
                                 )
                                 .clip(RoundedCornerShape(Radius.input))
@@ -1142,7 +1142,7 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                     MonthStepper(neu, b, { b = shiftMonth(b, -1) }, { b = shiftMonth(b, 1) })
                 }
             }
-            Spacer(Modifier.height(Space.l))
+            Spacer(Modifier.height(Space.xxl))
             SectionCard(neu) {
                 Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
                     Head("METRIC", Modifier.weight(1.2f))
@@ -1180,7 +1180,7 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                     }
                 }
             }
-            Spacer(Modifier.height(Space.l))
+            Spacer(Modifier.height(Space.xxl))
             SectionCard(neu) {
                 Text("WHERE IT WENT, SIDE BY SIDE", color = neu.muted, style = BakiType.section)
                 Spacer(Modifier.height(Space.s))
@@ -1395,7 +1395,7 @@ private fun StatementPreview(store: Store, month: String, onDismiss: () -> Unit)
     ) {
         Column(
             Modifier.width(780.dp).heightIn(max = 860.dp)
-                .elevated(neu, corner = Radius.sheet, drop = Elevation.high)
+                .elevated(neu, corner = Radius.sheet, drop = Elevation.floating)
                 .clip(RoundedCornerShape(Radius.sheet))
                 .background(neu.panel)
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}
@@ -1474,7 +1474,7 @@ private fun weekdayShort(iso: String): String =
 /** A card: the base material extruded with the card tier of the shadow scale. */
 @Composable
 private fun SectionCard(neu: Neu, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.sheet, offset = Elevation.medium) {
+    NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.sheet, offset = Elevation.card) {
         Column(Modifier.padding(Space.xl), content = content)
     }
 }
