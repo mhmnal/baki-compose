@@ -397,3 +397,16 @@ Reading at a glance is the desktop's only job, so every ambiguous signal got sha
 - **Compare**: changes carry `↑`/`↓` and keep the direction-aware colour.
 - **Year**: idle months drop to 55% opacity; the best month's figure is written in accent.
 - **Settings**: the veil is deeper (0.60 light / 0.70 dark) so the modal is unmistakably the focus.
+
+## Shadow library leak (v0.17.2)
+
+The scrim covered only part of the window; the untouched strip was exactly the width of everything
+drawn after a shadow. Root cause: `dev.lennartegb.compose:shadow` 0.1.2 leaks a canvas translate on
+desktop, so every shadow shifted everything painted after it (the dialog ended up drawn at +303,+14
+while its layout stayed at 0,0 — which is why clicks missed).
+
+Fix: each `boxShadow` call now sits inside its own `graphicsLayer()`, so a leaked transform is
+confined to that layer. `ShadowEngineTest.everyShadowIsDrawnInItsOwnLayer` fails the build if a bare
+`.boxShadow(` appears. Verified by a magenta marker: the dialog's drawn bounds went from
+(573,147)-(1709,1015) to the window's own (270,133)-(1709,1015), and the scrim is uniform
+`#969B91` on both sides.

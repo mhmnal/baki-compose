@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -146,24 +147,28 @@ fun Modifier.raised(
     offset: Dp = Elevation.medium,
     fill: Color = neu.panel,
 ): Modifier = this
-    // the library's CSS-style box shadows: highlight up-left, shade down-right, blur 2x offset
-    .boxShadow(
-        blurRadius = Elevation.blur(offset),
-        spreadRadius = 0.dp,
-        offset = DpOffset(-offset, -offset),
-        color = neu.light.copy(alpha = neu.lightAlpha),
-        shape = RoundedCornerShape(corner),
-        clip = false,
-        inset = false,
+    .graphicsLayer()
+    .then(
+        Modifier.boxShadow(
+            blurRadius = Elevation.blur(offset),
+            spreadRadius = 0.dp,
+            offset = DpOffset(-offset, -offset),
+            color = neu.light.copy(alpha = neu.lightAlpha),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ),
     )
-    .boxShadow(
-        blurRadius = Elevation.blur(offset),
-        spreadRadius = 0.dp,
-        offset = DpOffset(offset, offset),
-        color = neu.dark.copy(alpha = neu.darkAlpha),
-        shape = RoundedCornerShape(corner),
-        clip = false,
-        inset = false,
+    .then(
+        Modifier.boxShadow(
+            blurRadius = Elevation.blur(offset),
+            spreadRadius = 0.dp,
+            offset = DpOffset(offset, offset),
+            color = neu.dark.copy(alpha = neu.darkAlpha),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ),
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
@@ -178,14 +183,17 @@ fun Modifier.elevated(
     corner: Dp = Radius.sheet,
     drop: Dp = Elevation.high,
 ): Modifier = this
-    .boxShadow(
-        blurRadius = drop,
-        spreadRadius = 0.dp,
-        offset = DpOffset(0.dp, drop * 0.45f),
-        color = neu.dark.copy(alpha = (neu.darkAlpha * 1.5f).coerceAtMost(0.5f)),
-        shape = RoundedCornerShape(corner),
-        clip = false,
-        inset = false,
+    .graphicsLayer()
+    .then(
+        Modifier.boxShadow(
+            blurRadius = drop,
+            spreadRadius = 0.dp,
+            offset = DpOffset(0.dp, drop * 0.45f),
+            color = neu.dark.copy(alpha = (neu.darkAlpha * 1.5f).coerceAtMost(0.5f)),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ),
     )
     .clip(RoundedCornerShape(corner))
     .background(neu.panel)
@@ -200,14 +208,17 @@ fun Modifier.cardSurface(
     offset: Dp = Elevation.medium,
     fill: Color = neu.panel,
 ): Modifier = this
-    .boxShadow(
-        blurRadius = Elevation.blur(offset) * 0.9f,
-        spreadRadius = 0.dp,
-        offset = DpOffset(0.dp, offset * 0.9f),
-        color = neu.dark.copy(alpha = (neu.darkAlpha * 2.0f).coerceAtMost(0.42f)),
-        shape = RoundedCornerShape(corner),
-        clip = false,
-        inset = false,
+    .graphicsLayer()
+    .then(
+        Modifier.boxShadow(
+            blurRadius = Elevation.blur(offset) * 0.9f,
+            spreadRadius = 0.dp,
+            offset = DpOffset(0.dp, offset * 0.9f),
+            color = neu.dark.copy(alpha = (neu.darkAlpha * 2.0f).coerceAtMost(0.42f)),
+            shape = RoundedCornerShape(corner),
+            clip = false,
+            inset = false,
+        ),
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)
@@ -220,23 +231,28 @@ fun Modifier.inset(
     offset: Dp = Elevation.low,
     fill: Color = neu.base,
 ): Modifier = this
-    .boxShadow(
-        blurRadius = Elevation.blur(offset),
-        spreadRadius = 0.dp,
-        offset = DpOffset(offset, offset),
-        color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f),
-        shape = RoundedCornerShape(corner),
-        clip = true,
-        inset = true,
+    .graphicsLayer()
+    .then(
+        Modifier.boxShadow(
+            blurRadius = Elevation.blur(offset),
+            spreadRadius = 0.dp,
+            offset = DpOffset(offset, offset),
+            color = neu.dark.copy(alpha = neu.darkAlpha * 0.85f),
+            shape = RoundedCornerShape(corner),
+            clip = true,
+            inset = true,
+        ),
     )
-    .boxShadow(
-        blurRadius = Elevation.blur(offset),
-        spreadRadius = 0.dp,
-        offset = DpOffset(-offset, -offset),
-        color = neu.light.copy(alpha = neu.lightAlpha * 0.9f),
-        shape = RoundedCornerShape(corner),
-        clip = true,
-        inset = true,
+    .then(
+        Modifier.boxShadow(
+            blurRadius = Elevation.blur(offset),
+            spreadRadius = 0.dp,
+            offset = DpOffset(-offset, -offset),
+            color = neu.light.copy(alpha = neu.lightAlpha * 0.9f),
+            shape = RoundedCornerShape(corner),
+            clip = true,
+            inset = true,
+        ),
     )
     .clip(RoundedCornerShape(corner))
     .background(fill)

@@ -52,6 +52,26 @@ class ShadowEngineTest {
     ).readText()
 
     @Test
+    fun everyShadowIsDrawnInItsOwnLayer() {
+        // the library leaks canvas transforms on desktop; a shadow drawn on the shared canvas shifts
+        // everything painted after it. Each call therefore lives inside its own graphicsLayer.
+        val text = material()
+        var index = text.indexOf(".boxShadow(")
+        var checked = 0
+        while (index >= 0) {
+            val before = text.substring(0, index)
+            val chain = before.takeLast(400)
+            assertTrue(
+                chain.contains(".graphicsLayer()"),
+                "shadow #${checked + 1} is not isolated in a graphicsLayer",
+            )
+            checked++
+            index = text.indexOf(".boxShadow(", index + 1)
+        }
+        assertTrue(checked >= 4, "expected the four material tiers to draw shadows, found $checked")
+    }
+
+    @Test
     fun shadowsComeFromTheLibrary() {
         val m = material()
         assertTrue(m.contains("dev.lennartegb.shadows.boxShadow"), "the material must use the library modifier")
