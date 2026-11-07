@@ -395,7 +395,7 @@ private fun Overview(
                 if (entries.isEmpty()) {
                     NeuEmpty(neu, "Nothing this month", "Entries you log will appear here, newest first.")
                 } else {
-                    EntryTable(store, entries.take(9), compact = true)
+                    EntryTable(store, entries.take(9), compact = true, showNote = entries.any { it.note.isNotBlank() })
                 }
             }
             Spacer(Modifier.height(Space.l))
@@ -667,7 +667,7 @@ internal fun EntriesView(store: Store, month: String) {
         ) {
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    NeuField(query, { query = it }, "Filter", Modifier.width(320.dp))
+                    NeuField(query, { query = it }, "Filter", Modifier.width(320.dp), placeholder = "Search category or note")
                     Spacer(Modifier.width(Space.m))
                     Text(
                         "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
@@ -692,7 +692,9 @@ internal fun EntriesView(store: Store, month: String) {
                     if (query.isBlank()) "Entries you log on the phone appear here, newest first." else "No entry matches that filter.",
                 )
             } else {
-                SectionCard(neu) { EntryTable(store, entries, compact = false) }
+                SectionCard(neu) {
+                    EntryTable(store, entries, compact = false, showNote = monthEntries.any { it.note.isNotBlank() })
+                }
             }
         }
         NeuScrollbar(
@@ -799,6 +801,7 @@ private fun EntryTable(
     store: Store,
     entries: List<Entry>,
     compact: Boolean,
+    showNote: Boolean = true,
 ) {
     val neu = rememberNeu()
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
@@ -815,13 +818,19 @@ private fun EntryTable(
         Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
             Head("DATE" + if (sort == TableSort.Date) " ↓" else "", Modifier.width(120.dp)) { sort = TableSort.Date }
             Head("CATEGORY" + if (sort == TableSort.Category) " ↓" else "", Modifier.width(170.dp)) { sort = TableSort.Category }
-            Head("NOTE", Modifier.weight(1f))
+            if (showNote) Head("NOTE", Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
             Head("AMOUNT" + if (sort == TableSort.Amount) " ↓" else "", Modifier.width(120.dp), Alignment.End) { sort = TableSort.Amount }
         }
         Column {
             sorted.take(if (compact) 9 else sorted.size).forEach { entry ->
+                val hover = remember { MutableInteractionSource() }
+                val hovered by hover.collectIsHoveredAsState()
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.m),
+                    Modifier.fillMaxWidth()
+                        .then(if (hovered) Modifier.inset(neu, corner = Radius.input, offset = 2.dp) else Modifier)
+                        .clip(RoundedCornerShape(Radius.input))
+                        .hoverable(hover)
+                        .padding(horizontal = Space.s, vertical = Space.m),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(entry.date, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(120.dp))
@@ -830,10 +839,14 @@ private fun EntryTable(
                         Spacer(Modifier.width(Space.s))
                         Text(cats[entry.cat]?.name ?: entry.cat, color = neu.ink, style = BakiType.label)
                     }
-                    Text(
-                        entry.note.ifBlank { "—" }, color = neu.muted, style = BakiType.label,
-                        maxLines = 1, modifier = Modifier.weight(1f),
-                    )
+                    if (showNote) {
+                        Text(
+                            entry.note.ifBlank { "—" }, color = neu.muted, style = BakiType.label,
+                            maxLines = 1, modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
                     Text(
                         (if (entry.type == "income") "+" else "−") + rm(entry.amount),
                         color = if (entry.type == "income") neu.accent else neu.danger,
@@ -1208,6 +1221,7 @@ private fun NeuField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    placeholder: String? = null,
 ) {
     val neu = rememberNeu()
     val interaction = remember { MutableInteractionSource() }
@@ -1223,15 +1237,22 @@ private fun NeuField(
             ),
             corner = Radius.input,
         ) {
-            androidx.compose.foundation.text.BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = BakiType.label.copy(color = neu.ink),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(neu.accent),
-                interactionSource = interaction,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s),
-            )
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s),
+            ) {
+                androidx.compose.foundation.text.BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = BakiType.label.copy(color = neu.ink),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(neu.accent),
+                    interactionSource = interaction,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (value.isEmpty() && placeholder != null) {
+                    Text(placeholder, color = neu.muted.copy(alpha = 0.75f), style = BakiType.label)
+                }
+            }
         }
     }
 }
