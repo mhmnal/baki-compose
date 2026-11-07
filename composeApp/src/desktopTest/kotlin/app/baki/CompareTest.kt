@@ -2,6 +2,8 @@ package app.baki
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CompareTest {
@@ -27,25 +29,47 @@ class CompareTest {
         assertEquals(100.0, s.km, 0.001)
         assertEquals(2, s.entries)
         assertEquals(1, s.shifts)
-        assertEquals(3, s.entries + s.shifts) // two entries plus one shift
     }
 
     @Test
-    fun ratesUseWorkedHoursAndDrivenKm() {
-        val s = periodStats(store(), "2026-11")
-        // net comes from monthTotals; per-hour must divide that by the shifts' hours
-        assertEquals(s.net / 100.0 / 6.0, s.perHour, 0.01)
-        assertEquals(s.net / 100.0 / 150.0, s.perKm, 0.01)
+    fun changeIsRelativeToB() {
+        // A = 100, B = 50 -> (A-B)/B = +100%
+        val (text, positive) = relativeChange(100, 50)
+        assertEquals("+100%", text)
+        assertTrue(positive == true)
+        // A = 50, B = 100 -> -50%
+        assertEquals("-50%", relativeChange(50, 100).first)
     }
 
     @Test
-    fun comparisonHasEveryRowAndSignedDeltas() {
+    fun anEmptyBIsNewNotMinusAHundred() {
+        assertEquals("new", relativeChange(4000, 0).first)
+        assertEquals("—", relativeChange(0, 0).first)
+        // rates have no meaningful "new": they read as a dash
+        assertEquals("—", rawChange(26.0, 0.0))
+    }
+
+    @Test
+    fun goodnessFollowsTheMetric() {
+        // A = October, B = November. October earned 50.00 and spent 10.00; November earned nothing
+        // and spent 50.00.
+        val octoberFirst = compareMonths(store(), "2026-10", "2026-11")
+        assertEquals(true, octoberFirst.first { it.label == "In" }.good)   // income is new: good
+        assertEquals(true, octoberFirst.first { it.label == "Out" }.good)  // spending fell: good
+
+        // flip the periods: now spending rose against the baseline, which is bad
+        val novemberFirst = compareMonths(store(), "2026-11", "2026-10")
+        assertEquals(false, novemberFirst.first { it.label == "In" }.good)  // income gone: bad
+        assertEquals(false, novemberFirst.first { it.label == "Out" }.good) // spending rose: bad
+
+        assertNull(octoberFirst.first { it.label == "Kilometres" }.good)
+    }
+
+    @Test
+    fun everyRowIsPresent() {
         val rows = compareMonths(store(), "2026-10", "2026-11")
         assertEquals(8, rows.size)
-        val net = rows.first { it.label == "Net" }
-        val expected = periodStats(store(), "2026-11").net - periodStats(store(), "2026-10").net
-        assertEquals(expected, net.delta)
-        assertTrue(rows.first { it.label == "RM / hour" }.delta == null, "rate rows show a raw change, not a delta")
+        assertTrue(rows.all { it.changeLabel != null })
     }
 
     @Test

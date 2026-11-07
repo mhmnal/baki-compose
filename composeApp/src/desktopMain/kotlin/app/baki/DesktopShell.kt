@@ -1101,10 +1101,10 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                     Head("CHANGE", Modifier.weight(0.9f), Alignment.End)
                 }
                 rows.forEach { r ->
-                    val deltaColor = when {
-                        r.higherIsBetter == null -> neu.muted
-                        (r.deltaLabel?.startsWith("-") == true) == r.higherIsBetter -> neu.danger
-                        else -> neu.accent
+                    val deltaColor = when (r.good) {
+                        null -> neu.muted
+                        true -> neu.up
+                        false -> neu.danger
                     }
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = Space.s),
@@ -1113,9 +1113,9 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                         Text(r.label, color = neu.ink, style = BakiType.label, modifier = Modifier.weight(1.2f))
                         Text(r.a, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                         Text(r.b, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
-                        val label = r.deltaLabel
+                        val label = r.changeLabel
                         val arrow = when {
-                            label == null || label == "—" -> ""
+                            label == null || label == "—" || label == "new" -> ""
                             label.startsWith("-") -> "↓ "
                             label.startsWith("+") -> "↑ "
                             else -> ""

@@ -38,17 +38,46 @@ fun periodStats(store: Store, month: String): PeriodStats {
     )
 }
 
-/** One row of a comparison table: a label, both period values, and their difference. */
+/**
+ * One row of a comparison table. The change is relative to period **B**: change = (A − B) / B, shown
+ * as a signed percentage. `B` empty is not "−100%", it is "new"; both empty is "—".
+ *
+ * [good] says whether the change is desirable for *that* metric: more income is good, more spending
+ * is bad, kilometres are neither.
+ */
 data class CompareRow(
     val label: String,
     val a: String,
     val b: String,
-    /** b − a; null when a difference makes no sense for this row. */
-    val delta: Long?,
-    val deltaLabel: String?,
-    /** true when a rise is good, false when it is bad, null when neutral. */
+    val changeLabel: String?,
+    val good: Boolean?,
     val higherIsBetter: Boolean?,
 )
+
+/** A percentage change from B to A, or the honest "new"/"—" wording when B has nothing. */
+internal fun relativeChange(a: Long, b: Long): Pair<String?, Boolean?> = when {
+    b == 0L && a == 0L -> "—" to null
+    b == 0L -> "new" to true
+    else -> {
+        val pct = (a - b) * 100.0 / b
+        ((if (pct >= 0) "+" else "") + "%.0f".format(pct) + "%") to (pct >= 0)
+    }
+}
+
+/** A raw difference for rate rows (RM/h, km); percentages of rates are noise. */
+internal fun rawChange(a: Double, b: Double, decimals: Int = 2): String? =
+    if (b == 0.0 && a == 0.0) "—"
+    else if (b == 0.0) "—"
+    else {
+        val pattern = "%." + decimals + "f"
+        (if (a - b >= 0) "+" else "") + pattern.format(a - b)
+    }
+
+/** Goodness combines direction of the change with whether more is better for this metric. */
+internal fun isGood(changePositive: Boolean?, higherIsBetter: Boolean?): Boolean? = when {
+    changePositive == null || higherIsBetter == null -> null
+    else -> changePositive == higherIsBetter
+}
 
 /** Expense totals per category for a month, biggest first. */
 fun categoryTotals(store: Store, month: String): List<Pair<String, Long>> {
@@ -67,39 +96,64 @@ private fun pct(a: Long, b: Long): String {
 }
 
 /**
- * The comparison table for two months. Money rows carry a signed delta and a percentage; rate rows
- * (per hour, per km) show the raw change because a percentage of a rate is noise.
+ * The comparison table for two months. Money rows compare A against B with a relative change; rate
+ * rows show a raw difference. Colour is decided by whether the movement is good for that metric.
  */
 fun compareMonths(store: Store, aMonth: String, bMonth: String): List<CompareRow> {
     val a = periodStats(store, aMonth)
     val b = periodStats(store, bMonth)
-    fun money(label: String, av: Long, bv: Long, higherBetter: Boolean) = CompareRow(
-        label = label,
-        a = "RM ${rm(av)}",
-        b = "RM ${rm(bv)}",
-        delta = bv - av,
-        deltaLabel = pct(av, bv),
-        higherIsBetter = higherBetter,
-    )
-    fun rate(label: String, av: Double, bv: Double, higherBetter: Boolean) = CompareRow(
-        label = label,
-        a = "%.2f".format(av),
-        b = "%.2f".format(bv),
-        delta = null,
-        deltaLabel = (if (bv - av >= 0) "+" else "") + "%.2f".format(bv - av),
-        higherIsBetter = higherBetter,
-    )
+
+    fun money(label: String, av: Long, bv: Long, higherBetter: Boolean?): CompareRow {
+        val (text, positive) = relativeChange(av, bv)
+        return CompareRow(
+            label = label,
+            a = "RM ${rm(av)}",
+            b = "RM ${rm(bv)}",
+            changeLabel = text,
+            good = if (text == "new") higherBetter else isGood(positive, higherBetter),
+            higherIsBetter = higherBetter,
+        )
+    }
+
+    fun rate(label: String, av: Double, bv: Double, higherBetter: Boolean?): CompareRow {
+        val text = rawChange(av, bv)
+        val positive = if (text == null || text == "—") null else !text.startsWith("-")
+        return CompareRow(
+            label = label,
+            a = "%.2f".format(av),
+            b = "%.2f".format(bv),
+            changeLabel = text,
+            good = isGood(positive, higherBetter),
+            higherIsBetter = higherBetter,
+        )
+    }
+
     return listOf(
         money("Net", a.net, b.net, true),
         money("In", a.income, b.income, true),
         money("Out", a.expense, b.expense, false),
-        CompareRow("Hours", "%.1f".format(a.hours), "%.1f".format(b.hours), null,
-            (if (b.hours - a.hours >= 0) "+" else "") + "%.1f".format(b.hours - a.hours), true),
-        CompareRow("Kilometres", "%.0f".format(a.km), "%.0f".format(b.km), null,
-            (if (b.km - a.km >= 0) "+" else "") + "%.0f".format(b.km - a.km), null),
+        CompareRow(
+            label = "Hours",
+            a = "%.1f".format(a.hours), b = "%.1f".format(b.hours),
+            changeLabel = rawChange(a.hours, b.hours, 1),
+            good = isGood(if (a.hours == b.hours) null else a.hours > b.hours, true),
+            higherIsBetter = true,
+        ),
+        CompareRow(
+            label = "Kilometres",
+            a = "%.0f".format(a.km), b = "%.0f".format(b.km),
+            changeLabel = rawChange(a.km, b.km, 0),
+            good = null,
+            higherIsBetter = null,
+        ),
         rate("RM / hour", a.perHour, b.perHour, true),
         rate("RM / km", a.perKm, b.perKm, true),
-        CompareRow("Entries", a.entries.toString(), b.entries.toString(), null,
-            (if (b.entries - a.entries >= 0) "+" else "") + (b.entries - a.entries), null),
+        CompareRow(
+            label = "Entries",
+            a = a.entries.toString(), b = b.entries.toString(),
+            changeLabel = (b.entries - a.entries).let { if (a.entries == b.entries) "—" else (if (a.entries > b.entries) "+" else "") + (a.entries - b.entries) },
+            good = null,
+            higherIsBetter = null,
+        ),
     )
 }
