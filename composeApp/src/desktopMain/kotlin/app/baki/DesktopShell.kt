@@ -142,7 +142,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                     }
                 },
         ) {
-            Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.m)) {
+            Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.l)) {
                 Header(
                     neu = neu,
                     month = month,
@@ -157,6 +157,15 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 )
                 Spacer(Modifier.height(Space.xxl))
                 Box(Modifier.weight(1f)) {
+                    // the scroll viewport must clip; this fade makes the cut invisible
+                    Box(
+                        Modifier.fillMaxWidth().height(18.dp).align(Alignment.TopCenter)
+                            .background(
+                                androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    listOf(neu.base, neu.base.copy(alpha = 0f)),
+                                ),
+                            ),
+                    )
                     AnimatedContent(
                         targetState = tab,
                         transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
@@ -665,7 +674,7 @@ internal fun EntriesView(store: Store, month: String) {
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
         Column(
-            Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll),
+            Modifier.fillMaxSize().verticalScroll(scroll).padding(top = Space.xxl, bottom = Space.xl),
         ) {
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -723,7 +732,7 @@ internal fun ShiftsView(store: Store, month: String) {
     fun rateColor(rate: Double) = if (rate >= cfg.targetRate) neu.up else neu.danger
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(top = Space.xxl, bottom = Space.xl)) {
             SectionCard(neu) {
                 Text(
                     "${shifts.size} shifts · net RM ${"%.2f".format(net)} (after fuel & wear) · avg RM ${"%.2f".format(avgRate)}/h",
@@ -896,7 +905,7 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
     }
     val peak = months.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
-    Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = Space.xxl, bottom = Space.xl)) {
         SectionCard(neu) {
             val best = months.maxByOrNull { it.second.net }
             val yearShifts = store.shifts.filter { it.date.startsWith(year.toString()) }
@@ -1128,7 +1137,7 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
 
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(top = Space.xxl, bottom = Space.xl)) {
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("PERIOD A", color = neu.muted, style = BakiType.section)

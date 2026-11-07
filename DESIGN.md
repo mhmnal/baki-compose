@@ -472,3 +472,17 @@ Captured all four packs in both modes (`BAKI_PALETTE`/`BAKI_MODE`): above every 
 deviation from the canvas is **lighter** (+0.008…+0.011 luminance), never a dark smudge; dark packs
 show no deviation at all. Paper and Night are single-mode packs by design — Colour and Appearance are
 separate axes, which the Settings explainer now states.
+
+## Shadow room at the scroll edge (v0.19.1)
+
+The first card's 16 dp blur was being cut by the scroll viewport's top edge, which read as a bar
+clipping the design. The header was never the cause — it has no bar. Fixes:
+
+- the scroll content carries a 32 dp top inset **inside** the scroll (so it moves with the content),
+  giving the 9/16 emboss its full 25 dp of room;
+- the header's own 5/10 capsules get 16 dp of window padding (their reach is 15 dp);
+- an 18 dp gradient from canvas to transparent sits at the viewport edge, so a card scrolled under it
+  fades instead of being sliced.
+
+The header stays fixed. If it should scroll away with the page instead, moving `Header` inside the
+scrolling `Column` is the only change needed.
