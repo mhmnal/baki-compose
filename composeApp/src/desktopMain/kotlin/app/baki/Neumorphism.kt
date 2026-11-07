@@ -313,9 +313,12 @@ fun NeuWell(
     modifier: Modifier = Modifier,
     corner: Dp = 16.dp,
     offset: Dp = Elevation.inset,
+    /** false paints a flat tray: used by the chart plots, where the cavity added nothing but corner noise */
+    inset: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    Box(modifier.inset(neu, corner, offset).clip(RoundedCornerShape(corner)), content = content)
+    val body = if (inset) modifier.inset(neu, corner, offset) else modifier
+    Box(body.clip(RoundedCornerShape(corner)).background(neu.base), content = content)
 }
 
 /**

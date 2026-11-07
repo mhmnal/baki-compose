@@ -500,3 +500,10 @@ floating layers) still come from the library, inside their own graphics layers.
 
 Also: outer shadow order is now **shade first, highlight last**, so the lit corner is never tinted by
 the shade — the previous order produced a dark arc at card corners.
+
+## Flat plots (v0.19.6)
+
+The chart plots (Last 7 days, Month trajectory) are **flat trays**: `NeuWell(inset = false)`. The
+cavity added no information there and was the only place the corner artifact showed. Every other
+well keeps its inset — text fields, the segmented nav track, table hover, pressed controls and the
+scrollbar groove.

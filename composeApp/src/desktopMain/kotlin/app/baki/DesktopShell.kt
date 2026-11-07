@@ -467,6 +467,7 @@ private fun WeekChart(store: Store, neu: Neu) {
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
             corner = Radius.card,
             offset = Elevation.card,
+            inset = false,
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
                 Row(
@@ -538,6 +539,7 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
             },
             corner = Radius.card,
             offset = Elevation.card,
+            inset = false,
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.m)) {
                 Canvas(Modifier.fillMaxWidth().height(132.dp)) {
