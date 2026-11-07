@@ -347,3 +347,23 @@ A card is one downward shadow (`cardSurface`): no highlight, nothing above the t
 face the dual-shadow highlight bloomed into the whitespace under the header and read as a grey
 smudge. Small controls (buttons, chips, the segmented thumb) keep the dual emboss, where it reads as
 embossing rather than bloom. Probe: canvas is flat `#D6DCD1` above a card, shade `#D3D9CC` below.
+
+## Read-only desk (v0.16)
+
+The line between the clients is now explicit:
+
+| | Phone | Desktop |
+|---|---|---|
+| Role | capture | understand |
+| May | entry, shifts, GPS, routes, widget | read, sort, filter, compare, print, export |
+| May not | — | create, edit or delete a record |
+
+`ReadOnlyShellTest` fails the build if `addEntry/updateEntry/deleteEntry/**Shift` or the write dialogs
+appear in the desktop shell. The desk keeps **Statement**, **Refresh** (pull), **Settings**
+(theme/config) and CSV export.
+
+Destinations: Overview · Entries · Shifts · **Routes** · **Compare** · Year. Comparison logic lives in
+common `Compare.kt` (`periodStats`, `compareMonths`, `categoryTotals`) so the phone can reuse it.
+
+Routes are **device-local**: the route store never leaves the phone, so the desktop Routes view shows
+what exists on that machine (today: nothing) and an honest empty state.

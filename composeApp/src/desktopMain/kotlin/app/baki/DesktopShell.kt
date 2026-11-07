@@ -77,32 +77,37 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     val store = repo.store
     val baki = LocalBaki.current
     val neu = rememberNeu()
-    // BAKI_VIEW lets the design be captured deterministically (entries/shifts/year/settings/statement)
+    // BAKI_VIEW lets the design be captured deterministically
     val preview = remember { System.getenv("BAKI_VIEW").orEmpty() }
     var month by remember { mutableStateOf(todayIso().substring(0, 7)) }
     var tab by remember {
-        mutableStateOf(when (preview) { "entries" -> 1; "shifts" -> 2; "year" -> 3; else -> 0 })
+        mutableStateOf(
+            when (preview) {
+                "entries" -> 1
+                "shifts" -> 2
+                "routes" -> 3
+                "compare" -> 4
+                "year" -> 5
+                else -> 0
+            },
+        )
     }
-    var editing by remember { mutableStateOf<Entry?>(null) }
-    var adding by remember { mutableStateOf(false) }
-    var deleting by remember { mutableStateOf<Entry?>(null) }
     var statement by remember { mutableStateOf(preview == "statement") }
     var settingsOpen by remember { mutableStateOf(preview == "settings") }
     val scope = rememberCoroutineScope()
     val rootFocus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        // a laptop is a full editor: writes must reach the server
-        if (!repo.config.allowWrites) repo.setAllowWrites(true)
         repo.start()
         runCatching { rootFocus.requestFocus() }
     }
 
+    // the desk reads and prints; it never creates, edits or deletes a record
     DesktopActions.exportCsv = {
         PlatformEffects.exportFile("baki-${todayStamp()}.csv", "text/csv", exportCsv(repo.store))
     }
     DesktopActions.statement = { statement = true }
-    DesktopActions.newEntry = { adding = true }
+    DesktopActions.sync = { scope.launch { repo.sync() } }
     DesktopActions.applyTheme = { repo.setPalette(it) }
 
     androidx.compose.runtime.CompositionLocalProvider(
@@ -112,41 +117,37 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 backgroundColor = neu.accent.copy(alpha = 0.28f),
             ),
     ) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(neu.base)
-            .focusRequester(rootFocus)
-            .focusable()
-            .onPreviewKeyEvent { e ->
-                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                when {
-                    e.isCtrlPressed && e.key == Key.DirectionLeft -> { month = shiftMonth(month, -1); true }
-                    e.isCtrlPressed && e.key == Key.DirectionRight -> { month = shiftMonth(month, 1); true }
-                    e.isCtrlPressed && e.key == Key.F -> { tab = 1; true }
-                    e.isCtrlPressed && e.key == Key.N -> { adding = true; true }
-                    e.key == Key.Escape -> {
-                        statement = false; settingsOpen = false; adding = false; editing = null; deleting = null
-                        true
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(neu.base)
+                .focusRequester(rootFocus)
+                .focusable()
+                .onPreviewKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when {
+                        e.isCtrlPressed && e.key == Key.DirectionLeft -> { month = shiftMonth(month, -1); true }
+                        e.isCtrlPressed && e.key == Key.DirectionRight -> { month = shiftMonth(month, 1); true }
+                        e.isCtrlPressed && e.key == Key.F -> { tab = 1; true }
+                        e.key == Key.Escape -> { statement = false; settingsOpen = false; true }
+                        else -> false
                     }
-                    else -> false
-                }
-            },
-    ) {
-        Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.m)) {
-            Header(
-                neu = neu,
-                month = month,
-                status = repo.status,
-                tab = tab,
-                onTab = { tab = it },
-                onPrev = { month = shiftMonth(month, -1) },
-                onNext = { month = shiftMonth(month, 1) },
-                onStatement = { statement = true },
-                onNew = { adding = true },
-                onSettings = { settingsOpen = true },
-            )
-            Spacer(Modifier.height(Space.m))
+                },
+        ) {
+            Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.m)) {
+                Header(
+                    neu = neu,
+                    month = month,
+                    status = repo.status,
+                    tab = tab,
+                    onTab = { tab = it },
+                    onPrev = { month = shiftMonth(month, -1) },
+                    onNext = { month = shiftMonth(month, 1) },
+                    onStatement = { statement = true },
+                    onRefresh = { scope.launch { repo.sync() } },
+                    onSettings = { settingsOpen = true },
+                )
+                Spacer(Modifier.height(Space.m))
                 Box(Modifier.weight(1f).clipToBounds()) {
                     AnimatedContent(
                         targetState = tab,
@@ -154,31 +155,20 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                         label = "tab",
                     ) { current ->
                         when (current) {
-                            0 -> Overview(store, month, { editing = it }, { deleting = it }, { tab = 1 })
-                            1 -> EntriesView(store, month, { editing = it }, { deleting = it })
+                            0 -> Overview(store, month) { tab = 1 }
+                            1 -> EntriesView(store, month)
                             2 -> ShiftsView(store, month)
+                            3 -> RoutesView(store, month, neu)
+                            4 -> CompareView(store, month, neu)
                             else -> YearView(store)
                         }
                     }
                 }
+            }
         }
-    }
 
-    if (statement) StatementPreview(store, month) { statement = false }
-    if (settingsOpen) DesktopSettings(repo) { settingsOpen = false }
-    if (adding) {
-        EntryDialog(store, month, null, { adding = false }) { date, cat, cents, note ->
-            scope.launch { repo.addEntry("expense", cents, cat, note, date); adding = false }
-        }
-    }
-    editing?.let { entry ->
-        EntryDialog(store, month, entry, { editing = null }) { date, cat, cents, note ->
-            scope.launch { repo.updateEntry(entry, entry.type, cents, cat, note, date); editing = null }
-        }
-    }
-    deleting?.let { entry ->
-        DeleteDialog(entry, { deleting = null }) { scope.launch { repo.deleteEntry(entry.id); deleting = null } }
-    }
+        if (statement) StatementPreview(store, month) { statement = false }
+        if (settingsOpen) DesktopSettings(repo) { settingsOpen = false }
     }
     return true
 }
@@ -187,7 +177,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
 object DesktopActions {
     var exportCsv: () -> Unit = {}
     var statement: () -> Unit = {}
-    var newEntry: () -> Unit = {}
+    var sync: () -> Unit = {}
     var applyTheme: (String) -> Unit = { }
 }
 
@@ -203,7 +193,7 @@ private fun Header(
     onPrev: () -> Unit,
     onNext: () -> Unit,
     onStatement: () -> Unit,
-    onNew: () -> Unit,
+    onRefresh: () -> Unit,
     onSettings: () -> Unit,
 ) {
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -215,7 +205,7 @@ private fun Header(
                 Spacer(Modifier.width(Space.l))
                 NeuSegmented(
                     neu,
-                    listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
+                    listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Routes", 4 to "Compare", 5 to "Year"),
                     tab,
                     onSelect = onTab,
                 )
@@ -224,7 +214,7 @@ private fun Header(
                 Spacer(Modifier.width(Space.l))
                 NeuButton(neu, "Statement", onClick = onStatement)
                 Spacer(Modifier.width(Space.s))
-                NeuButton(neu, "New entry", primary = true, onClick = onNew)
+                NeuButton(neu, "Refresh", primary = true, onClick = onRefresh)
                 Spacer(Modifier.width(Space.s))
                 SettingsButton(neu, onSettings)
             }
@@ -237,7 +227,7 @@ private fun Header(
                     Spacer(Modifier.weight(1f))
                     SyncBadge(neu, status)
                     Spacer(Modifier.width(Space.m))
-                    NeuButton(neu, "New entry", primary = true, onClick = onNew)
+                    NeuButton(neu, "Refresh", primary = true, onClick = onRefresh)
                     Spacer(Modifier.width(Space.s))
                     SettingsButton(neu, onSettings)
                 }
@@ -245,7 +235,7 @@ private fun Header(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     NeuSegmented(
                         neu,
-                        listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Year"),
+                        listOf(0 to "Overview", 1 to "Entries", 2 to "Shifts", 3 to "Routes", 4 to "Compare", 5 to "Year"),
                         tab,
                         onSelect = onTab,
                     )
@@ -349,8 +339,6 @@ private fun Tip(text: String, content: @Composable () -> Unit) {
 private fun Overview(
     store: Store,
     month: String,
-    onEdit: (Entry) -> Unit,
-    onDelete: (Entry) -> Unit,
     onOpen: () -> Unit,
 ) {
     val baki = LocalBaki.current
@@ -401,7 +389,7 @@ private fun Overview(
                 if (entries.isEmpty()) {
                     NeuEmpty(neu, "Nothing this month", "Entries you log will appear here, newest first.")
                 } else {
-                    EntryTable(store, entries.take(9), onEdit, onDelete, compact = true)
+                    EntryTable(store, entries.take(9), compact = true)
                 }
             }
             Spacer(Modifier.height(Space.l))
@@ -618,72 +606,42 @@ private fun FundsBlock(store: Store, month: String, neu: Neu) {
 // ------------------------------------------------------------------ tables
 
 @Composable
-internal fun EntriesView(store: Store, month: String, onEdit: (Entry) -> Unit, onDelete: (Entry) -> Unit) {
-    val baki = LocalBaki.current
+internal fun EntriesView(store: Store, month: String) {
     val neu = rememberNeu()
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf<String?>(null) }
-    val tableFocus = remember { FocusRequester() }
     val entries = store.entries
         .filter { it.date.startsWith(month) }
         .filter { e -> query.isBlank() || (e.cat + " " + e.note).contains(query, ignoreCase = true) }
         .sortedByDescending { it.date }
-    LaunchedEffect(Unit) { runCatching { tableFocus.requestFocus() } }
-
-    fun move(delta: Int) {
-        if (entries.isEmpty()) return
-        val current = entries.indexOfFirst { it.id == selected }
-        val next = when {
-            current < 0 -> 0
-            else -> (current + delta).coerceIn(0, entries.lastIndex)
-        }
-        selected = entries[next].id
-    }
 
     val scroll = rememberScrollState()
     Box(Modifier.fillMaxSize()) {
-    Column(
-        Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)
-            .focusRequester(tableFocus).focusable()
-            .onPreviewKeyEvent { e ->
-                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                when (e.key) {
-                    Key.DirectionDown -> { move(1); true }
-                    Key.DirectionUp -> { move(-1); true }
-                    Key.Enter, Key.NumPadEnter ->
-                        entries.firstOrNull { it.id == selected }?.let { onEdit(it); true } ?: false
-                    Key.Delete, Key.Backspace ->
-                        entries.firstOrNull { it.id == selected }?.let { onDelete(it); true } ?: false
-                    Key.Escape -> { selected = null; true }
-                    else -> false
-                }
-            },
-    ) {
-        SectionCard(neu) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                NeuField(query, { query = it }, "Filter", Modifier.width(320.dp))
-                Spacer(Modifier.width(Space.m))
-                Text(
-                    "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
-                    color = neu.muted, style = BakiType.label,
-                )
-                Spacer(Modifier.weight(1f))
-                Text("↑ ↓ select · Enter edit · Delete remove", color = neu.muted, style = BakiType.caption)
-            }
-        }
-        Spacer(Modifier.height(Space.l))
-        if (entries.isEmpty()) {
-            NeuEmpty(
-                neu,
-                "Nothing this month",
-                if (query.isBlank()) "Entries you log will appear here, newest first." else "No entry matches that filter.",
-            )
-        } else {
+        Column(
+            Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll),
+        ) {
             SectionCard(neu) {
-                EntryTable(store, entries, onEdit, onDelete, compact = false, selectedId = selected, onSelect = { selected = it })
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NeuField(query, { query = it }, "Filter", Modifier.width(320.dp))
+                    Spacer(Modifier.width(Space.m))
+                    Text(
+                        "${entries.size} entries · RM ${rm(entries.filter { it.type != "income" }.sumOf { it.amount })} out",
+                        color = neu.ink, style = BakiType.label,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text("read-only · edit on the phone", color = neu.muted, style = BakiType.caption)
+                }
+            }
+            Spacer(Modifier.height(Space.l))
+            if (entries.isEmpty()) {
+                NeuEmpty(
+                    neu,
+                    "Nothing this month",
+                    if (query.isBlank()) "Entries you log on the phone appear here, newest first." else "No entry matches that filter.",
+                )
+            } else {
+                SectionCard(neu) { EntryTable(store, entries, compact = false) }
             }
         }
-    }
         NeuScrollbar(
             state = scroll,
             neu = neu,
@@ -751,13 +709,8 @@ private enum class TableSort { Date, Category, Amount }
 private fun EntryTable(
     store: Store,
     entries: List<Entry>,
-    onEdit: (Entry) -> Unit,
-    onDelete: (Entry) -> Unit,
     compact: Boolean,
-    selectedId: String? = null,
-    onSelect: (String) -> Unit = {},
 ) {
-    val baki = LocalBaki.current
     val neu = rememberNeu()
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
     var sort by remember { mutableStateOf(TableSort.Date) }
@@ -778,73 +731,27 @@ private fun EntryTable(
         }
         Column {
             sorted.take(if (compact) 9 else sorted.size).forEach { entry ->
-                val hover = remember { MutableInteractionSource() }
-                val hovered by hover.collectIsHoveredAsState()
-                val isSelected = entry.id == selectedId
-                var menu by remember { mutableStateOf(false) }
-                Box {
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .then(
-                                when {
-                                    isSelected || hovered -> Modifier.inset(neu, corner = Radius.input)
-                                    else -> Modifier
-                                },
-                            )
-                            .clip(RoundedCornerShape(Radius.input))
-                            .hoverableRow(hover)
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .pointerInput(entry.id) {
-                                var last = 0L
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val e = awaitPointerEvent()
-                                        if (e.type == androidx.compose.ui.input.pointer.PointerEventType.Press) {
-                                            if (e.buttons.isSecondaryPressed) menu = true
-                                            if (e.buttons.isPrimaryPressed) {
-                                                val now = System.currentTimeMillis()
-                                                if (now - last < 350) onEdit(entry)
-                                                last = now
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            .clickable(interactionSource = hover, indication = null) { onSelect(entry.id) }
-                            .padding(horizontal = Space.s, vertical = Space.m),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(entry.date, color = neu.muted, style = BakiType.labelNumeric, modifier = Modifier.width(120.dp))
-                        Row(Modifier.width(170.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(categoryIcon(entry.cat), contentDescription = null, tint = neu.muted, modifier = Modifier.size(IconSize.inline))
-                            Spacer(Modifier.width(Space.s))
-                            Text(cats[entry.cat]?.name ?: entry.cat, color = neu.ink, style = BakiType.label)
-                        }
-                        Text(
-                            entry.note.ifBlank { "—" }, color = neu.muted, style = BakiType.label,
-                            maxLines = 1, modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            (if (entry.type == "income") "+" else "−") + rm(entry.amount),
-                            color = if (entry.type == "income") neu.accent else neu.danger,
-                            style = BakiType.labelNumeric,
-                            modifier = Modifier.width(120.dp),
-                            textAlign = TextAlign.End,
-                        )
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(entry.date, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.width(120.dp))
+                    Row(Modifier.width(170.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(categoryIcon(entry.cat), contentDescription = null, tint = neu.muted, modifier = Modifier.size(IconSize.inline))
+                        Spacer(Modifier.width(Space.s))
+                        Text(cats[entry.cat]?.name ?: entry.cat, color = neu.ink, style = BakiType.label)
                     }
-                    if (menu) {
-                        androidx.compose.ui.window.Popup(
-                            onDismissRequest = { menu = false },
-                            properties = androidx.compose.ui.window.PopupProperties(focusable = true),
-                        ) {
-                            androidx.compose.foundation.layout.Box(Modifier.width(170.dp).elevated(neu, corner = Radius.small, drop = Elevation.high).clip(RoundedCornerShape(Radius.small)).background(neu.panel)) {
-                                Column(Modifier.padding(Space.xs)) {
-                                    NeuMenuItem(neu, "Edit") { menu = false; onEdit(entry) }
-                                    NeuMenuItem(neu, "Delete", danger = true) { menu = false; onDelete(entry) }
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        entry.note.ifBlank { "—" }, color = neu.muted, style = BakiType.label,
+                        maxLines = 1, modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        (if (entry.type == "income") "+" else "−") + rm(entry.amount),
+                        color = if (entry.type == "income") neu.accent else neu.danger,
+                        style = BakiType.labelNumeric,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = TextAlign.End,
+                    )
                 }
             }
         }
@@ -853,22 +760,6 @@ private fun EntryTable(
 
 private fun Modifier.hoverableRow(source: MutableInteractionSource): Modifier = this.hoverable(source)
 
-@Composable
-private fun NeuMenuItem(neu: Neu, label: String, danger: Boolean = false, onClick: () -> Unit) {
-    val hover = remember { MutableInteractionSource() }
-    val hovered by hover.collectIsHoveredAsState()
-    Box(
-        Modifier.fillMaxWidth()
-            .then(if (hovered) Modifier.inset(neu, corner = Radius.small) else Modifier)
-            .clip(RoundedCornerShape(Radius.small))
-            .hoverableRow(hover)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(interactionSource = hover, indication = null) { onClick() }
-            .padding(horizontal = Space.s, vertical = Space.s),
-    ) {
-        Text(label, color = if (danger) neu.danger else neu.ink, style = BakiType.label)
-    }
-}
 
 @Composable
 private fun Head(
@@ -955,6 +846,225 @@ internal fun YearView(store: Store) {
     }
 }
 
+// ------------------------------------------------------------------ routes
+
+/**
+ * Drive review: the phone records the path, this is where it can be studied. Read-only, like the
+ * rest of the desk.
+ */
+@Composable
+internal fun RoutesView(store: Store, month: String, neu: Neu) {
+    val shifts = remember(store, month) {
+        store.shifts.filter { it.date.startsWith(month) }.sortedByDescending { "${it.date} ${it.start}" }
+    }
+    var routes by remember(month) { mutableStateOf<Map<String, ShiftRoute>>(emptyMap()) }
+    var loading by remember(month) { mutableStateOf(true) }
+    var selected by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(shifts) {
+        loading = true
+        val found = mutableMapOf<String, ShiftRoute>()
+        shifts.forEach { s ->
+            RouteStore.route(s.id)?.takeIf { it.points.size >= 2 }?.let { found[s.id] = it }
+        }
+        routes = found
+        loading = false
+        if (selected == null || selected !in found) selected = found.keys.firstOrNull() ?: shifts.firstOrNull()?.id
+    }
+
+    if (shifts.isEmpty()) {
+        NeuEmpty(neu, "No shifts this month", "Start a shift on the phone; its route will be reviewable here.")
+        return
+    }
+
+    val shift = shifts.firstOrNull { it.id == selected }
+    val route = selected?.let { routes[it] }
+
+    Row(Modifier.fillMaxSize().padding(vertical = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.l)) {
+        NeuPanel(neu, Modifier.width(330.dp).fillMaxHeight(), corner = Radius.sheet) {
+            Column(Modifier.fillMaxSize().padding(Space.m)) {
+                Text("DRIVES · ${routes.size} of ${shifts.size}", color = neu.muted, style = BakiType.section)
+                Spacer(Modifier.height(Space.s))
+                Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                    shifts.forEach { s ->
+                        val has = routes.containsKey(s.id)
+                        val m = shiftMetrics(s, store.settings.profit)
+                        val isSel = s.id == selected
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .then(if (isSel) Modifier.inset(neu, corner = Radius.input) else Modifier)
+                                .clip(RoundedCornerShape(Radius.input))
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable { selected = s.id }
+                                .padding(horizontal = Space.s, vertical = Space.s),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill))
+                                    .background(if (has) neu.accent else neu.muted.copy(alpha = 0.4f)),
+                            )
+                            Spacer(Modifier.width(Space.s))
+                            Column(Modifier.weight(1f)) {
+                                Text("${s.date} · ${s.start}", color = neu.ink, style = BakiType.labelNumeric)
+                                Text(
+                                    "${"%.1f".format(s.km)} km · ${"%.1f".format(s.hours)} h · RM ${rm((m.net * 100).toLong())}",
+                                    color = neu.muted, style = BakiType.captionNumeric,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        NeuPanel(neu, Modifier.weight(1f).fillMaxHeight(), corner = Radius.sheet) {
+            if (shift == null || route == null) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (loading) Text("Loading routes…", color = neu.muted, style = BakiType.body)
+                    else NeuEmpty(neu, "No route for this shift", "GPS points may not have been recorded, or the route was pruned.")
+                }
+            } else {
+                Column(Modifier.fillMaxSize().padding(Space.l)) {
+                    val m = shiftMetrics(shift, store.settings.profit)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${shift.date} · ${shift.start}", color = neu.ink, style = BakiType.title)
+                            Text("${route.points.size} GPS points", color = neu.muted, style = BakiType.caption)
+                        }
+                        NeuMetric(neu, "KM", "%.1f".format(shift.km))
+                        Spacer(Modifier.width(Space.l))
+                        NeuMetric(neu, "HOURS", "%.1f".format(shift.hours))
+                        Spacer(Modifier.width(Space.l))
+                        NeuMetric(neu, "NET", "RM ${rm((m.net * 100).toLong())}", valueColor = neu.accent)
+                        Spacer(Modifier.width(Space.l))
+                        NeuMetric(neu, "RM / KM", "%.2f".format(if (shift.km > 0.01) m.net / shift.km else 0.0))
+                        Spacer(Modifier.width(Space.l))
+                        NeuMetric(neu, "RM / H", "%.2f".format(if (shift.hours > 0.01) m.net / shift.hours else 0.0))
+                    }
+                    Spacer(Modifier.height(Space.l))
+                    Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(Radius.card))) {
+                        RouteMap(
+                            routes = listOf(MapRoute(route, routeColorFor(LocalBaki.current, 0), "${shift.date} ${shift.start}")),
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------- compare
+
+/**
+ * The desk's real job: two periods side by side, with deltas that say whether a change is good.
+ */
+@Composable
+internal fun CompareView(store: Store, month: String, neu: Neu) {
+    var a by remember(month) { mutableStateOf(month) }
+    var b by remember(month) { mutableStateOf(shiftMonth(month, -1)) }
+    val rows = remember(store, a, b) { compareMonths(store, a, b) }
+    val catA = remember(store, a) { categoryTotals(store, a) }
+    val catB = remember(store, b) { categoryTotals(store, b) }
+
+    val scroll = rememberScrollState()
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
+            SectionCard(neu) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("PERIOD A", color = neu.muted, style = BakiType.section)
+                    Spacer(Modifier.width(Space.s))
+                    MonthStepper(neu, a, { a = shiftMonth(a, -1) }, { a = shiftMonth(a, 1) })
+                    Spacer(Modifier.weight(1f))
+                    Text("VERSUS", color = neu.muted, style = BakiType.section)
+                    Spacer(Modifier.weight(1f))
+                    Text("PERIOD B", color = neu.muted, style = BakiType.section)
+                    Spacer(Modifier.width(Space.s))
+                    MonthStepper(neu, b, { b = shiftMonth(b, -1) }, { b = shiftMonth(b, 1) })
+                }
+            }
+            Spacer(Modifier.height(Space.l))
+            SectionCard(neu) {
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
+                    Head("METRIC", Modifier.weight(1.2f))
+                    Head(monthLabel(a).uppercase(), Modifier.weight(1f), Alignment.End)
+                    Head(monthLabel(b).uppercase(), Modifier.weight(1f), Alignment.End)
+                    Head("CHANGE", Modifier.weight(0.9f), Alignment.End)
+                }
+                rows.forEach { r ->
+                    val deltaColor = when {
+                        r.higherIsBetter == null -> neu.muted
+                        (r.deltaLabel?.startsWith("-") == true) == r.higherIsBetter -> neu.danger
+                        else -> neu.accent
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = Space.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(r.label, color = neu.ink, style = BakiType.label, modifier = Modifier.weight(1.2f))
+                        Text(r.a, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                        Text(r.b, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                        Text(
+                            r.deltaLabel ?: "—",
+                            color = deltaColor,
+                            style = BakiType.labelNumeric,
+                            modifier = Modifier.weight(0.9f),
+                            textAlign = TextAlign.End,
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(Space.l))
+            SectionCard(neu) {
+                Text("WHERE IT WENT, SIDE BY SIDE", color = neu.muted, style = BakiType.section)
+                Spacer(Modifier.height(Space.s))
+                val names = (catA.map { it.first } + catB.map { it.first }).distinct()
+                val top = names
+                    .map { name ->
+                        name to ((catA.firstOrNull { it.first == name }?.second ?: 0L) to
+                            (catB.firstOrNull { it.first == name }?.second ?: 0L))
+                    }
+                    .sortedByDescending { maxOf(it.second.first, it.second.second) }
+                    .take(7)
+                val peak = top.maxOfOrNull { maxOf(it.second.first, it.second.second) }?.coerceAtLeast(1) ?: 1
+                top.forEach { (name, values) ->
+                    val (va, vb) = values
+                    Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+                        Text(name, color = neu.ink, style = BakiType.label, modifier = Modifier.width(150.dp))
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Box(Modifier.fillMaxWidth().height(8.dp)) {
+                                Box(
+                                    Modifier.fillMaxWidth((va.toFloat() / peak).coerceIn(0f, 1f)).height(8.dp)
+                                        .clip(RoundedCornerShape(Radius.pill)).background(neu.accent),
+                                )
+                            }
+                            Box(Modifier.fillMaxWidth().height(8.dp)) {
+                                Box(
+                                    Modifier.fillMaxWidth((vb.toFloat() / peak).coerceIn(0f, 1f)).height(8.dp)
+                                        .clip(RoundedCornerShape(Radius.pill)).background(neu.muted),
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(Space.m))
+                        Column(Modifier.width(150.dp), horizontalAlignment = Alignment.End) {
+                            Text("RM ${rm(va)}", color = neu.ink, style = BakiType.captionNumeric)
+                            Text("RM ${rm(vb)}", color = neu.muted, style = BakiType.captionNumeric)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(Space.xs))
+                Text("accent = ${monthLabel(a)} · grey = ${monthLabel(b)}", color = neu.muted, style = BakiType.caption)
+            }
+            Spacer(Modifier.height(Space.l))
+        }
+        NeuScrollbar(
+            state = scroll,
+            neu = neu,
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
+        )
+    }
+}
+
 // ----------------------------------------------------------------- dialogs
 
 @Composable
@@ -987,62 +1097,6 @@ private fun NeuField(
                 interactionSource = interaction,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s),
             )
-        }
-    }
-}
-
-@Composable
-private fun EntryDialog(
-    store: Store,
-    month: String,
-    existing: Entry?,
-    onDismiss: () -> Unit,
-    onSave: (date: String, cat: String, cents: Long, note: String) -> Unit,
-) {
-    val neu = rememberNeu()
-    val cats = store.settings.cats.catsOut.filter { it.id != "grabfee" }
-    var date by remember { mutableStateOf(existing?.date ?: todayIso()) }
-    var amount by remember { mutableStateOf(existing?.amount?.let { "%.2f".format(it / 100.0) } ?: "") }
-    var note by remember { mutableStateOf(existing?.note ?: "") }
-    var cat by remember { mutableStateOf(existing?.cat ?: cats.firstOrNull()?.id ?: "other") }
-    val cents = amount.toDoubleOrNull()?.let { (it * 100).toLong() } ?: 0L
-
-    NeuDialog(neu, onDismiss) {
-        Text(if (existing == null) "New entry" else "Edit entry", color = neu.ink, style = BakiType.title)
-        Spacer(Modifier.height(Space.l))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NeuField(date, { date = it }, "Date", Modifier.weight(1f))
-            NeuField(amount, { amount = it.filter { c -> c.isDigit() || c == '.' } }, "Amount (RM)", Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(Space.m))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-            cats.take(5).forEach { c ->
-                NeuChip(neu, c.name, selected = cat == c.id) { cat = c.id }
-            }
-        }
-        Spacer(Modifier.height(Space.m))
-        NeuField(note, { note = it }, "Note", Modifier.fillMaxWidth())
-        Spacer(Modifier.height(Space.l))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NeuButton(neu, "Cancel", onClick = onDismiss)
-            NeuButton(neu, if (existing == null) "Add entry" else "Save changes", primary = true, enabled = cents > 0) {
-                if (cents > 0) onSave(date, cat, cents, note)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeleteDialog(entry: Entry, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    val neu = rememberNeu()
-    NeuDialog(neu, onDismiss) {
-        Text("Delete this entry?", color = neu.ink, style = BakiType.title)
-        Spacer(Modifier.height(Space.s))
-        Text("RM ${rm(entry.amount)} · ${entry.date} · ${entry.cat}", color = neu.muted, style = BakiType.label)
-        Spacer(Modifier.height(Space.l))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NeuButton(neu, "Cancel", onClick = onDismiss)
-            NeuButton(neu, "Delete", primary = true, onClick = onConfirm)
         }
     }
 }

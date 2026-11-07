@@ -55,7 +55,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 40
-        versionName = "0.15.4"
+        versionName = "0.16.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
