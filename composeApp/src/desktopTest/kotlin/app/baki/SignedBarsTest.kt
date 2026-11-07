@@ -8,26 +8,24 @@ import kotlin.test.assertTrue
 class SignedBarsTest {
 
     @Test
-    fun lossesHangBelowTheZeroLine() {
-        val loss = SignedBars.of(-6070, peakPositive = 11563, peakNegative = 6070)
-        assertFalse(loss.positive, "a negative day must be drawn below zero")
-        assertEquals(1f, loss.fraction, 0.001f)
-    }
-
-    @Test
-    fun gainsRiseAboveIt() {
-        val gain = SignedBars.of(9210, peakPositive = 11563, peakNegative = 6070)
+    fun oneSharedScaleAcrossBothDirections() {
+        // −60.70 must read as about half of +115.63, not as its own full-height bar
+        val gain = SignedBars.of(11_563, peakPositive = 11_563, peakNegative = 6_070)
+        val loss = SignedBars.of(-6_070, peakPositive = 11_563, peakNegative = 6_070)
+        assertEquals(1f, gain.fraction, 0.001f)
+        assertEquals(0.525f, loss.fraction, 0.005f)
         assertTrue(gain.positive)
-        assertTrue(gain.fraction > 0.7f)
+        assertFalse(loss.positive)
     }
 
     @Test
-    fun scaleIsIndependentPerSide() {
-        // a small gain and a small loss should look proportional to their own side, not to each other
-        val gain = SignedBars.of(100, peakPositive = 10_000, peakNegative = 1_000)
-        val loss = SignedBars.of(-500, peakPositive = 10_000, peakNegative = 1_000)
-        assertEquals(0.01f, gain.fraction, 0.001f)
-        assertEquals(0.5f, loss.fraction, 0.001f)
+    fun zeroLineSitsWhereThePeaksMeet() {
+        val z = SignedBars.zeroFraction(peakPositive = 11_563, peakNegative = 6_070)
+        assertEquals(0.656f, z, 0.002f)
+        // no losses: the baseline belongs at the bottom
+        assertEquals(1f, SignedBars.zeroFraction(10, 0), 0.001f)
+        // no gains: at the top
+        assertEquals(0f, SignedBars.zeroFraction(0, 10), 0.001f)
     }
 
     @Test

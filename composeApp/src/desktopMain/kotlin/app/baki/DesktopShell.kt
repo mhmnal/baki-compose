@@ -447,7 +447,6 @@ private fun WeekChart(store: Store, neu: Neu) {
     val peakNeg = days.maxOfOrNull { (-it.second.net).coerceAtLeast(0L) }?.coerceAtLeast(1L) ?: 1L
     val summary = days.joinToString(", ") { (iso, t) -> "${weekdayShort(iso)} ${rm(t.net)}" }
     val plot = 96.dp
-    val half = plot / 2
 
     Column {
         Text("LAST 7 DAYS", color = neu.muted, style = BakiType.section)
@@ -463,10 +462,12 @@ private fun WeekChart(store: Store, neu: Neu) {
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Space.m),
                 ) {
+                    val zeroShare = SignedBars.zeroFraction(peakPos, peakNeg)
+                    val zeroY = plot * zeroShare
                     days.forEach { (iso, t) ->
                         val g = SignedBars.of(t.net, peakPos, peakNeg)
-                        val h = (half * g.fraction).coerceAtLeast(0.dp)
-                        val offsetY = if (g.positive) half - h else half
+                        val h = (plot * g.fraction).coerceAtLeast(0.dp)
+                        val offsetY = if (g.positive) (zeroY - h).coerceAtLeast(0.dp) else zeroY
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
@@ -478,7 +479,7 @@ private fun WeekChart(store: Store, neu: Neu) {
                             Box(Modifier.fillMaxWidth().height(plot)) {
                                 Box(
                                     Modifier.align(Alignment.TopCenter).fillMaxWidth().height(1.dp)
-                                        .offset(y = half - 0.5.dp)
+                                        .offset(y = zeroY - 0.5.dp)
                                         .background(neu.ink.copy(alpha = 0.14f)),
                                 )
                                 if (!g.zero) {
