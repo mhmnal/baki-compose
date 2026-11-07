@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -1012,7 +1013,7 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
         NeuPanel(neu, Modifier.width(330.dp).fillMaxHeight(), corner = Radius.sheet) {
             Column(Modifier.fillMaxSize().padding(Space.m)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("DRIVES · ${routes.size} of ${shifts.size}", color = neu.muted, style = BakiType.section)
+                    Text("DRIVES · ${routes.size} of ${shifts.size} routes pulled", color = neu.muted, style = BakiType.section)
                     Spacer(Modifier.weight(1f))
                     NeuButton(neu, "Pull") { reload++ }
                 }
@@ -1060,9 +1061,25 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
 
         NeuPanel(neu, Modifier.weight(1f).fillMaxHeight(), corner = Radius.sheet) {
             if (shift == null || route == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    if (loading) Text("Loading routes…", color = neu.muted, style = BakiType.body)
-                    else NeuEmpty(neu, "No route for this shift", "GPS points may not have been recorded, or the route was pruned.")
+                // centred in the pane, not a full-width band clipped by the card
+                Box(Modifier.fillMaxSize().padding(Space.xl), contentAlignment = Alignment.Center) {
+                    Column(
+                        Modifier.widthIn(max = 360.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        if (loading) {
+                            Text("Loading routes…", color = neu.muted, style = BakiType.body)
+                        } else {
+                            Text("No route for this shift", color = neu.ink, style = BakiType.bodyStrong, textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(Space.xs))
+                            Text(
+                                "GPS points may not have been recorded, or the route was pruned. If the drive exists on the phone, pull it here.",
+                                color = neu.muted, style = BakiType.caption, textAlign = TextAlign.Center,
+                            )
+                            Spacer(Modifier.height(Space.m))
+                            NeuButton(neu, "Pull routes", primary = true) { reload++ }
+                        }
+                    }
                 }
             } else {
                 Column(Modifier.fillMaxSize().padding(Space.l)) {
