@@ -30,6 +30,16 @@ private data class PushBody(
     @SerialName("undeleteIds") val undeleteIds: List<String> = emptyList(),
 )
 
+/** One sealed trace on its way to the desk. The server treats [blob] as opaque text. */
+@Serializable
+data class RouteBlob(val shiftId: String, val date: String, val blob: String)
+
+@Serializable
+private data class RoutesBody(val items: List<RouteBlob>)
+
+@Serializable
+private data class RoutesResponse(val ok: Boolean = true, val items: List<RouteBlob> = emptyList())
+
 /**
  * The same tracker server the web app talks to, so both clients share one dataset.
  * `events()` is the live channel: the server broadcasts a change after any write.
@@ -70,6 +80,24 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
         }
         val env = BakiJson.decodeFromString<DataEnvelope>(res.bodyAsText())
         return env.data ?: store
+    }
+
+    /** Upload sealed traces; the server stores them under the shift id. */
+    suspend fun pushRoutes(items: List<RouteBlob>): Int {
+        if (items.isEmpty()) return 0
+        val res = http.post("$baseUrl/api/routes") {
+            contentType(ContentType.Application.Json)
+            setBody(BakiJson.encodeToString(RoutesBody.serializer(), RoutesBody(items)))
+        }
+        if (res.status != HttpStatusCode.OK) throw IllegalStateException("route upload failed: ${res.status}")
+        return items.size
+    }
+
+    /** Traces recorded since [since] (a yyyy-MM-dd date). */
+    suspend fun pullRoutes(since: String): List<RouteBlob> {
+        val res = http.get("$baseUrl/api/routes?since=$since")
+        if (res.status != HttpStatusCode.OK) return emptyList()
+        return BakiJson.decodeFromString<RoutesResponse>(res.bodyAsText()).items
     }
 
     /** Emits once per server-side change. Reconnects by the caller's restart policy. */

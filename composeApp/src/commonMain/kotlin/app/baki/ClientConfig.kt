@@ -19,6 +19,10 @@ data class ClientConfig(
     val palette: String = "sage",
     /** "auto" | "on" | "off" — liquid glass, resolved against the device tier. */
     val glassMode: String = "auto",
+    /** Opt-in: upload sealed traces so the desk can review them. Off by default. */
+    val syncRoutes: Boolean = false,
+    /** Shared passphrase for the sealed traces; blank disables route sync entirely. */
+    val routeSecret: String = "",
 )
 
 private const val CONFIG_FILE = "config.json"

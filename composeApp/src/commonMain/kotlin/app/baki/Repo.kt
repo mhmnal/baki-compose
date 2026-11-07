@@ -111,6 +111,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                     saveLocal(store)
                     pendingPush = false
                 }
+                runCatching { pushRoutes() }
                 status = "synced"
                 lastError = null
                 lastSyncAt = nowMillis()
@@ -133,6 +134,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 saveLocal(store)
                 pendingPush = false
             }
+            runCatching { pushRoutes() }
             status = "synced"
             lastError = null
             lastSyncAt = nowMillis()
@@ -605,6 +607,50 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         saveLocal(store)
         pushWithTombs(emptyList())
+    }
+
+    /**
+     * Upload sealed traces for recent shifts. Opt-in and silent: a failure here must never disturb a
+     * ledger sync, so the caller wraps it.
+     */
+    suspend fun pushRoutes(days: Int = 45) {
+        val secret = config.routeSecret
+        if (!config.syncRoutes || secret.isBlank()) return
+        val cutoff = addDays(todayIso(), -days)
+        val items = mutableListOf<RouteBlob>()
+        store.shifts.filter { it.date >= cutoff }.forEach { shift ->
+            val route = RouteStore.route(shift.id) ?: return@forEach
+            if (route.points.size < 2) return@forEach
+            val plain = BakiJson.encodeToString(ShiftRoute.serializer(), route).encodeToByteArray()
+            val sealed = RouteCrypto.seal(secret, plain)
+            items += RouteBlob(shift.id, shift.date, RouteBase64.encode(sealed))
+        }
+        if (items.isNotEmpty()) {
+            client.pushRoutes(items)
+            lastPushAt = nowMillis()
+        }
+    }
+
+    /** Pull and open traces since [since]; returns how many were stored. */
+    suspend fun pullRoutes(since: String): Int {
+        val secret = config.routeSecret
+        if (secret.isBlank()) return 0
+        var stored = 0
+        client.pullRoutes(since).forEach { item ->
+            runCatching {
+                val plain = RouteCrypto.open(secret, RouteBase64.decode(item.blob))
+                val route = BakiJson.decodeFromString(ShiftRoute.serializer(), plain.decodeToString())
+                RouteStore.put(route)
+                stored++
+            }
+        }
+        return stored
+    }
+
+    fun setRouteSync(enabled: Boolean, secret: String) {
+        config = config.copy(syncRoutes = enabled, routeSecret = secret.trim())
+        saveConfig(config)
+        if (enabled && secret.isNotBlank()) scope.launch { runCatching { pushRoutes() } }
     }
 
     fun setPalette(pack: String) {

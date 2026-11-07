@@ -57,6 +57,15 @@ object RouteStore {
         }
     }
 
+    /** Replace one shift's route wholesale — used when a trace arrives from another device. */
+    suspend fun put(route: ShiftRoute) {
+        if (route.shiftId.isBlank() || route.points.size < 2) return
+        mutex.withLock {
+            val file = loadUnlocked()
+            writeUnlocked(file.copy(routes = file.routes + (route.shiftId to route)))
+        }
+    }
+
     /** Simplify on completion: keeps the drawing faithful while the file stays small. */
     suspend fun finalize(shiftId: String) = mutex.withLock {
         val file = loadUnlocked()

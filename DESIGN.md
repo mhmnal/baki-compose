@@ -367,3 +367,20 @@ common `Compare.kt` (`periodStats`, `compareMonths`, `categoryTotals`) so the ph
 
 Routes are **device-local**: the route store never leaves the phone, so the desktop Routes view shows
 what exists on that machine (today: nothing) and an honest empty state.
+
+## Route sync (v0.17)
+
+Routes were device-local on purpose. They can now be reviewed at the desk, **opt-in and sealed**:
+
+- **Off by default.** `Settings → Route traces` on both clients: a toggle and a shared *route key*.
+- The phone seals each trace with **AES-GCM**, key = SHA-256 of the shared passphrase, envelope
+  `RT1 | ivLen | iv | ciphertext`. Only the two clients know the key.
+- `POST /api/routes` stores the opaque blob in `routes.json`, keyed by shift id; `GET
+  /api/routes?since=YYYY-MM-DD` returns them. The server never parses a coordinate, and route blobs
+  never enter `data.json`, so ledger backups stay free of movement history.
+- Upload happens after a normal sync (last 45 days, only shifts that have a route); the desk pulls
+  when the Routes tab opens or when **Pull** is pressed.
+- Sharing the key is manual: type the same passphrase on both devices. Blank key disables sync.
+
+`RouteCryptoTest` covers round-trip, wrong key, tampering and the envelope; `RouteSyncLiveTest` is an
+opt-in end-to-end check against a running server (`BAKI_LIVE_SYNC=1`).

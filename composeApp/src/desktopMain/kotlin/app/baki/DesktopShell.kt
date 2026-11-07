@@ -98,6 +98,8 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     val rootFocus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
+        // capture/test hook: configure route sync without touching the encrypted config file
+        System.getenv("BAKI_ROUTE_SECRET")?.takeIf { it.isNotBlank() }?.let { repo.setRouteSync(true, it) }
         repo.start()
         runCatching { rootFocus.requestFocus() }
     }
@@ -158,7 +160,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                             0 -> Overview(store, month) { tab = 1 }
                             1 -> EntriesView(store, month)
                             2 -> ShiftsView(store, month)
-                            3 -> RoutesView(store, month, neu)
+                            3 -> RoutesView(repo, month, neu)
                             4 -> CompareView(store, month, neu)
                             else -> YearView(store)
                         }
@@ -853,7 +855,8 @@ internal fun YearView(store: Store) {
  * rest of the desk.
  */
 @Composable
-internal fun RoutesView(store: Store, month: String, neu: Neu) {
+internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
+    val store = repo.store
     val shifts = remember(store, month) {
         store.shifts.filter { it.date.startsWith(month) }.sortedByDescending { "${it.date} ${it.start}" }
     }
@@ -861,14 +864,17 @@ internal fun RoutesView(store: Store, month: String, neu: Neu) {
     var loading by remember(month) { mutableStateOf(true) }
     var selected by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(shifts) {
+    var reload by remember { mutableStateOf(0) }
+    LaunchedEffect(month, reload) {
         loading = true
+        runCatching { repo.pullRoutes("$month-01") }
         val found = mutableMapOf<String, ShiftRoute>()
         shifts.forEach { s ->
             RouteStore.route(s.id)?.takeIf { it.points.size >= 2 }?.let { found[s.id] = it }
         }
         routes = found
         loading = false
+        if (reload > 0) { /* nothing to re-key: map identity changed above */ }
         if (selected == null || selected !in found) selected = found.keys.firstOrNull() ?: shifts.firstOrNull()?.id
     }
 
@@ -883,7 +889,11 @@ internal fun RoutesView(store: Store, month: String, neu: Neu) {
     Row(Modifier.fillMaxSize().padding(vertical = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.l)) {
         NeuPanel(neu, Modifier.width(330.dp).fillMaxHeight(), corner = Radius.sheet) {
             Column(Modifier.fillMaxSize().padding(Space.m)) {
-                Text("DRIVES · ${routes.size} of ${shifts.size}", color = neu.muted, style = BakiType.section)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("DRIVES · ${routes.size} of ${shifts.size}", color = neu.muted, style = BakiType.section)
+                    Spacer(Modifier.weight(1f))
+                    NeuButton(neu, "Pull") { reload++ }
+                }
                 Spacer(Modifier.height(Space.s))
                 Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
                     shifts.forEach { s ->
@@ -1110,6 +1120,8 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
     var kml by remember { mutableStateOf("%.1f".format(profit.kmPerLitre)) }
     var wear by remember { mutableStateOf("%.2f".format(profit.wearPerKm)) }
     var target by remember { mutableStateOf("%.0f".format(profit.targetRate)) }
+    var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
+    var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
     val scope = rememberCoroutineScope()
 
     NeuDialog(neu, onDismiss, width = 580.dp) {
@@ -1141,6 +1153,24 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             NeuField(wear, { wear = it.filter { c -> c.isDigit() || c == '.' } }, "wear RM / km", Modifier.weight(1f))
             NeuField(target, { target = it.filter { c -> c.isDigit() || c == '.' } }, "target RM / hour", Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(Space.l))
+        Text("ROUTE TRACES", color = neu.muted, style = BakiType.section)
+        Spacer(Modifier.height(Space.xs))
+        Text(
+            "Sealed with a key only your two devices know; the server stores ciphertext.",
+            color = neu.muted, style = BakiType.caption,
+        )
+        Spacer(Modifier.height(Space.s))
+        NeuSegmented(
+            neu,
+            listOf(false to "Off", true to "On"),
+            routeSync,
+        ) { on -> routeSync = on; repo.setRouteSync(on, routeKey) }
+        Spacer(Modifier.height(Space.s))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            NeuField(routeKey, { routeKey = it }, "shared route key", Modifier.weight(1f))
+            NeuButton(neu, "Save key") { repo.setRouteSync(routeSync, routeKey) }
         }
         Spacer(Modifier.height(Space.l))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {

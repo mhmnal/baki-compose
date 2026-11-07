@@ -1066,6 +1066,8 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val baki = LocalBaki.current
     var url by remember { mutableStateOf(repo.config.serverUrl) }
+    var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
+    var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
     var editingProfit by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -1106,6 +1108,34 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 Spacer(Modifier.height(Space.s))
                 Text(it, color = baki.down, style = BakiType.caption )
             }
+        }
+        Spacer(Modifier.height(Space.m))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+            Text("Route traces", color = baki.onSurface, style = BakiType.bodyStrong)
+            Text(
+                "Sealed with a key only your devices know, so the desk can review your drives. The server never sees coordinates.",
+                color = baki.muted, style = BakiType.caption,
+            )
+            Spacer(Modifier.height(Space.m))
+            SwitchRow(
+                title = "Sync route traces",
+                sub = if (routeSync) "on — recordings are uploaded sealed" else "off — recordings stay on this phone",
+                checked = routeSync,
+            ) {
+                routeSync = it
+                repo.setRouteSync(it, routeKey)
+            }
+            Spacer(Modifier.height(Space.m))
+            OutlinedTextField(
+                value = routeKey, onValueChange = { routeKey = it }, singleLine = true,
+                label = { Text("shared route key") },
+                modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+            )
+            Spacer(Modifier.height(Space.m))
+            Button(
+                onClick = { repo.setRouteSync(routeSync, routeKey) },
+                colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
+            ) { Text("Save route key") }
         }
         Spacer(Modifier.height(Space.l))
         SectionTitle("SAFETY")
