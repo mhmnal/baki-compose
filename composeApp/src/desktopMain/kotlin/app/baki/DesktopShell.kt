@@ -569,30 +569,36 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
 
 @Composable
 private fun CategoryBlock(store: Store, month: String, neu: Neu) {
+    val baki = LocalBaki.current
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
-    val rows = remember(store, month) { store.entries
-        .filter { it.date.startsWith(month) && it.type != "income" }
-        .groupBy { it.cat }
-        .map { (id, list) -> (cats[id]?.name ?: id) to list.sumOf { it.amount } }
-        .sortedByDescending { it.second }
-        .take(6) }
-    val total = rows.sumOf { it.second }.coerceAtLeast(1)
+    val rows = remember(store, month) {
+        store.entries
+            .filter { it.date.startsWith(month) && it.type != "income" }
+            .groupBy { it.cat }
+            .map { (id, list) -> Triple(id, cats[id]?.name ?: id, list.sumOf { it.amount }) }
+            .sortedByDescending { it.third }
+            .take(6)
+    }
+    // one colour per slice, never repeated within the chart; "Other" is always the neutral grey
+    val colors = remember(rows, baki) { chartColors(baki, rows.map { it.first }) }
+    val total = rows.sumOf { it.third }.coerceAtLeast(1)
+
     Text("WHERE IT WENT", color = neu.muted, style = BakiType.section)
     Spacer(Modifier.height(Space.s))
     NeuBar(
         neu = neu,
         fraction = 1f,
         modifier = Modifier.fillMaxWidth().height(12.dp),
-        segments = rows.mapIndexed { i, (_, cents) ->
-            (cents.toFloat() / total).coerceAtLeast(0.002f) to routeColorFor(LocalBaki.current, i)
+        segments = rows.mapIndexed { i, (_, _, cents) ->
+            (cents.toFloat() / total).coerceAtLeast(0.002f) to colors[i]
         },
     )
     Spacer(Modifier.height(Space.m))
-    rows.forEachIndexed { i, (name, cents) ->
+    rows.forEachIndexed { i, (_, name, cents) ->
         Row(Modifier.fillMaxWidth().padding(vertical = Space.xxs), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(9.dp).clip(RoundedCornerShape(Radius.pill))
-                    .raised(neu, corner = 6.dp, offset = 2.dp, fill = routeColorFor(LocalBaki.current, i)),
+                    .raised(neu, corner = 6.dp, offset = 2.dp, fill = colors[i]),
             )
             Spacer(Modifier.width(Space.s))
             Text(name, color = neu.ink, style = BakiType.label)
@@ -603,6 +609,7 @@ private fun CategoryBlock(store: Store, month: String, neu: Neu) {
         }
     }
 }
+
 
 @Composable
 private fun FundsBlock(store: Store, month: String, neu: Neu) {
