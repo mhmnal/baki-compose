@@ -43,8 +43,12 @@ class LiveShiftService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val start = intent?.getLongExtra(EXTRA_START, 0L) ?: 0L
-        val total = intent?.getLongExtra(EXTRA_TOTAL, 0L) ?: 0L
+        // START_STICKY restarts the service with a null intent after the process is killed: rebuild
+        // the notification from the stored shift instead of showing 00:00 / RM 0.00
+        val stored = if (intent == null) runCatching { loadLive() }.getOrNull() else null
+        if (intent == null && stored == null) { stopSelf(); return START_NOT_STICKY }
+        val start = intent?.getLongExtra(EXTRA_START, 0L) ?: stored?.start ?: 0L
+        val total = intent?.getLongExtra(EXTRA_TOTAL, 0L) ?: stored?.let { liveTotalCents(it) } ?: 0L
         ensureChannel()
         // a location-typed FGS needs the permission at this moment, or the start is refused
         runCatching { startForeground(NOTIF_ID, build(start, total)) }

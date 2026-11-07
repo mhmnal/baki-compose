@@ -51,6 +51,9 @@ object DistanceTracker {
     private var fixCount: Int = 0
     private var rejectedCount: Int = 0
     private var lastFixAt: Long = 0
+    private var rejectsInARow: Int = 0
+    private var watchdog: android.os.Handler? = null
+    private var watchdogTask: Runnable? = null
 
     // ---- route capture -------------------------------------------------------
     // Points are buffered and written in batches: each write is a JSON encode + AES-GCM + fsync,
@@ -111,6 +114,8 @@ object DistanceTracker {
         }.getOrDefault(false)
 
         if (!started) startLegacy(ctx)
+        WatchdogContext.ctx = ctx.applicationContext
+        startWatchdog()
     }
 
     private fun startLegacy(ctx: Context) {
@@ -133,6 +138,36 @@ object DistanceTracker {
         runCatching { lm.requestLocationUpdates(provider, 1_000L, 0f, l, ctx.mainLooper) }
     }
 
+    private fun startWatchdog() {
+        stopWatchdog()
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
+        val task = object : Runnable {
+            override fun run() {
+                val live = runCatching { loadLive() }.getOrNull()
+                if (live == null) { stopWatchdog(); return }
+                val silentFor = System.currentTimeMillis() - lastFixAt
+                if (lastFixAt > 0 && silentFor > 90_000) {
+                    // the fused request was dropped (doze, provider churn): restart it in place
+                    val metresBefore = metres
+                    stop()
+                    start(WatchdogContext.ctx ?: return)
+                    metres = metresBefore
+                    lastFixAt = System.currentTimeMillis()   // back off: try again in 90s, not 30s
+                }
+                handler.postDelayed(this, 30_000)
+            }
+        }
+        watchdog = handler
+        watchdogTask = task
+        handler.postDelayed(task, 30_000)
+    }
+
+    private fun stopWatchdog() {
+        watchdogTask?.let { watchdog?.removeCallbacks(it) }
+        watchdogTask = null
+        watchdog = null
+    }
+
     fun stop() {
         (fused as? com.google.android.gms.location.FusedLocationProviderClient)?.let {
             (callback as? LocationCallback)?.let { cb -> runCatching { it.removeLocationUpdates(cb) } }
@@ -147,13 +182,26 @@ object DistanceTracker {
     private fun accept(loc: Location) {
         fixCount++
         lastFixAt = System.currentTimeMillis()
-        if (loc.accuracy > MAX_ACCURACY_M) { rejectedCount++; return }
+        if (loc.accuracy > MAX_ACCURACY_M) {
+            rejectedCount++
+            // after a run of poor fixes the anchor is stale: a good fix would look like a teleport.
+            // Re-anchor without counting distance so tracking can resume.
+            if (++rejectsInARow >= 3) { last = loc; rejectsInARow = 0 }
+            return
+        }
         val prev = last
-        if (prev == null) { last = loc; return }
+        if (prev == null) { last = loc; rejectsInARow = 0; return }
 
         val step = distanceMetres(prev, loc)
         val seconds = (loc.time - prev.time) / 1000.0
-        if (seconds > 0 && step / seconds > MAX_SPEED_MPS) { rejectedCount++; return }   // a jump, not travel
+        if (seconds > 0 && step / seconds > MAX_SPEED_MPS) {
+            rejectedCount++
+            // a tunnel or a dead zone leaves the anchor far behind; re-anchor instead of rejecting
+            // every subsequent fix for the rest of the shift
+            if (++rejectsInARow >= 2) { last = loc; rejectsInARow = 0 }
+            return
+        }
+        rejectsInARow = 0
 
         // Count travel with the speed-assisted rule, and always move the anchor forward: a stale
         // anchor turned slow traffic into nothing and made the next jump double-counted.

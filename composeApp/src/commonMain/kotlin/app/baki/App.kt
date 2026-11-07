@@ -750,7 +750,11 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(live.start) {
-        while (true) { now = nowMillis(); delay(1000) }
+        while (true) {
+            now = nowMillis()
+            repo.ensureLiveCover(now)
+            delay(1000)
+        }
     }
 
     val worked = liveWorkedMs(live, now)

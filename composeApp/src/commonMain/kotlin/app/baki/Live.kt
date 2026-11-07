@@ -6,6 +6,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
 import kotlin.math.max
+import kotlin.math.roundToLong
 
 /** A shift in progress: device-local until you end it, exactly like the web app. */
 @Serializable
@@ -93,7 +94,8 @@ fun liveBreakEven(store: Store, live: LiveShift, now: Long = nowMillis()): LiveB
     val rates = costRates(cfg)
     val running = live.km * (rates.fuel + rates.wear)
     val date = startDate(live.start)
-    val cover = draftCoverCharge(store, date, startClock(live.start)) / 100.0
+    val coverCents = liveCoverWindows(store, live.start, now) * (store.settings.profit.grabInsurance * 100).toLong()
+    val cover = coverCents / 100.0
     val workedHours = liveWorkedMs(live, now) / 3_600_000.0
     val overhead = overheadPerHour(store, date.take(7)) * workedHours
     val costs = running + cover + overhead

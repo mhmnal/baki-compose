@@ -27,18 +27,61 @@ fun shiftStartMs(sh: Shift, tz: TimeZone = TimeZone.currentSystemDefault()): Lon
     return midnight + minutes * 60_000L
 }
 
-fun coverChargedIds(shifts: List<Shift>, tz: TimeZone = TimeZone.currentSystemDefault()): Set<String> {
+/**
+ * How many insurance windows each shift consumes.
+ *
+ * Grab bills a rolling 24h window. A shift that starts inside an already-paid window costs nothing
+ * up front, but if it is still running when that window ends, a new one starts immediately — the
+ * renewal belongs to the shift that is happening, not to the next shift. A 30h shift can consume two
+ * renewals; the loop handles that without special cases.
+ */
+fun coverWindows(shifts: List<Shift>, tz: TimeZone = TimeZone.currentSystemDefault()): Map<String, Int> {
     val sorted = shifts.sortedBy { shiftStartMs(it, tz) }
-    val charged = mutableSetOf<String>()
-    var last = Long.MIN_VALUE
+    val windows = mutableMapOf<String, Int>()
+    var paidUntil = Long.MIN_VALUE
     for (sh in sorted) {
-        val t = shiftStartMs(sh, tz)
-        if (last == Long.MIN_VALUE || t - last >= DAY_MS) {
-            charged += sh.id
-            last = t
+        val start = shiftStartMs(sh, tz)
+        val end = start + (sh.hours * 3_600_000.0).toLong()
+        var count = 0
+        if (paidUntil == Long.MIN_VALUE || start >= paidUntil) {
+            count++
+            paidUntil = start + DAY_MS
         }
+        // still working when the paid window ends: renew, and keep renewing for very long shifts
+        while (paidUntil < end) {
+            count++
+            paidUntil += DAY_MS
+        }
+        windows[sh.id] = count
     }
-    return charged
+    return windows
+}
+
+/** Ids of shifts that pay at least one window. */
+fun coverChargedIds(shifts: List<Shift>, tz: TimeZone = TimeZone.currentSystemDefault()): Set<String> =
+    coverWindows(shifts, tz).filterValues { it > 0 }.keys
+
+/** Windows the live shift has consumed by [now], including the one it will be charged at its start. */
+fun liveCoverWindows(
+    store: Store,
+    startMs: Long,
+    nowMs: Long,
+    tz: TimeZone = TimeZone.currentSystemDefault(),
+): Int {
+    val prior = coverPaidUntil(store, tz)
+    var paidUntil = if (prior == null || startMs >= prior) startMs + DAY_MS else prior
+    var count = if (prior == null || startMs >= prior) 1 else 0
+    while (paidUntil < nowMs) {
+        count++
+        paidUntil += DAY_MS
+    }
+    return count
+}
+
+/** The part of the live insurance that has already renewed beyond the shift's up-front window. */
+fun liveRenewedWindows(store: Store, startMs: Long, nowMs: Long): Int {
+    val atStart = liveCoverWindows(store, startMs, startMs)
+    return (liveCoverWindows(store, startMs, nowMs) - atStart).coerceAtLeast(0)
 }
 
 /** Would this (unsaved) shift be charged? Used by the shift form. */
@@ -55,11 +98,11 @@ fun draftCoverCharge(store: Store, date: String, start: String): Long {
  */
 fun recomputeCover(store: Store, now: String = nowIso()): Pair<Store, Boolean> {
     val fee = (store.settings.profit.grabInsurance * 100).roundToLong()
-    val charged = coverChargedIds(store.shifts)
+    val windows = coverWindows(store.shifts)
     var changed = false
 
     val shifts = store.shifts.map { sh ->
-        val want = if (sh.id in charged) fee else 0L
+        val want = (windows[sh.id] ?: 0) * fee
         if ((sh.grabFee ?: 0L) != want) { changed = true; sh.copy(grabFee = want) } else sh
     }
 
@@ -96,9 +139,17 @@ fun recomputeCover(store: Store, now: String = nowIso()): Pair<Store, Boolean> {
  * A shift started before that moment costs nothing extra.
  */
 fun coverPaidUntil(store: Store, tz: TimeZone = TimeZone.currentSystemDefault()): Long? {
-    val charged = coverChargedIds(store.shifts, tz)
-    val last = store.shifts.filter { it.id in charged }.maxByOrNull { shiftStartMs(it, tz) } ?: return null
-    return shiftStartMs(last, tz) + DAY_MS
+    if (store.shifts.isEmpty()) return null
+    var paidUntil = Long.MIN_VALUE
+    coverWindows(store.shifts, tz) // keep the loop and the rule in one place
+    val sorted = store.shifts.sortedBy { shiftStartMs(it, tz) }
+    for (sh in sorted) {
+        val start = shiftStartMs(sh, tz)
+        val end = start + (sh.hours * 3_600_000.0).toLong()
+        if (paidUntil == Long.MIN_VALUE || start >= paidUntil) paidUntil = start + DAY_MS
+        while (paidUntil < end) paidUntil += DAY_MS
+    }
+    return paidUntil
 }
 
 /** "00:00" / "14:30" local clock for a moment. */

@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlin.math.abs
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.roundToLong
 import kotlin.math.max
 import kotlin.random.Random
 
@@ -237,6 +238,49 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         live?.let { PlatformEffects.liveChanged(it.start, liveTotalCents(it)) }
     }
 
+    private var lastCoverCheck = 0L
+
+    /**
+     * Insurance renews while a shift is running, at the moment the paid window ends — not at the next
+     * shift's start. The fee that has not been written yet (the shift only becomes an entry when it
+     * ends) is shown immediately as a live expense, so the money never lags behind the driving.
+     */
+    fun ensureLiveCover(now: Long = nowMillis()) {
+        val current = live ?: return
+        if (now - lastCoverCheck < 10_000) return
+        lastCoverCheck = now
+        val fee = (store.settings.profit.grabInsurance * 100).roundToLong()
+        if (fee <= 0) return
+        val renewed = liveRenewedWindows(store, current.start, now)
+        val id = "fee-live-${current.id}"
+        val existing = store.entries.firstOrNull { it.id == id }
+        val want = renewed * fee
+        if (want <= 0) {
+            if (existing != null) {
+                store = store.copy(entries = store.entries.filterNot { it.id == id }, updatedAt = nowIso())
+                saveLocal(store)
+            }
+            return
+        }
+        if (existing?.amount == want) return
+        val entry = Entry(
+            id = id, date = startDate(current.start), type = "expense", cat = "grabfee",
+            amount = want, note = "Grab insurance (renewed)", updated = nowIso(),
+        )
+        store = store.copy(
+            entries = store.entries.filterNot { it.id == id } + entry,
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+    }
+
+    /** Drop the provisional live fee; the finished shift's fee entry replaces it. */
+    private fun clearLiveCover(id: String) {
+        val entryId = "fee-live-$id"
+        if (store.entries.none { it.id == entryId }) return
+        store = store.copy(entries = store.entries.filterNot { it.id == entryId }, updatedAt = nowIso())
+    }
+
     fun pauseLive() {
         val current = live ?: return
         if (isPaused(current)) return
@@ -368,6 +412,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
         live = null
         saveLive(null)
+        clearLiveCover(current.id)
         PlatformEffects.liveChanged(null, 0)
         PlatformEffects.successFeedback()
         if (total <= 0) return@withLock       // nothing earned: nothing to write
@@ -411,6 +456,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     fun discardLive() {
         live = null
         saveLive(null)
+        live?.let { clearLiveCover(it.id) }
         PlatformEffects.liveChanged(null, 0)
     }
 

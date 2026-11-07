@@ -5,8 +5,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * cover-cases.json was produced by the shipping web app: for each awkward case it lists the ids
- * it would charge. Kotlin must agree exactly, or the two apps will bill different days.
+ * cover-cases.json was produced by the shipping web app: for each awkward case it lists the ids it
+ * would charge. Kotlin must agree, with one deliberate exception: when a shift is still running as
+ * the paid window ends, Kotlin renews for that shift (the web app charged the next start instead).
+ * The fixture reflects that rule.
  */
 class CoverCrossCheckTest {
 
