@@ -384,3 +384,16 @@ Routes were device-local on purpose. They can now be reviewed at the desk, **opt
 
 `RouteCryptoTest` covers round-trip, wrong key, tampering and the envelope; `RouteSyncLiveTest` is an
 opt-in end-to-end check against a running server (`BAKI_LIVE_SYNC=1`).
+
+## Signposting pass (v0.17.1)
+
+Reading at a glance is the desktop's only job, so every ambiguous signal got sharpened:
+
+- **Funds**: a shortfall is larger (`subtitleNumeric`), terracotta, and labelled `SHORTFALL`; a surplus
+  stays accent.
+- **Entries**: category chips (top eight by spend) beside the filter, so scanning a category is one click.
+- **Shifts**: the header now carries averages — `avg RM/h`, `avg km` — next to total net.
+- **Routes**: the selected drive gets a deeper inset well and a 3 dp accent spine.
+- **Compare**: changes carry `↑`/`↓` and keep the direction-aware colour.
+- **Year**: idle months drop to 55% opacity; the best month's figure is written in accent.
+- **Settings**: the veil is deeper (0.60 light / 0.70 dark) so the modal is unmistakably the focus.

@@ -114,7 +114,7 @@ fun neuOf(p: BakiPalette): Neu {
         danger = p.down,
         lightAlpha = if (p.dark) 0.30f else 0.75f,
         darkAlpha = if (p.dark) 0.38f else 0.18f,
-        scrim = if (p.dark) Color.Black.copy(alpha = 0.55f) else blend(base, p.onSurface, 0.45f).copy(alpha = 0.42f),
+        scrim = if (p.dark) Color.Black.copy(alpha = 0.70f) else blend(base, p.onSurface, 0.55f).copy(alpha = 0.60f),
     )
 }
 

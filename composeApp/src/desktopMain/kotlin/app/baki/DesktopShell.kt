@@ -594,13 +594,21 @@ private fun FundsBlock(store: Store, month: String, neu: Neu) {
         Row(Modifier.fillMaxWidth().padding(vertical = Space.xxs)) {
             Text(label, color = neu.ink, style = BakiType.label)
             Spacer(Modifier.weight(1f))
+            val delta = accrued - spent
             Text(
-                "RM ${rm(accrued - spent)}",
-                color = if (accrued - spent >= 0) neu.accent else neu.danger,
-                style = BakiType.labelNumeric,
+                "RM ${rm(delta)}",
+                color = if (delta >= 0) neu.accent else neu.danger,
+                style = BakiType.subtitleNumeric,
             )
         }
-        Text("accrued RM ${rm(accrued)} · spent RM ${rm(spent)}", color = neu.muted, style = BakiType.captionNumeric)
+        val delta = accrued - spent
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("accrued RM ${rm(accrued)} · spent RM ${rm(spent)}", color = neu.muted, style = BakiType.captionNumeric)
+            if (delta < 0) {
+                Spacer(Modifier.width(Space.s))
+                Text("SHORTFALL", color = neu.danger, style = BakiType.section)
+            }
+        }
         Spacer(Modifier.height(Space.xs))
     }
 }
@@ -611,8 +619,18 @@ private fun FundsBlock(store: Store, month: String, neu: Neu) {
 internal fun EntriesView(store: Store, month: String) {
     val neu = rememberNeu()
     var query by remember { mutableStateOf("") }
-    val entries = store.entries
-        .filter { it.date.startsWith(month) }
+    var catFilter by remember { mutableStateOf<String?>(null) }
+    val catsById = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
+    val monthEntries = store.entries.filter { it.date.startsWith(month) }
+    val catOptions = remember(monthEntries) {
+        monthEntries.filter { it.type != "income" }
+            .groupBy { it.cat }
+            .map { (id, list) -> id to list.sumOf { it.amount } }
+            .sortedByDescending { it.second }
+            .take(8)
+    }
+    val entries = monthEntries
+        .filter { catFilter == null || it.cat == catFilter }
         .filter { e -> query.isBlank() || (e.cat + " " + e.note).contains(query, ignoreCase = true) }
         .sortedByDescending { it.date }
 
@@ -631,6 +649,13 @@ internal fun EntriesView(store: Store, month: String) {
                     )
                     Spacer(Modifier.weight(1f))
                     Text("read-only · edit on the phone", color = neu.muted, style = BakiType.caption)
+                }
+                Spacer(Modifier.height(Space.m))
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+                    NeuChip(neu, "All", selected = catFilter == null) { catFilter = null }
+                    catOptions.forEach { (id, _) ->
+                        NeuChip(neu, catsById[id]?.name ?: id, selected = catFilter == id) { catFilter = id }
+                    }
                 }
             }
             Spacer(Modifier.height(Space.l))
@@ -662,7 +687,13 @@ internal fun ShiftsView(store: Store, month: String) {
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().padding(vertical = Space.s).verticalScroll(scroll)) {
         SectionCard(neu) {
-        Text("${shifts.size} shifts · net RM ${"%.2f".format(net)}", color = neu.muted, style = BakiType.label)
+        val sumHours = shifts.sumOf { it.hours }
+        val avgRate = if (sumHours > 0.01) net / sumHours else 0.0
+        val avgKm = if (shifts.isNotEmpty()) shifts.sumOf { it.km } / shifts.size else 0.0
+        Text(
+            "${shifts.size} shifts · net RM ${"%.2f".format(net)} · avg RM ${"%.2f".format(avgRate)}/h · avg ${"%.0f".format(avgKm)} km",
+            color = neu.ink, style = BakiType.label,
+        )
         Spacer(Modifier.height(Space.m))
         Row(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
             Head("DATE", Modifier.width(150.dp))
@@ -821,13 +852,23 @@ internal fun YearView(store: Store) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                 row.forEach { (label, t) ->
                     Column(Modifier.weight(1f).padding(vertical = Space.m)) {
+                        val idle = t.entryCount == 0 && t.shiftCount == 0
+                        val best = label == months.maxByOrNull { it.second.net }?.first && !idle
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 monthLabel(label),
-                                color = if (t.entryCount == 0 && t.shiftCount == 0) neu.muted else neu.ink,
+                                color = (if (idle) neu.muted else neu.ink).copy(alpha = if (idle) 0.55f else 1f),
                                 style = BakiType.label, modifier = Modifier.weight(1f),
                             )
-                            Text("RM ${rm(t.net)}", color = neu.muted, style = BakiType.labelNumeric)
+                            Text(
+                                "RM ${rm(t.net)}",
+                                color = when {
+                                    best -> neu.accent
+                                    idle -> neu.muted.copy(alpha = 0.55f)
+                                    else -> neu.ink
+                                },
+                                style = BakiType.labelNumeric,
+                            )
                         }
                         Spacer(Modifier.height(Space.xs))
                         NeuBar(
@@ -902,13 +943,22 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                         val isSel = s.id == selected
                         Row(
                             Modifier.fillMaxWidth()
-                                .then(if (isSel) Modifier.inset(neu, corner = Radius.input) else Modifier)
+                                .then(
+                                    if (isSel) Modifier.inset(neu, corner = Radius.input, offset = Elevation.medium)
+                                    else Modifier,
+                                )
                                 .clip(RoundedCornerShape(Radius.input))
                                 .pointerHoverIcon(PointerIcon.Hand)
                                 .clickable { selected = s.id }
                                 .padding(horizontal = Space.s, vertical = Space.s),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            Box(
+                                Modifier.size(width = 3.dp, height = 26.dp)
+                                    .clip(RoundedCornerShape(Radius.pill))
+                                    .background(if (isSel) neu.accent else androidx.compose.ui.graphics.Color.Transparent),
+                            )
+                            Spacer(Modifier.width(Space.s))
                             Box(
                                 Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill))
                                     .background(if (has) neu.accent else neu.muted.copy(alpha = 0.4f)),
@@ -1014,8 +1064,15 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                         Text(r.label, color = neu.ink, style = BakiType.label, modifier = Modifier.weight(1.2f))
                         Text(r.a, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
                         Text(r.b, color = neu.ink, style = BakiType.labelNumeric, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+                        val label = r.deltaLabel
+                        val arrow = when {
+                            label == null || label == "—" -> ""
+                            label.startsWith("-") -> "↓ "
+                            label.startsWith("+") -> "↑ "
+                            else -> ""
+                        }
                         Text(
-                            r.deltaLabel ?: "—",
+                            "$arrow${label ?: "—"}",
                             color = deltaColor,
                             style = BakiType.labelNumeric,
                             modifier = Modifier.weight(0.9f),
