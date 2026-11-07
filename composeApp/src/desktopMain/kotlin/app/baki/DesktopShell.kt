@@ -68,6 +68,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** The desktop's proportions. Everything derives from these, not from literals in screens. */
@@ -1239,6 +1240,7 @@ private fun NeuField(
     label: String,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
+    masked: Boolean = false,
 ) {
     val neu = rememberNeu()
     val interaction = remember { MutableInteractionSource() }
@@ -1263,6 +1265,8 @@ private fun NeuField(
                     singleLine = true,
                     textStyle = BakiType.label.copy(color = neu.ink),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(neu.accent),
+                    visualTransformation = if (masked) androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    else androidx.compose.ui.text.input.VisualTransformation.None,
                     interactionSource = interaction,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -1276,7 +1280,6 @@ private fun NeuField(
 
 @Composable
 private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
-    val baki = LocalBaki.current
     val neu = rememberNeu()
     val profit = repo.store.settings.profit
     var fuel by remember { mutableStateOf("%.2f".format(profit.fuelPrice)) }
@@ -1285,29 +1288,60 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
     var target by remember { mutableStateOf("%.0f".format(profit.targetRate)) }
     var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
-    val scope = rememberCoroutineScope()
+    var revealKey by remember { mutableStateOf(false) }
+    var hydrated by remember { mutableStateOf(false) }
+    var keyHydrated by remember { mutableStateOf(false) }
 
-    NeuDialog(neu, onDismiss, width = 580.dp) {
+    // autosave: a short settle, then persist; no Save buttons
+    LaunchedEffect(fuel, kml, wear, target) {
+        if (!hydrated) { hydrated = true; return@LaunchedEffect }
+        delay(450)
+        val p = repo.store.settings.profit
+        repo.updateProfit(
+            p.copy(
+                fuelPrice = fuel.toDoubleOrNull() ?: p.fuelPrice,
+                kmPerLitre = kml.toDoubleOrNull()?.takeIf { it > 0.0 } ?: p.kmPerLitre,
+                wearPerKm = wear.toDoubleOrNull() ?: p.wearPerKm,
+                targetRate = target.toDoubleOrNull() ?: p.targetRate,
+            ),
+        )
+    }
+    LaunchedEffect(routeKey) {
+        if (!keyHydrated) { keyHydrated = true; return@LaunchedEffect }
+        delay(450)
+        repo.setRouteSync(routeSync, routeKey)
+    }
+
+    NeuDialog(neu, onDismiss, width = 620.dp) {
         Text("Settings", color = neu.ink, style = BakiType.title)
         Spacer(Modifier.height(Space.l))
+
         Text("COLOUR", color = neu.muted, style = BakiType.section)
-        Spacer(Modifier.height(Space.s))
+        Spacer(Modifier.height(Space.xs))
         NeuSegmented(
             neu,
             listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper", "mist" to "Mist"),
             repo.config.palette,
         ) { repo.setPalette(it) }
         Spacer(Modifier.height(Space.l))
+
         Text("APPEARANCE", color = neu.muted, style = BakiType.section)
-        Spacer(Modifier.height(Space.s))
+        Spacer(Modifier.height(Space.xs))
         NeuSegmented(
             neu,
             listOf("auto" to "Auto", "light" to "Light", "dark" to "Dark"),
             repo.config.themeMode,
         ) { repo.setThemeMode(it) }
+        Spacer(Modifier.height(Space.xs))
+        Text(
+            "Colour picks the palette, Appearance picks light or dark. They are separate axes: Night is a " +
+                "dark palette, so it stays dark even when Appearance is Light.",
+            color = neu.muted, style = BakiType.caption,
+        )
         Spacer(Modifier.height(Space.l))
+
         Text("VEHICLE & TARGET", color = neu.muted, style = BakiType.section)
-        Spacer(Modifier.height(Space.s))
+        Spacer(Modifier.height(Space.xs))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             NeuField(fuel, { fuel = it.filter { c -> c.isDigit() || c == '.' } }, "RM / litre", Modifier.weight(1f))
             NeuField(kml, { kml = it.filter { c -> c.isDigit() || c == '.' } }, "km / litre", Modifier.weight(1f))
@@ -1318,6 +1352,7 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
             NeuField(target, { target = it.filter { c -> c.isDigit() || c == '.' } }, "target RM / hour", Modifier.weight(1f))
         }
         Spacer(Modifier.height(Space.l))
+
         Text("ROUTE TRACES", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.xs))
         Text(
@@ -1325,28 +1360,21 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
             color = neu.muted, style = BakiType.caption,
         )
         Spacer(Modifier.height(Space.s))
-        NeuSegmented(
-            neu,
-            listOf(false to "Off", true to "On"),
-            routeSync,
-        ) { on -> routeSync = on; repo.setRouteSync(on, routeKey) }
+        NeuSegmented(neu, listOf(false to "Off", true to "On"), routeSync) { on ->
+            routeSync = on
+            repo.setRouteSync(on, routeKey)
+        }
         Spacer(Modifier.height(Space.s))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NeuField(routeKey, { routeKey = it }, "shared route key", Modifier.weight(1f))
-            NeuButton(neu, "Save key") { repo.setRouteSync(routeSync, routeKey) }
+            NeuField(routeKey, { routeKey = it }, "shared route key", Modifier.weight(1f), masked = !revealKey)
+            NeuButton(neu, if (revealKey) "Hide" else "Show") { revealKey = !revealKey }
         }
+        Spacer(Modifier.height(Space.xs))
+        Text("Saved automatically as you type.", color = neu.muted, style = BakiType.caption)
         Spacer(Modifier.height(Space.l))
+
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            NeuButton(neu, "Close", onClick = onDismiss)
-            NeuButton(neu, "Save costs", primary = true) {
-                val updated = profit.copy(
-                    fuelPrice = fuel.toDoubleOrNull() ?: profit.fuelPrice,
-                    kmPerLitre = kml.toDoubleOrNull() ?: profit.kmPerLitre,
-                    wearPerKm = wear.toDoubleOrNull() ?: profit.wearPerKm,
-                    targetRate = target.toDoubleOrNull() ?: profit.targetRate,
-                )
-                scope.launch { repo.updateProfit(updated); onDismiss() }
-            }
+            NeuButton(neu, "Close", primary = true, onClick = onDismiss)
         }
     }
 }
