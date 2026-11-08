@@ -1206,6 +1206,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var addingBill by remember { mutableStateOf(false) }
     var unlinkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
     var historyOpen by remember { mutableStateOf(false) }
+    var statementHistoryOpen by remember { mutableStateOf(false) }
+    var notifRefresh by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1525,10 +1527,17 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             ) { Text("Import statement PDFs") }
             Spacer(Modifier.height(Space.xs))
             val weeks = repo.store.statements.size
-            Text(
-                if (weeks == 1) "1 week on file" else "$weeks weeks on file",
-                color = baki.muted, style = BakiType.captionNumeric,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (weeks == 1) "1 week on file" else "$weeks weeks on file",
+                    color = baki.muted, style = BakiType.captionNumeric,
+                )
+                if (weeks > 0) {
+                    TextButton(onClick = { statementHistoryOpen = true }, contentPadding = PaddingValues(0.dp)) {
+                        Text(" · View all weeks", color = baki.primary, style = BakiType.captionStrong )
+                    }
+                }
+            }
             importMsg?.let {
                 Spacer(Modifier.height(Space.s))
                 Text(it, color = if (it.startsWith("Imported")) baki.up else baki.down, style = BakiType.caption)
@@ -1544,6 +1553,24 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     checked = repo.config.statementReminder,
                     onCheckedChange = { repo.setStatementReminder(it) },
                 )
+            }
+            val notificationsBlocked = remember(repo.config.statementReminder, notifRefresh) {
+                repo.config.statementReminder && PlatformEffects.notificationsBlocked()
+            }
+            if (notificationsBlocked) {
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "Notifications are blocked, so the Wednesday reminder cannot fire.",
+                    color = baki.down, style = BakiType.caption,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    TextButton(onClick = { PlatformEffects.openNotificationSettings() }, contentPadding = PaddingValues(0.dp)) {
+                        Text("Open settings", color = baki.primary, style = BakiType.captionStrong )
+                    }
+                    TextButton(onClick = { notifRefresh++ }, contentPadding = PaddingValues(0.dp)) {
+                        Text("Check again", color = baki.primary, style = BakiType.captionStrong )
+                    }
+                }
             }
 
             val latest = repo.store.statements.values.maxByOrNull { it.weekStart }
@@ -1711,7 +1738,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         if (repo.store.statements.isNotEmpty()) {
             SectionTitle("STATEMENT")
             Spacer(Modifier.height(Space.s))
-            StatementCard(repo.store)
+            StatementCard(repo.store, onViewHistory = { statementHistoryOpen = true })
             Spacer(Modifier.height(Space.l))
         }
         SectionTitle("CATEGORIES")
@@ -1875,6 +1902,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         RowCard("Records", "${repo.store.entries.size} entries · ${repo.store.shifts.size} shifts", "", baki.muted)
         Spacer(Modifier.height(Space.s))
         RowCard("Status", repo.status, "", baki.muted)
+    }
+
+    if (statementHistoryOpen) {
+        StatementHistorySheet(repo.store) { statementHistoryOpen = false }
     }
 
     if (confirmReset) {

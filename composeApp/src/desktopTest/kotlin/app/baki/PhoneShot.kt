@@ -135,5 +135,25 @@ class PhoneShot {
         runCatching { repo.addExpense(6_400, "fuel", "Petronas", today) }
         runCatching { repo.addExpense(320, "toll", "MEX", today) }
         runCatching { repo.addExpense(1_200, "wear", "tyre wear", today) }
+        runCatching {
+            repo.saveStatement(
+                Statement(
+                    weekStart = addDays(today, -7),
+                    rangeText = "27 October – 2 November 2026",
+                    income = 507.34, deductions = 37.50, weekly = 469.84,
+                    insuranceCount = 5, importedAt = "2026-11-03T09:12:00Z",
+                ),
+            )
+        }
+        runCatching {
+            repo.saveStatement(
+                Statement(
+                    weekStart = addDays(today, -14),
+                    rangeText = "20–26 October 2026",
+                    income = 482.10, deductions = 30.00, weekly = 452.10,
+                    insuranceCount = 4, importedAt = "2026-10-27T08:44:00Z",
+                ),
+            )
+        }
     }
 }

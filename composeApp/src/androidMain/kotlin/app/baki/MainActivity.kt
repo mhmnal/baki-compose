@@ -67,7 +67,8 @@ class MainActivity : ComponentActivity() {
             else -> null
         } ?: return
         val mime = intent.type ?: runCatching { contentResolver.getType(uri) }.getOrNull()
-        if (mime != "application/pdf") return
+        // some providers hand PDFs over as octet-stream; accept the plausible types and sniff below
+        if (mime != null && mime != "application/pdf" && mime != "application/octet-stream") return
         Thread {
             val bytes = runCatching {
                 contentResolver.openInputStream(uri)?.use { input ->
@@ -84,7 +85,12 @@ class MainActivity : ComponentActivity() {
                     out.toByteArray()
                 }
             }.getOrNull()
-            if (bytes != null) runOnUiThread { SharedStatement.pending = bytes }
+            if (bytes == null) return@Thread
+            if (!looksLikePdf(bytes)) {
+                runOnUiThread { PlatformEffects.notice("That file doesn't look like a PDF.") }
+                return@Thread
+            }
+            runOnUiThread { SharedStatement.pending = bytes }
         }.start()
     }
 

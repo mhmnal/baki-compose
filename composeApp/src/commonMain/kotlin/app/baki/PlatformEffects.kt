@@ -37,6 +37,10 @@ expect object PlatformEffects {
     fun notice(text: String)
     /** Schedule or cancel the weekly Wednesday statement reminder. */
     fun setStatementReminder(enabled: Boolean)
+    /** True when the OS will not deliver notifications (Android 13+ permission denied). */
+    fun notificationsBlocked(): Boolean
+    /** Open this app's notification settings, where the user can allow the reminder. */
+    fun openNotificationSettings()
 }
 
 /** Notification actions arrive as intents; the UI drains this (state, so Compose reacts). */

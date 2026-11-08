@@ -3,13 +3,23 @@ package app.baki
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * End-to-end check of the real pipeline: PDF bytes -> text -> Statement.
  * Skipped unless BAKI_PDF points at a statement, so no personal document enters the repo.
  */
 class PdfPipelineTest {
+
+    @Test
+    fun sniffsPdfHeadersEvenWithLeadingBytes() {
+        assertTrue(looksLikePdf("%PDF-1.7\n".encodeToByteArray()))
+        assertTrue(looksLikePdf(byteArrayOf(0, 0, 0) + "%PDF-1.4".encodeToByteArray()))
+        assertFalse(looksLikePdf("not a pdf".encodeToByteArray()))
+        assertFalse(looksLikePdf(ByteArray(0)))
+    }
 
     @Test
     fun readsARealGrabPdf() {

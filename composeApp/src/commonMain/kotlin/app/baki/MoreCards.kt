@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 /** Read-only view of the last imported Grab statement. */
 @Composable
-fun StatementCard(store: Store) {
+fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
     val baki = LocalBaki.current
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
     Column(
@@ -32,6 +32,65 @@ fun StatementCard(store: Store) {
             Text(st.rangeText, color = baki.muted, style = BakiType.caption )
         }
         Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, style = BakiType.caption )
+        if (onViewHistory != null && store.statements.size > 1) {
+            TextButton(onClick = onViewHistory, contentPadding = PaddingValues(0.dp)) {
+                Text("View all ${store.statements.size} weeks", color = baki.primary, style = BakiType.captionStrong )
+            }
+        }
+    }
+}
+
+/** All imported weekly statements, newest first; week-level reconciliation, no day stamps. */
+@Composable
+fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
+    val baki = LocalBaki.current
+    val rows = store.statements.values.sortedByDescending { it.weekStart }
+    BakiSheet(onDismiss = onDismiss) {
+        Text("Statement history", color = baki.onSurface, style = BakiType.title )
+        Text(
+            "${rows.size} imported week${if (rows.size == 1) "" else "s"} · income and insurance reconciliation",
+            color = baki.muted, style = BakiType.caption,
+        )
+        rows.forEach { st ->
+            val check = statementCheck(store, st)
+            val gap = check.loggedGross / 100.0 - st.income
+            Column(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.surfaceHigh).padding(Space.l),
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        st.rangeText.ifBlank { "Week of ${prettyDate(st.weekStart)}" },
+                        color = baki.onSurface, style = BakiType.labelStrong,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text("RM ${"%.2f".format(st.income)}", color = baki.onSurface, style = BakiType.titleNumeric )
+                }
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    "deductions RM ${"%.2f".format(st.deductions)} · weekly RM ${"%.2f".format(st.weekly)}",
+                    color = baki.muted, style = BakiType.captionNumeric,
+                )
+                Text(
+                    "insurance: app ${check.appInsurance} vs statement ${st.insuranceCount}" +
+                        if (check.insuranceMatches) " ✓" else " — check the cover rule",
+                    color = if (check.insuranceMatches) baki.up else baki.down,
+                    style = BakiType.caption,
+                )
+                if (check.loggedShifts == 0) {
+                    Text("no shifts logged for this week", color = baki.muted, style = BakiType.caption )
+                } else {
+                    Text(
+                        "logged ${check.loggedShifts} shifts · RM ${"%.2f".format(check.loggedGross / 100.0)} · gap RM ${"%.2f".format(gap)}",
+                        color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
+                        style = BakiType.captionNumeric,
+                    )
+                }
+                Text(
+                    "imported ${st.importedAt.take(16).replace('T', ' ')}",
+                    color = baki.muted, style = BakiType.nano,
+                )
+            }
+        }
     }
 }
 
