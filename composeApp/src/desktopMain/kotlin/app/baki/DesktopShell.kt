@@ -298,7 +298,8 @@ private fun ArrowZone(neu: Neu, label: String, rotate: Boolean, onClick: () -> U
         Box(
             Modifier.size(30.dp)
                 .clip(RoundedCornerShape(Radius.pill))
-                .background(if (hovered) neu.accentSoft else neu.base)
+                // no disc at rest: a base-coloured circle over the inset read as a separate button
+                .background(if (hovered) neu.accentSoft else androidx.compose.ui.graphics.Color.Transparent)
                 .hoverable(interaction)
                 .clickable(interactionSource = interaction, indication = null, onClick = onClick)
                 .pointerHoverIcon(PointerIcon.Hand),

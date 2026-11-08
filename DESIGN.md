@@ -743,3 +743,9 @@ Light mode is unchanged. Dark mode now follows the Obsidian Slate brief exactly:
 Theme resolution fix: the desk previously derived dark from the *colour pack*. With a stored `paper`
 pack it stayed light even when Appearance was Dark. The desk is palette-independent, so it now resolves
 `paletteFor("sage", dark)` from the mode; the phone keeps its own packs.
+
+## Stepper arrow discs (v0.31.1)
+
+Each chevron in the month stepper painted `background(neu.base)` over the inset capsule, so the arrows
+read as two separate circular buttons sitting inside the groove. The arrows now paint nothing at rest
+(only a soft accent tint on hover), leaving one continuous sunken capsule with the chevrons carved into it.
