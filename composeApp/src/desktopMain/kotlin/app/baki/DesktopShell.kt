@@ -1205,10 +1205,15 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                         val isSel = s.id == selected
                         Row(
                             Modifier.fillMaxWidth()
+                                // a little margin keeps the inset ring clear of the card edge, where it
+                                // used to clip into a dark strip
+                                .padding(horizontal = Space.xs)
                                 .then(
-                                    // selection is a state, not an input: a tint, not a cavity. The inset
-                                    // ring showed as a dark strip along the row's left edge.
-                                    if (isSel) Modifier.background(neu.accentSoft, RoundedCornerShape(Radius.input))
+                                    // selection is tactile: the row is pressed into the surface
+                                    if (isSel) Modifier.inset(
+                                        neu, corner = Radius.input, offset = Elevation.inset,
+                                        fill = blend(neu.base, neu.dark, 0.06f),
+                                    )
                                     else Modifier,
                                 )
                                 .clip(RoundedCornerShape(Radius.input))
@@ -1217,11 +1222,7 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                                 .padding(horizontal = Space.s, vertical = Space.s),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Box(
-                                Modifier.size(width = 3.dp, height = 26.dp)
-                                    .clip(RoundedCornerShape(Radius.pill))
-                                    .background(if (isSel) neu.accent else androidx.compose.ui.graphics.Color.Transparent),
-                            )
+                            Box(Modifier.size(width = 3.dp, height = 26.dp))
                             Spacer(Modifier.width(Space.s))
                             Box(
                                 Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill))

@@ -419,7 +419,10 @@ fun <T> NeuSegmented(
                 Box(
                     Modifier
                         .then(
-                            if (on) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset, fill = neu.accent)
+                            if (on) Modifier.inset(
+                                neu, corner = 50.dp, offset = Elevation.inset,
+                                fill = blend(neu.base, neu.dark, 0.06f),
+                            )
                             else Modifier,
                         )
                         .clip(RoundedCornerShape(Radius.pill))
@@ -429,7 +432,7 @@ fun <T> NeuSegmented(
                 ) {
                     Text(
                         label,
-                        color = if (on) neu.onAccent else neu.muted,
+                        color = if (on) neu.ink else neu.muted,
                         style = if (on) BakiType.labelStrong else BakiType.label,
                     )
                 }
@@ -450,7 +453,11 @@ fun NeuChip(
     Box(
         modifier
             .then(
-                if (selected) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset, fill = neu.accent)
+                // selected is a pressed state: a slightly darker face sunk into the surface, not a colour badge
+                if (selected) Modifier.inset(
+                    neu, corner = 50.dp, offset = Elevation.inset,
+                    fill = blend(neu.base, neu.dark, 0.06f),
+                )
                 else Modifier.raised(neu, corner = 50.dp, offset = Elevation.control),
             )
             .clip(RoundedCornerShape(Radius.pill))
@@ -459,7 +466,7 @@ fun NeuChip(
             .heightIn(min = 32.dp)
             .padding(horizontal = Space.m, vertical = Space.xs),
     ) {
-        Text(label, color = if (selected) neu.onAccent else neu.ink, style = BakiType.label)
+        Text(label, color = neu.ink, style = if (selected) BakiType.labelStrong else BakiType.label)
     }
 }
 

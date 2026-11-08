@@ -716,3 +716,13 @@ The rulebook also clarified why the header and rail were raised: they were previ
   and edge labels never sit on the inner shadow. Text fields and empty states got the same 16dp inner
   padding because they also hold long text inside a sunken well.
 - `ChartBayTest` guards the shared depth and the 16dp padding.
+
+## Selection is depth, not colour (v0.30)
+
+Selected controls are pressed into the surface instead of filled with an accent:
+
+- active tab (segmented thumb), active filter chip, and the selected drive in Routes all use an inset
+  with a face darkened by 6% toward the shade, plus bold ink. No accent fill, no accent bar.
+- the Routes row keeps a 4dp side margin so its inset ring is not clipped into a dark strip at the card edge.
+- primary CTAs remain accent-filled + soft drop (they are actions, not selections); focus rings stay
+  Electric Blue.
