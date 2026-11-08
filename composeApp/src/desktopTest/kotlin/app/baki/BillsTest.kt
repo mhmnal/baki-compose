@@ -115,3 +115,25 @@ class SyncChangeTest {
         assertEquals(1, merged.bills.size)
     }
 }
+
+
+class BillTotalsTest {
+    private val rent = Bill("b1", "Rent", 27_000, "monthly", "rent")
+    private val google = Bill("b2", "Google", 10_000, "annual", "subscriptions", anchorMonth = 1)
+    private val car = Bill("b3", "Car loan", 20_000, "monthly", "carloan", optional = true)
+    private val old = Bill("b4", "Cancelled", 5_000, "monthly", "subscriptions", active = false)
+
+    @Test
+    fun theMonthTotalCountsOnlyWhatIsDue() {
+        val s = Store(bills = listOf(rent, google, car, old))
+        assertEquals(27_000, Bills.committed(s, "2026-11"))
+        assertEquals(37_000, Bills.committed(s, "2026-01"))   // Google's month
+    }
+
+    @Test
+    fun averageIncludesAnnualsSpreadOverTheYear() {
+        val s = Store(bills = listOf(rent, google, car, old))
+        // 270 + 100/12 = 278.33; optional and inactive are excluded
+        assertEquals(27_833, Bills.averageMonthly(s))
+    }
+}

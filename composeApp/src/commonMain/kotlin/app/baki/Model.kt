@@ -60,6 +60,8 @@ data class Shift(
     /** annual bills renew in this month (1..12) */
     val anchorMonth: Int? = null,
     val updated: String = "",
+    /** soft delete: bills have no tombstone, so removal is a flag the server keeps */
+    val active: Boolean = true,
 )
 
 /** "This bill's 2026-12 (or 2026) period was paid by this entry." */

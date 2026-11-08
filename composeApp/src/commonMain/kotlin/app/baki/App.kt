@@ -1067,6 +1067,115 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
 }
 
 @Composable
+private fun BillEditorDialog(
+    existing: Bill?,
+    categories: List<Cat>,
+    baki: BakiPalette,
+    canDelete: Boolean,
+    onSave: (Bill) -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
+    var annual by remember { mutableStateOf(existing?.cadence == "annual") }
+    var category by remember { mutableStateOf(existing?.category ?: categories.firstOrNull()?.id ?: "other") }
+    var business by remember { mutableStateOf(existing?.business ?: false) }
+    var optional by remember { mutableStateOf(existing?.optional ?: false) }
+    var anchor by remember { mutableStateOf(existing?.anchorMonth?.toString() ?: "1") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = baki.container,
+        title = { Text(if (existing == null) "New bill" else "Edit bill", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it }, singleLine = true,
+                    label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                )
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    singleLine = true, label = { Text("Amount RM") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Monthly", color = baki.onSurface, style = BakiType.label)
+                    Switch(checked = annual, onCheckedChange = { annual = it })
+                    Text("Annual", color = baki.onSurface, style = BakiType.label)
+                }
+                if (annual) {
+                    OutlinedTextField(
+                        value = anchor,
+                        onValueChange = { anchor = it.filter { c -> c.isDigit() }.take(2) },
+                        singleLine = true, label = { Text("Renews in month (1-12)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                    )
+                }
+                Text("Category", color = baki.muted, style = BakiType.caption)
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                ) {
+                    categories.forEach { c ->
+                        val on = c.id == category
+                        Box(
+                            Modifier.clip(RoundedCornerShape(Radius.pill))
+                                .background(if (on) baki.primaryContainer else baki.container)
+                                .clickable { category = c.id }
+                                .padding(horizontal = Space.m, vertical = Space.xs),
+                        ) {
+                            Text(c.name, color = if (on) baki.onPrimaryContainer else baki.onSurface, style = BakiType.label)
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Business (tax deductible)", color = baki.onSurface, style = BakiType.label)
+                    Spacer(Modifier.weight(1f))
+                    Switch(checked = business, onCheckedChange = { business = it })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Optional (pay from leftovers)", color = baki.onSurface, style = BakiType.label)
+                    Spacer(Modifier.weight(1f))
+                    Switch(checked = optional, onCheckedChange = { optional = it })
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    onSave(
+                        Bill(
+                            id = existing?.id ?: "",
+                            name = name,
+                            amount = cents,
+                            cadence = if (annual) "annual" else "monthly",
+                            category = category,
+                            business = business,
+                            optional = optional,
+                            anchorMonth = if (annual) anchor.toIntOrNull()?.coerceIn(1, 12) ?: 1 else null,
+                        ),
+                    )
+                },
+                enabled = name.isNotBlank() && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            Row {
+                if (existing != null) {
+                    TextButton(onClick = onDelete, enabled = canDelete) { Text("Delete", color = if (canDelete) baki.down else baki.muted) }
+                }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
+    )
+}
+
+@Composable
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val baki = LocalBaki.current
     var url by remember { mutableStateOf(repo.config.serverUrl) }
@@ -1075,6 +1184,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var editingProfit by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var linkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
+    var editingBill by remember { mutableStateOf<Bill?>(null) }
+    var addingBill by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1157,7 +1268,20 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     color = baki.muted, style = BakiType.caption,
                 )
             } else {
-                Text("${monthLabel(current)} · $covered of ${committed.size} covered", color = baki.onSurface, style = BakiType.bodyStrong)
+                val committedTotal = Bills.committed(repo.store, current)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${monthLabel(current)} · RM ${"%.2f".format(committedTotal / 100.0)} committed",
+                            color = baki.onSurface, style = BakiType.bodyStrong,
+                        )
+                        Text(
+                            "$covered of ${committed.size} covered · average RM ${"%.2f".format(Bills.averageMonthly(repo.store) / 100.0)}/month incl. annual",
+                            color = baki.muted, style = BakiType.caption,
+                        )
+                    }
+                    TextButton(onClick = { addingBill = true }) { Text("Add", color = baki.primary, style = BakiType.label) }
+                }
             }
             Text(
                 "Pay a month before it ends and it counts as covered; if it is already covered, cover the next one.",
@@ -1168,7 +1292,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 val period = Bills.periodOf(bill, current)
                 val isPaid = Bills.isCovered(repo.store, bill, period)
                 Row(Modifier.fillMaxWidth().padding(vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
+                    Column(
+                        Modifier.weight(1f).clickable { editingBill = bill },
+                    ) {
                         Text(bill.name, color = baki.onSurface, style = BakiType.label)
                         Text(
                             "RM ${"%.2f".format(bill.amount / 100.0)} · ${if (bill.cadence == "annual") "annual" else "monthly"}",
@@ -1223,6 +1349,25 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
         }
+            if (addingBill || editingBill != null) {
+                val existing = editingBill
+                BillEditorDialog(
+                    existing = existing,
+                    categories = repo.store.settings.cats.catsOut,
+                    baki = baki,
+                    canDelete = existing != null && repo.store.billPayments.none { it.billId == existing.id },
+                    onSave = { bill ->
+                        scope.launch { repo.saveBill(bill) }
+                        addingBill = false
+                        editingBill = null
+                    },
+                    onDelete = {
+                        existing?.let { b -> scope.launch { repo.deleteBill(b.id) } }
+                        editingBill = null
+                    },
+                    onDismiss = { addingBill = false; editingBill = null },
+                )
+            }
             linkTarget?.let { (bill, period) ->
                 val candidates = Bills.linkCandidates(repo.store, bill, period)
                 AlertDialog(

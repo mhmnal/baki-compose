@@ -694,8 +694,12 @@ private fun BillsBlock(store: Store, month: String, neu: Neu) {
     Text("BILLS", color = neu.muted, style = BakiType.section)
     Spacer(Modifier.height(Space.s))
     Text(
-        "$paid of ${committed.size} covered · RM ${rm(committed.sumOf { it.amount })}/month",
+        "RM ${rm(Bills.committed(store, month))} due this month · $paid of ${committed.size} covered",
         color = neu.ink, style = BakiType.labelNumeric,
+    )
+    Text(
+        "average RM ${rm(Bills.averageMonthly(store))}/month incl. annual",
+        color = neu.muted, style = BakiType.caption,
     )
     val nextOpen = Bills.nextOpenMonth(store, month)
     Text("next open month: ${monthLabel(nextOpen)}", color = neu.muted, style = BakiType.caption)

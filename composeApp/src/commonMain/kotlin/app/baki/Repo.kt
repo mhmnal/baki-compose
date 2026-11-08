@@ -170,6 +170,43 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         runCatching { pushWithTombs(emptyList()) }
     }
 
+    /** Adds a bill, or updates one by id. Amounts are cents; an empty id means "new". */
+    suspend fun saveBill(bill: Bill): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return false
+        val id = bill.id.ifBlank { newId("bill") }
+        val clean = bill.copy(
+            id = id,
+            name = bill.name.trim().take(60),
+            amount = bill.amount.coerceAtLeast(0),
+            category = bill.category.ifBlank { "other" },
+            anchorMonth = bill.anchorMonth?.takeIf { it in 1..12 },
+            updated = nowIso(),
+            active = true,
+        )
+        if (clean.name.isBlank()) return false
+        store = store.copy(
+            bills = store.bills.filterNot { it.id == id } + clean,
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+        true
+    }
+
+    /** Soft-deletes: the server keeps the record (with the flag) so the removal syncs. */
+    suspend fun deleteBill(id: String): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return false
+        if (store.billPayments.any { it.billId == id }) return false   // keep its history
+        val existing = store.bills.firstOrNull { it.id == id } ?: return false
+        store = store.copy(
+            bills = store.bills.map { if (it.id == id) existing.copy(active = false, updated = nowIso()) else it },
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+        true
+    }
+
     /** Pays one bill for a period: an expense entry dated today plus the link that marks it covered. */
     suspend fun payBill(billId: String, period: String, date: String = todayIso(), note: String = ""): Boolean =
         mutex.withLock { payBillLocked(billId, period, date, note) }

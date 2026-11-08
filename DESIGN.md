@@ -607,3 +607,16 @@ away — the data had arrived and been discarded.
 `changed` is now `merged != store`, a full data-class comparison, so any field a future version adds is
 saved too. `SyncChangeTest` guards the bills-only case. The Bills card also shows a "No bills loaded yet
 · tap Sync now" state instead of inventing a far-future month for the settle button.
+
+## Bill editor and monthly commitments (v0.23)
+
+- **Add / edit / delete** from the Bills card: name, amount, monthly or annual (with renewal month),
+  category chosen from the existing categories, a **business** flag for the tax pack, and an
+  **optional** flag for leftover goals. Tapping a bill opens it for editing.
+- Deletion is a **soft delete** (`active = false`), because bills have no tombstone on the server; the
+  flag syncs and the bill disappears from every list. A bill with payments cannot be deleted.
+- The card header now states the month's commitments: `November 2026 · RM 387.50 committed`, the
+  average including annuals (`RM 395.83/month`), and `0 of 3 covered`. The desk shows the same two
+  figures in its BILLS block.
+- `Bills.committed()` counts active, non-optional bills falling due in that month; `averageMonthly()`
+  spreads annual bills over twelve months.

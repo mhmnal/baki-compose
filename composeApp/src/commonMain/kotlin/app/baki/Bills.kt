@@ -25,6 +25,18 @@ object Bills {
     fun fallsIn(bill: Bill, monthLabel: String): Boolean =
         bill.cadence == "monthly" || bill.anchorMonth == monthLabel.substring(5, 7).toInt()
 
+    /** What this month actually asks for: every active, non-optional bill falling due in it. */
+    fun committed(store: Store, monthLabel: String): Long =
+        due(store, monthLabel).sumOf { it.amount }
+
+    /** The month's commitments including the annual bills spread over twelve months. */
+    fun averageMonthly(store: Store): Long {
+        val active = store.bills.filter { it.active && it.optional.not() }
+        val monthly = active.filter { it.cadence == "monthly" }.sumOf { it.amount }
+        val annual = active.filter { it.cadence == "annual" }.sumOf { it.amount }
+        return monthly + annual / 12
+    }
+
     fun isCovered(store: Store, bill: Bill, period: String): Boolean =
         store.billPayments.any { it.billId == bill.id && it.period == period }
 
@@ -33,7 +45,7 @@ object Bills {
 
     /** Committed (non-optional) bills for a month, whether or not they are paid. */
     fun due(store: Store, monthLabel: String): List<Bill> =
-        store.bills.filter { it.optional.not() && fallsIn(it, monthLabel) }
+        store.bills.filter { it.active && it.optional.not() && fallsIn(it, monthLabel) }
 
     fun unpaid(store: Store, monthLabel: String): List<Bill> =
         due(store, monthLabel).filter { !isCovered(store, it, periodOf(it, monthLabel)) }
