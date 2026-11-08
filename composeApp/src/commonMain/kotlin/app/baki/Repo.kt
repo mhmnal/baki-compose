@@ -171,6 +171,40 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         runCatching { pushWithTombs(emptyList()) }
     }
 
+    /** Pays one bill for a period: an expense entry dated today plus the link that marks it covered. */
+    suspend fun payBill(billId: String, period: String, date: String = todayIso(), note: String = ""): Boolean =
+        mutex.withLock { payBillLocked(billId, period, date, note) }
+
+    private fun payBillLocked(billId: String, period: String, date: String, note: String): Boolean {
+        if (config.allowWrites.not()) return false
+        val bill = store.bills.firstOrNull { it.id == billId } ?: return false
+        if (store.billPayments.any { it.billId == billId && it.period == period }) return false
+        val now = nowIso()
+        val entry = Entry(
+            id = newId("e"), date = date, type = "expense", cat = bill.category,
+            amount = bill.amount, note = note.ifBlank { "${bill.name} · $period" }, updated = now,
+        )
+        store = store.copy(
+            entries = store.entries + entry,
+            billPayments = store.billPayments + BillPayment(billId, period, bill.amount, entry.id, date, now),
+            updatedAt = now,
+        )
+        saveLocal(store)
+        return true
+    }
+
+    /** Settles every committed bill still open for [monthLabel]. Returns how many were paid. */
+    suspend fun settleBills(monthLabel: String, date: String = todayIso()): Int = mutex.withLock {
+        if (config.allowWrites.not()) return 0
+        val open = Bills.unpaid(store, monthLabel)
+        var n = 0
+        open.forEach { bill ->
+            if (payBillLocked(bill.id, Bills.periodOf(bill, monthLabel), date, "")) n++
+        }
+        if (n > 0) runCatching { pushWithTombs(emptyList()) }
+        n
+    }
+
     suspend fun addExpense(amountCents: Long, cat: String, note: String, date: String, odo: Int? = null) =
         addEntry("expense", amountCents, cat, note, date, odo)
 

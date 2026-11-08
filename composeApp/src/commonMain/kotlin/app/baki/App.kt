@@ -1142,6 +1142,70 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             ) { Text("Save route key") }
         }
         Spacer(Modifier.height(Space.l))
+        SectionTitle("BILLS")
+        Spacer(Modifier.height(Space.s))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+            val current = Bills.monthPeriod(todayIso())
+            val target = Bills.nextOpenMonth(repo.store, current)
+            val committed = Bills.due(repo.store, current)
+            val covered = committed.count { Bills.isCovered(repo.store, it, Bills.periodOf(it, current)) }
+            Text("${monthLabel(current)} · $covered of ${committed.size} covered", color = baki.onSurface, style = BakiType.bodyStrong)
+            Text(
+                "Pay a month before it ends and it counts as covered; if it is already covered, cover the next one.",
+                color = baki.muted, style = BakiType.caption,
+            )
+            Spacer(Modifier.height(Space.m))
+            committed.forEach { bill ->
+                val period = Bills.periodOf(bill, current)
+                val isPaid = Bills.isCovered(repo.store, bill, period)
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(bill.name, color = baki.onSurface, style = BakiType.label)
+                        Text(
+                            "RM ${"%.2f".format(bill.amount / 100.0)} · ${if (bill.cadence == "annual") "annual" else "monthly"}",
+                            color = baki.muted, style = BakiType.captionNumeric,
+                        )
+                    }
+                    if (isPaid) {
+                        Text("covered ${Bills.paidOn(repo.store, bill, period) ?: ""}", color = baki.up, style = BakiType.caption)
+                    } else {
+                        OutlinedButton(
+                            onClick = { scope.launch { repo.payBill(bill.id, period) } },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
+                            border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
+                        ) { Text("Mark paid") }
+                    }
+                }
+            }
+            Spacer(Modifier.height(Space.s))
+            Button(
+                onClick = { scope.launch { repo.settleBills(target) } },
+                colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
+                enabled = Bills.unpaid(repo.store, target).isNotEmpty(),
+            ) { Text("Settle all for ${monthLabel(target)}") }
+
+            // optional goals: only when the month actually leaves something over
+            val net = monthTotals(repo.store, current).net
+            repo.store.bills.filter { it.optional }.forEach { bill ->
+                Spacer(Modifier.height(Space.m))
+                val paid = Bills.isCovered(repo.store, bill, Bills.periodOf(bill, current))
+                Text(
+                    "leftover this month: RM ${"%.2f".format(net / 100.0)}",
+                    color = baki.muted, style = BakiType.captionNumeric,
+                )
+                if (paid) {
+                    Text("${bill.name} covered", color = baki.up, style = BakiType.caption)
+                } else {
+                    OutlinedButton(
+                        onClick = { scope.launch { repo.payBill(bill.id, Bills.periodOf(bill, current)) } },
+                        enabled = net >= bill.amount,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
+                        border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
+                    ) { Text("Pay ${bill.name} · RM ${"%.0f".format(bill.amount / 100.0)}") }
+                }
+            }
+        }
+        Spacer(Modifier.height(Space.l))
         SectionTitle("WEEKLY STATEMENT")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {

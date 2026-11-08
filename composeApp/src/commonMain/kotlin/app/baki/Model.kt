@@ -44,6 +44,35 @@ data class Shift(
     val sample: Boolean? = null,
 )
 
+/** A recurring commitment. Its payment is an ordinary expense plus a [BillPayment] link. */
+@Serializable data class Bill(
+    val id: String,
+    val name: String,
+    /** cents */
+    val amount: Long,
+    /** "monthly" or "annual" */
+    val cadence: String = "monthly",
+    val category: String,
+    /** deductible on the tax pack (phone, subscriptions) */
+    val business: Boolean = false,
+    /** a leftover goal, never a due bill (e.g. the car loan the family covers) */
+    val optional: Boolean = false,
+    /** annual bills renew in this month (1..12) */
+    val anchorMonth: Int? = null,
+    val updated: String = "",
+)
+
+/** "This bill's 2026-12 (or 2026) period was paid by this entry." */
+@Serializable data class BillPayment(
+    val billId: String,
+    /** "YYYY-MM" for monthly, "YYYY" for annual */
+    val period: String,
+    val amount: Long,
+    val entryId: String,
+    val paidAt: String,
+    val updated: String = "",
+)
+
 @Serializable data class Cat(val id: String, val name: String, val icon: String)
 
 @Serializable
@@ -113,6 +142,9 @@ data class Store(
     val statements: Map<String, Statement> = emptyMap(),
     val settings: Settings = Settings(),
     val tomb: Tomb = Tomb(),
+    /** recurring commitments; payments link to ordinary expense entries */
+    val bills: List<Bill> = emptyList(),
+    val billPayments: List<BillPayment> = emptyList(),
 )
 
 val BakiJson = Json {

@@ -412,6 +412,8 @@ private fun Overview(
                     Spacer(Modifier.height(Space.l))
                     FundsBlock(store, month, neu)
                     Spacer(Modifier.height(Space.l))
+                    BillsBlock(store, month, neu)
+                    Spacer(Modifier.height(Space.l))
                     Spacer(Modifier.height(Space.xs))
                     Spacer(Modifier.height(Space.l))
                     week?.let { (start, r) ->
@@ -683,6 +685,35 @@ private fun CategoryBlock(store: Store, month: String, neu: Neu) {
     }
 }
 
+
+@Composable
+private fun BillsBlock(store: Store, month: String, neu: Neu) {
+    val committed = Bills.due(store, month)
+    if (committed.isEmpty() && store.bills.none { it.optional }) return
+    val paid = committed.count { Bills.isCovered(store, it, Bills.periodOf(it, month)) }
+    Text("BILLS", color = neu.muted, style = BakiType.section)
+    Spacer(Modifier.height(Space.s))
+    Text(
+        "$paid of ${committed.size} covered · RM ${rm(committed.sumOf { it.amount })}/month",
+        color = neu.ink, style = BakiType.labelNumeric,
+    )
+    val nextOpen = Bills.nextOpenMonth(store, month)
+    Text("next open month: ${monthLabel(nextOpen)}", color = neu.muted, style = BakiType.caption)
+    // optional goals are paid from what the month leaves over
+    store.bills.filter { it.optional }.forEach { bill ->
+        val net = monthTotals(store, month).net
+        val covered = Bills.isCovered(store, bill, Bills.periodOf(bill, month))
+        Text(
+            if (covered) "${bill.name}: covered" else "leftover RM ${rm(net)} · ${bill.name} RM ${rm(bill.amount)}",
+            color = when {
+                covered -> neu.up
+                net >= bill.amount -> neu.ink
+                else -> neu.muted
+            },
+            style = BakiType.captionNumeric,
+        )
+    }
+}
 
 @Composable
 private fun FundsBlock(store: Store, month: String, neu: Neu) {

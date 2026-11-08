@@ -32,8 +32,8 @@ data class TaxYear(
 }
 
 private val VEHICLE_CATS = setOf("fuel", "toll", "parking", "carwash", "maintenance")
-private val BUSINESS_CATS = setOf("phone", "grabfee", "roadtax")
-private val NEVER = setOf("food", "other")
+private val BUSINESS_CATS = setOf("phone", "grabfee", "roadtax", "subscriptions")
+private val NEVER = setOf("food", "other", "rent", "carloan")
 
 fun taxYear(store: Store, year: Int, totalKmInput: Double? = null): TaxYear {
     val y = year.toString()

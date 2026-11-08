@@ -46,6 +46,13 @@ fun mergeStores(
             cats = Cats(catsIn.values.toList(), catsOut.values.toList()),
             profit = b.settings.profit,
         ),
+        // bills merge by id (newest wins); a payment is unique per bill+period
+        bills = (a.bills + b.bills)
+            .groupBy { it.id }
+            .map { (_, list) -> list.maxByOrNull { it.updated }!! },
+        billPayments = (a.billPayments + b.billPayments)
+            .groupBy { it.billId to it.period }
+            .map { (_, list) -> list.maxByOrNull { it.updated }!! },
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),

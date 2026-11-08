@@ -561,3 +561,23 @@ Year → **Tax pack** produces the Borang B picture from the records the app alr
 - net business income, printable HTML (A4) and CSV.
 
 `taxYear()` is pure and tested; `taxPackHtml`/`taxPackCsv` are rendered from it.
+
+## Bills (v0.22)
+
+Recurring commitments tracked by **period**, not due date, so a month can be settled before it starts:
+
+- `Bill` (monthly or annual, amount, category, business flag, optional goal) and `BillPayment` (links a
+  period to the ordinary expense entry created when it is paid) live in the store and sync; the server
+  whitelists and merges both.
+- Paying a bill creates a normal expense dated **the day you paid**, with a note naming the period;
+  the payment link marks that period covered. Paying in November for December still records November cash.
+- The phone's Bills card shows what is covered this month, lets you mark each bill paid, and has one
+  **Settle all for <month>** action that pays every open committed bill for that month. When a month is
+  fully covered it offers the next one, and so on (prepay ahead).
+- Optional bills (the car loan the family covers) are never due and never in the survival total; they
+  appear only when the month's net can absorb them.
+- Tax: subscriptions and phone are business costs; rent and car-loan principal are never deductible
+  (LHDN allows capital allowance on the vehicle, not the loan principal).
+
+Seeded: Rent 270 monthly (personal), Spotify 17.50 monthly (business), CelcomDigi 100 monthly
+(business), Google 100 annual in January (business), Car loan 200 monthly (optional).
