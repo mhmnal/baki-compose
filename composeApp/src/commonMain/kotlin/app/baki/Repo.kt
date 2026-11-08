@@ -331,13 +331,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         date: String, start: String, hours: Double, km: Double,
         grossCents: Long, extraCents: Long = 0, note: String = "",
         odoStart: Double? = null, odoEnd: Double? = null,
+        reimbursedTolls: Boolean = false,
     ) = mutex.withLock {
         if (blocked()) return@withLock
         val charge = draftCoverCharge(store, date, start)
         val shift = Shift(
             id = newId("s"), date = date, start = start, hours = hours, km = km,
-            gross = grossCents, extra = extraCents, grabFee = charge, note = note,
-            odoStart = odoStart, odoEnd = odoEnd, updated = nowIso(),
+            gross = grossCents, extra = extraCents, reimbursedTolls = reimbursedTolls,
+            grabFee = charge, note = note, odoStart = odoStart, odoEnd = odoEnd, updated = nowIso(),
         )
         // recompute over the whole timeline so earlier shifts stay correct
         val withShift = store.copy(shifts = store.shifts + shift, updatedAt = nowIso())
@@ -607,7 +608,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun updateShift(
         shift: Shift, date: String, start: String, hours: Double, km: Double,
         grossCents: Long, extraCents: Long, note: String, kmPerLitre: Double?,
-        odoStart: Double? = null, odoEnd: Double? = null,
+        odoStart: Double? = null, odoEnd: Double? = null, reimbursedTolls: Boolean = false,
     ) = mutex.withLock {
         if (blocked()) return@withLock
         // the driver replaced the tracked km with the car's own figure: learn from it
@@ -617,7 +618,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         val edited = shift.copy(
             date = date, start = start, hours = hours, km = km, gross = grossCents, extra = extraCents,
-            note = note, kmPerLitre = kmPerLitre, odoStart = odoStart, odoEnd = odoEnd, updated = nowIso(),
+            reimbursedTolls = reimbursedTolls, note = note, kmPerLitre = kmPerLitre,
+            odoStart = odoStart, odoEnd = odoEnd, updated = nowIso(),
         )
         store = store.copy(
             shifts = store.shifts.map { if (it.id == shift.id) edited else it },

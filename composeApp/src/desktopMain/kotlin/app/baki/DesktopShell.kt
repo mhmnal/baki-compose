@@ -381,11 +381,11 @@ private fun Overview(
             SectionCard(neu) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) {
-                        Text("NET THIS MONTH", color = neu.muted, style = BakiType.section)
+                        Text("RECORDED NET THIS MONTH", color = neu.muted, style = BakiType.section)
                         EasedMoney(t.net, neu.ink, BakiType.displayNumeric)
                         Spacer(Modifier.height(Space.xs))
                         Text(
-                            "${t.entryCount} entries · ${t.shiftCount} shifts · after all costs",
+                            "${t.entryCount} entries · ${t.shiftCount} shifts · recorded, not operating",
                             color = neu.muted, style = BakiType.labelNumeric,
                         )
                     }

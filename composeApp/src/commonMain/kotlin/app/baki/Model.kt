@@ -36,6 +36,8 @@ data class Shift(
     val gross: Long = 0,
     val incentive: Long = 0,
     val extra: Long = 0,
+    /** Grab paid these tolls back; the amount stays recorded but is not an operating cost. */
+    val reimbursedTolls: Boolean = false,
     @SerialName("kmPerLitre") val kmPerLitre: Double? = null,
     val grabFee: Long? = null,
     val note: String = "",

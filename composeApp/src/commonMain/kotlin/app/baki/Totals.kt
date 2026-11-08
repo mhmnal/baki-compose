@@ -12,22 +12,51 @@ data class Totals(val income: Long, val expense: Long, val entryCount: Int, val 
     val net: Long get() = income - expense
 }
 
+/** The operating truth: shift earnings after accrued running costs, never ledger fee entries. */
+data class OperatingTotals(
+    val earnings: Long,
+    val costs: Long,
+    val net: Long,
+    val hours: Double,
+    val shiftCount: Int,
+) {
+    val perHour: Double? get() = if (hours > 0.01) net / 100.0 / hours else null
+}
+
+private fun operatingFor(store: Store, shifts: List<Shift>): OperatingTotals {
+    val cfg = store.settings.profit
+    val rows = shifts.map { shiftMetrics(it, cfg, overheadPerHour(store, it.date.take(7))) }
+    val earnings = cents(rows.sumOf { it.gross })
+    val net = cents(rows.sumOf { it.net })
+    return OperatingTotals(earnings, earnings - net, net, rows.sumOf { it.hrs }, rows.size)
+}
+
+fun dayOperating(store: Store, date: String): OperatingTotals =
+    operatingFor(store, store.shifts.filter { it.date == date })
+
+fun monthOperating(store: Store, month: String): OperatingTotals =
+    operatingFor(store, store.shifts.filter { it.date.startsWith(month) })
+
 fun entriesOn(store: Store, date: String): List<Entry> = store.entries.filter { it.date == date }
 fun shiftsOn(store: Store, date: String): List<Shift> = store.shifts.filter { it.date == date }
 
 fun dayTotals(store: Store, date: String): Totals {
     val list = entriesOn(store, date)
     val shifts = shiftsOn(store, date)
-    val income = list.filter { it.type == "income" }.sumOf { it.amount } + shifts.sumOf { it.gross }
-    val expense = list.filter { it.type != "income" }.sumOf { it.amount } + shifts.sumOf { it.extra }
+    val income = list.filter { it.type == "income" }.sumOf { it.amount } +
+        shifts.sumOf { it.gross + it.incentive }
+    val expense = list.filter { it.type != "income" }.sumOf { it.amount } +
+        shifts.sumOf { if (it.reimbursedTolls) 0L else it.extra }
     return Totals(income, expense, list.size, shifts.size)
 }
 
 fun monthTotals(store: Store, month: String): Totals {
     val list = store.entries.filter { it.date.startsWith(month) }
     val shifts = store.shifts.filter { it.date.startsWith(month) }
-    val income = list.filter { it.type == "income" }.sumOf { it.amount } + shifts.sumOf { it.gross }
-    val expense = list.filter { it.type != "income" }.sumOf { it.amount } + shifts.sumOf { it.extra }
+    val income = list.filter { it.type == "income" }.sumOf { it.amount } +
+        shifts.sumOf { it.gross + it.incentive }
+    val expense = list.filter { it.type != "income" }.sumOf { it.amount } +
+        shifts.sumOf { if (it.reimbursedTolls) 0L else it.extra }
     return Totals(income, expense, list.size, shifts.size)
 }
 
@@ -95,8 +124,10 @@ fun weekTotals(store: Store, startIso: String): Totals {
     val days = (0 until 7).map { addDays(startIso, it) }
     val entries = store.entries.filter { it.date in days }
     val shifts = store.shifts.filter { it.date in days }
-    val income = entries.filter { it.type == "income" }.sumOf { it.amount } + shifts.sumOf { it.gross }
-    val expense = entries.filter { it.type != "income" }.sumOf { it.amount } + shifts.sumOf { it.extra }
+    val income = entries.filter { it.type == "income" }.sumOf { it.amount } +
+        shifts.sumOf { it.gross + it.incentive }
+    val expense = entries.filter { it.type != "income" }.sumOf { it.amount } +
+        shifts.sumOf { if (it.reimbursedTolls) 0L else it.extra }
     return Totals(income, expense, entries.size, shifts.size)
 }
 
@@ -137,7 +168,7 @@ fun payoutDue(store: Store): Double? {
     val covered = statementCoveredUntil(store) ?: return null
     val pending = store.shifts.filter { it.date > covered }
     if (pending.isEmpty()) return 0.0
-    return pending.sumOf { it.gross } / 100.0
+    return pending.sumOf { it.gross + it.incentive } / 100.0
 }
 
 /** A fuel purchase that carries an odometer reading. */
@@ -417,7 +448,7 @@ fun statementCheck(store: Store, statement: Statement): StatementCheck {
     val windows = coverWindows(store.shifts)
     val appInsurance = week.sumOf { windows[it.id] ?: 0 }
     return StatementCheck(
-        loggedGross = week.sumOf { it.gross },
+        loggedGross = week.sumOf { it.gross + it.incentive },
         loggedShifts = week.size,
         appInsurance = appInsurance,
         statementInsurance = statement.insuranceCount,

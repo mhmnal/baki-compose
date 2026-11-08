@@ -829,3 +829,15 @@ Storage and sync fixes after the feasibility audit:
   one `pushWithAllTombs`; a successful add/edit can no longer clear the outbox while an older delete is
   still unknown to the server. Background syncs no longer set the header to "syncing" (manual syncs do).
 - Still outstanding: server authentication, off-machine backups, and server-side fsync/error propagation.
+
+## Totals correctness (unreleased)
+
+- `dayTotals`, `monthTotals` and `weekTotals` now include `shift.incentive`; they were silently leaving
+  incentive pay out of every day/month total.
+- `Shift.reimbursedTolls` makes a toll a pass-through: it stays recorded in the shift and the ledger, but
+  it is excluded from cash and operating costs.
+- `dayOperating` / `monthOperating` are the canonical operating aggregates from `shiftMetrics`; they never
+  include linked `fee-<shiftId>` cash entries, so insurance can't be counted twice.
+- Today shows a secondary “Operating · after running costs” line so the recorded total and the operating
+  total are no longer confused. The desktop overview is labelled “recorded, not operating”.
+- Tests: incentive income, reimbursed tolls, fee-entry non-double-count, hours/rate.

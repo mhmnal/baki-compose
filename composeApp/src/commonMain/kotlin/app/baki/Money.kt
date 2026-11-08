@@ -73,7 +73,7 @@ fun shiftMetrics(sh: Shift, cfg: Profit = Profit(), overheadPerHour: Double = 0.
     val running = fuel + wear
     // money is stored in cents; the maths is in ringgit
     val gross = sh.gross / 100.0 + sh.incentive / 100.0
-    val extra = sh.extra / 100.0
+    val extra = if (sh.reimbursedTolls) 0.0 else sh.extra / 100.0
     val grabFee = sh.grabFee?.let { it / 100.0 } ?: cfg.grabInsurance
     val net = gross - running - extra - grabFee - overheadPerHour * sh.hours
     val netHr = if (sh.hours > 0) net / sh.hours else null

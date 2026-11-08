@@ -440,14 +440,14 @@ private fun AppContent(repo: BakiRepo) {
                 payoutsTarget = PayoutsTarget.Stored(shift.id)
             },
             onDismiss = { adding = 0; editingShift = null },
-            onSave = { date, start, hours, km, gross, extra, kmPerLitre, odoS, odoE ->
+            onSave = { date, start, hours, km, gross, extra, kmPerLitre, odoS, odoE, reimbursed ->
                 val target = editingShift
                 adding = 0; editingShift = null
                 scope.launch {
                     if (target == null) {
-                        repo.addShift(date, start, hours, km, gross, extra, odoStart = odoS, odoEnd = odoE)
+                        repo.addShift(date, start, hours, km, gross, extra, odoStart = odoS, odoEnd = odoE, reimbursedTolls = reimbursed)
                     } else {
-                        repo.updateShift(target, date, start, hours, km, gross, extra, target.note, kmPerLitre, odoS, odoE)
+                        repo.updateShift(target, date, start, hours, km, gross, extra, target.note, kmPerLitre, odoS, odoE, reimbursed)
                         val res = snackbar.showSnackbar(
                             "Shift saved · was RM ${rm(target.gross)}",
                             actionLabel = "Undo", duration = SnackbarDuration.Long,
@@ -456,7 +456,7 @@ private fun AppContent(repo: BakiRepo) {
                             repo.updateShift(
                                 target, target.date, target.start, target.hours, target.km,
                                 target.gross, target.extra, target.note, target.kmPerLitre,
-                                target.odoStart, target.odoEnd,
+                                target.odoStart, target.odoEnd, target.reimbursedTolls,
                             )
                         }
                     }
@@ -2084,7 +2084,7 @@ private fun ShiftDialog(
     existing: Shift?,
     onDismiss: () -> Unit,
     onPayouts: (Shift) -> Unit = {},
-    onSave: (String, String, Double, Double, Long, Long, Double?, Double?, Double?) -> Unit,
+    onSave: (String, String, Double, Double, Long, Long, Double?, Double?, Double?, Boolean) -> Unit,
     onDelete: (Shift) -> Unit,
     onCalibrate: (Double) -> Unit = {},
 ) {
@@ -2095,6 +2095,7 @@ private fun ShiftDialog(
     var km by remember { mutableStateOf(existing?.km?.takeIf { it > 0 }?.let { "%.1f".format(it) } ?: "") }
     var gross by remember { mutableStateOf(existing?.gross?.takeIf { it > 0 }?.let { "%.2f".format(it / 100.0) } ?: "") }
     var extra by remember { mutableStateOf(existing?.extra?.takeIf { it > 0 }?.let { "%.2f".format(it / 100.0) } ?: "") }
+    var reimbursed by remember { mutableStateOf(existing?.reimbursedTolls ?: false) }
     var kml by remember { mutableStateOf(existing?.kmPerLitre?.let { "%.1f".format(it) } ?: "") }
     var odoA by remember { mutableStateOf(existing?.odoStart?.let { "%.0f".format(it) } ?: "") }
     var odoB by remember { mutableStateOf(existing?.odoEnd?.let { "%.0f".format(it) } ?: "") }
@@ -2106,11 +2107,12 @@ private fun ShiftDialog(
     val kmValue = km.toDoubleOrNull() ?: 0.0
     val kmlValue = kml.toDoubleOrNull()?.takeIf { it > 0 }
 
-    val preview = remember(date, start, hoursValue, kmValue, grossCents, kmlValue, odoStart, odoEnd) {
+    val preview = remember(date, start, hoursValue, kmValue, grossCents, kmlValue, odoStart, odoEnd, extra, reimbursed) {
         val charge = existing?.grabFee ?: draftCoverCharge(store, date, start)
         val probe = Shift(
             id = "__preview", date = date, start = start, hours = hoursValue, km = kmValue,
             gross = grossCents, extra = ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(),
+            reimbursedTolls = reimbursed,
             grabFee = charge, kmPerLitre = kmlValue, odoStart = odoStart, odoEnd = odoEnd,
         )
         shiftMetrics(probe, store.settings.profit, overheadPerHour(store, date.take(7)))
@@ -2137,6 +2139,14 @@ private fun ShiftDialog(
                         label = { Text("Tolls (RM)") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
                     OutlinedTextField(value = kml, onValueChange = { kml = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("km/L (opt)") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Tolls reimbursed", color = baki.onSurface, style = BakiType.bodyStrong )
+                        Text("Grab pays these back; excluded from running cost",
+                            color = baki.muted, style = BakiType.caption )
+                    }
+                    Switch(checked = reimbursed, onCheckedChange = { reimbursed = it })
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     OutlinedTextField(value = odoA, onValueChange = { odoA = it.filter { c -> c.isDigit() || c == '.' } },
@@ -2183,7 +2193,7 @@ private fun ShiftDialog(
             }
             Button(
                 enabled = grossCents > 0 && hoursValue > 0,
-                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(), kmlValue, odoStart, odoEnd) },
+                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(), kmlValue, odoStart, odoEnd, reimbursed) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 shape = RoundedCornerShape(Radius.pill),
                 modifier = Modifier.fillMaxWidth().height(50.dp),

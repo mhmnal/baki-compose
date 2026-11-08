@@ -73,6 +73,7 @@ fun TodayScreen(
     val today = todayIso()
     // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
+    val operating = remember(store, day) { dayOperating(store, day) }
     val entries = remember(store, day) { entriesOn(store, day).sortedByDescending { it.updated } }
     val shifts = remember(store, day) { shiftsOn(store, day) }
     val cfg = store.settings.profit
@@ -106,7 +107,7 @@ fun TodayScreen(
                     EasedMoney(t.net, baki.onSurface, BakiType.displayNumeric, prefix = "")
                 }
                 Text(
-                    if (t.net >= 0) "KEPT FOR THE DAY" else "OUT OF POCKET",
+                    if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
                     color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong )
             }
         }
@@ -115,6 +116,17 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 Chip("in RM ${rm(t.income)}", baki.up)
                 Chip("out RM ${rm(t.expense)}", baki.down)
+            }
+        }
+
+        if (operating.shiftCount > 0) {
+            item {
+                Text(
+                    "Operating · RM ${rm(operating.net)} after running costs" +
+                        (operating.perHour?.let { " · RM ${"%.2f".format(it)}/h" } ?: ""),
+                    color = if (operating.net >= 0) baki.muted else baki.down,
+                    style = BakiType.caption,
+                )
             }
         }
 
