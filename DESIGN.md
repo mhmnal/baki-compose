@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.3)
+## Current state (v0.36.4)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -850,3 +850,11 @@ Storage and sync fixes after the feasibility audit:
 - A one-day month gets one "only day" card instead of identical best/worst cards.
 - Desktop labels its recorded per-hour and operating last-week figures explicitly.
 - The preview harness clears live.json so frames cannot inherit a stale live shift.
+
+## Statement history and permission state (v0.36.4)
+
+- Every imported week is listed behind View all weeks, with income/deductions, insurance reconciliation,
+  logged gap and imported time.
+- The Wednesday reminder shows a blocked-notification warning with Open settings / Check again.
+- Share/VIEW accepts application/octet-stream as well as application/pdf, then sniffs %PDF within the first
+  KiB; a renamed non-PDF is rejected.
