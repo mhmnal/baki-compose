@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -52,41 +50,46 @@ fun QuickEntryBar(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
             text = ""
         }
     }
-    // one line, no enclosure: a rule and the words are enough
-    Column(modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text("toll 4.20 parking 2", color = baki.muted, style = BakiType.body) },
-                singleLine = true,
-                textStyle = BakiType.body,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = baki.primary,
-                    focusedTextColor = baki.onSurface,
-                    unfocusedTextColor = baki.onSurface,
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { submit() }),
-                modifier = Modifier.weight(1f),
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.pill))
+            .background(baki.surfaceHigh)
+            .padding(start = Space.l, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text("toll 4.20 parking 2", color = baki.muted, style = BakiType.body ) },
+            singleLine = true,
+            textStyle = BakiType.bodySmall,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = baki.primary,
+                focusedTextColor = baki.onSurface,
+                unfocusedTextColor = baki.onSurface,
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { submit() }),
+            modifier = Modifier.weight(1f),
+        )
+        VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(40.dp))
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(Radius.pill))
+                .background(if (text.isBlank()) Color.Transparent else baki.primary)
+                .clickable(enabled = text.isNotBlank()) { submit() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                BakiIcons.ArrowRight, contentDescription = "Add",
+                tint = if (text.isBlank()) baki.muted else baki.onPrimary,
+                modifier = Modifier.size(IconSize.inline),
             )
-            VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(48.dp))
-            TextButton(
-                onClick = { submit() },
-                enabled = text.isNotBlank(),
-                modifier = Modifier.heightIn(min = 48.dp),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = baki.primary,
-                    disabledContentColor = baki.muted,
-                ),
-                contentPadding = PaddingValues(horizontal = Space.m),
-            ) { Text("Add", style = BakiType.labelStrong) }
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(baki.muted.copy(alpha = 0.25f)))
     }
 }
 

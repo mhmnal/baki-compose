@@ -99,9 +99,8 @@ val PaperPalette = BakiPalette(
 /** "Mist": the classic soft-UI board — neutral cool grey, near-white faces, blue accent. */
 val MistLight = BakiPalette(
     dark = false,
-    // a soft-UI blue, darkened from the board's #5B8DEF so white text and primary-on-canvas
-    // action labels both clear AA (4.8:1 on the mist canvas, 5.65:1 for white on it)
-    primary = Color(0xFF2A63C8), onPrimary = Color(0xFFFFFFFF),
+    // a soft-UI blue, darkened from the board's #5B8DEF so white text on it clears AA
+    primary = Color(0xFF2E6BD6), onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Color(0xFFDCE8FB), onPrimaryContainer = Color(0xFF14263F),
     accentStrong = Color(0xFF2459B8), onAccent = Color(0xFFFFFFFF),
     surface = Color(0xFFE9EDF2), container = Color(0xFFF2F5F9), surfaceHigh = Color(0xFFDDE3EA),

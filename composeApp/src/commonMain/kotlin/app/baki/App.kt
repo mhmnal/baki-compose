@@ -36,8 +36,6 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -63,7 +61,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -71,8 +68,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import kotlinx.coroutines.Dispatchers
@@ -215,6 +210,20 @@ private fun AppContent(repo: BakiRepo) {
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
                     onQuickText = { quickText = it },
+                    onQuickAdd = { cat, cents ->
+                        scope.launch {
+                            val id = repo.addExpense(cents, cat, "", todayIso())
+                            if (id != null) {
+                                val name = repo.store.settings.cats.catsOut
+                                    .firstOrNull { it.id == cat }?.name ?: cat
+                                val res = snackbar.showSnackbar(
+                                    "Added $name RM ${rm(cents)}",
+                                    actionLabel = "Undo", duration = SnackbarDuration.Short,
+                                )
+                                if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
+                            }
+                        }
+                    },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
                     onDeleteEntry = { entry ->
                         scope.launch {
@@ -227,6 +236,12 @@ private fun AppContent(repo: BakiRepo) {
                                 repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
                             }
                         }
+                    },
+                    onPreset = { catId ->
+                        editingEntry = null
+                        entryType = "expense"
+                        presetCat = catId
+                        adding = 2
                     },
                     onAddShift = { editingShift = null; adding = 3 },
                     onSeeAll = { tab = 1 },
@@ -491,13 +506,15 @@ private fun Header(repo: BakiRepo) {
     // read the status here, not in the caller: a sync tick then re-draws only this row
     val status = repo.status
     val baki = LocalBaki.current
-    // one wordmark, one status: the old badge and tagline were decoration
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.s),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Baki", color = baki.onSurface, style = BakiType.title)
-        Spacer(Modifier.weight(1f))
+    Row(Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primary), contentAlignment = Alignment.Center) {
+            Text("✓", color = baki.onPrimary, style = BakiType.bodyStrong )
+        }
+        Spacer(Modifier.width(Space.m))
+        Column(Modifier.weight(1f)) {
+            Text("Baki", color = baki.onSurface, style = BakiType.title )
+            Text("what your shift really pays", color = baki.muted, style = BakiType.caption )
+        }
         val dot = when (status) {
             "synced" -> baki.up
             "offline" -> baki.down
@@ -505,12 +522,8 @@ private fun Header(repo: BakiRepo) {
             "syncing" -> baki.primary
             else -> baki.muted
         }
-        Row(
-            Modifier.semantics { contentDescription = "Sync status: $status" },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Box(Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
             Text(
                 when (status) {
                     "synced" -> "synced"
@@ -588,7 +601,7 @@ private fun BottomBar(
         }
 
         Row(
-            Modifier.fillMaxSize().selectableGroup(),
+            Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(Space.xxs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -609,10 +622,7 @@ private fun BottomBar(
                             if (liquid) Modifier
                             else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
                         )
-                        .selectable(
-                            selected = on,
-                            role = Role.Tab,
-                        ) { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
+                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
