@@ -632,3 +632,9 @@ saved too. `SyncChangeTest` guards the bills-only case. The Bills card also show
 - **Rename categories**: tapping a category name opens a rename dialog; the id never changes, so
   history keeps pointing at the same category. The id-keyed merge means the new name wins on every
   device. Add and remove (only when unused) behave as before.
+
+## Desk payment log (v0.24.1)
+
+The BILLS block on the desk now lists the five most recent payments (`Bills.history()`), each with bill,
+period, amount and paid date; broken links show `unlinked` / `deleted` in the danger colour instead of
+being hidden. Read-only, like the rest of the desk.

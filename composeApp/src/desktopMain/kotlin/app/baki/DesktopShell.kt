@@ -703,6 +703,31 @@ private fun BillsBlock(store: Store, month: String, neu: Neu) {
     )
     val nextOpen = Bills.nextOpenMonth(store, month)
     Text("next open month: ${monthLabel(nextOpen)}", color = neu.muted, style = BakiType.caption)
+    // the payment log: newest first, with broken links called out rather than hidden
+    val recent = Bills.history(store, 5)
+    if (recent.isNotEmpty()) {
+        Spacer(Modifier.height(Space.s))
+        Text("PAID RECENTLY", color = neu.muted, style = BakiType.section)
+        recent.forEach { p ->
+            val broken = !p.active || !p.entryExists
+            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                Text(
+                    "${p.billName} · ${p.period}",
+                    color = if (broken) neu.danger else neu.ink,
+                    style = BakiType.caption,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    if (!p.active) "unlinked" else if (!p.entryExists) "deleted" else p.paidAt.take(10),
+                    color = if (broken) neu.danger else neu.muted,
+                    style = BakiType.captionNumeric,
+                )
+                Spacer(Modifier.width(Space.s))
+                Text("RM ${rm(p.amount)}", color = if (broken) neu.muted else neu.ink, style = BakiType.captionNumeric)
+            }
+        }
+    }
+
     // optional goals are paid from what the month leaves over
     store.bills.filter { it.optional }.forEach { bill ->
         val net = monthTotals(store, month).net
