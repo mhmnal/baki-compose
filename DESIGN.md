@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.2)
+## Current state (v0.36.3)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -841,3 +841,12 @@ Storage and sync fixes after the feasibility audit:
 - Today shows a secondary “Operating · after running costs” line so the recorded total and the operating
   total are no longer confused. The desktop overview is labelled “recorded, not operating”.
 - Tests: incentive income, reimbursed tolls, fee-entry non-double-count, hours/rate.
+
+## Hero pair and list cleanup (v0.36.3)
+
+- Today's recorded net is still the hero; operating net/rate sits beside its label, on two lines,
+  so the tall money figure never gets squeezed into a column.
+- Spending/Shifts use human dates; repeated swipe/hold copy was removed; Shifts keeps one hint.
+- A one-day month gets one "only day" card instead of identical best/worst cards.
+- Desktop labels its recorded per-hour and operating last-week figures explicitly.
+- The preview harness clears live.json so frames cannot inherit a stale live shift.
