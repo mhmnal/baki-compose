@@ -1,0 +1,111 @@
+{
+  "title": "Baki",
+  "command": {
+    "bin": "/home/min/Documents/deepseek-harness/default-workspace/.tools/gradle/wrapper/dists/gradle-9.6.1-bin/4ticwg1pgcbps2hj28r8so764/gradle-9.6.1/bin/gradle",
+    "args": [
+      ":composeApp:desktopTest",
+      "--tests",
+      "app.baki.PhoneShot",
+      "--offline",
+      "--console=plain"
+    ],
+    "cwd": ".",
+    "env": {
+      "JAVA_HOME": "/home/min/Documents/deepseek-harness/default-workspace/.tools/jdk21",
+      "GRADLE_USER_HOME": "/home/min/Documents/deepseek-harness/default-workspace/.tools/gradle",
+      "ANDROID_HOME": "/home/min/Documents/deepseek-harness/default-workspace/.tools/sdk"
+    }
+  },
+  "surfaces": [
+    {
+      "id": "phone",
+      "label": "Phone",
+      "frames": [
+        {
+          "id": "overview",
+          "label": "Today",
+          "file": "composeApp/build/preview/{variant}/phone/overview.png"
+        },
+        {
+          "id": "spending",
+          "label": "Spending",
+          "file": "composeApp/build/preview/{variant}/phone/spending.png"
+        },
+        {
+          "id": "shifts",
+          "label": "Shifts",
+          "file": "composeApp/build/preview/{variant}/phone/shifts.png"
+        },
+        {
+          "id": "summary",
+          "label": "Summary",
+          "file": "composeApp/build/preview/{variant}/phone/summary.png"
+        },
+        {
+          "id": "more",
+          "label": "More",
+          "file": "composeApp/build/preview/{variant}/phone/more.png"
+        }
+      ]
+    },
+    {
+      "id": "desk",
+      "label": "Desktop",
+      "frames": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "file": "composeApp/build/preview/{variant}/desk/overview.png"
+        },
+        {
+          "id": "entries",
+          "label": "Entries",
+          "file": "composeApp/build/preview/{variant}/desk/entries.png"
+        },
+        {
+          "id": "shifts",
+          "label": "Shifts",
+          "file": "composeApp/build/preview/{variant}/desk/shifts.png"
+        },
+        {
+          "id": "routes",
+          "label": "Routes",
+          "file": "composeApp/build/preview/{variant}/desk/routes.png"
+        },
+        {
+          "id": "compare",
+          "label": "Compare",
+          "file": "composeApp/build/preview/{variant}/desk/compare.png"
+        },
+        {
+          "id": "year",
+          "label": "Year",
+          "file": "composeApp/build/preview/{variant}/desk/year.png"
+        },
+        {
+          "id": "statement",
+          "label": "Statement",
+          "file": "composeApp/build/preview/{variant}/desk/statement.png"
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "file": "composeApp/build/preview/{variant}/desk/settings.png"
+        }
+      ]
+    }
+  ],
+  "watch": [
+    "composeApp/src"
+  ],
+  "variants": [
+    {
+      "id": "dark",
+      "label": "Dark"
+    },
+    {
+      "id": "light",
+      "label": "Light"
+    }
+  ]
+}

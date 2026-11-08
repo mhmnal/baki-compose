@@ -76,8 +76,8 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
     val store = repo.store
     val baki = LocalBaki.current
     val neu = rememberNeu()
-    // BAKI_VIEW lets the design be captured deterministically
-    val preview = remember { System.getenv("BAKI_VIEW").orEmpty() }
+    // BAKI_VIEW lets the design be captured deterministically; the offscreen harness sets it first
+    val preview = remember { PhonePreview.desktopView ?: System.getenv("BAKI_VIEW").orEmpty() }
     var month by remember { mutableStateOf(todayIso().substring(0, 7)) }
     var tab by remember {
         mutableStateOf(

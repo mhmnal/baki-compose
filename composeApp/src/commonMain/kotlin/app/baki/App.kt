@@ -105,7 +105,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     }
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
-        if (Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
+        if (!PhonePreview.active && Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
         SharedTransitionLayout {
             androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
                 AppContent(repo)
@@ -124,7 +124,7 @@ private sealed interface PayoutsTarget {
 private fun AppContent(repo: BakiRepo) {
     // read the palette *inside* the theme provider, or every colour falls back to dark
     val baki = LocalBaki.current
-    var tab by remember { mutableStateOf(0) }
+    var tab by remember { mutableStateOf(PhonePreview.initialTab) }
     var adding by remember { mutableStateOf(0) }   // 0 none, 1 chooser, 2 entry, 3 shift, 4 payout
     var day by remember { mutableStateOf(todayIso()) }
     var month by remember { mutableStateOf(todayIso().take(7)) }
