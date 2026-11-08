@@ -160,6 +160,17 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
     }
 
+    /** Statements are keyed by week, so re-importing a corrected statement replaces it. */
+    suspend fun saveStatement(statement: Statement) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            statements = store.statements + (statement.weekStart to statement),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+    }
+
     suspend fun addExpense(amountCents: Long, cat: String, note: String, date: String, odo: Int? = null) =
         addEntry("expense", amountCents, cat, note, date, odo)
 

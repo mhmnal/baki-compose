@@ -529,3 +529,20 @@ faded without looking wrong. Tabs now swap instantly, and `DesktopConsistencyTes
 
 Motion that remains: the animated money counter (numbers only) and hover/selection state changes
 (instant). Neither touches shadow geometry.
+
+## Weekly statement import (v0.20)
+
+The Grab statement is the income side of the books; the app is the expense side. `StatementParse` reads
+the PDF text (BM or English labels), the phone picks the file, and `PdfText` extracts it with PDFBox
+(`pdfbox-android` on the phone, `pdfbox` on the desk).
+
+Parsed: week range, total income, total deductions, weekly payout, transport net, pickup/trip fares,
+other income, incentives, tips, daily-insurance count, and a consistency check
+(`income + deductions = weekly`).
+
+**Tolls are not in the statement.** Verified against a real 14-page statement: there is no toll line,
+Grab folds the reimbursement into the trip fare. So tolls stay an app-side estimate for route
+decisions, never a reconciliation figure.
+
+The More screen shows the last statement and compares it with what was logged for that week
+(gross income gap, insurance count vs the cover rule).

@@ -396,3 +396,30 @@ fun tollSummary(entries: List<Entry>, month: String): TollSummary {
     val back = inMonth.filter { it.cat == "tollback" && it.type == "income" }.sumOf { it.amount }
     return TollSummary(paid, back)
 }
+
+
+/** How the imported statement compares with what the app logged for the same Monday–Sunday week. */
+data class StatementCheck(
+    val loggedGross: Long,
+    val loggedShifts: Int,
+    /** insurance windows the app derives for shifts that start in the week */
+    val appInsurance: Int,
+    val statementInsurance: Int,
+) {
+    val grossDelta: Long get() = loggedGross
+    val insuranceMatches: Boolean get() = appInsurance == statementInsurance
+}
+
+fun statementCheck(store: Store, statement: Statement): StatementCheck {
+    val start = statement.weekStart
+    val end = addDays(start, 7)
+    val week = store.shifts.filter { it.date >= start && it.date < end }
+    val windows = coverWindows(store.shifts)
+    val appInsurance = week.sumOf { windows[it.id] ?: 0 }
+    return StatementCheck(
+        loggedGross = week.sumOf { it.gross },
+        loggedShifts = week.size,
+        appInsurance = appInsurance,
+        statementInsurance = statement.insuranceCount,
+    )
+}

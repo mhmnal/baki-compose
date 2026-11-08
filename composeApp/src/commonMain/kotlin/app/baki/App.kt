@@ -1142,6 +1142,72 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             ) { Text("Save route key") }
         }
         Spacer(Modifier.height(Space.l))
+        SectionTitle("WEEKLY STATEMENT")
+        Spacer(Modifier.height(Space.s))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+            Text("Import the Wednesday PDF", color = baki.onSurface, style = BakiType.bodyStrong)
+            Text(
+                "Grab's weekly statement is the income side of your books. Import it once a week; the desk shows how it compares with what you logged.",
+                color = baki.muted, style = BakiType.caption,
+            )
+            Spacer(Modifier.height(Space.m))
+            var importMsg by remember { mutableStateOf<String?>(null) }
+            val pickStatement = rememberStatementImport { bytes ->
+                if (bytes == null) return@rememberStatementImport
+                val text = PdfText.extract(bytes)
+                val parsed = text?.let { StatementParse.parse(it) }
+                if (parsed == null) {
+                    importMsg = "That PDF doesn't look like a Grab statement."
+                } else {
+                    scope.launch {
+                        repo.saveStatement(parsed)
+                        importMsg = "Imported ${parsed.weekStart} · RM ${"%.2f".format(parsed.weekly)}"
+                    }
+                }
+            }
+            Button(
+                onClick = { pickStatement() },
+                colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
+            ) { Text("Import statement PDF") }
+            importMsg?.let {
+                Spacer(Modifier.height(Space.s))
+                Text(it, color = if (it.startsWith("Imported")) baki.up else baki.down, style = BakiType.caption)
+            }
+
+            val latest = repo.store.statements.values.maxByOrNull { it.weekStart }
+            if (latest != null) {
+                Spacer(Modifier.height(Space.m))
+                Text(
+                    "${latest.rangeText.ifBlank { latest.weekStart }}",
+                    color = baki.onSurface, style = BakiType.label,
+                )
+                Text(
+                    "income RM ${"%.2f".format(latest.income)} · deductions RM ${"%.2f".format(latest.deductions)} · weekly RM ${"%.2f".format(latest.weekly)}",
+                    color = baki.muted, style = BakiType.captionNumeric,
+                )
+                val check = statementCheck(repo.store, latest)
+                val gap = check.loggedGross / 100.0 - latest.income
+                if (check.loggedShifts == 0) {
+                    Text(
+                        "no shifts logged for this week (Grab RM ${"%.2f".format(latest.income)})",
+                        color = baki.muted, style = BakiType.captionNumeric,
+                    )
+                } else {
+                    Text(
+                        "logged ${check.loggedShifts} shifts · RM ${"%.2f".format(check.loggedGross / 100.0)} · Grab RM ${"%.2f".format(latest.income)} · gap RM ${"%.2f".format(gap)}",
+                        color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
+                        style = BakiType.captionNumeric,
+                    )
+                }
+                Text(
+                    if (check.insuranceMatches) "insurance: ${latest.insuranceCount} charges match"
+                    else "insurance: app ${check.appInsurance} vs statement ${latest.insuranceCount} — check the cover rule",
+                    color = if (check.insuranceMatches) baki.up else baki.down,
+                    style = BakiType.caption,
+                )
+            }
+        }
+        Spacer(Modifier.height(Space.l))
         SectionTitle("SAFETY")
         Spacer(Modifier.height(Space.s))
         SwitchRow(

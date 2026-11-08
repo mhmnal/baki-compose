@@ -15,3 +15,7 @@
 # Play Services location
 -keep class com.google.android.gms.** { *; }
 -dontwarn com.google.android.gms.**
+
+# PDFBox references optional JPEG-2000 decoding that the app never uses (text extraction only)
+-dontwarn com.gemalto.jp2.**
+-dontwarn com.tom_roush.pdfbox.filter.JPXFilter

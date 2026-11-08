@@ -33,12 +33,14 @@ kotlin {
                 implementation("androidx.activity:activity-compose:1.9.3")
                 implementation("androidx.core:core-ktx:1.13.1")
                 implementation("com.google.android.gms:play-services-location:21.3.0")
+                implementation("com.tom-roush:pdfbox-android:2.0.27.0")
                 implementation("io.ktor:ktor-client-okhttp:3.0.3")
             }
         }
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation("org.apache.pdfbox:pdfbox:2.0.32")
                 // KMP soft-shadow library: the neumorphic material lives on the desktop only
                 implementation("com.github.LennartEgb.compose-shadow:shadow-jvm:0.1.2")
                 implementation("io.ktor:ktor-client-cio:3.0.3")
@@ -54,8 +56,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 60
-        versionName = "0.19.9"
+        versionCode = 63
+        versionName = "0.20.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"

@@ -1,0 +1,332 @@
+Penyata Pemandu
+26 Oktober, 2026 - 1 November, 2026
+
+
+
+   Dibayar kepada                                      Ringkasan
+
+   DRIVER NAME                                  Jumlah Pendapatan               507.34
+                                           Jumlah Penolakan                 -37.50
+   MY | RHB Bank **********0000
+
+                                                       Jumlah Mingguan               RM469.84
+
+
+
+
+Butiran pendapatan
+
+Penerangan                                    Jumlah
+
+
+ Pendapatan bersih pengangkutan             488.70
+
+ Tambang pengambilan                        101.20
+
+ Tambang perjalanan                         381.50
+
+ Pendapatan lain                              6.00
+
+ Insentif                                    16.64
+
+ Tip                                          2.00
+
+ Pelarasan                                  -37.50
+
+ Jumlah Pendapatan                          507.34
+
+ Jumlah Penolakan                           -37.50
+
+
+ Jumlah Mingguan
+                                        RM469.84
+
+
+
+
+Tip
+
+
+  Tarikh / Masa      Kod Tempahan            Dompet Tunai            Dompet Kredit     Subtotal
+
+
+
+   29 Oktober,
+                     A-BOOKINGCODE                      2.00                  -        2.00
+   5:16PM
+
+
+
+                                            Page 1 of 14
+
+                                                                                    RM2.00
+
+
+
+
+Insentif
+
+Layak
+
+  Penerangan                                   Dompet Tunai         Dompet Kredit    Subtotal
+
+
+
+
+  - ID insentif 4339262
+
+                                                             0.00           0.00        0.00
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  - ID insentif 4339263
+
+                                                             6.07           0.00        6.07
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR6.065)
+
+
+
+
+  - ID insentif 4318607
+
+                                                             0.00           0.00        0.00
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  - ID insentif 4318608
+
+                                                             5.95           0.00        5.95
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR5.95)
+
+
+
+
+  - ID insentif 4308397
+
+                                                             0.00           0.00        0.00
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+                                              Page 2 of 14
+
+  - ID insentif 4308398
+
+
+                                                                  2.45           0.00         2.45
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR2.4545)
+
+
+
+
+  - ID insentif 4300148
+
+                                                                  0.00           0.00         0.00
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  - ID insentif 4300149
+
+                                                                  2.17           0.00         2.17
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR2.175)
+
+
+
+                                                                                         RM16.64
+Tidak Layak
+
+  Penerangan                                        Dompet Tunai         Dompet Kredit     Subtotal
+
+
+
+
+  SIC Pickup Bonus! (Sunday, 4pm - 11:59pm) - ID
+  insentif 4310787
+
+  Anda tidak layak untuk insentif kerana:
+
+       anda hanya melengkapkan 0 trip                             0.00           0.00         0.00
+       (kelayakan minima: 1 trip);
+
+
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  Bonus Penghantaran - ID insentif 4285985
+
+  Anda tidak layak untuk insentif kerana:
+
+       Anda telah mengumpul 0 permata.
+       (kelayakan minima: 1 permata)                              0.00           0.00         0.00
+
+
+
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+                                                   Page 3 of 14
+
+SIC DropOff Bonus! (Sunday, 12pm - 2:59pm) -
+ID insentif 4310797
+
+Anda tidak layak untuk insentif kerana:
+
+     anda hanya melengkapkan 0 trip                             0.00   0.00   0.00
+     (kelayakan minima: 1 trip);
+
+
+(Jumlah insentif yang dipaparkan adalah
+selepas cukai pegangan bernilai MYR0)
+
+
+
+
+Complete 7 work units, earn RM50.00 - ID
+insentif 4285942
+
+Anda tidak layak untuk insentif kerana:
+
+     Anda telah mengumpul 0 permata.                            0.00   0.00   0.00
+     (kelayakan minima: 5 permata)
+
+
+(Jumlah insentif yang dipaparkan adalah
+selepas cukai pegangan bernilai MYR0)
+
+
+
+
+SIC Pickup Bonus! (Saturday, 4pm - 11:59pm) -
+ID insentif 4310709
+
+Anda tidak layak untuk insentif kerana:
+
+     anda hanya melengkapkan 0 trip                             0.00   0.00   0.00
+     (kelayakan minima: 1 trip);
+
+
+(Jumlah insentif yang dipaparkan adalah
+selepas cukai pegangan bernilai MYR0)
+
+
+
+
+SIC Pickup Bonus! (Friday, 4pm - 11:59pm) - ID
+insentif 4310089
+
+Anda tidak layak untuk insentif kerana:
+
+     anda hanya melengkapkan 0 trip                             0.00   0.00   0.00
+     (kelayakan minima: 1 trip);
+
+
+(Jumlah insentif yang dipaparkan adalah
+selepas cukai pegangan bernilai MYR0)
+
+
+
+
+                                                 Page 4 of 14
+
+  - - ID insentif 4286183
+
+
+                                                             0.00           0.00        0.00
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  - ID insentif 4304558
+
+  Anda tidak layak untuk insentif kerana:
+
+        Anda telah mengumpul 0 permata.
+        (kelayakan minima: 1 permata)                        0.00           0.00        0.00
+
+
+
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+
+  - ID insentif 4304556
+
+  Anda tidak layak untuk insentif kerana:
+
+        Anda telah mengumpul 0 permata.                      0.00           0.00        0.00
+        (kelayakan minima: 3 permata)
+
+
+  (Jumlah insentif yang dipaparkan adalah
+  selepas cukai pegangan bernilai MYR0)
+
+
+
+                                                                                    RM0.00
+
+
+
+
+Pelarasan
+
+
+  Penerangan                                   Dompet Tunai         Dompet Kredit    Subtotal
+
+
+
+  Grab Daily E-hailing Insurance-2026-10-29
+                                                         -7.50              0.00       -7.50
+  17:40:45-2026-10-30 17:40:44
+
+
+  Grab Daily E-hailing Insurance-2026-10-28
+                                                         -7.50              0.00       -7.50
+  17:40:45-2026-10-29 17:40:44
+
+
+
+  ZTM GRAB DAILY INSURANCE DEDUCT
+                                                         -7.50              0.00       -7.50
+  2026/10/26 18:14:10
+
+
+
+                                              Page 5 of 14
+
+  Grab Daily E-hailing Insurance-2026-10-25
+                                                         -7.50           0.00         -7.50
+  17:16:07-2026-10-26 17:16:06
+
+
+
+  ZTM GRAB DAILY INSURANCE DEDUCT
+                                                         -7.50           0.00         -7.50
+  2026/10/24 02:41:59
+
+
+                                                                                  -RM37.50
