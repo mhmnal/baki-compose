@@ -141,9 +141,13 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                StatTile("best day", best?.let { "RM ${rm(it.second.net)}" } ?: "—", best?.first?.takeLast(5) ?: "", baki.up, Modifier.weight(1f))
-                StatTile("worst day", worst?.let { "RM ${rm(it.second.net)}" } ?: "—", worst?.first?.takeLast(5) ?: "", baki.down, Modifier.weight(1f))
+            if (days.size > 1) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                    StatTile("best day", best?.let { "RM ${rm(it.second.net)}" } ?: "—", best?.first?.let { prettyDate(it) } ?: "", baki.up, Modifier.weight(1f))
+                    StatTile("worst day", worst?.let { "RM ${rm(it.second.net)}" } ?: "—", worst?.first?.let { prettyDate(it) } ?: "", baki.down, Modifier.weight(1f))
+                }
+            } else if (best != null) {
+                StatTile("only day", "RM ${rm(best.second.net)}", prettyDate(best.first), baki.up, Modifier.fillMaxWidth())
             }
         }
 

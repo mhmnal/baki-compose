@@ -110,7 +110,7 @@ class PhoneShot {
     /** Remove only the seeded ledger/config files, not the desktop key material. */
     private fun resetPreviewStore() {
         val dir = File(System.getProperty("user.home") ?: ".", ".local/share/baki")
-        listOf("store.json", "store.json.bak", "config.json", "config.json.bak").forEach {
+        listOf("store.json", "store.json.bak", "config.json", "config.json.bak", "live.json").forEach {
             File(dir, it).delete()
         }
     }

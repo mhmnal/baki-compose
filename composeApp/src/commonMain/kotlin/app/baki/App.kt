@@ -931,11 +931,11 @@ private fun SpendingScreen(
         Spacer(Modifier.height(Space.s))
         Hero(shownLabel, shown, baki.down, 40)
         Text(
-            if (filtering) {
+            (if (filtering) {
                 "${entries.size} purchase(s)${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
             } else {
                 "${t.entryCount} purchases · ${t.shiftCount} shifts · in RM ${rm(t.income)}"
-            },
+            }),
             color = baki.muted, style = BakiType.captionNumeric,
         )
         Spacer(Modifier.height(Space.m))
@@ -1026,7 +1026,7 @@ private fun SpendingScreen(
             items(entries, key = { it.id }) { e ->
                 RowCard(
                     e.note.ifEmpty { e.cat },
-                    e.date + " · swipe or hold to edit",
+                    prettyDate(e.date),
                     (if (e.type == "income") "+" else "−") + rm(e.amount),
                     if (e.type == "income") baki.up else baki.down,
                     icon = categoryIcon(e.cat),
@@ -1061,7 +1061,7 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
         Spacer(Modifier.height(Space.l))
         Hero("NET AFTER CAR COST", cents(net), baki.onSurface, 40)
         Text(
-            "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${"%.2f".format(if (hours > 0) net / hours else 0.0)}/hr",
+            "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${"%.2f".format(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
             color = baki.muted, style = BakiType.label )
         Spacer(Modifier.height(Space.l))
         LazyColumn(
@@ -1072,8 +1072,8 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
                 val sh = row.first
                 val m = row.second
                 RowCard(
-                    "${sh.date} ${sh.start}".trim(),
-                    "${"%.1f".format(m.km)} km · ${m.band} · swipe or hold to edit",
+                    "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
+                    "${"%.1f".format(m.km)} km · ${m.band}",
                     "RM ${"%.2f".format(m.net)}",
                     if (m.net < 0) baki.down else bandColor(m.band, baki),
                     onLongPress = { onEditShift(sh) },

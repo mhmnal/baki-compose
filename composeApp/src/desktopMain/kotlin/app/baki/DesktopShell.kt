@@ -395,7 +395,7 @@ private fun Overview(
                         val monthShifts = store.shifts.filter { it.date.startsWith(month) }
                         val monthHours = monthShifts.sumOf { it.hours }
                         if (monthHours > 0.05) {
-                            NeuMetric(neu, "PER HOUR", "RM ${"%.2f".format(t.net / 100.0 / monthHours)}")
+                            NeuMetric(neu, "REC. PER HOUR", "RM ${"%.2f".format(t.net / 100.0 / monthHours)}")
                         }
                     }
                 }
@@ -447,7 +447,7 @@ private fun Overview(
                     Spacer(Modifier.height(Space.m))
                     week?.let { (start, r) ->
                         NeuMetric(
-                            neu, "LAST WEEK",
+                            neu, "OPERATING LAST WEEK",
                             "${"%.1f".format(r.hours)} h · RM ${rm(r.net)}",
                             detail = "RM ${"%.2f".format(r.perHour)}/h · ${prettyDate(start)}",
                         )

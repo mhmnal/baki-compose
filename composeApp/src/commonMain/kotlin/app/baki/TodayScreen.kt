@@ -106,9 +106,25 @@ fun TodayScreen(
                         modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = BakiType.title )
                     EasedMoney(t.net, baki.onSurface, BakiType.displayNumeric, prefix = "")
                 }
-                Text(
-                    if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
-                    color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
+                        color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (operating.shiftCount > 0) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("OPERATING", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
+                            Text(
+                                "RM ${rm(operating.net)}" +
+                                    (operating.perHour?.let { " · ${"%.2f".format(it)}/h" } ?: ""),
+                                color = if (operating.net >= 0) baki.onSurface else baki.down,
+                                style = BakiType.labelNumeric,
+                            )
+                            Text("after running costs", color = baki.muted, style = BakiType.nano)
+                        }
+                    }
+                }
             }
         }
 
@@ -116,17 +132,6 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 Chip("in RM ${rm(t.income)}", baki.up)
                 Chip("out RM ${rm(t.expense)}", baki.down)
-            }
-        }
-
-        if (operating.shiftCount > 0) {
-            item {
-                Text(
-                    "Operating · RM ${rm(operating.net)} after running costs" +
-                        (operating.perHour?.let { " · RM ${"%.2f".format(it)}/h" } ?: ""),
-                    color = if (operating.net >= 0) baki.muted else baki.down,
-                    style = BakiType.caption,
-                )
             }
         }
 
