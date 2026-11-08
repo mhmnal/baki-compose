@@ -1,7 +1,10 @@
 # PWA vs Compose — feature parity
 
 PWA = `../grab-tracker/index.html` (the app in daily use). Compose = this project.
-PDF statement import is excluded by request.
+
+> **Historical comparison** (written around 0.18). PDF statement import landed in 0.34, quick presets are
+> implemented, and bills/tax packs exist. See [README.md](README.md) for the current feature set; this file
+> is kept for the parity reasoning.
 
 ## Same behaviour (verified by tests)
 
@@ -22,7 +25,7 @@ PDF statement import is excluded by request.
 | ~~Income entries~~ | **done** — Spending/Income toggle, income categories | ✓ |
 | ~~Edit entry~~ | **done** — long-press a row, change amount/category/note/date | ✓ |
 | ~~Edit shift~~ | **done** — long-press, change hours/km/payout/tolls, per-shift km/L | ✓ |
-| Quick presets | `preset`, `quickExp` — one-tap frequent expenses | S |
+| ~~Quick presets~~ | **done** — chips + one-tap amounts on Today | ✓ |
 | Calculator | `openCalc`, `calcKey` | S |
 | ~~Undo after delete~~ | **done** — snackbar with Undo | ✓ |
 

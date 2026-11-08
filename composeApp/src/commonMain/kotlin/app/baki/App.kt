@@ -167,8 +167,6 @@ private fun AppContent(repo: BakiRepo) {
         // sit above the gesture bar, not on top of it
         val gestureInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val barGap = gestureInset + 14.dp
-        val barTop = maxHeight - barHeight - barGap
-        val fabTop = barTop - fabSize - 6.dp
         val sheetOpen = adding != 0 || payoutsTarget != null
 
         // ---- level 1: the app itself, blurred while a sheet is up ----

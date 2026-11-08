@@ -19,3 +19,6 @@ dist/
 
 # deterministic QA screenshots (contain personal data)
 build/shots/
+
+# local run logs
+*.log

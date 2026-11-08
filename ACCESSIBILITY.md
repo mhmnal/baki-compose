@@ -1,43 +1,46 @@
 # Accessibility
 
-Neumorphism is low-contrast by nature, so the app treats accessibility as a build requirement rather
-than a polish pass. Anything below is enforced by a test or is a documented gap.
+Updated 2026-11-08 for **0.35.9**. Two surfaces with different constraints: the desk is a custom
+neumorphic canvas; the phone is Material 3 + liquid glass. Accessibility is enforced where tests can
+prove it and documented honestly where it cannot.
 
 ## Enforced by tests
 
 | Check | Test | Threshold |
 |---|---|---|
-| Body text on every surface | `ContrastTest.bodyTextIsReadable` | WCAG AA 4.5:1 (onSurface, muted, up, down, warn on surface and container) |
-| Filled controls | `ContrastTest.filledControlsStayReadable` | 4.5:1 (onPrimary/primary, onPrimaryContainer, onAccent) |
-| Surface hierarchy | `NeumorphismTest.panelsSitAboveTheCanvasPerceptually` | panel luminance above base so a panel is not invisible |
-| Shadow separation | `NeumorphismTest.shadowsKeepEnoughSeparationToRead` | light/dark shadow spread > 0.05 luminance |
-| Design tokens | `DesignTokensTest` | no raw font size or corner radius outside the design files |
+| Body text on every palette | `ContrastTest.bodyTextIsReadable` | WCAG AA 4.5:1 (onSurface, muted, up, down, warn) |
+| Text on the neumorphic canvas | `ContrastTest.canvasTextMeetsTheReadableFloors` | 4.5:1 on the computed canvas tone |
+| Non-text UI boundaries | `ContrastTest.nonTextUiMeetsTheThreeToOneFloor` | 3:1 |
+| Filled controls / accent text | `ContrastTest.filledControlsStayReadable` | 4.5:1 |
+| No Material chrome on the desk | `DesktopConsistencyTest.noMaterialChromeInTheDesktopShell` | source assertion |
+| Tab switches are instant | `DesktopConsistencyTest.tabSwitchesAreNotCrossfaded` | source assertion |
+| Desk never writes | `ReadOnlyShellTest` | repository assertion |
+| Surface depth is native | `ShadowEngineTest` | source assertion (no library, tokens, clipping) |
 
-All four palettes (sage light, sage dark, night, paper) are covered.
+Run them with `./gradlew :composeApp:desktopTest`.
 
-## Interaction
+## Desktop
 
-- **Focus is always visible.** Buttons, icon buttons, rail items and fields draw a 2 dp accent ring
-  when focused. Neumorphism cannot show focus by shadow alone, so it is drawn explicitly.
-- **Keyboard**: `Ctrl+←/→` month, `Ctrl+F` entries, `Ctrl+N` new entry, `Esc` dismiss;
-  in a table `↑ ↓` select, `Enter` edit, `Delete` remove.
-- **Targets**: rail items 48 dp, toolbar buttons 36 dp tall with 16 dp padding, chips 32 dp with
-  12 dp padding — all at or above the 44 dp touch guidance after padding.
-- **Hover** never moves text: rows keep their padding and change surface only.
+- Focus is drawn as an Electric Blue ring on custom buttons; tab navigation works without the mouse.
+- Contrast is computed per palette and tested; `ContrastTest` is the gate for any palette change.
+- Charts expose a spoken summary through `semantics` (week bars, trajectory).
+- **Gap:** no OS font scaling, no reduced-motion handling, and canvas charts do not expose per-point
+  values.
+- Scrollbars were removed by request; the wheel/trackpad is the only scroll affordance.
 
-## Screen readers
+## Phone
 
-- Every icon-only control has a `contentDescription` (rail, gear, month chevrons, row actions).
-- The two charts expose a summary through `Modifier.semantics`: the week reads as
-  "Last seven days net: Mon 92.61, …" and the trend as "Month trend, peak RM 115.63".
-- Tables are text-first, so a reader walks labels and figures in reading order.
+- Material 3 provides semantics, state layers and 48 dp minimum interaction sizes for stock components.
+- The glass nav is 74 dp tall with 52 dp tab cells; the add action is 56 dp.
+- Palette contrast is covered by the same `ContrastTest` packs the phone uses.
+- **Gap:** TalkBack cannot edit/delete a ledger row without the swipe/long-press gestures, and custom
+  canvases (week strip, sparkline, map) have no per-element descriptions.
+- **Gap:** dynamic colour from the wallpaper is not contrast-clamped.
+- **Gap:** large-font layouts have not been audited; fixed display sizes may clip.
+- The M3/WCAG phone pass (48 dp audit, selected-tab semantics, custom Edit/Delete actions, Mist contrast
+  fix) exists at tag `v0.35.4` but is **not** in the current interface; cherry-pick pieces as needed.
 
-## Known gaps
+## Known exceptions
 
-- No OS font-scale support: Compose Desktop has no system text-size setting; a `Config` scale is the
-  honest way to add it later.
-- No high-contrast theme beyond the Night pack; a true high-contrast mode would need a fourth palette
-  with heavier text and near-opaque surfaces.
-- Reduced-motion preference is not read yet; the transitions are short (90–140 ms) and only
-  fades, but honouring `prefers-reduced-motion` equivalents is still to do.
-- Charts are canvas-drawn; their descriptions are summaries, not data tables.
+- Decorative separators may be below 3:1 because they carry no information.
+- Muted text at small sizes on the desk is tested at 4.5:1; placeholders use the same tone.

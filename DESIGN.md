@@ -793,3 +793,14 @@ so every item is still reachable; there is simply no persistent track/thumb.
 - **Wednesday reminder**: a WorkManager periodic task fires the next Wednesday at 10:00 and posts a
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
+
+## Current state (v0.35.9)
+
+- **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
+  Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
+- Natural-language quick entry and voice were removed in 0.35.6 (unused); quick-add chips and the full
+  Add sheet remain. The parser and its tests stay in the codebase.
+- The floating glass **+** was restored above the nav in 0.35.8; it is glass, so it refracts the content
+  directly behind it.
+- PDF statement import: share/open PDFs, multi-select, Wednesday 10:00 reminder (v0.34/0.35).
+- **Desk**: neumorphic Soft UI 2.0 in light and Obsidian Slate in dark, read-only, unchanged since 0.34.

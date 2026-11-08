@@ -1,55 +1,47 @@
-# Known bugs / parked work
+# Known issues / parked work
 
-Kept here so nothing is lost between sessions. Ordered by what actually costs money or trust.
+Updated 2026-11-08 for **0.35.9**. Ordered by what costs money or trust first.
 
-## How distance is decided (v0.6.4)
+## Security / operations
 
-`odometer > GPS (speed-assisted) > hours x average speed`
+- **The sync API is unauthenticated.** Anyone who can reach the port can read and merge the store.
+  Route traces are sealed (AES-GCM) but the ledger is not. Keep it on a trusted LAN or put it behind
+  a reverse proxy with auth.
+- **Backups are local only.** The server rotates 30 JSON backups in `../grab-tracker/backups/`; nothing
+  leaves the machine.
+- **`/usr/bin/baki` is a root-owned leftover** from an early install. The current app lives in
+  `~/.local/opt/baki`; removing the old binary needs sudo.
 
-- `travelMetres` believes Doppler speed only when the fix reports a good speed accuracy, otherwise it
-  trusts position past a noise floor of 0.25 x accuracy. The anchor always advances.
-- `Calibration` learns the drift factor: when a finished shift's km is corrected to the car's own
-  figure, the raw-vs-real pair is stored locally; the median of the last 5 ratios (clamped 0.8-1.8,
-  from 2 samples up) becomes `gpsCorrection` automatically. No odometer at both ends is required.
+## Phone
 
-## Fixed
+- **Natural-language quick entry and voice were removed** in 0.35.6 because they went unused. The parser
+  and its tests remain (`QuickEntry.kt`, `QuickEntryTest`); the UI/mic are gone.
+- **TalkBack coverage is incomplete.** Custom canvases (week strip, sparkline, route map) and the old
+  swipe-to-edit/delete ledger rows lack custom accessibility actions; a screen-reader user cannot edit or
+  delete an entry without gestures.
+- **Dynamic colour is not contrast-checked.** Fixed palettes pass `ContrastTest`; wallpaper-derived
+  colours can fall below 4.5:1.
+- **Statement reminder needs notification permission.** If it was denied at first launch, the reminder
+  switch silently produces no notification.
+- **Share target accepts `application/pdf` only**; some providers send `application/octet-stream`.
+  Bulk import is capped at 12 files, 25 MB each. No OCR.
+- **Odometer discipline is partial**: most fuel fills still lack a reading, so measured km/L only
+  applies after the "Use measured" action.
+- The Today header/status and glass nav are custom; 48 dp targets were not exhaustively re-audited after
+  the minimal pass was reverted.
 
-- **Tracked km under-counted in slow traffic** (v0.6.3). A fixed 3 m step gate ignored the fix's
-  Doppler speed and left the anchor stale, so stop-go driving lost real distance (reported: 50 km
-  tracked vs 75 km on the odometer). Travel is now speed-assisted with an accuracy-scaled noise floor
-  (`travelMetres`, 7 tests).
+## Desk
 
-- **In-progress route deleted on every app launch** (v0.6.2). `Repo.start()` swept orphaned paths
-  using only the stored shifts, so opening the app during a shift purged the path being recorded and
-  the day's map appeared to restart after a stop. The sweep now keeps the live shift's key.
-- **Weekly review counted the wrong fuel category** (v0.6.1). `cat == "petrol"` vs `"fuel"`.
+- **Read-only by design** (capture is the phone's job). There is no add/edit/delete.
+- No OS font scaling or reduced-motion handling; charts are canvas with summary descriptions only.
+- Scrollbars were removed by request; the wheel is the only affordance.
+- Automated UI clicking is impossible from this Wayland session (compositor drops synthetic input).
+  Visual QA uses `scripts/shots.sh`; this is a tooling limitation, not an app bug.
 
-## Bugs
+## Parked, deliberately
 
-1. **Quick entry ignores fuel aliases when the category id isn't `petrol`.**
-   `QuickEntry.ALIASES` registers `petrol/fuel/gas/minyak` only if a category with id `petrol` exists.
-   Stores whose fuel category is `fuel` (like ours) lose `minyak`/`gas`; `petrol` only works because
-   it is the category *name*. Fix: map the alias group onto whichever fuel category exists
-   (`cats.firstOrNull { isFuelCat(it.id) }`).
-
-2. **Fuel accrual uses a default assumption, not measurement.**
-   `measuredEconomy()` needs two fuel entries carrying an odometer; with none it returns null and the
-   app silently keeps the `kmPerLitre` setting. Our data implies ~8.2 km/L against a configured 11.
-   Fix: ask for the odometer at fuel-up (or surface measured vs assumed and offer to adopt it).
-
-3. **`Kept Today` widget has not had the resize pass** the live widget got (2x2 vs 4x2 both just
-   stretch the same column).
-
-4. **Desktop app image predates liquid glass.** `~/.local/opt/baki` needs a rebuild to match v0.6.x.
-
-## Parked features (Batch B/C remainder)
-
-- 2.4 undo history (needs an inverse-op log through every mutation)
-- 2.3 inline editing of ledger amounts
-- 2.7 search everywhere (entries + shifts + notes)
-- 2.9 Quick Settings tile long-press
-- 2.10 range selection on the week strip
-
-## Blocked on toolchain
-
-- CMP 1.13 stable for M3 Expressive components, shape morphing, adaptive layouts, desktop AOT.
+- Maintenance reminders by distance (start counting from the first service).
+- Receipt photos (receipts are rarely kept).
+- Best-hours earning nudge.
+- Phone neumorphism (the glass design is the current direction).
+- Bill notifications and tax-pack year/PDF export were discarded by request.

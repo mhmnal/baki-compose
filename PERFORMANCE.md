@@ -1,5 +1,9 @@
 # Performance audit
 
+> **Baseline note (2026-11-08):** measured 2026-11-06 around v0.18 on the current hardware. The
+> algorithms and test harness have not changed materially; rerun the benchmark before quoting numbers
+> for a newer build.
+
 Measured on this machine and on the Nothing Phone, 2026-11-06.
 Benchmark harness: `composeApp/src/desktopTest/.../Benchmark.kt` — a synthetic year
 (2,400 entries, 520 shifts) so the numbers are about the algorithms, not the current 6 shifts.
