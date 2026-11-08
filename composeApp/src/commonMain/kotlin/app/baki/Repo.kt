@@ -101,22 +101,22 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         scope.launch {
             while (true) {
-                runCatching { sync() }
+                runCatching { sync(showProgress = false) }
                 delay(if (status == "offline") 5_000 else 20_000)
             }
         }
         scope.launch {
             while (true) {
                 runCatching {
-                    client.events().collect { sync() }
+                    client.events().collect { sync(showProgress = false) }
                 }
                 delay(3_000)          // server restarts / network blips: retry the stream
             }
         }
     }
 
-    suspend fun sync() = mutex.withLock {
-        status = "syncing"
+    suspend fun sync(showProgress: Boolean = true) = mutex.withLock {
+        if (showProgress) status = "syncing"
         try {
             val remote = client.pull()
             if (remote == null) {
@@ -284,8 +284,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(entries = store.entries + entry, updatedAt = nowIso())
         saveLocal(store)                       // never lose a tap, even offline
         try {
-            val saved = client.push(store)
-            store = mergeStores(store, saved)
+            pushWithAllTombs()
             saveLocal(store)
             pendingPush = false
             status = "synced"
@@ -312,8 +311,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(entries = store.entries + made, updatedAt = stamp)
         saveLocal(store)
         try {
-            val saved = client.push(store)
-            store = mergeStores(store, saved)
+            pushWithAllTombs()
             saveLocal(store)
             pendingPush = false
             status = "synced"
@@ -346,8 +344,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = recomputeCover(withShift).first
         saveLocal(store)
         try {
-            val saved = client.push(store)
-            store = mergeStores(store, saved)
+            pushWithAllTombs()
             saveLocal(store)
             pendingPush = false
             status = "synced"
@@ -570,8 +567,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             RouteStore.pruneOrphans(routeKeysInUse())
         }
         try {
-            val saved = client.push(store)
-            store = mergeStores(store, saved)
+            pushWithAllTombs()
             saveLocal(store)
             pendingPush = false
             status = "synced"
@@ -700,15 +696,29 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (!config.pendingPush) pendingPush = true
     }
 
-    /** Full-store push used by the retry loop: carries every tombstone so deletions cannot lag behind. */
-    private suspend fun pushAll() {
+    /**
+     * The only place that talks to the push endpoint. It always sends the union of the explicit
+     * tombstones and everything already in [Store.tomb], so no successful write can clear the outbox
+     * while an older deletion is still unknown to the server.
+     */
+    private suspend fun pushWithAllTombs(extraIds: List<String> = emptyList()): Store {
+        // A fee entry can be legitimately re-derived after it was tombstoned (the cover rule changed,
+        // or a renewal now applies). Tombstones are authoritative on the server, so a re-created id
+        // must be undeleted or the ledger silently loses that fee.
         val neededFees = store.entries.filter { it.cat == "grabfee" }.map { it.id }
         val resurrect = neededFees.filter { it in store.tomb.ids }
-        val saved = client.push(store, deletedIds = store.tomb.ids, undeleteIds = resurrect)
+        val deleted = (extraIds + store.tomb.ids).distinct()
+        val saved = client.push(store, deletedIds = deleted, undeleteIds = resurrect)
         store = mergeStores(store, saved)
         if (resurrect.isNotEmpty()) {
             store = store.copy(tomb = store.tomb.copy(ids = store.tomb.ids - resurrect.toSet()))
         }
+        return saved
+    }
+
+    /** Full-store push used by the retry loop. */
+    private suspend fun pushAll() {
+        pushWithAllTombs()
         saveLocal(store)
         pendingPush = false
         status = "synced"
@@ -718,16 +728,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
-            // A fee entry can be legitimately re-derived after it was tombstoned (the cover rule
-            // changed, or a renewal now applies). Tombstones are authoritative on the server, so a
-            // re-created id must be undeleted or the ledger silently loses that fee.
-            val neededFees = store.entries.filter { it.cat == "grabfee" }.map { it.id }
-            val resurrect = neededFees.filter { it in store.tomb.ids }
-            val saved = client.push(store, deletedIds = ids, undeleteIds = resurrect)
-            store = mergeStores(store, saved)
-            if (resurrect.isNotEmpty()) {
-                store = store.copy(tomb = store.tomb.copy(ids = store.tomb.ids - resurrect.toSet()))
-            }
+            pushWithAllTombs(ids)
             saveLocal(store)
             status = "synced"
             pendingPush = false
@@ -749,8 +750,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val cat = Cat(id = id, name = name.trim(), icon = "🏷️")
         store = store.copy(settings = store.settings.copy(cats = store.settings.cats.copy(catsOut = store.settings.cats.catsOut + cat)))
         saveLocal(store)
-        runCatching { client.push(store) }.onSuccess {
-            store = mergeStores(store, it)
+        runCatching { pushWithAllTombs() }.onSuccess {
             saveLocal(store)
             pendingPush = false
         }
@@ -780,8 +780,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val cats = store.settings.cats
         store = store.copy(settings = store.settings.copy(cats = cats.copy(catsOut = cats.catsOut.filter { it.id != id })))
         saveLocal(store)
-        runCatching { client.push(store) }.onSuccess {
-            store = mergeStores(store, it)
+        runCatching { pushWithAllTombs() }.onSuccess {
             saveLocal(store)
             pendingPush = false
         }

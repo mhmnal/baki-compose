@@ -31,10 +31,24 @@ class DurabilityTest {
     }
 
     @Test
+    fun everyPushCarriesEveryTombstone() {
+        val r = repo()
+        assertTrue(r.contains("(extraIds + store.tomb.ids).distinct()"), "all local tombstones must travel")
+        assertEquals(1, Regex("client\\.push\\(store").findAll(r).count(), "pushes must go through one helper")
+    }
+
+    @Test
+    fun backgroundSyncDoesNotFlipTheHeader() {
+        val r = repo()
+        assertTrue(r.contains("sync(showProgress = false)"), "background syncs must stay quiet")
+        assertTrue(r.contains("if (showProgress) status = \"syncing\""), "only manual syncs show syncing")
+    }
+
+    @Test
     fun theRetryLoopPushesFullHistoryWithTombstones() {
         val r = repo()
         assertTrue(r.contains("private suspend fun pushAll()"), "a single retry-push path is required")
-        assertTrue(r.contains("deletedIds = store.tomb.ids"), "deletions must travel with the retry push")
+        assertTrue(r.contains("deletedIds = deleted"), "deletions must travel with the retry push")
         // both sync branches (304 and fresh data) go through pushAll, not an ad-hoc push
         assertTrue(r.split("pushAll()").size - 1 >= 3, "sync branches do not both use pushAll")
     }

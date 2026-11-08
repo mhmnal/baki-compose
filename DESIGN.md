@@ -824,4 +824,7 @@ Storage and sync fixes after the feasibility audit:
   included); a zeroed store was quarantined and the `.bak` restored, with the reason shown in Diagnostics.
 - Verified on the phone debug build: offline add and delete both survived restart and reached the server;
   a zeroed store was quarantined and the backup restored. Release 0.36.0 carries it.
+- Post-0.36.0 fix: every push path now sends the union of its explicit tombstones and `Store.tomb`, through
+  one `pushWithAllTombs`; a successful add/edit can no longer clear the outbox while an older delete is
+  still unknown to the server. Background syncs no longer set the header to "syncing" (manual syncs do).
 - Still outstanding: server authentication, off-machine backups, and server-side fsync/error propagation.
