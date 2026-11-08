@@ -149,6 +149,9 @@ object Elevation {
     /** Wells, inputs, tracks: carved 4dp with an 8dp blur. */
     val inset = 4.dp
     val insetBlur = 8.dp
+    /** Data-viz bays: one depth on every screen - 3dp offset, 4dp blur. */
+    val viz = 3.dp
+    val vizBlur = 4.dp
     /** Floating layers keep their own drop. */
     val floating = 12.dp
 
@@ -300,6 +303,7 @@ fun NeuWell(
     modifier: Modifier = Modifier,
     corner: Dp = 16.dp,
     offset: Dp = Elevation.inset,
+    blur: Dp = Elevation.insetBlur,
     /** false paints a flat tray: used by the chart plots, where the cavity added nothing but corner noise */
     inset: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
@@ -307,7 +311,7 @@ fun NeuWell(
     // When inset, the modifier already fills the shape and draws the inner shadows. Painting a
     // background afterwards sat on top of them and flattened the cavity - the inset looked absent.
     if (inset) {
-        Box(modifier.inset(neu, corner, offset).clip(RoundedCornerShape(corner)), content = content)
+        Box(modifier.inset(neu, corner, offset, blur).clip(RoundedCornerShape(corner)), content = content)
     } else {
         Box(modifier.clip(RoundedCornerShape(corner)).background(neu.base), content = content)
     }
@@ -486,7 +490,7 @@ fun NeuBar(
     color: Color = neu.accent,
     segments: List<Pair<Float, Color>>? = null,
 ) {
-    NeuWell(neu, modifier, corner = height / 2, offset = 2.dp) {
+    NeuWell(neu, modifier, corner = height / 2, offset = Elevation.viz, blur = Elevation.vizBlur) {
         Row(Modifier.fillMaxSize().padding(2.dp)) {
             if (segments.isNullOrEmpty()) {
                 if (fraction <= 0f) return@Row
@@ -511,7 +515,7 @@ fun NeuBar(
 fun NeuEmpty(neu: Neu, title: String, hint: String?, modifier: Modifier = Modifier) {
     NeuWell(neu, modifier.fillMaxWidth(), corner = Radius.card) {
         Column(
-            Modifier.fillMaxWidth().padding(vertical = Space.xl),
+            Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(title, color = neu.ink, style = BakiType.labelStrong, textAlign = TextAlign.Center)

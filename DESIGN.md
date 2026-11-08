@@ -706,3 +706,13 @@ The desk now follows the extruded/sunken rulebook literally:
   `raised` clipped the first ~70dp of content; separating surface and scroll fixed it.
 
 The rulebook also clarified why the header and rail were raised: they were previously bare canvas.
+
+## Chart bay rules (v0.29)
+
+- Every data-visualisation bay (Last 7 Days, Month Trajectory, Compare bars) uses one inset depth:
+  **offset 3dp, blur 4dp** (`Elevation.viz` / `Elevation.vizBlur`). `NeuBar` tracks share it, so no screen
+  mixes two chart depths.
+- Bay content is padded **16dp on all sides** and clipped by the well's rounded shape, so negative bars
+  and edge labels never sit on the inner shadow. Text fields and empty states got the same 16dp inner
+  padding because they also hold long text inside a sunken well.
+- `ChartBayTest` guards the shared depth and the 16dp padding.

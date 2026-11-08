@@ -483,9 +483,10 @@ private fun WeekChart(store: Store, neu: Neu) {
             neu,
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
             corner = Radius.card,
-            offset = Elevation.inset,
+            offset = Elevation.viz,
+            blur = Elevation.vizBlur,
         ) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
+            Column(Modifier.fillMaxWidth().padding(Space.l)) {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Space.m),
@@ -554,9 +555,10 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                 contentDescription = "Cumulative net through $month, ending at RM ${rm(last)}"
             },
             corner = Radius.card,
-            offset = Elevation.inset,
+            offset = Elevation.viz,
+            blur = Elevation.vizBlur,
         ) {
-            Column(Modifier.fillMaxWidth().padding(Space.m)) {
+            Column(Modifier.fillMaxWidth().padding(Space.l)) {
                 Canvas(Modifier.fillMaxWidth().height(132.dp)) {
                     val span = (high - low).coerceAtLeast(1L).toFloat()
                     fun y(v: Long): Float = size.height - ((v - low).toFloat() / span) * size.height
@@ -1372,8 +1374,11 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                     .sortedByDescending { maxOf(it.second.first, it.second.second) }
                     .take(7)
                 val peak = top.maxOfOrNull { maxOf(it.second.first, it.second.second) }?.coerceAtLeast(1) ?: 1
-                NeuWell(neu, Modifier.fillMaxWidth(), corner = Radius.card, offset = Elevation.inset) {
-                Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s)) {
+                NeuWell(
+                    neu, Modifier.fillMaxWidth(), corner = Radius.card,
+                    offset = Elevation.viz, blur = Elevation.vizBlur,
+                ) {
+                Column(Modifier.fillMaxWidth().padding(Space.l)) {
                 top.forEach { (name, values) ->
                     val (va, vb) = values
                     Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
@@ -1440,7 +1445,7 @@ private fun NeuField(
             corner = Radius.input,
         ) {
             androidx.compose.foundation.layout.Box(
-                Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s),
+                Modifier.fillMaxWidth().padding(Space.l),
             ) {
                 androidx.compose.foundation.text.BasicTextField(
                     value = value,
