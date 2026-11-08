@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.35.9)
+## Current state (v0.36.0)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -805,7 +805,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
 - PDF statement import: share/open PDFs, multi-select, Wednesday 10:00 reminder (v0.34/0.35).
 - **Desk**: neumorphic Soft UI 2.0 in light and Obsidian Slate in dark, read-only, unchanged since 0.34.
 
-## Durability pass (unreleased, no signed build yet)
+## Durability pass (v0.36.0)
 
 Storage and sync fixes after the feasibility audit:
 
@@ -822,4 +822,6 @@ Storage and sync fixes after the feasibility audit:
 - Verified on a side-by-side debug build against an isolated server copy: an entry added offline and a
   deletion made offline both survived an app restart and reached the server after it returned (tombstone
   included); a zeroed store was quarantined and the `.bak` restored, with the reason shown in Diagnostics.
+- Verified on the phone debug build: offline add and delete both survived restart and reached the server;
+  a zeroed store was quarantined and the backup restored. Release 0.36.0 carries it.
 - Still outstanding: server authentication, off-machine backups, and server-side fsync/error propagation.
