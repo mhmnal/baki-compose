@@ -726,3 +726,20 @@ Selected controls are pressed into the surface instead of filled with an accent:
 - the Routes row keeps a 4dp side margin so its inset ring is not clipped into a dark strip at the card edge.
 - primary CTAs remain accent-filled + soft drop (they are actions, not selections); focus rings stay
   Electric Blue.
+
+## Obsidian Slate dark mode (v0.31)
+
+Light mode is unchanged. Dark mode now follows the Obsidian Slate brief exactly:
+
+- canvas `#1E222B`; text `#F1F5F9` / `#94A3B8`; Electric Blue `#3B82F6`, Emerald `#10B981`, red `#EF4444`;
+- raised surfaces use `#282D39` at 0.90 (top-left) and `#12151B` at 0.95 (bottom-right), offset 6dp, blur 10dp;
+- every sunken surface (inputs, tracks, chart bays, selected rows) uses `#14171D` at 0.90 top-left and
+  `#282D39` at 0.70 bottom-right, offset 3dp, blur 5dp, clipped to the rounded shape;
+- selected rows are sunken with a 4dp Electric Blue indicator (no flat colour overlay); selected tabs and
+  chips are sunken with bold ink;
+- primary CTAs are extruded accent keys filled Electric Blue with white text (light mode keeps the hybrid
+  accent + single drop).
+
+Theme resolution fix: the desk previously derived dark from the *colour pack*. With a stored `paper`
+pack it stayed light even when Appearance was Dark. The desk is palette-independent, so it now resolves
+`paletteFor("sage", dark)` from the mode; the phone keeps its own packs.

@@ -1222,7 +1222,14 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                                 .padding(horizontal = Space.s, vertical = Space.s),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Box(Modifier.size(width = 3.dp, height = 26.dp))
+                            Box(
+                                Modifier.size(width = 4.dp, height = 24.dp)
+                                    .clip(RoundedCornerShape(Radius.pill))
+                                    .background(
+                                        if (isSel && neu.isDark) neu.accent
+                                        else androidx.compose.ui.graphics.Color.Transparent,
+                                    ),
+                            )
                             Spacer(Modifier.width(Space.s))
                             Box(
                                 Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill))

@@ -95,22 +95,26 @@ data class Neu(
     val scrim: Color,
     /** true for dark packs, so shadow distances can shorten */
     val isDark: Boolean = false,
+    /** inner-shadow directions: identical to light/dark in light mode, separate tokens in dark */
+    val insetDark: Color = dark,
+    val insetLight: Color = light,
 )
 
 fun neuOf(p: BakiPalette): Neu {
-    // Soft UI 2.0 tokens (the desktop brief): one light and one dark canvas, one light source.
     val dark = p.dark
     val base = if (dark) Color(0xFF1E222B) else Color(0xFFE0E5EC)
-    val ink = if (dark) Color(0xFFF8FAFC) else Color(0xFF1E293B)
-    // The brief's #64748B secondary is 3.76:1 on #E0E5EC - below AA for body copy. Nudged 20% toward
-    // ink it reaches 4.68:1 while still reading as secondary.
+    val ink = if (dark) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+    // The brief's #64748B secondary is 3.76:1 on the light canvas - below AA for body copy. Nudged 20%
+    // toward ink it reaches 4.68:1 while still reading as secondary.
     val muted = if (dark) Color(0xFF94A3B8) else blend(Color(0xFF64748B), ink, 0.20f)
     val accent = Color(0xFF3B82F6)   // Electric Blue
     val up = Color(0xFF10B981)       // Emerald
     val danger = Color(0xFFEF4444)
-    // Highlight and shade are directions of the same canvas, never pure black/white.
-    val light = if (dark) blend(base, Color.White, 0.14f) else blend(base, Color.White, 0.92f)
-    val shade = if (dark) blend(base, Color.Black, 0.62f) else Color(0xFFA3B1C6)
+    // Obsidian Slate: one canvas, directional glow and drop, and separate inner-shadow tokens.
+    val light = if (dark) Color(0xFF282D39) else blend(base, Color.White, 0.92f)
+    val shade = if (dark) Color(0xFF12151B) else Color(0xFFA3B1C6)
+    val insetShade = if (dark) Color(0xFF14171D) else shade
+    val insetGlow = if (dark) Color(0xFF282D39) else light
     return Neu(
         base = base,
         panel = base,                       // a single moulded surface: face == canvas
@@ -123,10 +127,12 @@ fun neuOf(p: BakiPalette): Neu {
         accentSoft = blend(base, accent, if (dark) 0.28f else 0.14f),
         up = up,
         danger = danger,
-        lightAlpha = if (dark) 0.12f else 0.80f,
-        darkAlpha = if (dark) 0.55f else 0.60f,
+        lightAlpha = if (dark) 0.90f else 0.80f,
+        darkAlpha = if (dark) 0.95f else 0.60f,
         scrim = Color(0xFF0F172A).copy(alpha = if (dark) 0.66f else 0.45f),
         isDark = dark,
+        insetDark = insetShade,
+        insetLight = insetGlow,
     )
 }
 
@@ -175,8 +181,8 @@ fun Modifier.raised(
 ): Modifier = this
     .graphicsLayer()
     .drawBehind {
-        val o = Elevation.distance(neu, offset).toPx()
-        val b = Elevation.blur(neu, blur).toPx()
+        val o = (if (neu.isDark) 6.dp else Elevation.distance(neu, offset)).toPx()
+        val b = (if (neu.isDark) 10.dp else Elevation.blur(neu, blur)).toPx()
         val r = corner.toPx()
         val shape = Path().apply {
             addRoundRect(RoundRect(0f, 0f, size.width, size.height, r, r))
@@ -255,8 +261,8 @@ fun Modifier.inset(
     .graphicsLayer()
     .drawBehind {
         val r = corner.toPx()
-        val o = Elevation.distance(neu, offset).toPx()
-        val b = Elevation.blur(neu, blur).toPx()
+        val o = (if (neu.isDark) 3.dp else Elevation.distance(neu, offset)).toPx()
+        val b = (if (neu.isDark) 5.dp else Elevation.blur(neu, blur)).toPx()
         val shape = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, r, r)) }
         drawPath(shape, fill)
         // inner shadows painted as blurred strokes *clipped to the shape*: nothing can leak past a
@@ -279,8 +285,11 @@ fun Modifier.inset(
                 }
                 // BAKI_INSET lets the strength be judged live without a rebuild
                 val strength = System.getenv("BAKI_INSET")?.toFloatOrNull() ?: Elevation.INSET_STRENGTH
-                ring(neu.dark, neu.darkAlpha * strength, o)          // shade from the top-left
-                ring(neu.light, neu.lightAlpha * (strength + 0.05f), -o) // light from below-right
+                // Obsidian Slate specifies its own inner alphas; light keeps the tuned strengths.
+                val innerDark = if (neu.isDark) 0.90f else neu.darkAlpha * strength
+                val innerLight = if (neu.isDark) 0.70f else neu.lightAlpha * (strength + 0.05f)
+                ring(neu.insetDark, innerDark, o)            // shade from the top-left
+                ring(neu.insetLight, innerLight, -o)         // light from below-right
             }
         }
     }
@@ -351,7 +360,13 @@ fun NeuButton(
                         offset = Elevation.inset,
                         fill = if (primary && enabled) neu.accent else neu.base,
                     )
-                    // hybrid accent: a flat vibrant fill lifted by one soft outer drop
+                    // dark: an extruded accent key; light: hybrid accent with one soft drop
+                    primary && neu.isDark -> Modifier.raised(
+                        neu,
+                        corner = 50.dp,
+                        offset = Elevation.control,
+                        fill = if (hovered) blend(neu.accent, Color.White, 0.08f) else neu.accent,
+                    )
                     primary -> Modifier.elevated(
                         neu,
                         corner = 50.dp,
@@ -421,7 +436,7 @@ fun <T> NeuSegmented(
                         .then(
                             if (on) Modifier.inset(
                                 neu, corner = 50.dp, offset = Elevation.inset,
-                                fill = blend(neu.base, neu.dark, 0.06f),
+                                fill = if (neu.isDark) neu.base else blend(neu.base, neu.dark, 0.06f),
                             )
                             else Modifier,
                         )
@@ -456,7 +471,7 @@ fun NeuChip(
                 // selected is a pressed state: a slightly darker face sunk into the surface, not a colour badge
                 if (selected) Modifier.inset(
                     neu, corner = 50.dp, offset = Elevation.inset,
-                    fill = blend(neu.base, neu.dark, 0.06f),
+                    fill = if (neu.isDark) neu.base else blend(neu.base, neu.dark, 0.06f),
                 )
                 else Modifier.raised(neu, corner = 50.dp, offset = Elevation.control),
             )

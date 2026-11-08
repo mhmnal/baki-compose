@@ -114,3 +114,60 @@ class ShadowEngineTest {
         }
     }
 }
+
+/** Obsidian Slate: the dark branch has its own tokens, geometry and theme resolution. */
+class DarkModeTest {
+
+    private fun source(path: String): String {
+        var dir = File(System.getProperty("user.dir"))
+        while (true) {
+            val candidate = File(dir, "src/$path")
+            if (candidate.isFile) return candidate.readText()
+            dir = dir.parentFile ?: error("cannot locate sources")
+        }
+    }
+
+    private fun material() = source("desktopMain/kotlin/app/baki/Neumorphism.kt")
+
+    @Test
+    fun obsidianTokensArePresent() {
+        val m = material()
+        listOf(
+            "0xFF1E222B" to "dark canvas",
+            "0xFF282D39" to "raised glow / inset highlight",
+            "0xFF12151B" to "raised drop",
+            "0xFF14171D" to "inset dark",
+            "0xFFF1F5F9" to "dark primary text",
+            "0xFF94A3B8" to "dark secondary text",
+            "0xFF3B82F6" to "Electric Blue",
+            "0xFF10B981" to "Emerald",
+            "0xFFEF4444" to "danger red",
+        ).forEach { (hex, label) ->
+            assertTrue(m.contains(hex), "$label ($hex) missing")
+        }
+    }
+
+    @Test
+    fun darkGeometryFollowsTheBrief() {
+        val m = material()
+        listOf(
+            "if (neu.isDark) 6.dp" to "raised offset 6dp",
+            "if (neu.isDark) 10.dp" to "raised blur 10dp",
+            "if (neu.isDark) 3.dp" to "sunken offset 3dp",
+            "if (neu.isDark) 5.dp" to "sunken blur 5dp",
+            "0.90f" to "inner dark alpha",
+            "0.70f" to "inner light alpha",
+        ).forEach { (needle, label) ->
+            assertTrue(m.contains(needle), "$label missing from the engine")
+        }
+    }
+
+    @Test
+    fun deskThemeIgnoresTheStoredColourPack() {
+        val theme = source("commonMain/kotlin/app/baki/Theme.kt")
+        assertTrue(
+            theme.contains("if (Caps.isDesktop) paletteFor(\"sage\", dark)"),
+            "the desk must resolve light/dark from the mode, not from a stored colour pack",
+        )
+    }
+}

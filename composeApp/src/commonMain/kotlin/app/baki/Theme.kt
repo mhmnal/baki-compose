@@ -141,7 +141,9 @@ fun BakiTheme(
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    val fallback = paletteFor(pack, dark)
+    // The desk is palette-independent (Obsidian Slate / Soft UI 2.0 are fixed per mode), so a stored
+    // colour pack like "paper" must not keep it light when the user chose Dark.
+    val fallback = if (Caps.isDesktop) paletteFor("sage", dark) else paletteFor(pack, dark)
     val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: fallback } else fallback
     CompositionLocalProvider(LocalBaki provides palette) {
         MaterialTheme(
