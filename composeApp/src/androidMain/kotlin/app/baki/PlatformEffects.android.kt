@@ -79,6 +79,19 @@ actual object PlatformEffects {
 
     actual fun printStatement(html: String) {}
 
+    actual fun notice(text: String) {
+        val ctx = AppCtx.ctx ?: return
+        runCatching {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(ctx, text, android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    actual fun setStatementReminder(enabled: Boolean) {
+        AppCtx.ctx?.let { StatementReminder.setEnabled(it, enabled) }
+    }
+
     actual fun requestLiveWidget() {
         val ctx = AppCtx.ctx ?: return
         runCatching {

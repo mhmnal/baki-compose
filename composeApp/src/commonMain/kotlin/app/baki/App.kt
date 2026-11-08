@@ -70,8 +70,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.layerBackdrop
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -79,6 +81,26 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     // install the typefaces before anything composes text
     val (textFace, displayFace, readoutFace) = bakiFontFamilies()
     BakiType.install(textFace, displayFace, readoutFace)
+
+    // A PDF shared into the app is a statement import; the effect keeps it off the composition thread.
+    val shared = SharedStatement.pending
+    LaunchedEffect(shared) {
+        val bytes = shared ?: return@LaunchedEffect
+        SharedStatement.pending = null
+        val parsed = withContext(Dispatchers.Default) {
+            PdfText.extract(bytes)?.let { StatementParse.parse(it) }
+        }
+        if (parsed == null) {
+            PlatformEffects.notice("That PDF doesn't look like a Grab statement")
+        } else {
+            repo.saveStatement(parsed)
+            PlatformEffects.notice("Imported week of ${parsed.weekStart}")
+        }
+    }
+    // keep the Wednesday nudge in sync with the device setting
+    LaunchedEffect(repo.config.statementReminder) {
+        PlatformEffects.setStatementReminder(repo.config.statementReminder)
+    }
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         if (Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
@@ -1484,26 +1506,52 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             )
             Spacer(Modifier.height(Space.m))
             var importMsg by remember { mutableStateOf<String?>(null) }
-            val pickStatement = rememberStatementImport { bytes ->
-                if (bytes == null) return@rememberStatementImport
-                val text = PdfText.extract(bytes)
-                val parsed = text?.let { StatementParse.parse(it) }
-                if (parsed == null) {
-                    importMsg = "That PDF doesn't look like a Grab statement."
-                } else {
-                    scope.launch {
-                        repo.saveStatement(parsed)
-                        importMsg = "Imported ${parsed.weekStart} · RM ${"%.2f".format(parsed.weekly)}"
+            val pickStatement = rememberStatementImport { files ->
+                if (files.isNullOrEmpty()) return@rememberStatementImport
+                scope.launch {
+                    var imported = 0
+                    var skipped = 0
+                    files.forEach { bytes ->
+                        val parsed = withContext(Dispatchers.Default) {
+                            PdfText.extract(bytes)?.let { StatementParse.parse(it) }
+                        }
+                        if (parsed == null) skipped++ else {
+                            repo.saveStatement(parsed)
+                            imported++
+                        }
+                    }
+                    importMsg = when {
+                        imported == 0 -> "None of those looked like Grab statements."
+                        skipped == 0 -> "Imported $imported statement${if (imported == 1) "" else "s"}."
+                        else -> "Imported $imported · skipped $skipped."
                     }
                 }
             }
             Button(
                 onClick = { pickStatement() },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-            ) { Text("Import statement PDF") }
+            ) { Text("Import statement PDFs") }
+            Spacer(Modifier.height(Space.xs))
+            val weeks = repo.store.statements.size
+            Text(
+                if (weeks == 1) "1 week on file" else "$weeks weeks on file",
+                color = baki.muted, style = BakiType.captionNumeric,
+            )
             importMsg?.let {
                 Spacer(Modifier.height(Space.s))
                 Text(it, color = if (it.startsWith("Imported")) baki.up else baki.down, style = BakiType.caption)
+            }
+
+            Spacer(Modifier.height(Space.m))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Wednesday reminder", color = baki.onSurface, style = BakiType.label)
+                    Text("10:00 nudge to import last week's PDF", color = baki.muted, style = BakiType.caption)
+                }
+                Switch(
+                    checked = repo.config.statementReminder,
+                    onCheckedChange = { repo.setStatementReminder(it) },
+                )
             }
 
             val latest = repo.store.statements.values.maxByOrNull { it.weekStart }

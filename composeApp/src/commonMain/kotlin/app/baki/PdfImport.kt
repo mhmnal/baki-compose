@@ -7,6 +7,6 @@ expect object PdfText {
     fun extract(bytes: ByteArray): String?
 }
 
-/** Opens a PDF picker and hands back its bytes (null when the user cancels). */
+/** Opens a PDF picker (multi-select) and hands back bytes; null when cancelled, empty when nothing readable. */
 @Composable
-expect fun rememberStatementImport(onBytes: (ByteArray?) -> Unit): () -> Unit
+expect fun rememberStatementImport(onBytes: (List<ByteArray>?) -> Unit): () -> Unit

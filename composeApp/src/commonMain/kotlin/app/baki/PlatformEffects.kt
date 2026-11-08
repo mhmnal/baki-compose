@@ -33,6 +33,10 @@ expect object PlatformEffects {
     fun printStatement(html: String)
     /** Ask the launcher to place the live widget; desktop has no home screen. */
     fun requestLiveWidget()
+    /** Short, non-blocking feedback (a Toast on Android, a log line on desktop). */
+    fun notice(text: String)
+    /** Schedule or cancel the weekly Wednesday statement reminder. */
+    fun setStatementReminder(enabled: Boolean)
 }
 
 /** Notification actions arrive as intents; the UI drains this (state, so Compose reacts). */

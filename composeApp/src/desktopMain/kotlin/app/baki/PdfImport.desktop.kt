@@ -12,12 +12,13 @@ actual object PdfText {
 }
 
 @Composable
-actual fun rememberStatementImport(onBytes: (ByteArray?) -> Unit): () -> Unit = {
+actual fun rememberStatementImport(onBytes: (List<ByteArray>?) -> Unit): () -> Unit = {
     val chooser = javax.swing.JFileChooser().apply {
         fileSelectionMode = javax.swing.JFileChooser.FILES_ONLY
+        isMultiSelectionEnabled = true
         fileFilter = javax.swing.filechooser.FileNameExtensionFilter("Grab statement PDF", "pdf")
     }
     if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
-        onBytes(runCatching { chooser.selectedFile.readBytes() }.getOrNull())
+        onBytes(chooser.selectedFiles.mapNotNull { file -> runCatching { file.readBytes() }.getOrNull() })
     } else onBytes(null)
 }

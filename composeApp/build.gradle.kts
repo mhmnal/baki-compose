@@ -34,6 +34,7 @@ kotlin {
                 implementation("androidx.core:core-ktx:1.13.1")
                 implementation("com.google.android.gms:play-services-location:21.3.0")
                 implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+                implementation("androidx.work:work-runtime-ktx:2.9.1")
                 implementation("io.ktor:ktor-client-okhttp:3.0.3")
             }
         }
@@ -55,8 +56,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 73
-        versionName = "0.33.1"
+        versionCode = 76
+        versionName = "0.34.1"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"

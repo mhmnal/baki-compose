@@ -863,6 +863,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveConfig(config)
     }
 
+    fun setStatementReminder(on: Boolean) {
+        config = config.copy(statementReminder = on)
+        saveConfig(config)
+        PlatformEffects.setStatementReminder(on)
+    }
+
     fun setThemeMode(mode: String) {
         config = config.copy(themeMode = mode)
         saveConfig(config)

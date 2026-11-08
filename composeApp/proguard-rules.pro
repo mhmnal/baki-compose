@@ -19,3 +19,9 @@
 # PDFBox references optional JPEG-2000 decoding that the app never uses (text extraction only)
 -dontwarn com.gemalto.jp2.**
 -dontwarn com.tom_roush.pdfbox.filter.JPXFilter
+
+# WorkManager opens its Room database reflectively; R8 must keep the generated implementation.
+-keep class androidx.work.impl.WorkDatabase_Impl { *; }
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keepclassmembers class * extends androidx.room.RoomDatabase { <init>(); }
+-dontwarn androidx.room.paging.**

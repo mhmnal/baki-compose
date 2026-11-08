@@ -51,6 +51,41 @@ class MainActivity : ComponentActivity() {
         val act = intent?.getStringExtra("baki.action")
         android.util.Log.i("BakiLive", "drainIntent: $act (intent=${intent?.action})")
         act?.let { BakiIntents.deliver(it) }
+        readStatement(intent)
+    }
+
+    /** A PDF shared from another app becomes a statement import. */
+    private fun readStatement(intent: Intent?) {
+        if (intent == null) return
+        val uri = when (intent.action) {
+            Intent.ACTION_SEND -> if (Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            Intent.ACTION_VIEW -> intent.data
+            else -> null
+        } ?: return
+        val mime = intent.type ?: runCatching { contentResolver.getType(uri) }.getOrNull()
+        if (mime != "application/pdf") return
+        Thread {
+            val bytes = runCatching {
+                contentResolver.openInputStream(uri)?.use { input ->
+                    val out = java.io.ByteArrayOutputStream()
+                    val buffer = ByteArray(64 * 1024)
+                    var total = 0
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        total += n
+                        if (total > 25 * 1024 * 1024) return@runCatching null
+                        out.write(buffer, 0, n)
+                    }
+                    out.toByteArray()
+                }
+            }.getOrNull()
+            if (bytes != null) runOnUiThread { SharedStatement.pending = bytes }
+        }.start()
     }
 
     private val askLocation =

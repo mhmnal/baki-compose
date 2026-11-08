@@ -781,3 +781,15 @@ The month trajectory is a sparkline rather than a bare polyline:
 The desk is mouse-driven: the wheel and trackpad already scroll, so the drawn scrollbars were noise.
 Removed from the sidebar and from Entries, Shifts and Compare. Scroll state and bottom padding remain,
 so every item is still reachable; there is simply no persistent track/thumb.
+
+## Statement import friction (v0.34)
+
+- **Share straight into Baki**: the Android activity accepts `ACTION_SEND` and `ACTION_VIEW` for
+  `application/pdf`; the bytes land in `SharedStatement`, and the app parses/saves them and shows a Toast.
+- **Bulk import**: the picker is multi-select (up to 12 PDFs); each is parsed, valid weeks are saved
+  (keyed by week, so re-imports replace), and the card reports imported vs skipped plus "weeks on file".
+- WorkManager's Room database is opened reflectively; R8 stripped it in the first release and the app
+  crashed at startup. Keep rules for `WorkManager`/`RoomDatabase` are now in `proguard-rules.pro`.
+- **Wednesday reminder**: a WorkManager periodic task fires the next Wednesday at 10:00 and posts a
+  notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
+  card. Desktop compiles the same contract as a no-op.

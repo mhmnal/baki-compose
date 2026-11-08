@@ -15,6 +15,14 @@ actual object PlatformEffects {
     }
 
     actual fun requestLiveWidget() {}
+
+    actual fun notice(text: String) {
+        println("[baki] $text")
+    }
+
+    actual fun setStatementReminder(enabled: Boolean) {
+        // the desk has no notification channel; the phone owns the weekly nudge
+    }
     actual fun haptic(kind: Haptic) {}
     actual fun liveChanged(startMs: Long?, totalCents: Long) = Unit
     actual fun log(msg: String) = println(msg)

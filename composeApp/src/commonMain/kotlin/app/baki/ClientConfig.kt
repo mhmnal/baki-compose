@@ -23,6 +23,8 @@ data class ClientConfig(
     val syncRoutes: Boolean = false,
     /** Shared passphrase for the sealed traces; blank disables route sync entirely. */
     val routeSecret: String = "",
+    /** Weekly Wednesday nudge to import the Grab statement. */
+    val statementReminder: Boolean = true,
 )
 
 private const val CONFIG_FILE = "config.json"

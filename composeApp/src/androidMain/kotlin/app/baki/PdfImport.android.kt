@@ -18,14 +18,17 @@ actual object PdfText {
 }
 
 @Composable
-actual fun rememberStatementImport(onBytes: (ByteArray?) -> Unit): () -> Unit {
+actual fun rememberStatementImport(onBytes: (List<ByteArray>?) -> Unit): () -> Unit {
     val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri == null) { onBytes(null); return@rememberLauncherForActivityResult }
-        val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull()
-        onBytes(bytes)
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris: List<Uri> ->
+        if (uris.isEmpty()) { onBytes(null); return@rememberLauncherForActivityResult }
+        // statements are small; cap the batch so a mis-tap cannot chew memory
+        val files = uris.take(12).mapNotNull { uri ->
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            }.getOrNull()
+        }
+        onBytes(files)
     }
     return remember(launcher) { { launcher.launch(arrayOf("application/pdf")) } }
 }
