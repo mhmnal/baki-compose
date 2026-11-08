@@ -33,6 +33,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
     val cats = remember(store, month) { expensesByCategory(store, month) }
     val maxCat = cats.maxOfOrNull { it.second } ?: 1L
     val avgDay = if (days.isEmpty()) 0L else t.expense / days.size
+    val dayLabel = if (days.size == 1) "1 day" else "${days.size} days"
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = Space.l),
@@ -58,7 +59,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                 Text("THIS MONTH", color = baki.muted, style = BakiType.section)
                 EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
                 Text(
-                    "${days.size} days · in RM ${rm(t.income)} · out RM ${rm(t.expense)} · avg RM ${rm(avgDay)}/day",
+                    "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)} · avg RM ${rm(avgDay)}/day",
                     color = baki.muted, style = BakiType.label )
                 val streak = remember(store) { targetStreak(store, todayIso()) }
                 if (streak >= 2) {
