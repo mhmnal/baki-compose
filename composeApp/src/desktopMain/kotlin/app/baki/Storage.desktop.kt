@@ -24,12 +24,25 @@ actual object LocalStore {
             out.write(StoreCipher.encrypt(text.encodeToByteArray()))
             out.fd.sync()
         }
-        if (f.exists()) runCatching { f.copyTo(File(f.parentFile, f.name + ".bak"), overwrite = true) }
+        // never rotate a damaged/empty store over the last good backup
+        if (looksSealed(f)) {
+            runCatching { f.copyTo(File(f.parentFile, f.name + ".bak"), overwrite = true) }
+        }
         if (!tmp.renameTo(f)) {
             // cross-device or a locked file: fall back to a direct write rather than losing the save
             f.writeBytes(tmp.readBytes())
             tmp.delete()
         }
+    }
+
+    private fun looksSealed(f: File): Boolean {
+        if (!f.exists() || f.length() < 8) return false
+        return runCatching {
+            f.inputStream().use { input ->
+                val magic = ByteArray(5)
+                input.read(magic) == 5 && String(magic, Charsets.US_ASCII) == "BAKI1"
+            }
+        }.getOrDefault(false)
     }
 
     actual fun read(): String? = readSealed(file())

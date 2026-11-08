@@ -817,4 +817,9 @@ Storage and sync fixes after the feasibility audit:
   cannot be decrypted or parsed is quarantined as `store.json.corrupt-<stamp>`; the app tries the local
   `.bak`, then the server, and surfaces the result in Diagnostics instead of opening empty.
 - `StoreHealth` exposes load/save errors; Diagnostics shows them.
+- Backup rotation only copies an existing store to `.bak` when it still carries the sealed envelope
+  (`looksSealed`); a corrupt or empty file can no longer overwrite the last good backup.
+- Verified on a side-by-side debug build against an isolated server copy: an entry added offline and a
+  deletion made offline both survived an app restart and reached the server after it returned (tombstone
+  included); a zeroed store was quarantined and the `.bak` restored, with the reason shown in Diagnostics.
 - Still outstanding: server authentication, off-machine backups, and server-side fsync/error propagation.

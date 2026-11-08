@@ -53,6 +53,7 @@ class DurabilityTest {
         val m = source("desktopMain/kotlin/app/baki/Storage.desktop.kt")
         assertTrue(m.contains("fd.sync()"), "the temp file must be flushed before rename")
         assertTrue(m.contains(".bak"), "a previous local copy must be kept")
+        assertTrue(m.contains("looksSealed"), "a corrupt store must not rotate over a good backup")
         assertTrue(m.contains("actual fun quarantine"), "quarantine must be platform-implemented")
     }
 }
