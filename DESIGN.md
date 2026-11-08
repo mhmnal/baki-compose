@@ -775,3 +775,9 @@ The month trajectory is a sparkline rather than a bare polyline:
 - quiet low/mid/high grid and a stronger zero line when the balance crosses it;
 - a dot per day, an Emerald dot on the peak, and a haloed "now" endpoint;
 - taller canvas (168dp) so the curve has room; labels keep 11-01 / now / 11-08.
+
+## No desktop scrollbars (v0.33.1)
+
+The desk is mouse-driven: the wheel and trackpad already scroll, so the drawn scrollbars were noise.
+Removed from the sidebar and from Entries, Shifts and Compare. Scroll state and bottom padding remain,
+so every item is still reachable; there is simply no persistent track/thumb.

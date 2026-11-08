@@ -464,11 +464,6 @@ private fun Overview(
                         valueColor = if (streak >= 2) neu.accent else neu.ink,
                     )
             }
-            NeuScrollbar(
-                state = railScroll,
-                neu = neu,
-                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
-            )
         }
     }
 }
@@ -935,11 +930,6 @@ internal fun EntriesView(store: Store, month: String) {
                 }
             }
         }
-        NeuScrollbar(
-            state = scroll,
-            neu = neu,
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
-        )
     }
 }
 
@@ -1019,11 +1009,6 @@ internal fun ShiftsView(store: Store, month: String) {
                 }
             }
         }
-        NeuScrollbar(
-            state = scroll,
-            neu = neu,
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
-        )
     }
 }
 
@@ -1492,11 +1477,6 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
             }
             Spacer(Modifier.height(Space.l))
         }
-        NeuScrollbar(
-            state = scroll,
-            neu = neu,
-            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
-        )
     }
 }
 
