@@ -379,3 +379,20 @@ fun latestWeekWithData(store: Store, today: String): Pair<String, WeeklyReview>?
     }
     return null
 }
+
+
+/**
+ * Toll outlay for a month. Grab reimburses tolls instantly from its own trip data, so this is a
+ * pass-through: the money returns inside gross earnings. It is shown for route decisions and for the
+ * tax pack (where the toll and its reimbursement cancel), never as a cost that reduces net.
+ */
+data class TollSummary(val paid: Long, val reimbursed: Long) {
+    val recordedBack: Boolean get() = reimbursed > 0
+}
+
+fun tollSummary(entries: List<Entry>, month: String): TollSummary {
+    val inMonth = entries.filter { it.date.startsWith(month) }
+    val paid = inMonth.filter { it.cat == "toll" && it.type != "income" }.sumOf { it.amount }
+    val back = inMonth.filter { it.cat == "tollback" && it.type == "income" }.sumOf { it.amount }
+    return TollSummary(paid, back)
+}

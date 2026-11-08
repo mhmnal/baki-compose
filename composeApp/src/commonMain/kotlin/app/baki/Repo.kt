@@ -63,7 +63,22 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.tapFeedback()
     }
 
+    /** Tolls are a pass-through (Grab reimburses instantly), but the category must exist to log them. */
+    fun ensureTollCategory() {
+        val cats = store.settings.cats
+        if (cats.catsOut.any { it.id == "toll" }) return
+        store = store.copy(
+            settings = store.settings.copy(
+                cats = cats.copy(catsOut = cats.catsOut + Cat("toll", "Toll", "\uD83D\uDEE3")),
+            ),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        scope.launch { runCatching { pushWithTombs(emptyList()) } }
+    }
+
     fun start() {
+        ensureTollCategory()
         // enforce retention and drop paths whose shift no longer exists, even if no shift is ended.
         // The id of a shift in progress is NOT in store.shifts yet: sweeping without it deletes the
         // path being recorded right now, which is what made a drive appear to restart after a stop.
