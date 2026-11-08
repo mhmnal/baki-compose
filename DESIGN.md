@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.0)
+## Current state (v0.36.1)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -823,7 +823,8 @@ Storage and sync fixes after the feasibility audit:
   deletion made offline both survived an app restart and reached the server after it returned (tombstone
   included); a zeroed store was quarantined and the `.bak` restored, with the reason shown in Diagnostics.
 - Verified on the phone debug build: offline add and delete both survived restart and reached the server;
-  a zeroed store was quarantined and the backup restored. Release 0.36.0 carries it.
+  a zeroed store was quarantined and the backup restored. Release 0.36.0 carried the first pass; 0.36.1
+  completes it with the all-tombstones push and the quiet background sync.
 - Post-0.36.0 fix: every push path now sends the union of its explicit tombstones and `Store.tomb`, through
   one `pushWithAllTombs`; a successful add/edit can no longer clear the outbox while an older delete is
   still unknown to the server. Background syncs no longer set the header to "syncing" (manual syncs do).
