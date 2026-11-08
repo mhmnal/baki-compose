@@ -138,6 +138,11 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                 },
         ) {
             Column(Modifier.fillMaxSize().padding(horizontal = Gutter, vertical = Space.l)) {
+                Box(
+                    Modifier.fillMaxWidth()
+                        .raised(neu, corner = Radius.sheet, offset = Elevation.control)
+                        .padding(horizontal = Space.l, vertical = Space.m),
+                ) {
                 Header(
                     neu = neu,
                     month = month,
@@ -150,6 +155,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                     onRefresh = { scope.launch { repo.sync() } },
                     onSettings = { settingsOpen = true },
                 )
+                }
                 Spacer(Modifier.height(Space.xxl))
                 Box(Modifier.weight(1f)) {
                     // the scroll viewport must clip; this fade makes the cut invisible
@@ -414,9 +420,17 @@ private fun Overview(
             Spacer(Modifier.height(Space.l))
         }
         Spacer(Modifier.width(Gutter))
-        Column(Modifier.width(Rail2).fillMaxHeight().verticalScroll(rememberScrollState()).padding(top = Space.xxl, bottom = Space.xl)) {
-            NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.card) {
-                Column(Modifier.padding(Space.l)) {
+        // The raised surface is the sidebar; scrolling happens in an inner column so the shape and its
+        // content never fight over the same modifier chain.
+        Box(
+            Modifier.width(Rail2).fillMaxHeight()
+                .raised(neu, corner = Radius.sheet, offset = Elevation.card),
+        ) {
+            Column(
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Space.l, vertical = Space.m),
+            ) {
                     CategoryBlock(store, month, neu)
                     Spacer(Modifier.height(Space.l))
                     Spacer(Modifier.height(Space.xs))
@@ -447,7 +461,6 @@ private fun Overview(
                         detail = "above target, in a row",
                         valueColor = if (streak >= 2) neu.accent else neu.ink,
                     )
-                }
             }
             Spacer(Modifier.height(Space.xl))
         }

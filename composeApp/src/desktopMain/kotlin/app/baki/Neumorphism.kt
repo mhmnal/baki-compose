@@ -205,6 +205,7 @@ fun Modifier.elevated(
     neu: Neu,
     corner: Dp = Radius.sheet,
     drop: Dp = Elevation.floating,
+    fill: Color = neu.panel,
 ): Modifier = this
     .graphicsLayer()
     .drawBehind {
@@ -224,7 +225,7 @@ fun Modifier.elevated(
                 RRect.makeXYWH(0f, o, size.width, size.height, r, r), paint,
             )
         }
-        drawPath(shape, neu.panel)
+        drawPath(shape, fill)
     }
     .clip(RoundedCornerShape(corner))
 
@@ -339,17 +340,27 @@ fun NeuButton(
         modifier
             .then(if (focused) Modifier.border(2.dp, neu.accent, shape) else Modifier)
             .then(
-                if (pressed || !enabled) Modifier.inset(neu, corner = 50.dp, offset = Elevation.inset)
-                else Modifier.raised(
-                    neu,
-                    corner = 50.dp,
-                    offset = Elevation.control,
-                    fill = when {
-                        primary -> neu.accent
-                        hovered -> neu.accentSoft
-                        else -> neu.base
-                    },
-                ),
+                when {
+                    pressed || !enabled -> Modifier.inset(
+                        neu,
+                        corner = 50.dp,
+                        offset = Elevation.inset,
+                        fill = if (primary && enabled) neu.accent else neu.base,
+                    )
+                    // hybrid accent: a flat vibrant fill lifted by one soft outer drop
+                    primary -> Modifier.elevated(
+                        neu,
+                        corner = 50.dp,
+                        drop = Elevation.control,
+                        fill = if (hovered) blend(neu.accent, Color.White, 0.08f) else neu.accent,
+                    )
+                    else -> Modifier.raised(
+                        neu,
+                        corner = 50.dp,
+                        offset = Elevation.control,
+                        fill = if (hovered) neu.accentSoft else neu.base,
+                    )
+                },
             )
             .clip(shape)
             .pointerHoverIcon(PointerIcon.Hand)

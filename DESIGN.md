@@ -690,3 +690,19 @@ parts of the material did not match the brief:
   are the practical part of the spec.)
 - Material chrome is still forbidden by `DesktopConsistencyTest`; `material3.Text`/`Icon` remain only as
   text/glyph primitives.
+
+## Surface depth rules (v0.28)
+
+The desk now follows the extruded/sunken rulebook literally:
+
+- **Extruded:** header bar, Overview sidebar, boundary cards, resting buttons and unselected chips.
+- **Sunken:** text inputs and search fields, segmented tracks, active chips/tabs, the month stepper, and
+  progress/stacked bars (`NeuBar` is an inset groove; the fill runs inside it).
+- **Flat/hybrid:** canvas background, icons inside buttons, and primary CTAs — accent fill with a single
+  soft outer drop (`elevated`), not a second neumorphic emboss. Pressed/disabled primaries sink.
+- No extruded card inside another: the sidebar used to wrap its content in a raised `NeuPanel`; that
+  panel is gone and the sidebar itself is the structural surface.
+- The sidebar's scroll now lives in an inner column. Applying `verticalScroll` to the same chain as
+  `raised` clipped the first ~70dp of content; separating surface and scroll fixed it.
+
+The rulebook also clarified why the header and rail were raised: they were previously bare canvas.
