@@ -42,6 +42,8 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
     val scope = rememberCoroutineScope()
     var adding by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
+    var renaming by remember { mutableStateOf<Cat?>(null) }
+    var renameDraft by remember { mutableStateOf("") }
     val cats = repo.store.settings.cats.catsOut
     val usage = remember(repo.store) {
         repo.store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
@@ -51,7 +53,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Spending categories", color = baki.onSurface, style = BakiType.bodyStrong )
-                Text("${cats.size} categories · tap × to remove", color = baki.muted, style = BakiType.caption )
+                Text("${cats.size} categories · tap a name to rename, × to remove", color = baki.muted, style = BakiType.caption )
             }
             TextButton(enabled = editable, onClick = { adding = true }) {
                 Text("Add", color = if (editable) baki.primary else baki.muted, fontWeight = FontWeight.Bold)
@@ -66,7 +68,12 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
             ) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
-                Text(c.name, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label )
+                Text(
+                    c.name, color = baki.onSurface,
+                    modifier = Modifier.weight(1f)
+                        .clickable(enabled = editable) { renaming = c; renameDraft = c.name },
+                    style = BakiType.label,
+                )
                 Text(if (used > 0) "$used" else "", color = baki.muted, style = BakiType.caption )
                 Spacer(Modifier.width(Space.s))
                 Text(
@@ -80,6 +87,32 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                         .padding(horizontal = Space.m), style = BakiType.bodyStrong )
             }
         }
+    }
+
+    renaming?.let { cat ->
+        AlertDialog(
+            onDismissRequest = { renaming = null },
+            containerColor = baki.container,
+            title = { Text("Rename category", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = renameDraft, onValueChange = { renameDraft = it },
+                    label = { Text("Name") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val clean = renameDraft.trim()
+                        if (clean.isNotBlank()) scope.launch { repo.renameCategory(cat.id, clean) }
+                        renaming = null
+                    },
+                    enabled = renameDraft.isNotBlank(),
+                ) { Text("Save") }
+            },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text("Cancel") } },
+        )
     }
 
     if (adding) {

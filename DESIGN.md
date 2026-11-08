@@ -623,3 +623,12 @@ saved too. `SyncChangeTest` guards the bills-only case. The Bills card also show
   figures in its BILLS block.
 - `Bills.committed()` counts active, non-optional bills falling due in that month; `averageMonthly()`
   spreads annual bills over twelve months.
+
+## History and category rename (v0.24)
+
+- **Bill payments history**: `Bills.history()` resolves every payment against its bill and expense,
+  newest first, and marks broken links (`unlinked`, `expense deleted`) so a covered period with no
+  money behind it is visible rather than silent. Reached from **History** on the Bills card.
+- **Rename categories**: tapping a category name opens a rename dialog; the id never changes, so
+  history keeps pointing at the same category. The id-keyed merge means the new name wins on every
+  device. Add and remove (only when unused) behave as before.

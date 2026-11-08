@@ -170,3 +170,37 @@ class BillUnlinkTest {
         assertEquals(false, merged.billPayments.single().active)
     }
 }
+
+class BillHistoryTest {
+    private val rent = Bill("b1", "Rent", 27_000, "monthly", "rent")
+    private fun entry(id: String) = Entry(id = id, date = "2026-11-07", type = "expense", cat = "rent", amount = 27_000, updated = "x")
+
+    @Test
+    fun historyIsNewestFirstAndFlagsBrokenLinks() {
+        val store = Store(
+            entries = listOf(entry("e2")),
+            bills = listOf(rent),
+            billPayments = listOf(
+                BillPayment("b1", "2026-10", 27_000, "gone", "2026-10-05", "a"),
+                BillPayment("b1", "2026-11", 27_000, "e2", "2026-11-07", "b"),
+                BillPayment("b1", "2026-12", 27_000, "e2", "2026-12-02", "c", active = false),
+            ),
+        )
+        val h = Bills.history(store)
+        assertEquals(listOf("2026-12", "2026-11", "2026-10"), h.map { it.period })
+        assertEquals(false, h[0].active)
+        assertEquals(true, h[1].entryExists)
+        assertEquals(false, h[2].entryExists)
+    }
+
+    @Test
+    fun renamingACategoryWinsTheMerge() {
+        val base = Store(
+            settings = Settings(cats = Cats(emptyList(), listOf(Cat("rent", "Home", "🏠")))),
+        )
+        val renamed = Store(
+            settings = Settings(cats = Cats(emptyList(), listOf(Cat("rent", "Rent", "🏠")))),
+        )
+        assertEquals("Rent", mergeStores(base, renamed).settings.cats.catsOut.single().name)
+    }
+}

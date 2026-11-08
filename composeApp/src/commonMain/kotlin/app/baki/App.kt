@@ -1187,6 +1187,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var editingBill by remember { mutableStateOf<Bill?>(null) }
     var addingBill by remember { mutableStateOf(false) }
     var unlinkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
+    var historyOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1281,6 +1282,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                             color = baki.muted, style = BakiType.caption,
                         )
                     }
+                    TextButton(onClick = { historyOpen = true }) { Text("History", color = baki.muted, style = BakiType.label) }
                     TextButton(onClick = { addingBill = true }) { Text("Add", color = baki.primary, style = BakiType.label) }
                 }
             }
@@ -1354,6 +1356,42 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
         }
+            if (historyOpen) {
+                val rows = Bills.history(repo.store)
+                AlertDialog(
+                    onDismissRequest = { historyOpen = false },
+                    containerColor = baki.container,
+                    title = { Text("Bill payments", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(
+                            Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        ) {
+                            if (rows.isEmpty()) {
+                                Text("Nothing paid yet. Marking a bill paid records a payment here.", color = baki.muted, style = BakiType.caption)
+                            }
+                            rows.forEach { p ->
+                                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("${p.billName} · ${p.period}", color = baki.onSurface, style = BakiType.label)
+                                        Text(
+                                            "paid ${p.paidAt}" +
+                                                when {
+                                                    !p.active -> " · unlinked"
+                                                    !p.entryExists -> " · expense deleted"
+                                                    else -> ""
+                                                },
+                                            color = if (p.active && p.entryExists) baki.muted else baki.down,
+                                            style = BakiType.caption,
+                                        )
+                                    }
+                                    Text("RM ${"%.2f".format(p.amount / 100.0)}", color = baki.onSurface, style = BakiType.labelNumeric)
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { historyOpen = false }) { Text("Close") } },
+                )
+            }
             unlinkTarget?.let { (bill, period) ->
                 val link = Bills.payment(repo.store, bill, period)
                 AlertDialog(

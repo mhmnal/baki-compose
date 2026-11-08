@@ -725,6 +725,23 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         runCatching { client.push(store) }.onSuccess { store = mergeStores(store, it); saveLocal(store) }
     }
 
+    /** Renames a category in place; the id never changes, so history keeps pointing at it. */
+    suspend fun renameCategory(id: String, name: String) = mutex.withLock {
+        if (blocked()) return@withLock
+        val clean = name.trim().take(24)
+        if (clean.isBlank()) return@withLock
+        val cats = store.settings.cats
+        val out = cats.catsOut.map { if (it.id == id) it.copy(name = clean) else it }
+        val inn = cats.catsIn.map { if (it.id == id) it.copy(name = clean) else it }
+        if (out == cats.catsOut && inn == cats.catsIn) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(cats = Cats(inn, out)),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+    }
+
     suspend fun removeCategory(id: String) = mutex.withLock {
         if (blocked()) return@withLock
         // refuse while entries still reference it, so history never loses its label

@@ -81,6 +81,36 @@ object Bills {
             .sortedByDescending { it.date }
     }
 
+    /** One payment, resolved against its bill and expense, newest first, for the history list. */
+    data class PaymentView(
+        val billId: String,
+        val billName: String,
+        val period: String,
+        val amount: Long,
+        val paidAt: String,
+        val entryExists: Boolean,
+        val active: Boolean,
+    )
+
+    fun history(store: Store, limit: Int = 60): List<PaymentView> {
+        val bills = store.bills.associateBy { it.id }
+        val entries = store.entries.map { it.id }.toSet()
+        return store.billPayments
+            .sortedWith(compareByDescending<BillPayment> { it.paidAt }.thenByDescending { it.updated })
+            .take(limit)
+            .map { p ->
+                PaymentView(
+                    billId = p.billId,
+                    billName = bills[p.billId]?.name ?: "Deleted bill",
+                    period = p.period,
+                    amount = p.amount,
+                    paidAt = p.paidAt,
+                    entryExists = p.entryId in entries,
+                    active = p.active,
+                )
+            }
+    }
+
     fun shiftMonthLabel(monthLabel: String, delta: Int): String {
         var y = monthLabel.take(4).toInt()
         var m = monthLabel.substring(5, 7).toInt() + delta
