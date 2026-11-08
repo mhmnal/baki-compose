@@ -793,3 +793,19 @@ so every item is still reachable; there is simply no persistent track/thumb.
 - **Wednesday reminder**: a WorkManager periodic task fires the next Wednesday at 10:00 and posts a
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
+
+## Less, but better: phone Today (v0.35)
+
+First phone screen rebuilt on the reductionist brief; light/glass material kept for nav and sheets only.
+
+- **One hero**: today's net is the only display-size object; in/out collapse to one mono caption.
+- **One way to add**: a single line + Add (mic retained); the quick-add and preset chips are gone.
+- **Ledger as typography**: no cards, icons, badges or dividers; title/category/amount only, with swipe
+  to edit/delete and long-press to edit. Rows wear the canvas colour so the swipe background cannot ghost.
+- **Secondary below**: cover note, 7-day marks and the route card sit after the ledger; no push-down
+  spacer - the glass nav overlapping them in motion is accepted (the empty-gap version read worse).
+- **Header stripped** globally: wordmark + sync status only; the badge, tagline and repeated "Today" chrome
+  are gone. The disabled next-day arrow is hidden.
+- Typography-led hierarchy: Swiss left alignment, generous space, 1 accent + money red/green only.
+
+Still to do on the phone: Spending, Shifts, Summary, More, and the glass nav itself.

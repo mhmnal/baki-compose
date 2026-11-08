@@ -50,46 +50,39 @@ fun QuickEntryBar(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
             text = ""
         }
     }
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(baki.surfaceHigh)
-            .padding(start = Space.l, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextField(
-            value = text,
-            onValueChange = { text = it },
-            placeholder = { Text("toll 4.20 parking 2", color = baki.muted, style = BakiType.body ) },
-            singleLine = true,
-            textStyle = BakiType.bodySmall,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = baki.primary,
-                focusedTextColor = baki.onSurface,
-                unfocusedTextColor = baki.onSurface,
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { submit() }),
-            modifier = Modifier.weight(1f),
-        )
-        VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(40.dp))
-        Box(
-            Modifier.size(40.dp).clip(RoundedCornerShape(Radius.pill))
-                .background(if (text.isBlank()) Color.Transparent else baki.primary)
-                .clickable(enabled = text.isNotBlank()) { submit() },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                BakiIcons.ArrowRight, contentDescription = "Add",
-                tint = if (text.isBlank()) baki.muted else baki.onPrimary,
-                modifier = Modifier.size(IconSize.inline),
+    // one line, no enclosure: a rule and the words are enough
+    Column(modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = { Text("toll 4.20 parking 2", color = baki.muted, style = BakiType.body) },
+                singleLine = true,
+                textStyle = BakiType.body,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = baki.primary,
+                    focusedTextColor = baki.onSurface,
+                    unfocusedTextColor = baki.onSurface,
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { submit() }),
+                modifier = Modifier.weight(1f),
+            )
+            VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(40.dp))
+            Text(
+                "Add",
+                color = if (text.isBlank()) baki.muted else baki.primary,
+                modifier = Modifier
+                    .clickable(enabled = text.isNotBlank()) { submit() }
+                    .padding(horizontal = Space.s, vertical = Space.m),
+                style = BakiType.labelStrong,
             )
         }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(baki.muted.copy(alpha = 0.25f)))
     }
 }
 

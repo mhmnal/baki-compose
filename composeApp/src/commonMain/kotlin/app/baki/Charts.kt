@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
 
-/** The last seven days ending at [endDay]: a bar per day, green when money stayed. */
+/** The last seven days ending at [endDay]: bare marks, no tiles. */
 @Composable
 fun WeekStrip(store: Store, endDay: String) {
     val baki = LocalBaki.current
@@ -34,36 +34,29 @@ fun WeekStrip(store: Store, endDay: String) {
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
     val today = todayIso()
 
-    Column {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            days.forEachIndexed { i, d ->
-                val t = totals[i]
-                val up = t.net >= 0
-                val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
-                Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = Space.s),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        d.takeLast(2),
-                        color = if (d == today) baki.primary else baki.muted,
-                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
-                    Spacer(Modifier.height(Space.s))
-                    Box(
-                        Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        Box(
-                            Modifier.fillMaxWidth().fillMaxHeight(fraction)
-                                .clip(RoundedCornerShape(Radius.pill))
-                                .background(if (t.entryCount == 0 && t.shiftCount == 0) baki.surfaceHigh else if (up) baki.primary else baki.down),
-                        )
-                    }
-                    Spacer(Modifier.height(Space.xs))
-                    Text(
-                        if (t.entryCount == 0 && t.shiftCount == 0) "–" else (t.net / 100).toInt().toString(),
-                        color = baki.muted, style = BakiType.caption )
-                }
+    Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.Bottom) {
+        days.forEachIndexed { i, d ->
+            val t = totals[i]
+            val empty = t.entryCount == 0 && t.shiftCount == 0
+            val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.06f, 1f)
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                Box(
+                    Modifier.width(4.dp).height((32 * fraction).dp)
+                        .clip(RoundedCornerShape(Radius.tiny))
+                        .background(
+                            when {
+                                empty -> baki.muted.copy(alpha = 0.18f)
+                                t.net >= 0 -> if (d == today) baki.primary else baki.primary.copy(alpha = 0.55f)
+                                else -> baki.down.copy(alpha = 0.7f)
+                            },
+                        ),
+                )
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    d.takeLast(2),
+                    color = if (d == today) baki.primary else baki.muted,
+                    style = BakiType.captionNumeric,
+                )
             }
         }
     }

@@ -1,41 +1,38 @@
 package app.baki
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material3.Icon
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -52,7 +49,12 @@ fun bandColor(band: String, baki: BakiPalette): Color = when (band) {
     else -> baki.primary
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+/**
+ * Today, reduced: one number, one line to add, the ledger as typography. Cards, chips, icon tiles and
+ * section boxes are gone; structure comes from scale, alignment and space. Glass remains on the nav and
+ * on sheets only.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(
     repo: BakiRepo,
@@ -60,11 +62,9 @@ fun TodayScreen(
     onDay: (String) -> Unit,
     onPayout: () -> Unit,
     onPayouts: () -> Unit,
-    onQuickAdd: (String, Long) -> Unit,
     onQuickText: (String) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
-    onPreset: (String) -> Unit,
     onAddShift: () -> Unit,
     onSeeAll: () -> Unit,
     onAdd: () -> Unit,
@@ -72,326 +72,268 @@ fun TodayScreen(
     val baki = LocalBaki.current
     val store = repo.store
     val today = todayIso()
-    // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
     val entries = remember(store, day) { entriesOn(store, day).sortedByDescending { it.updated } }
     val shifts = remember(store, day) { shiftsOn(store, day) }
+    val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
     val cfg = store.settings.profit
     val live = repo.live
-    val shift = shifts.maxByOrNull { it.updated }
     val scope = rememberCoroutineScope()
-    val quick = remember(store) { quickAdds(store) }
-
-
+    val paidUntil = coverPaidUntil(store)
 
     PullToRefreshBox(
         isRefreshing = repo.status == "syncing",
         onRefresh = { scope.launch { repo.sync() } },
         modifier = Modifier.fillMaxSize(),
-        // the header dot already reports sync state, so no spinner over the content
         indicator = {},
     ) {
-    LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = Space.l),
-        verticalArrangement = Arrangement.spacedBy(Space.m),
-        // leave room for the floating bar and the + so nothing ends up underneath them
-        contentPadding = PaddingValues(top = 6.dp, bottom = 132.dp),
-    ) {
-        item { DayPill(day, today, onDay) }
+        LazyColumn(
+            Modifier.fillMaxSize().padding(horizontal = Space.xl),
+            contentPadding = PaddingValues(top = Space.s, bottom = 132.dp),
+        ) {
+            item { DateLine(day, today, onDay) }
 
-        item {
-            Column {
+            item {
+                Spacer(Modifier.height(Space.xxl))
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM", color = baki.muted,
-                        modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = BakiType.title )
+                    Text(
+                        "RM", color = baki.muted,
+                        modifier = Modifier.padding(bottom = Space.s, end = 6.dp),
+                        style = BakiType.title,
+                    )
                     EasedMoney(t.net, baki.onSurface, BakiType.displayNumeric, prefix = "")
                 }
+                Spacer(Modifier.height(Space.xs))
                 Text(
-                    if (t.net >= 0) "KEPT FOR THE DAY" else "OUT OF POCKET",
-                    color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong )
-            }
-        }
-
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                Chip("in RM ${rm(t.income)}", baki.up)
-                Chip("out RM ${rm(t.expense)}", baki.down)
-            }
-        }
-
-        if (live != null && day == today) {
-            item { LiveCard(repo, live, onPayout, onPayouts) }
-        }
-
-        item { WeekStrip(store, day) }
-
-        val paidUntil = coverPaidUntil(store)
-        if (paidUntil != null && nowMillis() < paidUntil) {
-            item {
-                Row(verticalAlignment = Alignment.Top) {
-                    Icon(
-                        BakiIcons.Shield, contentDescription = null, tint = baki.up,
-                        modifier = Modifier.padding(top = 1.dp).size(14.dp),
-                    )
-                    Spacer(Modifier.width(Space.s))
-                    // weight so a wrapped line stays beside the icon instead of under it
-                    Text(
-                        "Cover paid until ${clockOf(paidUntil)} — starting before then adds no RM ${"%.2f".format(cfg.grabInsurance)}",
-                        color = baki.up, style = BakiType.caption, modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-
-        if (shift != null) {
-            item {
-                val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
-                Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
-                        Spacer(Modifier.weight(1f))
-                        Box(
-                            Modifier.clip(RoundedCornerShape(Radius.pill))
-                                .background(bandColor(m.band, baki).copy(alpha = 0.18f))
-                                .padding(horizontal = Space.m, vertical = 4.dp),
-                        ) {
-                            Text(BANDS[m.band] ?: "—", color = bandColor(m.band, baki), style = BakiType.captionStrong )
-                        }
-                    }
-                    Spacer(Modifier.height(Space.xs))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text("RM ${"%.2f".format(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
-                        Spacer(Modifier.weight(1f))
-                        m.netHr?.let {
-                            Text("RM ${"%.0f".format(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
-                        }
-                    }
-                    Text(
-                        "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km · fuel + wear RM ${"%.2f".format(m.running)}",
-                        color = baki.muted, style = BakiType.caption )
-                    // what this shift had to beat
-                    m.netHr?.let { rate ->
-                        val delta = rate - cfg.targetRate
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                if (delta >= 0) "✓" else "✗",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.captionStrong )
-                            Spacer(Modifier.width(Space.xs))
-                            Text(
-                                "target RM ${"%.0f".format(cfg.targetRate)}/hr · " +
-                                    if (delta >= 0) "RM ${"%.0f".format(delta)} above"
-                                    else "RM ${"%.0f".format(-delta)} short",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption )
-                        }
-                    }
-                    Spacer(Modifier.height(Space.m))
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        PillButton("+ Add shift", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f), onAddShift)
-                        if (live == null) PillButton("▶ Live", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f)) { repo.startLive() }
-                        PillButton("All →", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f), onSeeAll)
-                    }
-                }
-            }
-        } else if (live == null && !repo.readOnly && day == today) {
-            item {
-                PillButton(
-                    "Start a live shift", baki.primary, baki.onPrimary,
-                    Modifier.fillMaxWidth().height(48.dp), { repo.startLive() },
-                )
-            }
-        }
-
-        // the day's movement: between the shift card and the ledger
-        item { TodayRouteCard(store = store, day = day, live = live) }
-
-        // one line of free text: "toll 4.20 parking 2"
-        item { QuickEntryBar(onSubmit = onQuickText) }
-
-        // what you keep buying, one tap away
-        if (quick.isNotEmpty()) item {
-            Column {
-                Text("QUICK ADD", color = baki.muted, style = BakiType.section)
-                Spacer(Modifier.height(Space.s))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    verticalArrangement = Arrangement.spacedBy(Space.s),
-                ) {
-                    val cats = store.settings.cats.catsOut
-                    quick.forEach { q ->
-                        val name = cats.firstOrNull { it.id == q.cat }?.name ?: q.cat
-                        Row(
-                            Modifier.heightIn(min = Control.secondary)
-                                .clip(RoundedCornerShape(Radius.pill))
-                                .background(baki.surfaceHigh)
-                                .clickable { onQuickAdd(q.cat, q.cents) }
-                                .padding(horizontal = Space.l),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Space.s),
-                        ) {
-                            Text(name, color = baki.onSurface, style = BakiType.labelStrong)
-                            Text("RM ${rm(q.cents)}", color = baki.primary, style = BakiType.captionNumeric)
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            FlowRow(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.m),
-                verticalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                // skip categories already offered as one-tap amounts above: the same chip twice is noise
-                val presets = remember(store, quick) {
-                    val counts = store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
-                    val quickCats = quick.map { it.cat }.toSet()
-                    val used = store.settings.cats.catsOut
-                        .filter { it.id != "grabfee" && it.id !in quickCats && (counts[it.id] ?: 0) > 0 }
-                        .sortedByDescending { counts[it.id] ?: 0 }
-                    (if (used.isEmpty()) store.settings.cats.catsOut.filter { it.id != "grabfee" && it.id !in quickCats } else used)
-                        .take(6)
-                }
-                presets.forEach { c ->
-                    Row(
-                        Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
-                            .clickable { onPreset(c.id) }
-                            // 48dp minimum touch target, per the accessibility guidance
-                            .heightIn(min = Control.primary)
-                            .padding(horizontal = Space.l),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            categoryIcon(c.id, c.name), contentDescription = null,
-                            tint = baki.primary, modifier = Modifier.size(IconSize.inline),
-                        )
-                        Spacer(Modifier.width(Space.s))
-                        Text(c.name, color = baki.onSurface, style = BakiType.bodySmallStrong )
-                    }
-                }
-            }
-        }
-
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
-                    color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    "+ Add", color = baki.primary,
-                    modifier = Modifier.clickable { onAdd() }.padding(horizontal = Space.s, vertical = Space.xs),
-                    style = BakiType.captionStrong,
-                )
-                Spacer(Modifier.width(Space.s))
-                Text("see all →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption )
-            }
-        }
-
-        items(shifts) { sh ->
-            val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
-            RowCardIcon(
-                icon = BakiIcons.Car,
-                title = "Shift ${sh.start.ifEmpty { sh.date }}",
-                sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
-                amount = "RM ${"%.2f".format(m.net)}",
-                tint = baki.up,
-                onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
-            )
-        }
-        items(entries, key = { it.id }) { e ->
-            RowCardIcon(
-                icon = categoryIcon(e.cat),
-                title = e.note.ifEmpty { e.cat },
-                sub = e.cat,
-                amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
-                tint = if (e.type == "income") baki.up else baki.down,
-                sharedKey = "entry-${e.id}",
-                onEdit = { onEditEntry(e) },
-                onDelete = { onDeleteEntry(e) },
-            )
-        }
-        if (shifts.isEmpty() && entries.isEmpty()) item {
-            Column(
-                Modifier.fillMaxWidth().padding(top = 26.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    Modifier.size(52.dp).clip(RoundedCornerShape(Radius.card)).background(baki.container),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(BakiIcons.Receipt, contentDescription = null, tint = baki.muted, modifier = Modifier.size(IconSize.bar))
-                }
-                Spacer(Modifier.height(Space.m))
-                Text("Nothing recorded yet", color = baki.onSurface, style = BakiType.bodyStrong)
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    "Tap a category above, or + to log something.",
+                    if (t.net >= 0) "kept for the day" else "out of pocket",
                     color = baki.muted, style = BakiType.caption,
                 )
+                Spacer(Modifier.height(Space.s))
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    Text("in ${rm(t.income)}", color = baki.muted, style = BakiType.captionNumeric)
+                    Text("·", color = baki.muted.copy(alpha = 0.6f), style = BakiType.captionNumeric)
+                    Text("out ${rm(t.expense)}", color = baki.muted, style = BakiType.captionNumeric)
+                }
+            }
+
+            if (live != null && day == today) {
+                item {
+                    Spacer(Modifier.height(Space.xl))
+                    LiveInline(repo, live, onPayout, onPayouts)
+                }
+            } else if (day == today && !repo.readOnly) {
+                item {
+                    Spacer(Modifier.height(Space.m))
+                    FlatAction("Start a live shift") { repo.startLive() }
+                }
+            }
+
+            item {
+                Spacer(Modifier.height(Space.xxl))
+                QuickEntryBar(onSubmit = onQuickText)
+            }
+
+            if (entries.isNotEmpty() || shifts.isNotEmpty()) {
+                item {
+                    Spacer(Modifier.height(Space.xxl))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("ENTRIES", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong)
+                        Spacer(Modifier.width(Space.s))
+                        Text("${t.entryCount}", color = baki.muted, style = BakiType.captionNumeric)
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "Add", color = baki.primary,
+                            modifier = Modifier.clickable { onAdd() }.padding(Space.s),
+                            style = BakiType.captionStrong,
+                        )
+                    }
+                }
+                items(entries, key = { it.id }) { entry ->
+                    MinimalLedgerRow(
+                        title = entry.note.ifBlank { cats[entry.cat]?.name ?: entry.cat },
+                        sub = if (entry.note.isBlank()) "" else cats[entry.cat]?.name ?: entry.cat,
+                        amount = (if (entry.type == "income") "+" else "−") + rm(entry.amount),
+                        tint = if (entry.type == "income") baki.up else baki.onSurface,
+                        onEdit = { onEditEntry(entry) },
+                        onDelete = { onDeleteEntry(entry) },
+                    )
+                }
+                if (shifts.isNotEmpty()) {
+                    items(shifts, key = { it.id }) { shift ->
+                        val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
+                        MinimalLedgerRow(
+                            title = "Shift ${shift.start.ifEmpty { shift.date }}",
+                            sub = "${"%.1f".format(shift.hours)} h · ${"%.0f".format(m.km)} km · ${BANDS[m.band] ?: "—"}",
+                            amount = "RM ${"%.2f".format(m.net)}",
+                            tint = baki.onSurface,
+                            onEdit = { onEditEntry(Entry(shift.id, shift.date, "shift", "shift", 0)) },
+                        )
+                    }
+                }
+                if (shifts.isNotEmpty()) {
+                    item {
+                        Row(Modifier.fillMaxWidth().padding(top = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.l)) {
+                            Text(
+                                "Add shift", color = baki.muted,
+                                modifier = Modifier.clickable { onAddShift() }.padding(vertical = Space.s),
+                                style = BakiType.caption,
+                            )
+                            Text("All shifts →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption)
+                        }
+                    }
+                }
+                item {
+                    Text(
+                        "All entries →", color = baki.muted,
+                        modifier = Modifier.padding(top = Space.s).clickable { onSeeAll() },
+                        style = BakiType.caption,
+                    )
+                }
+            } else {
+                item {
+                    Spacer(Modifier.height(Space.xxl))
+                    Text("Nothing recorded yet", color = baki.onSurface, style = BakiType.bodyStrong)
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "Type a line above — “toll 4.20”, “petrol 40” — or Add for the full form.",
+                        color = baki.muted, style = BakiType.caption,
+                    )
+                }
+            }
+
+            item {
+                Spacer(Modifier.height(56.dp))
+                if (paidUntil != null && nowMillis() < paidUntil) {
+                    Text(
+                        "Cover until ${clockOf(paidUntil)} · starting before then adds no RM ${"%.2f".format(cfg.grabInsurance)}",
+                        color = baki.up, style = BakiType.caption,
+                    )
+                    Spacer(Modifier.height(Space.xl))
+                }
+                Text("LAST 7 DAYS", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong)
+                Spacer(Modifier.height(Space.m))
+                WeekStrip(store, day)
+            }
+
+            item {
+                Spacer(Modifier.height(Space.xxl))
+                TodayRouteCard(store = store, day = day, live = live)
             }
         }
     }
+}
+
+@Composable
+private fun DateLine(day: String, today: String, onChange: (String) -> Unit) {
+    val baki = LocalBaki.current
+    Row(Modifier.fillMaxWidth().padding(top = Space.m), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (day == today) "TODAY" else weekdayShort(day).uppercase(),
+                color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+            )
+            Text(
+                if (day == today) prettyDate(day) else "${prettyDate(day)}",
+                color = baki.onSurface, style = BakiType.bodyStrong,
+            )
+        }
+        Text(
+            "‹", color = baki.onSurface, style = BakiType.title,
+            modifier = Modifier.clickable { onChange(addDays(day, -1)) }.padding(horizontal = Space.ml, vertical = Space.xs),
+        )
+        if (day < today) {
+            Text(
+                "›", color = baki.onSurface, style = BakiType.title,
+                modifier = Modifier
+                    .clickable { onChange(addDays(day, 1)) }
+                    .padding(horizontal = Space.ml, vertical = Space.xs),
+            )
+        }
     }
 }
 
 @Composable
-private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
+private fun FlatAction(label: String, onClick: () -> Unit) {
     val baki = LocalBaki.current
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = Space.s),
+        Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = Space.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, style = BakiType.body ) }
-        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (day == today) "Today" else prettyDate(day), color = baki.onSurface, style = BakiType.bodyStrong )
+        Text(label, color = baki.primary, style = BakiType.bodyStrong)
+        Spacer(Modifier.weight(1f))
+        Text("→", color = baki.primary, style = BakiType.body)
+    }
+}
+
+@Composable
+private fun LiveInline(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: () -> Unit) {
+    val baki = LocalBaki.current
+    val scope = rememberCoroutineScope()
+    val now = nowMillis()
+    val worked = liveWorkedMs(live, now)
+    val onBreak = isPaused(live)
+    val total = liveTotalCents(live)
+    val hours = worked / 3_600_000.0
+
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(if (onBreak) baki.warn else baki.primary))
+            Spacer(Modifier.width(Space.s))
+            Text(if (onBreak) "ON BREAK" else "LIVE", color = if (onBreak) baki.warn else baki.primary, letterSpacing = 1.2.sp, style = BakiType.captionStrong)
+            Spacer(Modifier.weight(1f))
+            Text("since ${startClock(live.start)}", color = baki.muted, style = BakiType.captionNumeric)
+        }
+        Spacer(Modifier.height(Space.s))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(liveClock(worked), color = baki.onSurface, style = BakiType.headline)
+            Spacer(Modifier.weight(1f))
+            Text("RM ${rm(total)}", color = baki.onSurface, style = BakiType.headlineNumeric)
+        }
+        if (hours > 0.05) {
+            Text("RM ${rm(total / 100.0 / hours)}/hr", color = baki.muted, style = BakiType.captionNumeric)
+        }
+        Spacer(Modifier.height(Space.s))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
             Text(
-                if (day == today) prettyDate(day) else "${weekdayShort(day)} · ${prettyDate(day)}",
-                color = baki.muted, style = BakiType.caption )
-        }
-        TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
-            Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), style = BakiType.body )
+                "+ Payout", color = baki.primary,
+                modifier = Modifier.clickable { onPayout() }.padding(vertical = Space.s),
+                style = BakiType.labelStrong,
+            )
+            Text(
+                if (onBreak) "Resume" else "Pause", color = baki.onSurface,
+                modifier = Modifier
+                    .clickable(enabled = !repo.readOnly) { if (onBreak) repo.resumeLive() else repo.pauseLive() }
+                    .padding(vertical = Space.s),
+                style = BakiType.label,
+            )
+            Text(
+                "End", color = baki.muted,
+                modifier = Modifier
+                    .clickable(enabled = !repo.readOnly) { scope.launch { repo.endLive() } }
+                    .padding(vertical = Space.s),
+                style = BakiType.label,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                "${live.payouts.size} payouts →", color = baki.muted,
+                modifier = Modifier.clickable { onPayouts() }.padding(vertical = Space.s),
+                style = BakiType.caption,
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(
-        modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = ink,
-            modifier = Modifier.padding(horizontal = Space.l, vertical = 11.dp), style = BakiType.labelStrong )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
-@Composable
-fun RowCardIcon(
-    icon: ImageVector,
+private fun MinimalLedgerRow(
     title: String,
     sub: String,
     amount: String,
     tint: Color,
-    sharedKey: String? = null,
-    onEdit: () -> Unit = {},
+    onEdit: () -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
     val baki = LocalBaki.current
-    val sharedScope = LocalSharedTransition.current
-    val visibilityScope = LocalAnimatedVisibility.current
-    val sharedMod = if (sharedScope != null && visibilityScope != null && sharedKey != null) {
-        with(sharedScope) {
-            Modifier.sharedBounds(
-                rememberSharedContentState(key = sharedKey),
-                animatedVisibilityScope = visibilityScope,
-            )
-        }
-    } else Modifier
-
     val swipe = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
@@ -399,10 +341,9 @@ fun RowCardIcon(
                 SwipeToDismissBoxValue.EndToStart -> onDelete?.invoke()
                 else -> {}
             }
-            false          // always spring back: the action is the swipe, not the removal
+            false
         },
     )
-
     SwipeToDismissBox(
         state = swipe,
         enableDismissFromStartToEnd = true,
@@ -410,34 +351,27 @@ fun RowCardIcon(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.card))
-                    .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
-                    .padding(horizontal = Space.ml),
+                Modifier.fillMaxSize().background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.18f))
+                    .padding(horizontal = Space.l),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
             ) {
-                Text(
-                    if (editing) "✎  Edit" else "Delete  🗑",
-                    color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong )
+                Text(if (editing) "Edit" else "Delete", color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong)
             }
         },
     ) {
-    Row(
-        Modifier.fillMaxWidth().then(sharedMod).clip(RoundedCornerShape(Radius.card)).background(baki.container)
-            .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
-            .padding(Space.l),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
-        Spacer(Modifier.width(Space.m))
-        Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, style = BakiType.bodyStrong )
-            if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption )
+        Row(
+            // opaque canvas face: otherwise the swipe actions show through a flat row
+            Modifier.fillMaxWidth().background(baki.surface)
+                .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
+                .padding(vertical = Space.m),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = baki.onSurface, style = BakiType.body)
+                if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+            }
+            Text(amount, color = tint, style = BakiType.subtitleNumeric)
         }
-        Text(amount, color = tint, style = BakiType.subtitleNumeric)
-    }
     }
 }

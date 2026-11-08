@@ -210,20 +210,6 @@ private fun AppContent(repo: BakiRepo) {
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
                     onQuickText = { quickText = it },
-                    onQuickAdd = { cat, cents ->
-                        scope.launch {
-                            val id = repo.addExpense(cents, cat, "", todayIso())
-                            if (id != null) {
-                                val name = repo.store.settings.cats.catsOut
-                                    .firstOrNull { it.id == cat }?.name ?: cat
-                                val res = snackbar.showSnackbar(
-                                    "Added $name RM ${rm(cents)}",
-                                    actionLabel = "Undo", duration = SnackbarDuration.Short,
-                                )
-                                if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
-                            }
-                        }
-                    },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
                     onDeleteEntry = { entry ->
                         scope.launch {
@@ -236,12 +222,6 @@ private fun AppContent(repo: BakiRepo) {
                                 repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
                             }
                         }
-                    },
-                    onPreset = { catId ->
-                        editingEntry = null
-                        entryType = "expense"
-                        presetCat = catId
-                        adding = 2
                     },
                     onAddShift = { editingShift = null; adding = 3 },
                     onSeeAll = { tab = 1 },
@@ -506,15 +486,13 @@ private fun Header(repo: BakiRepo) {
     // read the status here, not in the caller: a sync tick then re-draws only this row
     val status = repo.status
     val baki = LocalBaki.current
-    Row(Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primary), contentAlignment = Alignment.Center) {
-            Text("✓", color = baki.onPrimary, style = BakiType.bodyStrong )
-        }
-        Spacer(Modifier.width(Space.m))
-        Column(Modifier.weight(1f)) {
-            Text("Baki", color = baki.onSurface, style = BakiType.title )
-            Text("what your shift really pays", color = baki.muted, style = BakiType.caption )
-        }
+    // one wordmark, one status: the old badge and tagline were decoration
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Baki", color = baki.onSurface, style = BakiType.title)
+        Spacer(Modifier.weight(1f))
         val dot = when (status) {
             "synced" -> baki.up
             "offline" -> baki.down
@@ -523,7 +501,7 @@ private fun Header(repo: BakiRepo) {
             else -> baki.muted
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
+            Box(Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
             Text(
                 when (status) {
                     "synced" -> "synced"
