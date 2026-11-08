@@ -61,7 +61,6 @@ fun TodayScreen(
     onPayout: () -> Unit,
     onPayouts: () -> Unit,
     onQuickAdd: (String, Long) -> Unit,
-    onQuickText: (String) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onPreset: (String) -> Unit,
@@ -205,9 +204,6 @@ fun TodayScreen(
 
         // the day's movement: between the shift card and the ledger
         item { TodayRouteCard(store = store, day = day, live = live) }
-
-        // one line of free text: "toll 4.20 parking 2"
-        item { QuickEntryBar(onSubmit = onQuickText) }
 
         // what you keep buying, one tap away
         if (quick.isNotEmpty()) item {
