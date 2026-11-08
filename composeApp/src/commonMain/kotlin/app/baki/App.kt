@@ -184,6 +184,7 @@ private fun AppContent(repo: BakiRepo) {
                     repo = repo,
                     day = day,
                     onDay = { day = it },
+                    onAdd = { adding = 1 },
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
                     onQuickText = { quickText = it },
@@ -282,21 +283,6 @@ private fun AppContent(repo: BakiRepo) {
         BottomBar(tab, { tab = it }, liquid = glassTier > 0, backdrop = glassBackdrop)
     }
 
-    if (tab == 0 && !repo.readOnly) {
-        GlassSurface(
-            backdrop = glassBackdrop,
-            shape = RoundedCornerShape(Radius.pill),
-            tier = glassTier,
-                modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = Space.l).padding(bottom = barHeight + barGap + 6.dp).size(fabSize)
-                .shadow(10.dp, RoundedCornerShape(Radius.pill)),
-        ) {
-            Box(
-                Modifier.fillMaxSize().clickable { adding = 1 },
-                contentAlignment = Alignment.Center,
-            ) { Text("+", color = baki.primary, style = BakiType.headline ) }
-        }
-    }
     }
     }
 
@@ -514,7 +500,19 @@ private fun Header(repo: BakiRepo) {
             "syncing" -> baki.primary
             else -> baki.muted
         }
-        Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
+            Text(
+                when (status) {
+                    "synced" -> "synced"
+                    "offline" -> "offline"
+                    "cached" -> "cached"
+                    "syncing" -> "syncing"
+                    else -> "local"
+                },
+                color = baki.muted, style = BakiType.caption,
+            )
+        }
     }
 }
 
@@ -881,6 +879,7 @@ fun monthLabel(month: String): String {
 fun endOfMonth(month: String): String = addDays(addDays("$month-01", 32).take(7) + "-01", -1)
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SpendingScreen(
     repo: BakiRepo,
@@ -932,8 +931,13 @@ private fun SpendingScreen(
             singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
         )
         Spacer(Modifier.height(Space.s))
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            val chips = listOf("all" to "All") + cats.map { it.id to it.name }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            verticalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            val usedCats = all.map { it.cat }.toSet()
+            val chips = listOf("all" to "All") +
+                cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
             chips.forEach { (id, label) ->
                 val on = catFilter == id
                 Row(

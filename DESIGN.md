@@ -638,3 +638,23 @@ saved too. `SyncChangeTest` guards the bills-only case. The Bills card also show
 The BILLS block on the desk now lists the five most recent payments (`Bills.history()`), each with bill,
 period, amount and paid date; broken links show `unlinked` / `deleted` in the danger colour instead of
 being hidden. Read-only, like the rest of the desk.
+
+## Layout revision (v0.25)
+
+Phone:
+- quick-add chips and the category filter now use `FlowRow`, so "Car wash" and "Deepseek" are visible
+  instead of being clipped at the card edge (both rows were technically scrollable, which is not
+  discoverable). Only categories used in the month are offered as filters, and presets are capped at the
+  eight most-used, so filters stay two rows instead of five. Presets skip categories already offered as
+  one-tap amounts above them; the same chip twice was pure noise.
+- the floating **+** is gone; it covered the first entry's amount. Adding lives in the ledger header
+  ("+ Add") next to "see all", which is where the list is.
+- the sync dot carries its state as text ("synced", "offline", "cached", "syncing", "local") instead of
+  being an unexplained coloured dot.
+
+Desk:
+- Year lists only months with activity; idle months collapse to one caption ("8 months without
+  activity") instead of eight `RM 0.00` rows and a future dash.
+- Entries group by day: the date becomes a header with the day's totals, the repeated per-row date is
+  gone, and the note column gets the space.
+- Bills reads "open now: November 2026" when the month still has unpaid bills, "next open: …" otherwise.

@@ -702,7 +702,11 @@ private fun BillsBlock(store: Store, month: String, neu: Neu) {
         color = neu.muted, style = BakiType.caption,
     )
     val nextOpen = Bills.nextOpenMonth(store, month)
-    Text("next open month: ${monthLabel(nextOpen)}", color = neu.muted, style = BakiType.caption)
+    val openThisMonth = Bills.unpaid(store, month).isNotEmpty()
+    Text(
+        if (openThisMonth) "open now: ${monthLabel(month)}" else "next open: ${monthLabel(nextOpen)}",
+        color = neu.muted, style = BakiType.caption,
+    )
     // the payment log: newest first, with broken links called out rather than hidden
     val recent = Bills.history(store, 5)
     if (recent.isNotEmpty()) {
@@ -826,7 +830,11 @@ internal fun EntriesView(store: Store, month: String) {
                 )
             } else {
                 SectionCard(neu) {
-                    EntryTable(store, entries, compact = false, showNote = monthEntries.any { it.note.isNotBlank() })
+                    EntriesByDay(
+                        store = store,
+                        entries = entries,
+                        showNote = monthEntries.any { it.note.isNotBlank() },
+                    )
                 }
             }
         }
@@ -1053,8 +1061,12 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
             }
         }
         Spacer(Modifier.height(Space.xxl))
+        val activeMonths = months.filter { it.second.entryCount > 0 || it.second.shiftCount > 0 }
         SectionCard(neu) {
-        months.chunked(3).forEach { row ->
+        if (activeMonths.isEmpty()) {
+            Text("No activity in $year yet", color = neu.muted, style = BakiType.body)
+        }
+        activeMonths.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                 row.forEach { (label, t) ->
                     val idle = t.entryCount == 0 && t.shiftCount == 0
@@ -1102,6 +1114,14 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
             }
             Spacer(Modifier.height(Space.m))
         }
+            val idle = months.size - activeMonths.size
+            if (idle > 0) {
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    "$idle month${if (idle == 1) "" else "s"} without activity",
+                    color = neu.muted, style = BakiType.caption,
+                )
+            }
         }
         Spacer(Modifier.height(Space.xl))
     }
@@ -1611,5 +1631,76 @@ private fun weekdayShort(iso: String): String =
 private fun SectionCard(neu: Neu, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     NeuPanel(neu, Modifier.fillMaxWidth(), corner = Radius.sheet, offset = Elevation.card) {
         Column(Modifier.padding(Space.xl), content = content)
+    }
+}
+
+/**
+ * Entries grouped by the day they were logged, with that day's totals in the header. The date column
+ * disappeared into the header, which leaves room for the note and removes a repeated value on every row.
+ */
+@Composable
+private fun EntriesByDay(store: Store, entries: List<Entry>, showNote: Boolean) {
+    val neu = rememberNeu()
+    val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
+    val groups = remember(entries) {
+        entries
+            .sortedWith(compareByDescending<Entry> { it.date }.thenByDescending { it.updated })
+            .groupBy { it.date }
+    }
+
+    Column(Modifier.fillMaxWidth()) {
+        groups.forEach { (day, list) ->
+            val out = list.filter { it.type != "income" }.sumOf { it.amount }
+            val income = list.filter { it.type == "income" }.sumOf { it.amount }
+            Row(
+                Modifier.fillMaxWidth().padding(top = Space.m, bottom = Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "${weekdayShort(day)} ${day.takeLast(2).trimStart('0')} " +
+                        monthLabel(day.take(7)).substringBefore(' ').take(3),
+                    color = neu.muted, style = BakiType.section,
+                )
+                Spacer(Modifier.width(Space.s))
+                Text("${list.size} ${if (list.size == 1) "entry" else "entries"}", color = neu.muted, style = BakiType.caption)
+                Spacer(Modifier.weight(1f))
+                if (income > 0) Text("+RM ${rm(income)}  ", color = neu.accent, style = BakiType.captionNumeric)
+                if (out > 0) Text("−RM ${rm(out)}", color = neu.danger, style = BakiType.captionNumeric)
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(neu.dark.copy(alpha = 0.35f)))
+            list.forEach { entry ->
+                val hover = remember { MutableInteractionSource() }
+                val hovered by hover.collectIsHoveredAsState()
+                Row(
+                    Modifier.fillMaxWidth()
+                        .then(if (hovered) Modifier.inset(neu, corner = Radius.input, offset = 2.dp) else Modifier)
+                        .clip(RoundedCornerShape(Radius.input))
+                        .hoverable(hover)
+                        .padding(horizontal = Space.s, vertical = Space.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(Modifier.width(190.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(categoryIcon(entry.cat), contentDescription = null, tint = neu.muted, modifier = Modifier.size(IconSize.inline))
+                        Spacer(Modifier.width(Space.s))
+                        Text(cats[entry.cat]?.name ?: entry.cat, color = neu.ink, style = BakiType.label)
+                    }
+                    if (showNote) {
+                        Text(
+                            entry.note.ifBlank { "—" }, color = neu.muted, style = BakiType.label,
+                            maxLines = 1, modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                    Text(
+                        (if (entry.type == "income") "+" else "−") + rm(entry.amount),
+                        color = if (entry.type == "income") neu.accent else neu.danger,
+                        style = BakiType.labelNumeric,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = TextAlign.End,
+                    )
+                }
+            }
+        }
     }
 }

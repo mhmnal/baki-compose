@@ -1,5 +1,8 @@
 package app.baki
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
@@ -49,7 +52,7 @@ fun bandColor(band: String, baki: BakiPalette): Color = when (band) {
     else -> baki.primary
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TodayScreen(
     repo: BakiRepo,
@@ -64,6 +67,7 @@ fun TodayScreen(
     onPreset: (String) -> Unit,
     onAddShift: () -> Unit,
     onSeeAll: () -> Unit,
+    onAdd: () -> Unit,
 ) {
     val baki = LocalBaki.current
     val store = repo.store
@@ -210,9 +214,9 @@ fun TodayScreen(
             Column {
                 Text("QUICK ADD", color = baki.muted, style = BakiType.section)
                 Spacer(Modifier.height(Space.s))
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
                     val cats = store.settings.cats.catsOut
                     quick.forEach { q ->
@@ -235,8 +239,21 @@ fun TodayScreen(
         }
 
         item {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                val presets = store.settings.cats.catsOut.filter { it.id != "grabfee" }
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+                verticalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                // skip categories already offered as one-tap amounts above: the same chip twice is noise
+                val presets = remember(store, quick) {
+                    val counts = store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
+                    val quickCats = quick.map { it.cat }.toSet()
+                    val used = store.settings.cats.catsOut
+                        .filter { it.id != "grabfee" && it.id !in quickCats && (counts[it.id] ?: 0) > 0 }
+                        .sortedByDescending { counts[it.id] ?: 0 }
+                    (if (used.isEmpty()) store.settings.cats.catsOut.filter { it.id != "grabfee" && it.id !in quickCats } else used)
+                        .take(6)
+                }
                 presets.forEach { c ->
                     Row(
                         Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
@@ -263,6 +280,12 @@ fun TodayScreen(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Spacer(Modifier.weight(1f))
+                Text(
+                    "+ Add", color = baki.primary,
+                    modifier = Modifier.clickable { onAdd() }.padding(horizontal = Space.s, vertical = Space.xs),
+                    style = BakiType.captionStrong,
+                )
+                Spacer(Modifier.width(Space.s))
                 Text("see all →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption )
             }
         }
