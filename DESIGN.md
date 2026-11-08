@@ -804,3 +804,17 @@ so every item is still reachable; there is simply no persistent track/thumb.
   directly behind it.
 - PDF statement import: share/open PDFs, multi-select, Wednesday 10:00 reminder (v0.34/0.35).
 - **Desk**: neumorphic Soft UI 2.0 in light and Obsidian Slate in dark, read-only, unchanged since 0.34.
+
+## Durability pass (unreleased, no signed build yet)
+
+Storage and sync fixes after the feasibility audit:
+
+- The dirty/outbox bit now lives in `ClientConfig.pendingPush` (device-local, encrypted). Every
+  `saveLocal` marks it; only a successful push clears it. `sync()` therefore retries after a restart,
+  and the retry push carries `store.tomb.ids` so deletions propagate too. The sync 304 path and the
+  fresh-data path both go through one `pushAll()`.
+- Local writes fsync the temp file, copy the previous file to `.bak`, and verify the rename. A store that
+  cannot be decrypted or parsed is quarantined as `store.json.corrupt-<stamp>`; the app tries the local
+  `.bak`, then the server, and surfaces the result in Diagnostics instead of opening empty.
+- `StoreHealth` exposes load/save errors; Diagnostics shows them.
+- Still outstanding: server authentication, off-machine backups, and server-side fsync/error propagation.

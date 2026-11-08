@@ -25,15 +25,33 @@ data class ClientConfig(
     val routeSecret: String = "",
     /** Weekly Wednesday nudge to import the Grab statement. */
     val statementReminder: Boolean = true,
+    /**
+     * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
+     * launch after this field was introduced reconciles any pre-existing local-only edits.
+     */
+    val pendingPush: Boolean = true,
 )
 
 private const val CONFIG_FILE = "config.json"
 
 fun loadConfig(): ClientConfig {
-    val raw = LocalStore.readText(CONFIG_FILE) ?: return ClientConfig()
-    return runCatching { BakiJson.decodeFromString<ClientConfig>(raw) }.getOrElse { ClientConfig() }
+    val raw = try {
+        LocalStore.readText(CONFIG_FILE)
+    } catch (e: Exception) {
+        // a damaged config must not brick the app; keep a copy and start from defaults
+        runCatching { LocalStore.quarantine(CONFIG_FILE) }
+        StoreHealth.loadError = "Client config could not be read; defaults restored."
+        null
+    } ?: return ClientConfig()
+    return runCatching { BakiJson.decodeFromString<ClientConfig>(raw) }.getOrElse {
+        runCatching { LocalStore.quarantine(CONFIG_FILE) }
+        StoreHealth.loadError = "Client config could not be parsed; defaults restored."
+        ClientConfig()
+    }
 }
 
 fun saveConfig(cfg: ClientConfig) {
-    LocalStore.writeText(CONFIG_FILE, BakiJson.encodeToString(ClientConfig.serializer(), cfg))
+    runCatching {
+        LocalStore.writeText(CONFIG_FILE, BakiJson.encodeToString(ClientConfig.serializer(), cfg))
+    }.onFailure { StoreHealth.saveError = "Config could not be saved: ${it.message}" }
 }

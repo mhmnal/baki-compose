@@ -1,6 +1,7 @@
 package app.baki
 
 import java.io.File
+import java.io.FileOutputStream
 
 actual object LocalStore {
     private val dir: File by lazy {
@@ -10,17 +11,25 @@ actual object LocalStore {
 
     private fun file(): File = File(dir, "store.json")
 
+    /** Throws when the file exists but cannot be decrypted: the caller must not treat that as empty. */
     private fun readSealed(f: File): String? {
         if (!f.exists()) return null
-        val plain = runCatching { StoreCipher.decrypt(f.readBytes()) }.getOrElse { return null }
-        return plain.decodeToString()
+        return StoreCipher.decrypt(f.readBytes()).decodeToString()
     }
 
     private fun writeSealed(f: File, text: String) {
         f.parentFile?.mkdirs()
         val tmp = File(f.parentFile, f.name + ".tmp")
-        tmp.writeBytes(StoreCipher.encrypt(text.encodeToByteArray()))
-        tmp.renameTo(f)
+        FileOutputStream(tmp).use { out ->
+            out.write(StoreCipher.encrypt(text.encodeToByteArray()))
+            out.fd.sync()
+        }
+        if (f.exists()) runCatching { f.copyTo(File(f.parentFile, f.name + ".bak"), overwrite = true) }
+        if (!tmp.renameTo(f)) {
+            // cross-device or a locked file: fall back to a direct write rather than losing the save
+            f.writeBytes(tmp.readBytes())
+            tmp.delete()
+        }
     }
 
     actual fun read(): String? = readSealed(file())
@@ -29,7 +38,14 @@ actual object LocalStore {
 
     actual fun path(): String = file().absolutePath
 
-    actual fun readText(name: String): String? = readSealed(File(dir, name))
+    actual fun readText(name: String): String? = readSealed(File(dir, File(name).name))
 
-    actual fun writeText(name: String, text: String) = writeSealed(File(dir, name), text)
+    actual fun writeText(name: String, text: String) = writeSealed(File(dir, File(name).name), text)
+
+    actual fun quarantine(name: String): String? {
+        val f = File(dir, File(name).name)
+        if (!f.exists()) return null
+        val dest = File(dir, f.name + ".corrupt-" + System.currentTimeMillis())
+        return if (f.renameTo(dest)) dest.absolutePath else null
+    }
 }

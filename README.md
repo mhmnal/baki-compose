@@ -82,7 +82,11 @@ committed.
 - One store per user; the phone and desk share it through `POST/GET /api/data`.
 - Writes merge by id, newest wins; deletions are tombstones; statements are keyed by week.
 - The desk cannot create, edit or delete — `ReadOnlyShellTest` enforces it.
-- Client config (server URL, theme, reminder flag, route key) is device-local.
+- Client config (server URL, theme, reminder flag, route key, **durable outbox bit**) is device-local.
+- A local save marks the outbox; the sync loop retries it after restarts and sends tombstones with the
+  full-store push, so offline edits and deletes cannot sit silently on one device.
+- Local writes fsync the temp file, keep a `.bak`, and quarantine an unreadable store instead of
+  starting empty; the previous local backup or the server copy is used to recover.
 - Server keeps 30 rotating backups in `../grab-tracker/backups/`.
 
 ## Docs

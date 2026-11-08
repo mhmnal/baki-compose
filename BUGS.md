@@ -8,7 +8,8 @@ Updated 2026-11-08 for **0.35.9**. Ordered by what costs money or trust first.
   Route traces are sealed (AES-GCM) but the ledger is not. Keep it on a trusted LAN or put it behind
   a reverse proxy with auth.
 - **Backups are local only.** The server rotates 30 JSON backups in `../grab-tracker/backups/`; nothing
-  leaves the machine.
+  leaves the machine. Local clients now keep one `.bak` and recover from it, but a disk loss is still a
+  server-side problem.
 - **`/usr/bin/baki` is a root-owned leftover** from an early install. The current app lives in
   `~/.local/opt/baki`; removing the old binary needs sudo.
 

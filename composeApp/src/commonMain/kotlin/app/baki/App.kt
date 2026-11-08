@@ -1752,10 +1752,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     else -> "${h.status} · ${ago(now, h.lastSyncAt)}"
                 })
                 add("Upload" to when {
+                    h.readOnly -> "read-only"
                     h.pendingPush -> "pending — retries on next sync"
-                    h.lastPushAt == null -> if (h.readOnly) "read-only" else "never"
+                    h.lastPushAt == null -> "never"
                     else -> "ok · ${ago(now, h.lastPushAt)}"
                 })
+                StoreHealth.loadError?.let { add("Local store" to it) }
+                StoreHealth.saveError?.let { add("Local save" to it) }
                 add("GPS" to when {
                     h.tracker.provider.contains("desktop") -> "unavailable on desktop"
                     h.tracker.provider == "—" || h.tracker.fixes == 0 ->

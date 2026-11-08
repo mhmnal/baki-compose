@@ -120,13 +120,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         try {
             val remote = client.pull()
             if (remote == null) {
-                // 304: the server has nothing we have not already merged
-                if (config.allowWrites && pendingPush) {
-                    val saved = client.push(store)
-                    store = mergeStores(store, saved)
-                    saveLocal(store)
-                    pendingPush = false
-                }
+                // 304: the server has nothing new, but our outbox may still hold local edits
+                if (config.allowWrites && pendingPush) pushAll()
                 runCatching { pushRoutes() }
                 status = "synced"
                 lastError = null
@@ -143,12 +138,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 saveLocal(store)
             }
             // upload only when we hold something the server did not get last time
-            if (config.allowWrites && pendingPush) {
-                val saved = client.push(store)
-                store = mergeStores(store, saved)
-                saveLocal(store)
-                pendingPush = false
-            }
+            if (config.allowWrites && pendingPush) pushAll()
             runCatching { pushRoutes() }
             status = "synced"
             lastError = null
@@ -297,6 +287,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val saved = client.push(store)
             store = mergeStores(store, saved)
             saveLocal(store)
+            pendingPush = false
             status = "synced"
         } catch (e: Exception) {
             status = "cached"
@@ -324,6 +315,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val saved = client.push(store)
             store = mergeStores(store, saved)
             saveLocal(store)
+            pendingPush = false
             status = "synced"
         } catch (e: Exception) {
             status = "cached"
@@ -357,6 +349,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val saved = client.push(store)
             store = mergeStores(store, saved)
             saveLocal(store)
+            pendingPush = false
             status = "synced"
         } catch (e: Exception) {
             status = "cached"
@@ -580,6 +573,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val saved = client.push(store)
             store = mergeStores(store, saved)
             saveLocal(store)
+            pendingPush = false
             status = "synced"
         } catch (e: Exception) {
             status = "cached"
@@ -685,9 +679,42 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(listOf(id))
     }
 
-    /** True when the last push failed, so the next sync retries instead of uploading blindly. */
-    var pendingPush by mutableStateOf(false)
-        private set
+    /**
+     * Durable outbox bit. Set after every local store save, cleared only after the server accepted a
+     * push. It lives in the device config so an edit made offline still uploads after a restart.
+     */
+    var pendingPush: Boolean
+        get() = config.pendingPush
+        private set(value) {
+            if (config.pendingPush == value) return
+            config = config.copy(pendingPush = value)
+            saveConfig(config)
+        }
+
+    init {
+        StoreWrite.onLocalSave = { markDirty() }
+        StoreHealth.loadError?.let { lastError = it }
+    }
+
+    private fun markDirty() {
+        if (!config.pendingPush) pendingPush = true
+    }
+
+    /** Full-store push used by the retry loop: carries every tombstone so deletions cannot lag behind. */
+    private suspend fun pushAll() {
+        val neededFees = store.entries.filter { it.cat == "grabfee" }.map { it.id }
+        val resurrect = neededFees.filter { it in store.tomb.ids }
+        val saved = client.push(store, deletedIds = store.tomb.ids, undeleteIds = resurrect)
+        store = mergeStores(store, saved)
+        if (resurrect.isNotEmpty()) {
+            store = store.copy(tomb = store.tomb.copy(ids = store.tomb.ids - resurrect.toSet()))
+        }
+        saveLocal(store)
+        pendingPush = false
+        status = "synced"
+        lastError = null
+        lastPushAt = nowMillis()
+    }
 
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
@@ -722,7 +749,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val cat = Cat(id = id, name = name.trim(), icon = "🏷️")
         store = store.copy(settings = store.settings.copy(cats = store.settings.cats.copy(catsOut = store.settings.cats.catsOut + cat)))
         saveLocal(store)
-        runCatching { client.push(store) }.onSuccess { store = mergeStores(store, it); saveLocal(store) }
+        runCatching { client.push(store) }.onSuccess {
+            store = mergeStores(store, it)
+            saveLocal(store)
+            pendingPush = false
+        }
     }
 
     /** Renames a category in place; the id never changes, so history keeps pointing at it. */
@@ -749,7 +780,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val cats = store.settings.cats
         store = store.copy(settings = store.settings.copy(cats = cats.copy(catsOut = cats.catsOut.filter { it.id != id })))
         saveLocal(store)
-        runCatching { client.push(store) }.onSuccess { store = mergeStores(store, it); saveLocal(store) }
+        runCatching { client.push(store) }.onSuccess {
+            store = mergeStores(store, it)
+            saveLocal(store)
+            pendingPush = false
+        }
     }
 
     /** Merge a backup file into what is already here (never destructive). */
