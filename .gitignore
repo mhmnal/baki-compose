@@ -16,3 +16,6 @@ dist/
 
 # os noise
 .DS_Store
+
+# deterministic QA screenshots (contain personal data)
+build/shots/
