@@ -263,35 +263,46 @@ private fun HeaderIdentity(neu: Neu) {
 
 @Composable
 private fun MonthStepper(neu: Neu, month: String, onPrev: () -> Unit, onNext: () -> Unit) {
-    // one raised object: a flat chevron at each end and a recessed display in the middle
+    // One recessed capsule owns the depth; the chevrons are flat hit areas inside it. The old version
+    // stacked two raised icon buttons on a raised pill around a third inset, which read as three
+    // separate bubbles rather than a stepper.
     Row(
-        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.control)
-            .padding(horizontal = Space.xs, vertical = Space.xs),
+        Modifier.height(36.dp)
+            .inset(neu, corner = Radius.pill, offset = Elevation.inset)
+            .clip(RoundedCornerShape(Radius.pill))
+            .padding(horizontal = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Tip("Previous month") {
-            NeuIconButton(neu, Modifier.size(30.dp), onClick = onPrev) {
-                Icon(
-                    BakiIcons.ArrowRight, contentDescription = "Previous month",
-                    tint = neu.ink, modifier = Modifier.size(IconSize.inline).rotate180(),
-                )
-            }
-        }
+        ArrowZone(neu, "Previous month", rotate = true, onClick = onPrev)
         Box(
-            Modifier.height(30.dp)
-                .inset(neu, corner = Radius.small, offset = 2.dp)
-                .padding(horizontal = Space.m),
+            Modifier.widthIn(min = 138.dp).padding(horizontal = Space.s),
             contentAlignment = Alignment.Center,
         ) {
             Text(monthLabel(month), color = neu.ink, style = BakiType.labelNumeric)
         }
-        Tip("Next month") {
-            NeuIconButton(neu, Modifier.size(30.dp), onClick = onNext) {
-                Icon(
-                    BakiIcons.ArrowRight, contentDescription = "Next month",
-                    tint = neu.ink, modifier = Modifier.size(IconSize.inline),
-                )
-            }
+        ArrowZone(neu, "Next month", rotate = false, onClick = onNext)
+    }
+}
+
+@Composable
+private fun ArrowZone(neu: Neu, label: String, rotate: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    Tip(label) {
+        Box(
+            Modifier.size(30.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(if (hovered) neu.accentSoft else neu.base)
+                .hoverable(interaction)
+                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .pointerHoverIcon(PointerIcon.Hand),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                BakiIcons.ArrowRight, contentDescription = label,
+                tint = if (hovered) neu.ink else neu.muted,
+                modifier = Modifier.size(IconSize.inline).then(if (rotate) Modifier.rotate180() else Modifier),
+            )
         }
     }
 }
@@ -459,8 +470,7 @@ private fun WeekChart(store: Store, neu: Neu) {
             neu,
             Modifier.fillMaxWidth().semantics { contentDescription = "Last seven days net: $summary" },
             corner = Radius.card,
-            offset = Elevation.card,
-            inset = false,
+            offset = Elevation.inset,
         ) {
             Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.m)) {
                 Row(
@@ -531,8 +541,7 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
                 contentDescription = "Cumulative net through $month, ending at RM ${rm(last)}"
             },
             corner = Radius.card,
-            offset = Elevation.card,
-            inset = false,
+            offset = Elevation.inset,
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.m)) {
                 Canvas(Modifier.fillMaxWidth().height(132.dp)) {
@@ -1182,7 +1191,9 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                         Row(
                             Modifier.fillMaxWidth()
                                 .then(
-                                    if (isSel) Modifier.inset(neu, corner = Radius.input, offset = Elevation.inset)
+                                    // selection is a state, not an input: a tint, not a cavity. The inset
+                                    // ring showed as a dark strip along the row's left edge.
+                                    if (isSel) Modifier.background(neu.accentSoft, RoundedCornerShape(Radius.input))
                                     else Modifier,
                                 )
                                 .clip(RoundedCornerShape(Radius.input))
@@ -1348,6 +1359,8 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                     .sortedByDescending { maxOf(it.second.first, it.second.second) }
                     .take(7)
                 val peak = top.maxOfOrNull { maxOf(it.second.first, it.second.second) }?.coerceAtLeast(1) ?: 1
+                NeuWell(neu, Modifier.fillMaxWidth(), corner = Radius.card, offset = Elevation.inset) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.s)) {
                 top.forEach { (name, values) ->
                     val (va, vb) = values
                     Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
@@ -1375,6 +1388,8 @@ internal fun CompareView(store: Store, month: String, neu: Neu) {
                 }
                 Spacer(Modifier.height(Space.xs))
                 Text("accent = ${monthLabel(a)} · grey = ${monthLabel(b)}", color = neu.muted, style = BakiType.caption)
+                }
+                }
             }
             Spacer(Modifier.height(Space.l))
         }

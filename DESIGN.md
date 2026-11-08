@@ -658,3 +658,17 @@ Desk:
 - Entries group by day: the date becomes a header with the day's totals, the repeated per-row date is
   gone, and the note column gets the space.
 - Bills reads "open now: November 2026" when the month still has unpaid bills, "next open: …" otherwise.
+
+## Inset repair (v0.26)
+
+`NeuWell` painted `background(neu.base)` **after** `inset()`, covering the cavity it had just drawn. Every
+inset well — text fields, segmented tracks, chart plots — was therefore flat in practice, even though the
+code asked for depth. When `inset` is true the well now clips only; the modifier's own fill and blurred
+inner rings do the rest.
+
+- Month stepper rebuilt as one recessed capsule with flat chevrons inside; it used to stack a raised pill,
+  two raised icon buttons and an inset label, which read as three separate bubbles.
+- The two Overview plots and Compare's side-by-side bars sit in cavities again (`Elevation.inset`), now
+  that the material can show them.
+- A selected drive row uses an `accentSoft` tint instead of `inset`: selection is a state, not an input,
+  and the ring showed as a dark strip along the row's left edge.

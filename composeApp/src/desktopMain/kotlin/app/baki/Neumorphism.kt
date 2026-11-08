@@ -317,8 +317,13 @@ fun NeuWell(
     inset: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val body = if (inset) modifier.inset(neu, corner, offset) else modifier
-    Box(body.clip(RoundedCornerShape(corner)).background(neu.base), content = content)
+    // When inset, the modifier already fills the shape and draws the inner shadows. Painting a
+    // background afterwards sat on top of them and flattened the cavity - the inset looked absent.
+    if (inset) {
+        Box(modifier.inset(neu, corner, offset).clip(RoundedCornerShape(corner)), content = content)
+    } else {
+        Box(modifier.clip(RoundedCornerShape(corner)).background(neu.base), content = content)
+    }
 }
 
 /**
