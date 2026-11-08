@@ -52,7 +52,7 @@ class DesktopConsistencyTest {
     }
 }
 
-/** The shadow math is delegated to a maintained KMP library, never re-implemented by hand. */
+/** The material is hand-rolled from the brief: no third-party shadow engine, no Material chrome. */
 class ShadowEngineTest {
 
     private fun material() = File(
@@ -60,43 +60,57 @@ class ShadowEngineTest {
         "Neumorphism.kt",
     ).readText()
 
-    @Test
-    fun everyShadowIsDrawnInItsOwnLayer() {
-        // the library leaks canvas transforms on desktop; a shadow drawn on the shared canvas shifts
-        // everything painted after it. Each call therefore lives inside its own graphicsLayer.
-        val text = material()
-        var index = text.indexOf(".boxShadow(")
-        var checked = 0
-        while (index >= 0) {
-            // each modifier function is one chain: a graphicsLayer anywhere before the first
-            // shadow in that function contains every shadow that follows it
-            val fnStart = text.lastIndexOf("): Modifier", index)
-            val chain = text.substring(fnStart.coerceAtLeast(0), index)
-            assertTrue(
-                chain.contains(".graphicsLayer()"),
-                "shadow #${checked + 1} is not isolated in a graphicsLayer",
-            )
-            checked++
-            index = text.indexOf(".boxShadow(", index + 1)
-        }
-        assertTrue(checked >= 4, "expected the four material tiers to draw shadows, found $checked")
+    private fun functionBody(name: String): String {
+        val m = material()
+        val start = m.indexOf("fun Modifier.$name(")
+        if (start < 0) return ""
+        val end = m.indexOf("\nfun ", start + 10).let { if (it < 0) m.length else it }
+        return m.substring(start, end)
     }
 
     @Test
-    fun shadowsComeFromTheLibrary() {
+    fun theShadowEngineIsNative() {
         val m = material()
-        assertTrue(m.contains("dev.lennartegb.shadows.boxShadow"), "the material must use the library modifier")
-        // the one exception is the inset tier: the library's inset leaked past rounded corners, so it
-        // is drawn by hand and clipped to the shape. Hand-rolled blur is allowed *only* there.
-        val insetStart = m.indexOf("fun Modifier.inset(")
-        val insetEnd = m.indexOf("\nfun ", insetStart + 10).let { if (it < 0) m.length else it }
-        val outside = (m.substring(0, insetStart) + m.substring(insetEnd))
-            .lines().filterNot { it.trimStart().startsWith("import ") }.joinToString("\n")
-        assertTrue(!outside.contains("MaskFilter") && !outside.contains("makeBlur"), "hand-rolled blur shaders crept back in")
-        assertTrue(m.substring(insetStart, insetEnd).contains("clipPath"), "the inset must clip its shadows to the shape")
-        // every surface tier is expressed through the library
-        listOf("fun Modifier.raised", "fun Modifier.inset", "fun Modifier.elevated").forEach { fn ->
-            assertTrue(m.contains(fn), "$fn missing")
+        assertTrue(!m.contains("boxShadow"), "the third-party shadow modifier is still present")
+        assertTrue(!m.contains("dev.lennartegb"), "the shadow library import remains")
+        assertTrue(m.contains("MaskFilter.makeBlur"), "the native blurred shadow engine is missing")
+        assertTrue(m.contains("FilterBlurMode.NORMAL"), "blur mode missing from the native engine")
+    }
+
+    @Test
+    fun everySurfaceTierDrawsInItsOwnLayer() {
+        // canvas transforms leak on desktop; each shadow must sit in its own graphicsLayer so it
+        // cannot shift what is painted afterwards
+        listOf("raised", "inset", "elevated").forEach { fn ->
+            val body = functionBody(fn)
+            assertTrue(body.contains(".graphicsLayer()"), "$fn is not isolated in a graphicsLayer")
+            assertTrue(body.contains("drawBehind"), "$fn does not paint its own shadows")
+        }
+        val m = material()
+        assertTrue(
+            m.contains("): Modifier = raised("),
+            "cardSurface must use the same raised engine, not a second shadow path",
+        )
+    }
+
+    @Test
+    fun theInsetClipsItsShadowsToTheShape() {
+        val body = functionBody("inset")
+        assertTrue(body.contains("clipPath"), "the inset must clip its shadows to the rounded shape")
+    }
+
+    @Test
+    fun tokensMatchTheBrief() {
+        val m = material()
+        listOf(
+            "0xFFE0E5EC" to "light canvas",
+            "0xFF1E222B" to "dark canvas",
+            "0xFF3B82F6" to "Electric Blue accent",
+            "0xFF10B981" to "Emerald success",
+            "0xFF1E293B" to "light ink",
+            "0xFF64748B" to "light muted",
+        ).forEach { (hex, label) ->
+            assertTrue(m.contains(hex), "$label ($hex) missing from the material")
         }
     }
 }

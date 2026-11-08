@@ -1486,13 +1486,13 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
         Text("Settings", color = neu.ink, style = BakiType.title)
         Spacer(Modifier.height(Space.l))
 
-        Text("COLOUR", color = neu.muted, style = BakiType.section)
+        Text("SOFT UI 2.0", color = neu.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.xs))
-        NeuSegmented(
-            neu,
-            listOf("sage" to "Sage", "night" to "Night", "paper" to "Paper", "mist" to "Mist"),
-            repo.config.palette,
-        ) { repo.setPalette(it) }
+        Text(
+            "One canvas (#E0E5EC light, #1E222B dark), Electric Blue accent, Emerald for gains. " +
+                "The desk uses this palette only; the phone keeps its own themes.",
+            color = neu.muted, style = BakiType.caption,
+        )
         Spacer(Modifier.height(Space.l))
 
         Text("APPEARANCE", color = neu.muted, style = BakiType.section)
@@ -1504,8 +1504,8 @@ private fun DesktopSettings(repo: BakiRepo, onDismiss: () -> Unit) {
         ) { repo.setThemeMode(it) }
         Spacer(Modifier.height(Space.xs))
         Text(
-            "Colour picks the palette, Appearance picks light or dark. They are separate axes: Night is a " +
-                "dark palette, so it stays dark even when Appearance is Light.",
+            "Appearance picks the Soft UI 2.0 light or dark canvas. The desk no longer offers colour " +
+                "packs: the brief fixes one canvas and one accent per mode.",
             color = neu.muted, style = BakiType.caption,
         )
         Spacer(Modifier.height(Space.l))

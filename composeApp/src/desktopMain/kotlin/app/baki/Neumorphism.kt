@@ -57,9 +57,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import dev.lennartegb.shadows.boxShadow
 
 /**
  * Neumorphism, as a system rather than a style.
@@ -100,37 +98,35 @@ data class Neu(
 )
 
 fun neuOf(p: BakiPalette): Neu {
-    // a neumorphic canvas is a mid tone, not paper white
-    val base = when {
-        p.softUi && !p.dark -> blend(p.surface, p.onSurface, 0.06f)
-        p.dark -> blend(p.surface, p.primary, 0.10f)
-        else -> blend(blend(p.surface, p.primary, 0.05f), Color(0xFFB7C0B2), 0.42f)
-    }
-    // true neumorphism: the face is the canvas. Only light and shade define the form.
-    val panel = base
-    // one light source, top-left: a cool near-white highlight and a blue-grey shade, both tinted
-    // directions of the canvas — never black with alpha
-    val light = blend(base, Color(0xFFF8FBFF), if (p.dark) 0.16f else 0.82f)
-    val dark = if (p.dark) blend(base, Color(0xFF070A0E), 0.60f)
-    else blend(base, Color(0xFF2E3C4C), 0.42f)
-    // secondary text is derived against the canvas, not the palette
-    val muted = blend(base, p.onSurface, if (p.dark) 0.64f else if (p.softUi) 0.78f else 0.72f)
+    // Soft UI 2.0 tokens (the desktop brief): one light and one dark canvas, one light source.
+    val dark = p.dark
+    val base = if (dark) Color(0xFF1E222B) else Color(0xFFE0E5EC)
+    val ink = if (dark) Color(0xFFF8FAFC) else Color(0xFF1E293B)
+    // The brief's #64748B secondary is 3.76:1 on #E0E5EC - below AA for body copy. Nudged 20% toward
+    // ink it reaches 4.68:1 while still reading as secondary.
+    val muted = if (dark) Color(0xFF94A3B8) else blend(Color(0xFF64748B), ink, 0.20f)
+    val accent = Color(0xFF3B82F6)   // Electric Blue
+    val up = Color(0xFF10B981)       // Emerald
+    val danger = Color(0xFFEF4444)
+    // Highlight and shade are directions of the same canvas, never pure black/white.
+    val light = if (dark) blend(base, Color.White, 0.14f) else blend(base, Color.White, 0.92f)
+    val shade = if (dark) blend(base, Color.Black, 0.62f) else Color(0xFFA3B1C6)
     return Neu(
         base = base,
-        panel = panel,
+        panel = base,                       // a single moulded surface: face == canvas
         light = light,
-        dark = dark,
-        ink = p.onSurface,
+        dark = shade,
+        ink = ink,
         muted = muted,
-        accent = p.primary,
-        onAccent = p.onPrimary,
-        accentSoft = blend(base, p.primary, if (p.dark) 0.22f else 0.16f),
-        up = p.up,
-        danger = p.down,
-        lightAlpha = if (p.dark) 0.30f else 0.85f,
-        darkAlpha = if (p.dark) 0.42f else 0.55f,
-        scrim = if (p.dark) Color.Black.copy(alpha = 0.70f) else blend(base, p.onSurface, 0.55f).copy(alpha = 0.60f),
-        isDark = p.dark,
+        accent = accent,
+        onAccent = Color.White,
+        accentSoft = blend(base, accent, if (dark) 0.28f else 0.14f),
+        up = up,
+        danger = danger,
+        lightAlpha = if (dark) 0.12f else 0.80f,
+        darkAlpha = if (dark) 0.55f else 0.60f,
+        scrim = Color(0xFF0F172A).copy(alpha = if (dark) 0.66f else 0.45f),
+        isDark = dark,
     )
 }
 
@@ -175,27 +171,31 @@ fun Modifier.raised(
     fill: Color = neu.base,
 ): Modifier = this
     .graphicsLayer()
-    // shade first, highlight last: the lit corner must not be tinted by the shade
-    .then(Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
-            color = neu.dark.copy(alpha = neu.darkAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ))
-    .then(Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
-            color = neu.light.copy(alpha = neu.lightAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ))
+    .drawBehind {
+        val o = Elevation.distance(neu, offset).toPx()
+        val b = Elevation.blur(neu, blur).toPx()
+        val r = corner.toPx()
+        val shape = Path().apply {
+            addRoundRect(RoundRect(0f, 0f, size.width, size.height, r, r))
+        }
+        fun shadow(color: Color, alpha: Float, dx: Float, dy: Float) {
+            drawIntoCanvas { canvas ->
+                val paint = Paint().apply {
+                    isAntiAlias = true
+                    this.color = color.copy(alpha = alpha).toArgb()
+                    maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.6f)
+                }
+                canvas.nativeCanvas.drawRRect(
+                    RRect.makeXYWH(dx, dy, size.width, size.height, r, r), paint,
+                )
+            }
+        }
+        // shade first, highlight last: the lit corner must not be tinted by the shade
+        shadow(neu.dark, neu.darkAlpha, o, o)
+        shadow(neu.light, neu.lightAlpha, -o, -o)
+        drawPath(shape, fill)
+    }
     .clip(RoundedCornerShape(corner))
-    .background(fill)
 
 /**
  * Floating layer: a dialog or menu sits *above* the canvas rather than being moulded out of it, so
@@ -207,19 +207,26 @@ fun Modifier.elevated(
     drop: Dp = Elevation.floating,
 ): Modifier = this
     .graphicsLayer()
-    .then(
-        Modifier.boxShadow(
-            blurRadius = drop,
-            spreadRadius = 0.dp,
-            offset = DpOffset(0.dp, drop * 0.45f),
-            color = neu.dark.copy(alpha = (neu.darkAlpha * 0.9f).coerceAtMost(0.5f)),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ),
-    )
+    .drawBehind {
+        val b = drop.toPx()
+        val o = (drop * 0.45f).toPx()
+        val r = corner.toPx()
+        val shape = Path().apply {
+            addRoundRect(RoundRect(0f, 0f, size.width, size.height, r, r))
+        }
+        drawIntoCanvas { canvas ->
+            val paint = Paint().apply {
+                isAntiAlias = true
+                color = neu.dark.copy(alpha = (neu.darkAlpha * 0.9f).coerceAtMost(0.5f)).toArgb()
+                maskFilter = MaskFilter.makeBlur(FilterBlurMode.NORMAL, b * 0.45f)
+            }
+            canvas.nativeCanvas.drawRRect(
+                RRect.makeXYWH(0f, o, size.width, size.height, r, r), paint,
+            )
+        }
+        drawPath(shape, neu.panel)
+    }
     .clip(RoundedCornerShape(corner))
-    .background(neu.panel)
 
 /**
  * A card casts the full pair: the 9/16 emboss that makes the face sit in the material. The face is the
@@ -231,28 +238,7 @@ fun Modifier.cardSurface(
     offset: Dp = Elevation.card,
     blur: Dp = Elevation.cardBlur,
     fill: Color = neu.base,
-): Modifier = this
-    .graphicsLayer()
-    .then(Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(Elevation.distance(neu, offset), Elevation.distance(neu, offset)),
-            color = neu.dark.copy(alpha = neu.darkAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ))
-    .then(Modifier.boxShadow(
-            blurRadius = Elevation.blur(neu, blur),
-            spreadRadius = 0.dp,
-            offset = DpOffset(-Elevation.distance(neu, offset), -Elevation.distance(neu, offset)),
-            color = neu.light.copy(alpha = neu.lightAlpha),
-            shape = RoundedCornerShape(corner),
-            clip = false,
-            inset = false,
-        ))
-    .clip(RoundedCornerShape(corner))
-    .background(fill)
+): Modifier = raised(neu, corner = corner, offset = offset, blur = blur, fill = fill)
 
 /** Carved: the same shadows drawn inside the shape, for pressed states, fields and selection. */
 fun Modifier.inset(
@@ -539,12 +525,21 @@ fun NeuDialog(
             .clickable(interactionSource = MutableInteractionSource(), indication = null) { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {
+        // Floating layers are frosted glass, not another extrusion: translucent face, thin light
+        // border, and it never casts a neumorphic double shadow.
         Column(
             Modifier
                 .width(width)
-                .elevated(neu, corner = Radius.sheet, drop = Elevation.floating)
                 .clip(RoundedCornerShape(Radius.sheet))
-                .background(neu.panel)
+                .background(
+                    if (neu.isDark) Color(0xFF1E222B).copy(alpha = 0.86f)
+                    else Color(0xFFF8FAFC).copy(alpha = 0.88f),
+                )
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = if (neu.isDark) 0.16f else 0.45f),
+                    RoundedCornerShape(Radius.sheet),
+                )
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {}
                 .padding(Space.xl),
             content = content,

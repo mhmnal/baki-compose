@@ -672,3 +672,21 @@ inner rings do the rest.
   that the material can show them.
 - A selected drive row uses an `accentSoft` tint instead of `inset`: selection is a state, not an input,
   and the ring showed as a dark strip along the row's left edge.
+
+## Soft UI 2.0 compliance (v0.27)
+
+The desktop brief is now implemented literally; the desk is not Material and never was, but three
+parts of the material did not match the brief:
+
+- **Tokens.** Light canvas `#E0E5EC`, dark `#1E222B`; ink `#1E293B`/`#F8FAFC`; Electric Blue accent
+  `#3B82F6`; Emerald `#10B981`; danger red. The brief's `#64748B` secondary is 3.76:1 on `#E0E5EC`
+  (below AA), so it is blended 20% toward ink to 4.68:1. The desktop palette picker is gone: one canvas
+  and one accent per mode, Appearance still chooses light/dark. The phone keeps its own themes.
+- **Shadow engine.** The JitPack `shadow` library is removed. `raised` and `elevated` draw their own
+  dual blurred rounded rectangles with Skia `MaskFilter`, dark first and light last, each inside a
+  `graphicsLayer`; `cardSurface` delegates to `raised`, and `inset` keeps its clipped inner rings.
+- **Overlays.** Dialogs are frosted glass: translucent face, thin white border, no neumorphic double
+  shadow, over a scrim. (True backdrop blur would need a backdrop capture; the translucency and border
+  are the practical part of the spec.)
+- Material chrome is still forbidden by `DesktopConsistencyTest`; `material3.Text`/`Icon` remain only as
+  text/glyph primitives.

@@ -42,7 +42,6 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation("org.apache.pdfbox:pdfbox:2.0.32")
                 // KMP soft-shadow library: the neumorphic material lives on the desktop only
-                implementation("com.github.LennartEgb.compose-shadow:shadow-jvm:0.1.2")
                 implementation("io.ktor:ktor-client-cio:3.0.3")
             }
         }
@@ -57,7 +56,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 73
-        versionName = "0.26.0"
+        versionName = "0.27.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
