@@ -1,10 +1,5 @@
 package app.baki
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
@@ -166,19 +161,15 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                                 ),
                             ),
                     )
-                    AnimatedContent(
-                        targetState = tab,
-                        transitionSpec = { fadeIn(tween(140)) togetherWith fadeOut(tween(90)) },
-                        label = "tab",
-                    ) { current ->
-                        when (current) {
-                            0 -> Overview(store, month) { tab = 1 }
-                            1 -> EntriesView(store, month)
-                            2 -> ShiftsView(store, month)
-                            3 -> RoutesView(repo, month, neu)
-                            4 -> CompareView(store, month, neu)
-                            else -> YearView(store) { month = it; tab = 0 }
-                        }
+                    // no crossfade: a fade composites two embossed pages, so the shadows visibly
+                    // "settle" as the outgoing layer fades. Neumorphism reads better as an instant swap.
+                    when (tab) {
+                        0 -> Overview(store, month) { tab = 1 }
+                        1 -> EntriesView(store, month)
+                        2 -> ShiftsView(store, month)
+                        3 -> RoutesView(repo, month, neu)
+                        4 -> CompareView(store, month, neu)
+                        else -> YearView(store) { month = it; tab = 0 }
                     }
                 }
             }

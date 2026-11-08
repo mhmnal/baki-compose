@@ -518,3 +518,14 @@ renewal rule wants 6 windows (RM 45.00). Backfilled with `recomputeCover` throug
 
 `pushWithTombs` now undeletes any `grabfee` entry that recompute legitimately re-creates, so a fee can
 never be silently dropped by an old tombstone again.
+
+## Instant tabs (v0.19.8)
+
+Tab switches were crossfaded (140 ms in / 90 ms out). A fade composites **two complete pages**, each
+with its own emboss, so the incoming shadows ramped from 0 to full alpha while the outgoing ones
+faded — the "settling" that read as jank. Neumorphic depth is geometry, not opacity, so it cannot be
+faded without looking wrong. Tabs now swap instantly, and `DesktopConsistencyTest` fails the build if
+`AnimatedContent`, `Crossfade`, `fadeIn` or `togetherWith` reappears in the shell.
+
+Motion that remains: the animated money counter (numbers only) and hover/selection state changes
+(instant). Neither touches shadow geometry.

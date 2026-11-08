@@ -35,6 +35,15 @@ class DesktopConsistencyTest {
     }
 
     @Test
+    fun tabSwitchesAreNotCrossfaded() {
+        // a fade composites two embossed pages: shadows ramp in and "settle", which reads as jank
+        val text = shell()
+        listOf("AnimatedContent(", "Crossfade(", "fadeIn(", "togetherWith(").forEach { marker ->
+            assertTrue(!text.contains(marker), "tab transitions must be instant, found $marker")
+        }
+    }
+
+    @Test
     fun pillShapesUseTheRadiusToken() {
         listOf("DesktopShell.kt", "Neumorphism.kt").forEach { name ->
             val text = File(desktopDir(), name).readText()
