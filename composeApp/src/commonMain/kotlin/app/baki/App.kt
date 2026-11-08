@@ -1247,7 +1247,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             measuredEconomy(repo.store)?.let { m ->
                 Spacer(Modifier.height(Space.s))
                 Text(
-                    "measured ${"%.1f".format(m.kml)} km/L over ${"%.0f".format(m.km)} km · ${m.fills} fills (${m.from} → ${m.to})",
+                    "measured ${"%.1f".format(m.kml)} km/L over ${"%.0f".format(m.km)} km · ${m.fills} fills " +
+                        "(${m.from} → ${m.to}) · budget uses ${"%.2f".format(p.kmPerLitre)}",
                     color = baki.muted, style = BakiType.caption )
                 if (kotlin.math.abs(m.kml - p.kmPerLitre) > 0.3) {
                     TextButton(
