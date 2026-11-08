@@ -578,32 +578,86 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
             blur = Elevation.vizBlur,
         ) {
             Column(Modifier.fillMaxWidth().padding(Space.l)) {
-                Canvas(Modifier.fillMaxWidth().height(132.dp)) {
+                Canvas(Modifier.fillMaxWidth().height(168.dp)) {
+                    val padTop = 10.dp.toPx()
+                    val padBottom = 8.dp.toPx()
                     val span = (high - low).coerceAtLeast(1L).toFloat()
-                    fun y(v: Long): Float = size.height - ((v - low).toFloat() / span) * size.height
-                    drawLine(
-                        color = neu.ink.copy(alpha = 0.14f),
-                        start = androidx.compose.ui.geometry.Offset(0f, y(0L)),
-                        end = androidx.compose.ui.geometry.Offset(size.width, y(0L)),
-                        strokeWidth = 1.dp.toPx(),
-                    )
+                    val plotH = (size.height - padTop - padBottom).coerceAtLeast(1f)
+                    fun y(v: Long): Float = padTop + (1f - (v - low).toFloat() / span) * plotH
                     val step = if (points.size > 1) size.width / (points.size - 1) else size.width
-                    val path = Path()
-                    points.forEachIndexed { i, (_, v) ->
-                        val x = if (points.size > 1) i * step else size.width / 2
-                        if (i == 0) path.moveTo(x, y(v)) else path.lineTo(x, y(v))
+                    fun x(i: Int): Float = if (points.size > 1) i * step else size.width / 2
+
+                    // quiet scale grid: low / mid / high
+                    listOf(low, (low + high) / 2, high).forEach { v ->
+                        drawLine(
+                            color = neu.ink.copy(alpha = 0.05f),
+                            start = androidx.compose.ui.geometry.Offset(0f, y(v)),
+                            end = androidx.compose.ui.geometry.Offset(size.width, y(v)),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+                    // the zero line matters because net can cross it
+                    if (low < 0) {
+                        drawLine(
+                            color = neu.ink.copy(alpha = 0.14f),
+                            start = androidx.compose.ui.geometry.Offset(0f, y(0L)),
+                            end = androidx.compose.ui.geometry.Offset(size.width, y(0L)),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+
+                    val pts = points.mapIndexed { i, (_, v) ->
+                        androidx.compose.ui.geometry.Offset(x(i), y(v))
+                    }
+                    // Catmull-Rom: a running balance reads as a curve, not a jagged polyline
+                    val line = Path().apply {
+                        moveTo(pts.first().x, pts.first().y)
+                        for (i in 0 until pts.size - 1) {
+                            val p0 = pts[(i - 1).coerceAtLeast(0)]
+                            val p1 = pts[i]
+                            val p2 = pts[i + 1]
+                            val p3 = pts[(i + 2).coerceAtMost(pts.lastIndex)]
+                            cubicTo(
+                                p1.x + (p2.x - p0.x) / 6f, p1.y + (p2.y - p0.y) / 6f,
+                                p2.x - (p3.x - p1.x) / 6f, p2.y - (p3.y - p1.y) / 6f,
+                                p2.x, p2.y,
+                            )
+                        }
+                    }
+                    // area under the curve: the phone sparkline's depth cue
+                    val area = Path().apply {
+                        addPath(line)
+                        lineTo(pts.last().x, size.height)
+                        lineTo(pts.first().x, size.height)
+                        close()
                     }
                     drawPath(
-                        path = path,
+                        area,
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(neu.accent.copy(alpha = 0.34f), neu.accent.copy(alpha = 0f)),
+                            startY = pts.minOf { it.y },
+                            endY = size.height,
+                        ),
+                    )
+                    drawPath(
+                        line,
                         color = neu.accent,
                         style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = 2.dp.toPx(),
+                            width = 2.4.dp.toPx(),
                             cap = androidx.compose.ui.graphics.StrokeCap.Round,
                             join = androidx.compose.ui.graphics.StrokeJoin.Round,
                         ),
                     )
-                    val endX = if (points.size > 1) size.width else size.width / 2
-                    drawCircle(neu.accent, radius = 3.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(endX, y(last)))
+                    // small dots give the series its data points back
+                    pts.forEach { drawCircle(neu.accent.copy(alpha = 0.45f), radius = 1.7.dp.toPx(), center = it) }
+                    val peakIndex = points.indices.maxByOrNull { points[it].second } ?: 0
+                    if (peakIndex != pts.lastIndex) {
+                        drawCircle(neu.up.copy(alpha = 0.85f), radius = 2.4.dp.toPx(), center = pts[peakIndex])
+                    }
+                    val end = pts.last()
+                    drawCircle(neu.accent.copy(alpha = 0.16f), radius = 10.dp.toPx(), center = end)
+                    drawCircle(neu.accent, radius = 4.2.dp.toPx(), center = end)
+                    drawCircle(neu.base, radius = 1.5.dp.toPx(), center = end)
                 }
                 Spacer(Modifier.height(Space.s))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

@@ -765,3 +765,13 @@ its day label. Each sign is now scaled into the space it owns above or below zer
 to that space. Bars are also narrow (30dp, centred) with rounded data ends and a stronger zero baseline;
 the bay stays the tactile surface, bars stay flat data ink (extruding seven bars inside a sunken bay
 would fight its inner shadow).
+
+## Trajectory redraw (v0.33)
+
+The month trajectory is a sparkline rather than a bare polyline:
+
+- Catmull-Rom curve (1/6 tension) so a running balance reads smoothly;
+- gradient area under the line (accent 34% -> transparent), clipped by the sunken bay;
+- quiet low/mid/high grid and a stronger zero line when the balance crosses it;
+- a dot per day, an Emerald dot on the peak, and a haloed "now" endpoint;
+- taller canvas (168dp) so the curve has room; labels keep 11-01 / now / 11-08.
