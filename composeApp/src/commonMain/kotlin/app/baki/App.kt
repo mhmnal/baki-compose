@@ -1150,7 +1150,15 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             val target = Bills.nextOpenMonth(repo.store, current)
             val committed = Bills.due(repo.store, current)
             val covered = committed.count { Bills.isCovered(repo.store, it, Bills.periodOf(it, current)) }
-            Text("${monthLabel(current)} · $covered of ${committed.size} covered", color = baki.onSurface, style = BakiType.bodyStrong)
+            if (repo.store.bills.isEmpty()) {
+                Text("No bills loaded yet", color = baki.onSurface, style = BakiType.bodyStrong)
+                Text(
+                    "Bills sync from the server. If they stay empty, tap Sync now above.",
+                    color = baki.muted, style = BakiType.caption,
+                )
+            } else {
+                Text("${monthLabel(current)} · $covered of ${committed.size} covered", color = baki.onSurface, style = BakiType.bodyStrong)
+            }
             Text(
                 "Pay a month before it ends and it counts as covered; if it is already covered, cover the next one.",
                 color = baki.muted, style = BakiType.caption,
@@ -1188,7 +1196,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(Space.s))
-            Button(
+            if (repo.store.bills.isNotEmpty()) Button(
                 onClick = { scope.launch { repo.settleBills(target) } },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 enabled = Bills.unpaid(repo.store, target).isNotEmpty(),

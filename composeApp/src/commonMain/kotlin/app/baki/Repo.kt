@@ -135,10 +135,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             }
             val merged = mergeStores(store, remote)
             // no change means no disk write: serialising + encrypting the store is not free
-            val changed = merged.updatedAt != store.updatedAt ||
-                merged.entries.size != store.entries.size ||
-                merged.shifts.size != store.shifts.size ||
-                merged.tomb.ids.size != store.tomb.ids.size
+            // compare the whole store: a change that only touched bills, payments, statements or
+            // settings used to be merged and then discarded because the old test looked at four fields
+            val changed = merged != store
             if (changed) {
                 store = merged
                 saveLocal(store)

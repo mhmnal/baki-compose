@@ -90,3 +90,28 @@ class BillLinkTest {
         assertEquals(emptyList(), Bills.linkCandidates(store, rent, "2026-11"))
     }
 }
+
+
+class BillMergeTest {
+    @Test
+    fun billsSurviveTheSyncMerge() {
+        val bill = Bill("b1", "Rent", 27_000, "monthly", "rent", updated = "2026-11-01T00:00:00Z")
+        val local = Store()
+        val remote = Store(bills = listOf(bill))
+        assertEquals(1, mergeStores(local, remote).bills.size)
+        // and a newer local edit wins
+        val newer = bill.copy(amount = 28_000, updated = "2026-11-02T00:00:00Z")
+        assertEquals(28_000, mergeStores(Store(bills = listOf(newer)), remote).bills.single().amount)
+    }
+}
+
+class SyncChangeTest {
+    @Test
+    fun aBillsOnlyChangeSurvivesTheMerge() {
+        val stored = Store(entries = listOf(Entry(id = "e1", date = "2026-11-01", type = "expense", cat = "food", amount = 100, updated = "x")))
+        val remote = stored.copy(bills = listOf(Bill("b1", "Rent", 27_000, "monthly", "rent", updated = "y")))
+        val merged = mergeStores(stored, remote)
+        assertTrue(merged != stored, "merge must be seen as a change so the store is saved")
+        assertEquals(1, merged.bills.size)
+    }
+}

@@ -595,3 +595,15 @@ entry), so the ledger does not change.
 
 Known gap: bills themselves still have no add/edit screen — the five seeded commitments are fixed
 until an editor exists.
+
+## Bills-only sync fix (v0.22.2)
+
+Bills were seeded server-side while the phone still ran a build without the bill model. After updating,
+the phone kept showing "0 of 0" even after Sync now: `sync()` decided whether to save the merged store
+by comparing only `updatedAt`, entry count, shift count and tombstone count. A merge that changed
+**only bills / bill payments / statements / settings** compared equal, so the merged store was thrown
+away — the data had arrived and been discarded.
+
+`changed` is now `merged != store`, a full data-class comparison, so any field a future version adds is
+saved too. `SyncChangeTest` guards the bills-only case. The Bills card also shows a "No bills loaded yet
+· tap Sync now" state instead of inventing a far-future month for the settle button.
