@@ -193,6 +193,25 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         return true
     }
 
+    /**
+     * Marks a period covered using an expense that already exists (the rent you logged by hand, the
+     * phone bill you entered as "Phone"). No new money is recorded.
+     */
+    suspend fun linkBillPayment(billId: String, period: String, entryId: String): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return false
+        val bill = store.bills.firstOrNull { it.id == billId } ?: return false
+        if (store.billPayments.any { it.billId == billId && it.period == period }) return false
+        val entry = store.entries.firstOrNull { it.id == entryId && it.type != "income" } ?: return false
+        val now = nowIso()
+        store = store.copy(
+            billPayments = store.billPayments + BillPayment(billId, period, entry.amount, entry.id, entry.date, now),
+            updatedAt = now,
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+        true
+    }
+
     /** Settles every committed bill still open for [monthLabel]. Returns how many were paid. */
     suspend fun settleBills(monthLabel: String, date: String = todayIso()): Int = mutex.withLock {
         if (config.allowWrites.not()) return 0

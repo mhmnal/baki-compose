@@ -59,3 +59,34 @@ class BillsTest {
         assertEquals("2026-11", Bills.nextOpenMonth(onlyRent, "2026-11"))
     }
 }
+
+class BillLinkTest {
+
+    private val rent = Bill("b1", "Rent", 27_000, "monthly", "rent")
+
+    private fun e(id: String, cat: String, amount: Long, date: String = "2026-11-07") =
+        Entry(id = id, date = date, type = "expense", cat = cat, amount = amount, updated = "x")
+
+    @Test
+    fun matchesByAmountEvenWhenTheOldCategoryWasWrong() {
+        // the November rent was logged as "Other" with a note; it should still be offerable
+        val store = Store(entries = listOf(e("e1", "other", 27_000)), bills = listOf(rent))
+        assertEquals(listOf("e1"), Bills.linkCandidates(store, rent, "2026-11").map { it.id })
+    }
+
+    @Test
+    fun matchesByCategoryAtADifferentAmount() {
+        val store = Store(entries = listOf(e("e1", "rent", 26_000)), bills = listOf(rent))
+        assertEquals(listOf("e1"), Bills.linkCandidates(store, rent, "2026-11").map { it.id })
+    }
+
+    @Test
+    fun ignoresOtherMonthsAndAlreadyLinkedEntries() {
+        val store = Store(
+            entries = listOf(e("old", "other", 27_000, "2026-10-07"), e("used", "other", 27_000)),
+            bills = listOf(rent),
+            billPayments = listOf(BillPayment("b1", "2026-10", 27_000, "used", "2026-10-07", "x")),
+        )
+        assertEquals(emptyList(), Bills.linkCandidates(store, rent, "2026-11"))
+    }
+}

@@ -47,6 +47,20 @@ object Bills {
         return m
     }
 
+    /**
+     * Entries that could be the payment for [bill] in [period]: expenses inside that period which match
+     * the bill's amount or its category, and are not already linked to any bill.
+     */
+    fun linkCandidates(store: Store, bill: Bill, period: String): List<Entry> {
+        val linked = store.billPayments.map { it.entryId }.toSet()
+        val month = if (bill.cadence == "annual") period.take(4) else period.take(7)
+        return store.entries
+            .filter { it.type != "income" && it.id !in linked }
+            .filter { it.date.startsWith(month) }
+            .filter { it.amount == bill.amount || it.cat == bill.category }
+            .sortedByDescending { it.date }
+    }
+
     fun shiftMonthLabel(monthLabel: String, delta: Int): String {
         var y = monthLabel.take(4).toInt()
         var m = monthLabel.substring(5, 7).toInt() + delta

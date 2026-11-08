@@ -581,3 +581,17 @@ Recurring commitments tracked by **period**, not due date, so a month can be set
 
 Seeded: Rent 270 monthly (personal), Spotify 17.50 monthly (business), CelcomDigi 100 monthly
 (business), Google 100 annual in January (business), Car loan 200 monthly (optional).
+
+## Linking an existing entry (v0.22.1)
+
+Bills can be marked covered by an expense that already exists, without recording new money:
+`Bills.linkCandidates()` offers expenses in that period whose **amount matches** or whose **category
+matches**, excluding entries already linked to any bill. This is how the November rent (logged as
+"Other") and the November Spotify (logged under "Phone") can be attached to their bills instead of
+being paid twice.
+
+`Repo.linkBillPayment()` writes only the payment link (amount taken from the entry, paid date from the
+entry), so the ledger does not change.
+
+Known gap: bills themselves still have no add/edit screen — the five seeded commitments are fixed
+until an editor exists.

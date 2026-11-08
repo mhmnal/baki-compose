@@ -1074,6 +1074,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
     var editingProfit by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
+    var linkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1169,11 +1170,20 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     if (isPaid) {
                         Text("covered ${Bills.paidOn(repo.store, bill, period) ?: ""}", color = baki.up, style = BakiType.caption)
                     } else {
-                        OutlinedButton(
-                            onClick = { scope.launch { repo.payBill(bill.id, period) } },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                            border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
-                        ) { Text("Mark paid") }
+                        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+                            OutlinedButton(
+                                onClick = { scope.launch { repo.payBill(bill.id, period) } },
+                                contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
+                                border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
+                            ) { Text("Mark paid", style = BakiType.label) }
+                            OutlinedButton(
+                                onClick = { linkTarget = bill to period },
+                                contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
+                                border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
+                            ) { Text("Link", style = BakiType.label) }
+                        }
                     }
                 }
             }
@@ -1205,6 +1215,43 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
         }
+            linkTarget?.let { (bill, period) ->
+                val candidates = Bills.linkCandidates(repo.store, bill, period)
+                AlertDialog(
+                    onDismissRequest = { linkTarget = null },
+                    containerColor = baki.container,
+                    title = { Text("Link ${bill.name} · $period", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                            if (candidates.isEmpty()) {
+                                Text(
+                                    "No entry in that month matches this bill's amount or category. Use Mark paid to record a new one.",
+                                    color = baki.muted, style = BakiType.caption,
+                                )
+                            } else {
+                                Text("Choose the entry that already paid this bill:", color = baki.muted, style = BakiType.caption)
+                                candidates.take(6).forEach { entry ->
+                                    TextButton(
+                                        onClick = {
+                                            scope.launch {
+                                                repo.linkBillPayment(bill.id, period, entry.id)
+                                                linkTarget = null
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(0.dp),
+                                    ) {
+                                        Text(
+                                            "${entry.date} · RM ${"%.2f".format(entry.amount / 100.0)} · ${entry.note.ifBlank { entry.cat }}",
+                                            color = baki.onSurface, style = BakiType.label,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = { TextButton(onClick = { linkTarget = null }) { Text("Cancel") } },
+                )
+            }
         Spacer(Modifier.height(Space.l))
         SectionTitle("WEEKLY STATEMENT")
         Spacer(Modifier.height(Space.s))
