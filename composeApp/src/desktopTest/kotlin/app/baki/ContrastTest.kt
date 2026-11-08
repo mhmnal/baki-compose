@@ -59,6 +59,22 @@ class ContrastTest {
     }
 
     @Test
+    fun actionsAndSelectedNavMeetAA() {
+        val failures = mutableListOf<String>()
+        packs.forEach { (name, p) ->
+            listOf(
+                "primary/surface" to (p.primary to p.surface),
+                "primary/container" to (p.primary to p.container),
+                "onPrimaryContainer/primaryContainer" to (p.onPrimaryContainer to p.primaryContainer),
+            ).forEach { (pair, colors) ->
+                val r = ratio(colors.first, colors.second)
+                if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
+            }
+        }
+        assertTrue(failures.isEmpty(), "action contrast failures:\n" + failures.joinToString("\n"))
+    }
+
+    @Test
     fun canvasTextMeetsTheReadableFloors() {
         // the neumorphic canvas is darker than the palette surface, so the derived colours must be
         // checked against it, not against the palette

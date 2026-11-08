@@ -36,6 +36,8 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
@@ -61,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -68,6 +71,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import kotlinx.coroutines.Dispatchers
@@ -500,7 +505,11 @@ private fun Header(repo: BakiRepo) {
             "syncing" -> baki.primary
             else -> baki.muted
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            Modifier.semantics { contentDescription = "Sync status: $status" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Box(Modifier.size(6.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
             Text(
                 when (status) {
@@ -579,7 +588,7 @@ private fun BottomBar(
         }
 
         Row(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(Space.xxs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -600,7 +609,10 @@ private fun BottomBar(
                             if (liquid) Modifier
                             else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
                         )
-                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
+                        .selectable(
+                            selected = on,
+                            role = Role.Tab,
+                        ) { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {

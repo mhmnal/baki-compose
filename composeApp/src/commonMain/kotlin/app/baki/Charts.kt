@@ -22,6 +22,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.abs
 
 
@@ -34,7 +36,12 @@ fun WeekStrip(store: Store, endDay: String) {
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
     val today = todayIso()
 
-    Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.Bottom) {
+    val summary = days.mapIndexed { i, d -> "${weekdayShort(d)} ${rm(totals[i].net)}" }.joinToString(", ")
+    Row(
+        Modifier.fillMaxWidth().height(56.dp)
+            .semantics { contentDescription = "Last seven days net: $summary" },
+        verticalAlignment = Alignment.Bottom,
+    ) {
         days.forEachIndexed { i, d ->
             val t = totals[i]
             val empty = t.entryCount == 0 && t.shiftCount == 0

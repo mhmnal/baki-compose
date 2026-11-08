@@ -2,7 +2,7 @@ package app.baki
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
@@ -32,7 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -141,11 +150,11 @@ fun TodayScreen(
                         Spacer(Modifier.width(Space.s))
                         Text("${t.entryCount}", color = baki.muted, style = BakiType.captionNumeric)
                         Spacer(Modifier.weight(1f))
-                        Text(
-                            "Add", color = baki.primary,
-                            modifier = Modifier.clickable { onAdd() }.padding(Space.s),
-                            style = BakiType.captionStrong,
-                        )
+                        TextButton(
+                            onClick = onAdd,
+                            modifier = Modifier.height(48.dp),
+                            contentPadding = PaddingValues(horizontal = Space.m),
+                        ) { Text("Add", style = BakiType.captionStrong) }
                     }
                 }
                 items(entries, key = { it.id }) { entry ->
@@ -172,22 +181,26 @@ fun TodayScreen(
                 }
                 if (shifts.isNotEmpty()) {
                     item {
-                        Row(Modifier.fillMaxWidth().padding(top = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.l)) {
-                            Text(
-                                "Add shift", color = baki.muted,
-                                modifier = Modifier.clickable { onAddShift() }.padding(vertical = Space.s),
-                                style = BakiType.caption,
-                            )
-                            Text("All shifts →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption)
+                        Row(Modifier.fillMaxWidth().padding(top = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                            TextButton(
+                                onClick = onAddShift,
+                                modifier = Modifier.heightIn(min = 48.dp),
+                                colors = ButtonDefaults.textButtonColors(contentColor = baki.muted),
+                            ) { Text("Add shift", style = BakiType.caption) }
+                            TextButton(
+                                onClick = onSeeAll,
+                                modifier = Modifier.heightIn(min = 48.dp),
+                                colors = ButtonDefaults.textButtonColors(contentColor = baki.muted),
+                            ) { Text("All shifts →", style = BakiType.caption) }
                         }
                     }
                 }
                 item {
-                    Text(
-                        "All entries →", color = baki.muted,
-                        modifier = Modifier.padding(top = Space.s).clickable { onSeeAll() },
-                        style = BakiType.caption,
-                    )
+                    TextButton(
+                        onClick = onSeeAll,
+                        modifier = Modifier.heightIn(min = 48.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = baki.muted),
+                    ) { Text("All entries →", style = BakiType.caption) }
                 }
             } else {
                 item {
@@ -237,17 +250,15 @@ private fun DateLine(day: String, today: String, onChange: (String) -> Unit) {
                 color = baki.onSurface, style = BakiType.bodyStrong,
             )
         }
-        Text(
-            "‹", color = baki.onSurface, style = BakiType.title,
-            modifier = Modifier.clickable { onChange(addDays(day, -1)) }.padding(horizontal = Space.ml, vertical = Space.xs),
-        )
+        IconButton(
+            onClick = { onChange(addDays(day, -1)) },
+            modifier = Modifier.size(48.dp).semantics { contentDescription = "Previous day" },
+        ) { Text("‹", color = baki.onSurface, style = BakiType.title) }
         if (day < today) {
-            Text(
-                "›", color = baki.onSurface, style = BakiType.title,
-                modifier = Modifier
-                    .clickable { onChange(addDays(day, 1)) }
-                    .padding(horizontal = Space.ml, vertical = Space.xs),
-            )
+            IconButton(
+                onClick = { onChange(addDays(day, 1)) },
+                modifier = Modifier.size(48.dp).semantics { contentDescription = "Next day" },
+            ) { Text("›", color = baki.onSurface, style = BakiType.title) }
         }
     }
 }
@@ -255,13 +266,16 @@ private fun DateLine(day: String, today: String, onChange: (String) -> Unit) {
 @Composable
 private fun FlatAction(label: String, onClick: () -> Unit) {
     val baki = LocalBaki.current
-    Row(
-        Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = Space.m),
-        verticalAlignment = Alignment.CenterVertically,
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp),
     ) {
-        Text(label, color = baki.primary, style = BakiType.bodyStrong)
-        Spacer(Modifier.weight(1f))
-        Text("→", color = baki.primary, style = BakiType.body)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = baki.primary, style = BakiType.bodyStrong)
+            Spacer(Modifier.weight(1f))
+            Text("→", color = baki.primary, style = BakiType.body)
+        }
     }
 }
 
@@ -293,32 +307,28 @@ private fun LiveInline(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, on
             Text("RM ${rm(total / 100.0 / hours)}/hr", color = baki.muted, style = BakiType.captionNumeric)
         }
         Spacer(Modifier.height(Space.s))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
-            Text(
-                "+ Payout", color = baki.primary,
-                modifier = Modifier.clickable { onPayout() }.padding(vertical = Space.s),
-                style = BakiType.labelStrong,
-            )
-            Text(
-                if (onBreak) "Resume" else "Pause", color = baki.onSurface,
-                modifier = Modifier
-                    .clickable(enabled = !repo.readOnly) { if (onBreak) repo.resumeLive() else repo.pauseLive() }
-                    .padding(vertical = Space.s),
-                style = BakiType.label,
-            )
-            Text(
-                "End", color = baki.muted,
-                modifier = Modifier
-                    .clickable(enabled = !repo.readOnly) { scope.launch { repo.endLive() } }
-                    .padding(vertical = Space.s),
-                style = BakiType.label,
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            TextButton(onClick = onPayout, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text("Payout", style = BakiType.labelStrong)
+            }
+            TextButton(
+                onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
+                enabled = !repo.readOnly,
+                modifier = Modifier.heightIn(min = 48.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = baki.onSurface),
+            ) { Text(if (onBreak) "Resume" else "Pause", style = BakiType.label) }
+            TextButton(
+                onClick = { scope.launch { repo.endLive() } },
+                enabled = !repo.readOnly,
+                modifier = Modifier.heightIn(min = 48.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = baki.muted),
+            ) { Text("End", style = BakiType.label) }
             Spacer(Modifier.weight(1f))
-            Text(
-                "${live.payouts.size} payouts →", color = baki.muted,
-                modifier = Modifier.clickable { onPayouts() }.padding(vertical = Space.s),
-                style = BakiType.caption,
-            )
+            TextButton(
+                onClick = onPayouts,
+                modifier = Modifier.heightIn(min = 48.dp),
+                colors = ButtonDefaults.textButtonColors(contentColor = baki.muted),
+            ) { Text("${live.payouts.size} payouts", style = BakiType.caption) }
         }
     }
 }
@@ -362,8 +372,15 @@ private fun MinimalLedgerRow(
     ) {
         Row(
             // opaque canvas face: otherwise the swipe actions show through a flat row
-            Modifier.fillMaxWidth().background(baki.surface)
-                .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).background(baki.surface)
+                .combinedClickable(onClick = onEdit, onLongClick = onEdit)
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    customActions = buildList {
+                        add(CustomAccessibilityAction("Edit") { onEdit(); true })
+                        onDelete?.let { delete -> add(CustomAccessibilityAction("Delete") { delete(); true }) }
+                    }
+                }
                 .padding(vertical = Space.m),
             verticalAlignment = Alignment.CenterVertically,
         ) {

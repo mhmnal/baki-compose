@@ -809,3 +809,17 @@ First phone screen rebuilt on the reductionist brief; light/glass material kept 
 - Typography-led hierarchy: Swiss left alignment, generous space, 1 accent + money red/green only.
 
 Still to do on the phone: Spending, Shifts, Summary, More, and the glass nav itself.
+
+## M3 + accessibility pass (v0.35.3)
+
+- Quiet M3 variants: text buttons for actions, M3 text field, icon buttons for day navigation; no filled
+  button competes with the hero.
+- Touch targets: day arrows, Add, mic, all text actions and rows are at least 48dp. Measured from the
+  accessibility tree on the phone: arrows 48x48, start action 364x48, quick-add 258x56, Add 58x48,
+  ledger rows 364x48, nav items 74x52.
+- State clarity: nav items are selectable tabs with `selected` semantics; sync status carries a content
+  description; the 7-day strip has a spoken summary of all seven values.
+- Ledger rows are operable without gestures: tap/long-press edit, plus Edit/Delete screen-reader actions;
+  swipe remains a shortcut. Amount signs (+/-) carry the meaning as well as colour.
+- Contrast: a new test asserts primary-on-canvas and nav-label pairs. It caught Mist light at 4.26:1;
+  its primary was darkened from #2E6BD6 to #2A63C8 (4.8:1 on canvas, 5.65:1 for white on it).

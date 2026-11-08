@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -72,15 +74,17 @@ fun QuickEntryBar(onSubmit: (String) -> Unit, modifier: Modifier = Modifier) {
                 keyboardActions = KeyboardActions(onDone = { submit() }),
                 modifier = Modifier.weight(1f),
             )
-            VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(40.dp))
-            Text(
-                "Add",
-                color = if (text.isBlank()) baki.muted else baki.primary,
-                modifier = Modifier
-                    .clickable(enabled = text.isNotBlank()) { submit() }
-                    .padding(horizontal = Space.s, vertical = Space.m),
-                style = BakiType.labelStrong,
-            )
+            VoiceMicButton(onText = { spoken -> onSubmit(spoken) }, modifier = Modifier.size(48.dp))
+            TextButton(
+                onClick = { submit() },
+                enabled = text.isNotBlank(),
+                modifier = Modifier.heightIn(min = 48.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = baki.primary,
+                    disabledContentColor = baki.muted,
+                ),
+                contentPadding = PaddingValues(horizontal = Space.m),
+            ) { Text("Add", style = BakiType.labelStrong) }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(baki.muted.copy(alpha = 0.25f)))
     }
