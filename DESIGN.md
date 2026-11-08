@@ -546,3 +546,18 @@ decisions, never a reconciliation figure.
 
 The More screen shows the last statement and compares it with what was logged for that week
 (gross income gap, insurance count vs the cover rule).
+
+## Tax pack (v0.21)
+
+Year → **Tax pack** produces the Borang B picture from the records the app already holds:
+
+- income: logged shift earnings + standalone income entries; imported Grab statements shown as a
+  cross-check (not added, to avoid double counting);
+- expenses by category, each marked deductible or not — fuel, toll, parking, car wash and maintenance
+  are vehicle costs (pro-rated by business use), phone, Grab insurance and road tax are full business
+  costs, food and “other” are never deducted;
+- mileage: business km from shifts, an optional total-km field for the business-use share (blank =
+  all business), and the insurance window count;
+- net business income, printable HTML (A4) and CSV.
+
+`taxYear()` is pure and tested; `taxPackHtml`/`taxPackCsv` are rendered from it.

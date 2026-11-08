@@ -572,6 +572,75 @@ private fun MonthTrend(store: Store, month: String, neu: Neu) {
 }
 
 @Composable
+private fun TaxPackDialog(store: Store, year: Int, onDismiss: () -> Unit) {
+    val neu = rememberNeu()
+    var totalKm by remember { mutableStateOf("") }
+    val tax = remember(store, totalKm) { taxYear(store, year, totalKm.toDoubleOrNull()) }
+    val scope = rememberCoroutineScope()
+
+    NeuDialog(neu, onDismiss, width = 760.dp) {
+        Text("Tax pack · $year", color = neu.ink, style = BakiType.title)
+        Spacer(Modifier.height(Space.xs))
+        Text(
+            "Borang B figures: income, deductible expenses, mileage and the business-use share.",
+            color = neu.muted, style = BakiType.caption,
+        )
+        Spacer(Modifier.height(Space.l))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
+            NeuMetric(neu, "INCOME", "RM ${rm(tax.income)}")
+            NeuMetric(neu, "DEDUCTIBLE", "RM ${rm(tax.deductible)}")
+            NeuMetric(neu, "NET", "RM ${rm(tax.netBusinessIncome)}", valueColor = neu.accent)
+            NeuMetric(neu, "BUSINESS USE", "${"%.0f".format(tax.businessUse * 100)}%")
+        }
+        Spacer(Modifier.height(Space.l))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            NeuField(
+                totalKm, { totalKm = it.filter { c -> c.isDigit() } },
+                "total km this year (optional)", Modifier.width(300.dp),
+                placeholder = "${"%.0f".format(tax.businessKm)}",
+            )
+            Text(
+                "blank = all driving counted as business (${"%,.0f".format(tax.businessKm)} km logged)",
+                color = neu.muted, style = BakiType.caption,
+            )
+        }
+        Spacer(Modifier.height(Space.m))
+        Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
+            Head("EXPENSE", Modifier.weight(1f))
+            Head("AMOUNT", Modifier.width(140.dp), Alignment.End)
+            Head("DEDUCTIBLE", Modifier.width(110.dp), Alignment.End)
+        }
+        Column(Modifier.fillMaxWidth().heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
+            tax.lines.forEach { line ->
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+                    Text(line.label, color = neu.ink, style = BakiType.label, modifier = Modifier.weight(1f))
+                    Number("RM ${rm(line.amount)}", neu.ink, Modifier.width(140.dp))
+                    Number(if (line.deductible) "yes" else "—", if (line.deductible) neu.up else neu.muted, Modifier.width(110.dp))
+                }
+            }
+            if (tax.lines.isEmpty()) {
+                Text("No expenses logged for $year.", color = neu.muted, style = BakiType.caption)
+            }
+        }
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "Tolls are reimbursed inside Grab fares (not a separate deduction). Food and personal spending are listed but not claimable.",
+            color = neu.muted, style = BakiType.caption,
+        )
+        Spacer(Modifier.height(Space.l))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            NeuButton(neu, "Open / print", primary = true) {
+                PlatformEffects.printStatement(taxPackHtml(tax))
+            }
+            NeuButton(neu, "Save CSV") {
+                PlatformEffects.exportFile("baki-tax-$year.csv", "text/csv", taxPackCsv(tax))
+            }
+            NeuButton(neu, "Close", onClick = onDismiss)
+        }
+    }
+}
+
+@Composable
 private fun CategoryBlock(store: Store, month: String, neu: Neu) {
     val baki = LocalBaki.current
     val cats = remember(store) { store.settings.cats.catsOut.associateBy { it.id } }
@@ -890,6 +959,8 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
     val baki = LocalBaki.current
     val neu = rememberNeu()
     val year = todayIso().substring(0, 4).toIntOrNull() ?: 2026
+    var taxOpen by remember { mutableStateOf(false) }
+    if (taxOpen) TaxPackDialog(store, year) { taxOpen = false }
     val months = remember(store, year) {
         (1..12).map { m ->
             val label = "%04d-%02d".format(year, m)
@@ -916,6 +987,8 @@ internal fun YearView(store: Store, onMonth: (String) -> Unit) {
                         NeuMetric(neu, "BEST MONTH", monthLabel(it.first).substringBefore(' '),
                             detail = "RM ${rm(it.second.net)}", valueColor = neu.accent)
                     }
+                    Spacer(Modifier.width(Space.l))
+                    NeuButton(neu, "Tax pack", primary = true) { taxOpen = true }
                 }
             }
         }
