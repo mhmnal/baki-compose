@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.1)
+## Current state (v0.36.2)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -837,7 +837,7 @@ Storage and sync fixes after the feasibility audit:
 - `Shift.reimbursedTolls` makes a toll a pass-through: it stays recorded in the shift and the ledger, but
   it is excluded from cash and operating costs.
 - `dayOperating` / `monthOperating` are the canonical operating aggregates from `shiftMetrics`; they never
-  include linked `fee-<shiftId>` cash entries, so insurance can't be counted twice.
+  include linked `fee-<shiftId>` cash entries, so insurance can't be counted twice. Shipped in 0.36.2.
 - Today shows a secondary “Operating · after running costs” line so the recorded total and the operating
   total are no longer confused. The desktop overview is labelled “recorded, not operating”.
 - Tests: incentive income, reimbursed tolls, fee-entry non-double-count, hours/rate.
