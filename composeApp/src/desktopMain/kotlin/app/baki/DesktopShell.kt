@@ -156,7 +156,7 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                     onSettings = { settingsOpen = true },
                 )
                 }
-                Spacer(Modifier.height(Space.xxl))
+                Spacer(Modifier.height(Space.l))
                 Box(Modifier.weight(1f)) {
                     // the scroll viewport must clip; this fade makes the cut invisible
                     Box(
@@ -316,9 +316,9 @@ private fun ArrowZone(neu: Neu, label: String, rotate: Boolean, onClick: () -> U
 
 @Composable
 private fun SyncBadge(neu: Neu, status: String) {
+    // a status readout: no surface of its own on the already-raised header
     Row(
-        Modifier.raised(neu, corner = Radius.pill, offset = Elevation.control)
-            .padding(horizontal = Space.m, vertical = Space.xs + 1.dp),
+        Modifier.padding(horizontal = Space.s, vertical = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -326,7 +326,7 @@ private fun SyncBadge(neu: Neu, status: String) {
                 .background(if (status == "synced") neu.accent else neu.danger),
         )
         Spacer(Modifier.width(Space.s))
-        Text(status, color = neu.ink, style = BakiType.caption)
+        Text(status, color = neu.muted, style = BakiType.caption)
     }
 }
 
@@ -423,34 +423,35 @@ private fun Overview(
         Spacer(Modifier.width(Gutter))
         // The raised surface is the sidebar; scrolling happens in an inner column so the shape and its
         // content never fight over the same modifier chain.
+        val railScroll = rememberScrollState()
         Box(
             Modifier.width(Rail2).fillMaxHeight()
                 .raised(neu, corner = Radius.sheet, offset = Elevation.card),
         ) {
             Column(
                 Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Space.l, vertical = Space.m),
+                    .verticalScroll(railScroll)
+                    .padding(start = Space.l, end = Space.xl, top = Space.m, bottom = Space.xl),
             ) {
                     CategoryBlock(store, month, neu)
-                    Spacer(Modifier.height(Space.l))
-                    Spacer(Modifier.height(Space.xs))
-                    Spacer(Modifier.height(Space.l))
+                    Spacer(Modifier.height(Space.m))
+                    RailRule(neu)
+                    Spacer(Modifier.height(Space.m))
                     FundsBlock(store, month, neu)
-                    Spacer(Modifier.height(Space.l))
+                    Spacer(Modifier.height(Space.m))
+                    RailRule(neu)
+                    Spacer(Modifier.height(Space.m))
                     BillsBlock(store, month, neu)
-                    Spacer(Modifier.height(Space.l))
-                    Spacer(Modifier.height(Space.xs))
-                    Spacer(Modifier.height(Space.l))
+                    Spacer(Modifier.height(Space.m))
+                    RailRule(neu)
+                    Spacer(Modifier.height(Space.m))
                     week?.let { (start, r) ->
                         NeuMetric(
                             neu, "LAST WEEK",
                             "${"%.1f".format(r.hours)} h · RM ${rm(r.net)}",
                             detail = "RM ${"%.2f".format(r.perHour)}/h · ${prettyDate(start)}",
                         )
-                        Spacer(Modifier.height(Space.l))
-                        Spacer(Modifier.height(Space.xs))
-                        Spacer(Modifier.height(Space.l))
+                        Spacer(Modifier.height(Space.m))
                     }
                     val days = store.shifts.filter { it.date.startsWith(month) }
                     val hours = days.sumOf { it.hours }
@@ -463,9 +464,21 @@ private fun Overview(
                         valueColor = if (streak >= 2) neu.accent else neu.ink,
                     )
             }
-            Spacer(Modifier.height(Space.xl))
+            NeuScrollbar(
+                state = railScroll,
+                neu = neu,
+                modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = Space.s),
+            )
         }
     }
+}
+
+@Composable
+private fun RailRule(neu: Neu) {
+    Box(
+        Modifier.fillMaxWidth().height(1.dp)
+            .background(if (neu.isDark) neu.light.copy(alpha = 0.10f) else neu.dark.copy(alpha = 0.22f)),
+    )
 }
 
 @Composable

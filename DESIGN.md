@@ -749,3 +749,10 @@ pack it stayed light even when Appearance was Dark. The desk is palette-independ
 Each chevron in the month stepper painted `background(neu.base)` over the inset capsule, so the arrows
 read as two separate circular buttons sitting inside the groove. The arrows now paint nothing at rest
 (only a soft accent tint on hover), leaving one continuous sunken capsule with the chevrons carved into it.
+
+## Desk polish (v0.32)
+
+- sync status is a flat dot + label on the header, not a raised chip on a raised bar;
+- the sidebar has its own scrollbar (the last metric no longer looks chopped at rest) and 16dp bottom
+  breathing room; hairline rules separate spending / funds / bills / recent metrics;
+- the header-to-content gap tightened from 32dp to 16dp.
