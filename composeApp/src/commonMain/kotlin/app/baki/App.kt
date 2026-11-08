@@ -35,6 +35,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -304,6 +306,26 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     }
+    }
+
+    // the floating +: a glass action above the bar, opening the full add sheet
+    if (tab == 0 && !repo.readOnly) {
+        GlassSurface(
+            backdrop = glassBackdrop,
+            shape = RoundedCornerShape(Radius.pill),
+            tier = glassTier,
+            modifier = Modifier.align(Alignment.BottomEnd)
+                .padding(end = Space.l)
+                .padding(bottom = barHeight + barGap + 6.dp)
+                .size(fabSize)
+                .shadow(10.dp, RoundedCornerShape(Radius.pill))
+                .semantics { contentDescription = "Add entry" },
+        ) {
+            Box(
+                Modifier.fillMaxSize().clickable { adding = 1 },
+                contentAlignment = Alignment.Center,
+            ) { Text("+", color = baki.primary, style = BakiType.headline) }
+        }
     }
 
     // ---- level 2: the sheets sit above everything, on a scrim over the blurred app ----
