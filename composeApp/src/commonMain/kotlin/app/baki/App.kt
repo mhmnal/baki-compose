@@ -1186,6 +1186,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var linkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
     var editingBill by remember { mutableStateOf<Bill?>(null) }
     var addingBill by remember { mutableStateOf(false) }
+    var unlinkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1302,7 +1303,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         )
                     }
                     if (isPaid) {
-                        Text("covered ${Bills.paidOn(repo.store, bill, period) ?: ""}", color = baki.up, style = BakiType.caption)
+                        Text(
+                            "covered ${Bills.paidOn(repo.store, bill, period) ?: ""}",
+                            color = baki.up, style = BakiType.caption,
+                            modifier = Modifier.clickable { unlinkTarget = bill to period },
+                        )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                             OutlinedButton(
@@ -1349,6 +1354,27 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
         }
+            unlinkTarget?.let { (bill, period) ->
+                val link = Bills.payment(repo.store, bill, period)
+                AlertDialog(
+                    onDismissRequest = { unlinkTarget = null },
+                    containerColor = baki.container,
+                    title = { Text("Unlink ${bill.name} · $period", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+                    text = {
+                        Text(
+                            "Only the covered mark is removed. The RM ${"%.2f".format((link?.amount ?: bill.amount) / 100.0)} expense stays in your ledger.",
+                            color = baki.muted, style = BakiType.caption,
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            scope.launch { repo.unlinkBillPayment(bill.id, period) }
+                            unlinkTarget = null
+                        }) { Text("Unlink", color = baki.down) }
+                    },
+                    dismissButton = { TextButton(onClick = { unlinkTarget = null }) { Text("Cancel") } },
+                )
+            }
             if (addingBill || editingBill != null) {
                 val existing = editingBill
                 BillEditorDialog(

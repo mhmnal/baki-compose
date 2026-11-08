@@ -37,11 +37,19 @@ object Bills {
         return monthly + annual / 12
     }
 
-    fun isCovered(store: Store, bill: Bill, period: String): Boolean =
-        store.billPayments.any { it.billId == bill.id && it.period == period }
+    /** The live link for this bill and period, if its expense still exists. */
+    fun payment(store: Store, bill: Bill, period: String): BillPayment? {
+        val link = store.billPayments.firstOrNull {
+            it.active && it.billId == bill.id && it.period == period &&
+                store.entries.any { e -> e.id == it.entryId }
+        } ?: return null
+        return link
+    }
+
+    fun isCovered(store: Store, bill: Bill, period: String): Boolean = payment(store, bill, period) != null
 
     fun paidOn(store: Store, bill: Bill, period: String): String? =
-        store.billPayments.firstOrNull { it.billId == bill.id && it.period == period }?.paidAt?.take(10)
+        payment(store, bill, period)?.paidAt?.take(10)
 
     /** Committed (non-optional) bills for a month, whether or not they are paid. */
     fun due(store: Store, monthLabel: String): List<Bill> =

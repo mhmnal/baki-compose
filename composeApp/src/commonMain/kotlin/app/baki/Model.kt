@@ -73,6 +73,8 @@ data class Shift(
     val entryId: String,
     val paidAt: String,
     val updated: String = "",
+    /** unlinking clears the flag instead of deleting the row, so the removal syncs */
+    val active: Boolean = true,
 )
 
 @Serializable data class Cat(val id: String, val name: String, val icon: String)

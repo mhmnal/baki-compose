@@ -11,8 +11,11 @@ class BillsTest {
     private val google = Bill("b2", "Google", 10_000, "annual", "subscriptions", anchorMonth = 1)
     private val car = Bill("b3", "Car loan", 20_000, "monthly", "carloan", optional = true)
 
-    private fun store(payments: List<BillPayment> = emptyList()): Store =
-        Store(bills = listOf(rent, google, car), billPayments = payments)
+    private fun store(payments: List<BillPayment> = emptyList(), entries: List<Entry> = emptyList()): Store =
+        Store(entries = entries, bills = listOf(rent, google, car), billPayments = payments)
+
+    private fun entry(id: String) =
+        Entry(id = id, date = "2026-11-05", type = "expense", cat = "rent", amount = 27_000, updated = "x")
 
     @Test
     fun monthlyPeriodsRollOverTheYear() {
@@ -37,7 +40,7 @@ class BillsTest {
     @Test
     fun payingCoversOnlyThatPeriod() {
         val pay = BillPayment("b1", "2026-11", 27_000, "e1", "2026-11-05", "x")
-        val s = store(listOf(pay))
+        val s = store(listOf(pay), listOf(entry("e1")))
         assertTrue(Bills.isCovered(s, rent, "2026-11"))
         assertFalse(Bills.isCovered(s, rent, "2026-12"))
         assertEquals(listOf(rent), Bills.unpaid(s, "2026-12"))
@@ -50,6 +53,7 @@ class BillsTest {
                 BillPayment("b1", "2026-11", 27_000, "e1", "2026-11-05", "x"),
                 BillPayment("b1", "2026-12", 27_000, "e2", "2026-11-05", "x"),
             ),
+            listOf(entry("e1"), entry("e2")),
         )
         // November and December are covered; Google falls due in January, so that is the next open month
         assertEquals("2027-01", Bills.nextOpenMonth(s, "2026-11"))
@@ -135,5 +139,34 @@ class BillTotalsTest {
         val s = Store(bills = listOf(rent, google, car, old))
         // 270 + 100/12 = 278.33; optional and inactive are excluded
         assertEquals(27_833, Bills.averageMonthly(s))
+    }
+}
+
+
+class BillUnlinkTest {
+    private val rent = Bill("b1", "Rent", 27_000, "monthly", "rent")
+    private fun entry(id: String) = Entry(id = id, date = "2026-11-07", type = "expense", cat = "rent", amount = 27_000, updated = "x")
+
+    @Test
+    fun anUnlinkedPaymentStopsCoveringThePeriod() {
+        val link = BillPayment("b1", "2026-11", 27_000, "e1", "2026-11-07", "x", active = false)
+        val store = Store(entries = listOf(entry("e1")), bills = listOf(rent), billPayments = listOf(link))
+        assertFalse(Bills.isCovered(store, rent, "2026-11"))
+        assertEquals(listOf(rent), Bills.unpaid(store, "2026-11"))
+    }
+
+    @Test
+    fun aLinkWhoseExpenseWasDeletedNoLongerCovers() {
+        val link = BillPayment("b1", "2026-11", 27_000, "gone", "2026-11-07", "x")
+        val store = Store(bills = listOf(rent), billPayments = listOf(link))
+        assertFalse(Bills.isCovered(store, rent, "2026-11"))
+    }
+
+    @Test
+    fun theNewestPaymentWinsAcrossDevices() {
+        val live = BillPayment("b1", "2026-11", 27_000, "e1", "2026-11-07", "2026-11-07T10:00:00Z")
+        val unlinked = live.copy(active = false, updated = "2026-11-08T10:00:00Z")
+        val merged = mergeStores(Store(billPayments = listOf(live)), Store(billPayments = listOf(unlinked)))
+        assertEquals(false, merged.billPayments.single().active)
     }
 }

@@ -613,6 +613,9 @@ saved too. `SyncChangeTest` guards the bills-only case. The Bills card also show
 - **Add / edit / delete** from the Bills card: name, amount, monthly or annual (with renewal month),
   category chosen from the existing categories, a **business** flag for the tax pack, and an
   **optional** flag for leftover goals. Tapping a bill opens it for editing.
+- Unlinking a payment is a **soft removal** too (`BillPayment.active = false`): the expense stays in the
+  ledger, only the covered mark goes, and the change syncs because the newest row wins the merge. A
+  link whose expense was deleted stops counting as covered on its own.
 - Deletion is a **soft delete** (`active = false`), because bills have no tombstone on the server; the
   flag syncs and the bill disappears from every list. A bill with payments cannot be deleted.
 - The card header now states the month's commitments: `November 2026 · RM 387.50 committed`, the

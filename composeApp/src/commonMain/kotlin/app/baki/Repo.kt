@@ -207,6 +207,25 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         true
     }
 
+    /**
+     * Removes the link between a bill period and its expense. The money stays in the ledger; only the
+     * "covered" claim goes away, and the change syncs because the row is flagged inactive.
+     */
+    suspend fun unlinkBillPayment(billId: String, period: String): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return false
+        val link = store.billPayments.firstOrNull { it.active && it.billId == billId && it.period == period }
+            ?: return false
+        store = store.copy(
+            billPayments = store.billPayments.map {
+                if (it.billId == billId && it.period == period) it.copy(active = false, updated = nowIso()) else it
+            },
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        runCatching { pushWithTombs(emptyList()) }
+        true
+    }
+
     /** Pays one bill for a period: an expense entry dated today plus the link that marks it covered. */
     suspend fun payBill(billId: String, period: String, date: String = todayIso(), note: String = ""): Boolean =
         mutex.withLock { payBillLocked(billId, period, date, note) }
