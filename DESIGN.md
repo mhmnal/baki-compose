@@ -756,3 +756,12 @@ read as two separate circular buttons sitting inside the groove. The arrows now 
 - the sidebar has its own scrollbar (the last metric no longer looks chopped at rest) and 16dp bottom
   breathing room; hairline rules separate spending / funds / bills / recent metrics;
 - the header-to-content gap tightened from 32dp to 16dp.
+
+## Signed bar scaling (v0.32.1)
+
+The 7-day chart scaled every bar against the full plot height while positioning zero wherever the
+positive/negative peaks met, so the negative peak ran past the bottom of the plot and straight through
+its day label. Each sign is now scaled into the space it owns above or below zero, and the bar is clamped
+to that space. Bars are also narrow (30dp, centred) with rounded data ends and a stronger zero baseline;
+the bay stays the tactile surface, bars stay flat data ink (extruding seven bars inside a sunken bay
+would fight its inner shadow).

@@ -507,10 +507,15 @@ private fun WeekChart(store: Store, neu: Neu) {
                 ) {
                     val zeroShare = SignedBars.zeroFraction(peakPos, peakNeg)
                     val zeroY = plot * zeroShare
+                    val negSpace = (plot - zeroY).coerceAtLeast(1.dp)
                     days.forEach { (iso, t) ->
-                        val g = SignedBars.of(t.net, peakPos, peakNeg)
-                        val h = (plot * g.fraction).coerceAtLeast(0.dp)
-                        val offsetY = if (g.positive) (zeroY - h).coerceAtLeast(0.dp) else zeroY
+                        // each side is scaled to the space it owns: the negative peak must stop at the
+                        // bottom of the plot, not run through the day label below it
+                        val positive = t.net >= 0
+                        val h = if (positive) zeroY * (t.net.toFloat() / peakPos)
+                        else negSpace * (-t.net.toFloat() / peakNeg)
+                        val barH = h.coerceIn(0.dp, if (positive) zeroY else negSpace)
+                        val offsetY = if (positive) (zeroY - barH).coerceAtLeast(0.dp) else zeroY
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 if (t.entryCount == 0 && t.shiftCount == 0) "–" else rm(t.net),
@@ -523,24 +528,24 @@ private fun WeekChart(store: Store, neu: Neu) {
                                 Box(
                                     Modifier.align(Alignment.TopCenter).fillMaxWidth().height(1.dp)
                                         .offset(y = zeroY - 0.5.dp)
-                                        .background(neu.ink.copy(alpha = 0.14f)),
+                                        .background(neu.ink.copy(alpha = 0.20f)),
                                 )
-                                if (!g.zero) {
+                                if (t.net != 0L) {
                                     Box(
                                         Modifier
                                             .align(Alignment.TopCenter)
                                             .offset(y = offsetY)
-                                            .fillMaxWidth(0.58f)
-                                            .height(h.coerceAtLeast(2.dp))
+                                            .width(30.dp)
+                                            .height(barH.coerceAtLeast(2.dp))
                                             .clip(
-                                                if (g.positive) RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)
+                                                if (positive) RoundedCornerShape(topStart = Radius.bar, topEnd = Radius.bar)
                                                 else RoundedCornerShape(bottomStart = Radius.bar, bottomEnd = Radius.bar),
                                             )
-                                            .background(if (g.positive) neu.accent else neu.danger),
+                                            .background(if (positive) neu.accent else neu.danger),
                                     )
                                 }
                             }
-                            Spacer(Modifier.height(Space.xs))
+                            Spacer(Modifier.height(Space.s))
                             Text(weekdayShort(iso), color = neu.ink, style = BakiType.caption)
                         }
                     }
