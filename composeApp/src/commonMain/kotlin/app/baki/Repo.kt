@@ -607,6 +607,23 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             pushWithTombs(emptyList())
         }
 
+    /** Attach an odometer to an already-saved entry without changing its amount or date. */
+    suspend fun setEntryOdometer(id: String, odo: Int): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val entry = store.entries.firstOrNull { it.id == id } ?: return@withLock false
+        if (entry.odo == odo) return@withLock true
+        val stamp = nowIso()
+        store = store.copy(
+            entries = store.entries.map {
+                if (it.id == id) it.copy(odo = odo, updated = stamp) else it
+            },
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     /** Edit a shift; the cover rule re-runs because the date or start may have moved. */
     suspend fun updateShift(
         shift: Shift, date: String, start: String, hours: Double, km: Double,

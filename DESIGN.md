@@ -873,3 +873,11 @@ Storage and sync fixes after the feasibility audit:
   blank instead of inventing a time.
 - Successful adds show a one-shot lime check in the snackbar; Undo remains intact.
 - 176 tests; phone 0.36.5 / code 99.
+
+## Fuel odometer prompt (unreleased)
+
+- After a fuel entry is saved without an odometer, a skippable dialog asks for the dashboard reading.
+- Quick-add fuel and the full Add sheet both route through it; the expense is already saved, so dismissing
+  the prompt can never lose it.
+- The last known reading is shown as a hint; a new reading must be positive and strictly higher.
+- Skip keeps the entry and asks again on the next fill. Adding it updates the same entry (loggedAt intact).

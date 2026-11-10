@@ -115,6 +115,8 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
 }
 
 /** Which shift's payouts the sheet is showing. */
+private data class FuelPrompt(val entryId: String, val label: String, val cents: Long)
+
 private sealed interface PayoutsTarget {
     data object Live : PayoutsTarget
     data class Stored(val shiftId: String) : PayoutsTarget
@@ -135,10 +137,27 @@ private fun AppContent(repo: BakiRepo) {
     var editingBudgets by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
     var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
+    var fuelPrompt by remember { mutableStateOf<FuelPrompt?>(null) }
     val glassTier = effectiveGlassTier(repo.config.glassMode, DeviceTier.level)
     val glassBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    suspend fun announceAdded(id: String, label: String, cents: Long) {
+        val res = snackbar.showSnackbar(
+            "Added $label RM ${rm(cents)}",
+            actionLabel = "Undo", duration = SnackbarDuration.Short,
+        )
+        if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
+    }
+    fun routeAdded(id: String, type: String, cat: String, cents: Long, odo: Int?) {
+        val name = (repo.store.settings.cats.catsOut + repo.store.settings.cats.catsIn)
+            .firstOrNull { it.id == cat }?.name ?: cat
+        if (type != "income" && isFuelCat(cat) && odo == null) {
+            fuelPrompt = FuelPrompt(id, name, cents)
+        } else {
+            scope.launch { announceAdded(id, name, cents) }
+        }
+    }
     LaunchedEffect(Unit) { repo.start() }
 
     // notification actions: "+ Payout" and "End shift" come back as intents
@@ -211,15 +230,7 @@ private fun AppContent(repo: BakiRepo) {
                     onQuickAdd = { cat, cents ->
                         scope.launch {
                             val id = repo.addExpense(cents, cat, "", todayIso())
-                            if (id != null) {
-                                val name = repo.store.settings.cats.catsOut
-                                    .firstOrNull { it.id == cat }?.name ?: cat
-                                val res = snackbar.showSnackbar(
-                                    "Added $name RM ${rm(cents)}",
-                                    actionLabel = "Undo", duration = SnackbarDuration.Short,
-                                )
-                                if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
-                            }
+                            if (id != null) routeAdded(id, "expense", cat, cents, null)
                         }
                     },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
@@ -384,6 +395,27 @@ private fun AppContent(repo: BakiRepo) {
         )
     }
 
+    fuelPrompt?.let { p ->
+        OdometerPromptDialog(
+            label = p.label,
+            cents = p.cents,
+            lastOdo = repo.store.entries
+                .filter { isFuelCat(it.cat) && (it.odo ?: 0) > 0 }
+                .maxOfOrNull { it.odo ?: 0 },
+            onSave = { odo ->
+                fuelPrompt = null
+                scope.launch {
+                    repo.setEntryOdometer(p.entryId, odo)
+                    announceAdded(p.entryId, p.label, p.cents)
+                }
+            },
+            onSkip = {
+                fuelPrompt = null
+                scope.launch { announceAdded(p.entryId, p.label, p.cents) }
+            },
+        )
+    }
+
     when (adding) {
         1 -> AddChoiceDialog(
             onDismiss = { adding = 0 },
@@ -405,15 +437,7 @@ private fun AppContent(repo: BakiRepo) {
                 scope.launch {
                     if (target == null) {
                         val id = repo.addEntry(type, cents, cat, note, date, odoAtFill)
-                        if (id != null) {
-                            val name = (repo.store.settings.cats.catsOut + repo.store.settings.cats.catsIn)
-                                .firstOrNull { it.id == cat }?.name ?: cat
-                            val res = snackbar.showSnackbar(
-                                "Added $name RM ${rm(cents)}",
-                                actionLabel = "Undo", duration = SnackbarDuration.Short,
-                            )
-                            if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
-                        }
+                        if (id != null) routeAdded(id, type, cat, cents, odoAtFill)
                     } else {
                         repo.updateEntry(target, type, cents, cat, note, date, odoAtFill)
                         val res = snackbar.showSnackbar(
