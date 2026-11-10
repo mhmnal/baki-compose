@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.6)
+## Current state (v0.36.7)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -897,3 +897,9 @@ Storage and sync fixes after the feasibility audit:
   full-screen. Images/index are sealed locally, never synced. Auto brightness is deliberately not used.
 - Viewer keeps the screen awake and restores system-bar icon mode on close.
 - Dynamic launcher shortcut “My QR” opens More.
+
+## Snackbar/deletion fix (v0.36.7)
+
+- One swipe invokes one row action; entry deletion is additionally de-duplicated by id.
+- Undo is a compact label; the snackbar host sits above the floating + rather than under it.
+- 178 tests; phone 0.36.7 / code 101.
