@@ -912,7 +912,10 @@ private fun SpendingScreen(
         .filter { e ->
             query.isBlank() || (e.cat + " " + e.note + " " + (e.amount / 100.0)).lowercase().contains(query.lowercase())
         }
-        .sortedByDescending { it.date }
+        .sortedWith(
+            compareByDescending<Entry> { it.date }
+                .thenByDescending { it.loggedAt.ifBlank { it.updated } },
+        )
     val cats = remember(repo.store) { repo.store.settings.cats.catsOut }
 
     // the headline follows the filter: a category view answers "how much on this?" not "how much at all"
@@ -1026,7 +1029,7 @@ private fun SpendingScreen(
             items(entries, key = { it.id }) { e ->
                 RowCard(
                     e.note.ifEmpty { e.cat },
-                    prettyDate(e.date),
+                    prettyDate(e.date) + (loggedTime(e.loggedAt)?.let { " · logged $it" } ?: ""),
                     (if (e.type == "income") "+" else "−") + rm(e.amount),
                     if (e.type == "income") baki.up else baki.down,
                     icon = categoryIcon(e.cat),

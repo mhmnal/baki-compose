@@ -118,6 +118,7 @@ fun recomputeCover(store: Store, now: String = nowIso()): Pair<Store, Boolean> {
         val row = Entry(
             id = id, date = sh.date, type = "expense", cat = "grabfee", amount = want,
             note = "Grab insurance", updated = current?.updated ?: now,
+            loggedAt = current?.loggedAt ?: now,
         )
         if (current == null || current.amount != row.amount || current.date != row.date) {
             byId[id] = row

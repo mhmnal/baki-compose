@@ -74,7 +74,11 @@ fun TodayScreen(
     // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
     val operating = remember(store, day) { dayOperating(store, day) }
-    val entries = remember(store, day) { entriesOn(store, day).sortedByDescending { it.updated } }
+    val entries = remember(store, day) {
+        entriesOn(store, day).sortedWith(
+            compareByDescending<Entry> { it.loggedAt.ifBlank { it.updated } },
+        )
+    }
     val shifts = remember(store, day) { shiftsOn(store, day) }
     val cfg = store.settings.profit
     val live = repo.live
@@ -318,7 +322,7 @@ fun TodayScreen(
             RowCardIcon(
                 icon = categoryIcon(e.cat),
                 title = e.note.ifEmpty { e.cat },
-                sub = e.cat,
+                sub = listOfNotNull(e.cat, loggedTime(e.loggedAt)?.let { "logged $it" }).joinToString(" · "),
                 amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
                 tint = if (e.type == "income") baki.up else baki.down,
                 sharedKey = "entry-${e.id}",

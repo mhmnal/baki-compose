@@ -227,7 +227,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val now = nowIso()
         val entry = Entry(
             id = newId("e"), date = date, type = "expense", cat = bill.category,
-            amount = bill.amount, note = note.ifBlank { "${bill.name} · $period" }, updated = now,
+            amount = bill.amount, note = note.ifBlank { "${bill.name} · $period" },
+            updated = now, loggedAt = now,
         )
         store = store.copy(
             entries = store.entries + entry,
@@ -277,11 +278,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         type: String, amountCents: Long, cat: String, note: String, date: String, odo: Int? = null,
     ): String? = mutex.withLock {
         if (blocked()) return@withLock null
+        val stamp = nowIso()
         val entry = Entry(
             id = newId(), date = date, type = type, cat = cat, amount = amountCents,
-            note = note, updated = nowIso(), odo = odo,
+            note = note, updated = stamp, loggedAt = stamp, odo = odo,
         )
-        store = store.copy(entries = store.entries + entry, updatedAt = nowIso())
+        store = store.copy(entries = store.entries + entry, updatedAt = stamp)
         saveLocal(store)                       // never lose a tap, even offline
         try {
             pushWithAllTombs()
@@ -305,7 +307,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val made = entries.map { q ->
             Entry(
                 id = newId(), date = date, type = "expense", cat = q.cat, amount = q.cents,
-                note = "", updated = stamp,
+                note = "", updated = stamp, loggedAt = stamp,
             )
         }
         store = store.copy(entries = store.entries + made, updatedAt = stamp)
@@ -388,9 +390,10 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             return
         }
         if (existing?.amount == want) return
+        val stamp = nowIso()
         val entry = Entry(
             id = id, date = startDate(current.start), type = "expense", cat = "grabfee",
-            amount = want, note = "Grab insurance (renewed)", updated = nowIso(),
+            amount = want, note = "Grab insurance (renewed)", updated = stamp, loggedAt = stamp,
         )
         store = store.copy(
             entries = store.entries.filterNot { it.id == id } + entry,

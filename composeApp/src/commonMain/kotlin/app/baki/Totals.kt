@@ -3,9 +3,12 @@ package app.baki
 import kotlin.math.roundToLong
 
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 
 /** Day and month roll-ups, same rules as dayTotals()/monthTotals() in index.html. */
 data class Totals(val income: Long, val expense: Long, val entryCount: Int, val shiftCount: Int) {
@@ -146,6 +149,15 @@ fun prettyDate(iso: String): String {
     val d = runCatching { LocalDate.parse(iso) }.getOrNull() ?: return iso
     val month = d.month.name.lowercase().replaceFirstChar { it.uppercase() }
     return "${d.dayOfMonth} $month"
+}
+
+/** Local HH:mm for a creation timestamp; null for rows that predate the field. */
+fun loggedTime(iso: String): String? {
+    if (iso.isBlank()) return null
+    return runCatching {
+        val t = Instant.parse(iso).toLocalDateTime(TimeZone.currentSystemDefault())
+        "%02d:%02d".format(t.hour, t.minute)
+    }.getOrNull()
 }
 
 /** "MON", "TUE" … */

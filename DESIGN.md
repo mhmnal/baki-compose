@@ -858,3 +858,11 @@ Storage and sync fixes after the feasibility audit:
 - The Wednesday reminder shows a blocked-notification warning with Open settings / Check again.
 - Share/VIEW accepts application/octet-stream as well as application/pdf, then sniffs %PDF within the first
   KiB; a renamed non-PDF is rejected.
+
+## Logged-at timestamps (unreleased)
+
+- `Entry.loggedAt` is set once when an entry is created and preserved through edits. `updated` remains
+  the sync/edit timestamp.
+- Today sorts by loggedAt (fallback updated for pre-field rows); Spending sorts by date, then loggedAt.
+- Rows show "logged HH:mm"; old rows have no time and are not backfilled with invented values.
+- 176 tests; preview checked in dark/light.

@@ -16,7 +16,10 @@ data class Entry(
     val cat: String = "other",
     val amount: Long,
     val note: String = "",
+    /** last edit, used by sync */
     val updated: String = "",
+    /** immutable creation time; blank on rows imported before this field existed */
+    val loggedAt: String = "",
     val odo: Int? = null,
     val sample: Boolean? = null,
 )
