@@ -6,9 +6,11 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -17,7 +19,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,7 +46,12 @@ fun BakiSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier
         Snackbar(
             action = data.visuals.actionLabel?.let { label ->
                 {
-                    TextButton(onClick = { data.performAction() }) {
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable { data.performAction() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    ) {
                         Text(label, color = baki.primary, style = BakiType.labelStrong )
                     }
                 }

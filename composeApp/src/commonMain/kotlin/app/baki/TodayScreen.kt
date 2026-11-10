@@ -29,7 +29,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val BANDS = mapOf(
@@ -398,6 +401,8 @@ fun RowCardIcon(
     onDelete: (() -> Unit)? = null,
 ) {
     val baki = LocalBaki.current
+    val gestureScope = rememberCoroutineScope()
+    var acted by remember { mutableStateOf(false) }
     val sharedScope = LocalSharedTransition.current
     val visibilityScope = LocalAnimatedVisibility.current
     val sharedMod = if (sharedScope != null && visibilityScope != null && sharedKey != null) {
@@ -411,10 +416,15 @@ fun RowCardIcon(
 
     val swipe = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> onEdit()
-                SwipeToDismissBoxValue.EndToStart -> onDelete?.invoke()
-                else -> {}
+            if (value != SwipeToDismissBoxValue.Settled && !acted) {
+                acted = true
+                when (value) {
+                    SwipeToDismissBoxValue.StartToEnd -> onEdit()
+                    SwipeToDismissBoxValue.EndToStart -> onDelete?.invoke()
+                    else -> {}
+                }
+                // one gesture, one action; allow the next swipe after the spring-back
+                gestureScope.launch { delay(650); acted = false }
             }
             false          // always spring back: the action is the swipe, not the removal
         },

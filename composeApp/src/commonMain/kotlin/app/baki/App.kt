@@ -158,6 +158,27 @@ private fun AppContent(repo: BakiRepo) {
             scope.launch { announceAdded(id, name, cents) }
         }
     }
+
+    // A swipe can report the same confirmation twice; never queue two Undo bars for one row.
+    val deletingIds = remember { mutableSetOf<String>() }
+    fun deleteEntryWithUndo(entry: Entry) {
+        if (!deletingIds.add(entry.id)) return
+        scope.launch {
+            try {
+                if (repo.store.entries.none { it.id == entry.id }) return@launch
+                repo.deleteEntry(entry.id)
+                val res = snackbar.showSnackbar(
+                    "Deleted ${entry.note.ifEmpty { entry.cat }} · RM ${rm(entry.amount)}",
+                    actionLabel = "Undo", duration = SnackbarDuration.Short,
+                )
+                if (res == SnackbarResult.ActionPerformed) {
+                    repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
+                }
+            } finally {
+                deletingIds.remove(entry.id)
+            }
+        }
+    }
     LaunchedEffect(Unit) { repo.start() }
 
     // notification actions: "+ Payout" and "End shift" come back as intents
@@ -187,6 +208,10 @@ private fun AppContent(repo: BakiRepo) {
         // sit above the gesture bar, not on top of it
         val gestureInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val barGap = gestureInset + 14.dp
+        val hasFab = tab == 0 && !repo.readOnly
+        // keep Undo clear of the floating +, not underneath it
+        val snackbarBottom = if (hasFab) barHeight + barGap + fabSize + 10.dp
+        else barHeight + barGap + 10.dp
         val sheetOpen = adding != 0 || payoutsTarget != null
 
         // ---- level 1: the app itself, blurred while a sheet is up ----
@@ -201,7 +226,9 @@ private fun AppContent(repo: BakiRepo) {
     ) {
     Scaffold(
         containerColor = baki.surface,
-        snackbarHost = { BakiSnackbarHost(snackbar, Modifier.padding(bottom = 108.dp)) },
+        snackbarHost = {
+            BakiSnackbarHost(snackbar, Modifier.padding(horizontal = Space.m).padding(bottom = snackbarBottom))
+        },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             Header(repo)
@@ -235,18 +262,7 @@ private fun AppContent(repo: BakiRepo) {
                         }
                     },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
-                    onDeleteEntry = { entry ->
-                        scope.launch {
-                            repo.deleteEntry(entry.id)
-                            val res = snackbar.showSnackbar(
-                                "Deleted ${entry.note.ifEmpty { entry.cat }} · RM ${rm(entry.amount)}",
-                                actionLabel = "Undo", duration = SnackbarDuration.Short,
-                            )
-                            if (res == SnackbarResult.ActionPerformed) {
-                                repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
-                            }
-                        }
-                    },
+                    onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
                     onPreset = { catId ->
                         editingEntry = null
                         entryType = "expense"
@@ -261,18 +277,7 @@ private fun AppContent(repo: BakiRepo) {
                     month = month,
                     onMonth = { month = it },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
-                    onDeleteEntry = { entry ->
-                        scope.launch {
-                            repo.deleteEntry(entry.id)
-                            val res = snackbar.showSnackbar(
-                                "Deleted ${entry.note.ifEmpty { entry.cat }} · RM ${rm(entry.amount)}",
-                                actionLabel = "Undo", duration = SnackbarDuration.Short,
-                            )
-                            if (res == SnackbarResult.ActionPerformed) {
-                                repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
-                            }
-                        }
-                    },
+                    onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
                 )
                 2 -> ShiftsScreen(
                     repo = repo,
@@ -453,17 +458,7 @@ private fun AppContent(repo: BakiRepo) {
             },
             onDelete = { entry ->
                 adding = 0; editingEntry = null
-                scope.launch {
-                    repo.deleteEntry(entry.id)
-                    val res = snackbar.showSnackbar(
-                        message = "Deleted ${entry.note.ifEmpty { entry.cat }} · RM ${rm(entry.amount)}",
-                        actionLabel = "Undo",
-                        duration = SnackbarDuration.Short,
-                    )
-                    if (res == SnackbarResult.ActionPerformed) {
-                        repo.addEntry(entry.type, entry.amount, entry.cat, entry.note, entry.date)
-                    }
-                }
+                deleteEntryWithUndo(entry)
             },
         )
         3 -> ShiftDialog(
@@ -710,12 +705,18 @@ fun RowCard(
 ) {
     val baki = LocalBaki.current
     val ink = if (amountTint == Color.Unspecified) baki.onSurface else amountTint
+    val gestureScope = rememberCoroutineScope()
+    var acted by remember { mutableStateOf(false) }
     val swipe = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> onLongPress?.invoke()
-                SwipeToDismissBoxValue.EndToStart -> onDelete?.invoke()
-                else -> {}
+            if (value != SwipeToDismissBoxValue.Settled && !acted) {
+                acted = true
+                when (value) {
+                    SwipeToDismissBoxValue.StartToEnd -> onLongPress?.invoke()
+                    SwipeToDismissBoxValue.EndToStart -> onDelete?.invoke()
+                    else -> {}
+                }
+                gestureScope.launch { delay(650); acted = false }
             }
             false
         },
