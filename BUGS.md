@@ -1,6 +1,6 @@
 # Known issues / parked work
 
-Updated 2026-11-08 for **0.36.4**. Ordered by what costs money or trust first.
+Updated 2026-11-08 for **0.36.5**. Ordered by what costs money or trust first.
 
 ## Security / operations
 

@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.4)
+## Current state (v0.36.5)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -866,3 +866,10 @@ Storage and sync fixes after the feasibility audit:
 - Today sorts by loggedAt (fallback updated for pre-field rows); Spending sorts by date, then loggedAt.
 - Rows show "logged HH:mm"; old rows have no time and are not backfilled with invented values.
 - 176 tests; preview checked in dark/light.
+
+## Logged-at timestamps and entry confirmation (v0.36.5)
+
+- Entries carry an immutable `loggedAt`; Today sorts by it, Spending by date then it. Old rows stay
+  blank instead of inventing a time.
+- Successful adds show a one-shot lime check in the snackbar; Undo remains intact.
+- 176 tests; phone 0.36.5 / code 99.
