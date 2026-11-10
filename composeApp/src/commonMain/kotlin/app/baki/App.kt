@@ -181,7 +181,7 @@ private fun AppContent(repo: BakiRepo) {
     ) {
     Scaffold(
         containerColor = baki.surface,
-        snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = 108.dp)) },
+        snackbarHost = { BakiSnackbarHost(snackbar, Modifier.padding(bottom = 108.dp)) },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             Header(repo)
@@ -404,7 +404,16 @@ private fun AppContent(repo: BakiRepo) {
                 adding = 0; editingEntry = null
                 scope.launch {
                     if (target == null) {
-                        repo.addEntry(type, cents, cat, note, date, odoAtFill)
+                        val id = repo.addEntry(type, cents, cat, note, date, odoAtFill)
+                        if (id != null) {
+                            val name = (repo.store.settings.cats.catsOut + repo.store.settings.cats.catsIn)
+                                .firstOrNull { it.id == cat }?.name ?: cat
+                            val res = snackbar.showSnackbar(
+                                "Added $name RM ${rm(cents)}",
+                                actionLabel = "Undo", duration = SnackbarDuration.Short,
+                            )
+                            if (res == SnackbarResult.ActionPerformed) repo.deleteEntry(id)
+                        }
                     } else {
                         repo.updateEntry(target, type, cents, cat, note, date, odoAtFill)
                         val res = snackbar.showSnackbar(
