@@ -2,7 +2,10 @@ package app.baki
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,6 +17,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 
+private const val ACTION_OPEN_QR = "app.baki.OPEN_QR"
+
 class MainActivity : ComponentActivity() {
 
     private val askNotifications =
@@ -24,6 +29,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppCtx.ctx = applicationContext
         LocalStore.attach(filesDir)
+        installQrShortcut()
         askNotificationPermission()
         askLocationPermission()
         drainIntent(intent)
@@ -48,10 +54,27 @@ class MainActivity : ComponentActivity() {
 
     /** Notification actions arrive as "payout" / "end"; the UI picks them up. */
     private fun drainIntent(intent: Intent?) {
+        if (intent?.action == ACTION_OPEN_QR) BakiIntents.deliver("qr")
         val act = intent?.getStringExtra("baki.action")
         android.util.Log.i("BakiLive", "drainIntent: $act (intent=${intent?.action})")
         act?.let { BakiIntents.deliver(it) }
         readStatement(intent)
+    }
+
+    /** Long-press the launcher icon for a direct My QR entry point. */
+    private fun installQrShortcut() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return
+        runCatching {
+            val manager = getSystemService(ShortcutManager::class.java) ?: return
+            val intent = Intent(this, MainActivity::class.java).setAction(ACTION_OPEN_QR)
+            val shortcut = ShortcutInfo.Builder(this, "payment_qr")
+                .setShortLabel("My QR")
+                .setLongLabel("Show payment QR")
+                .setIcon(Icon.createWithResource(this, R.mipmap.ic_launcher))
+                .setIntent(intent)
+                .build()
+            manager.dynamicShortcuts = listOf(shortcut)
+        }
     }
 
     /** A PDF shared from another app becomes a statement import. */

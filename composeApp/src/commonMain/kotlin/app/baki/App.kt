@@ -165,6 +165,7 @@ private fun AppContent(repo: BakiRepo) {
     LaunchedEffect(pendingAction) {
         when (pendingAction) {
             "payout" -> if (repo.live != null) adding = 4
+            "qr" -> tab = 4
             "end" -> if (repo.live != null) { PlatformEffects.tapFeedback(); repo.endLive() }
             "pause" -> repo.live?.let { live ->
                 PlatformEffects.tapFeedback()
@@ -1255,6 +1256,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(horizontal = Space.l).verticalScroll(rememberScrollState()),
     ) {
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("PAYMENT QR")
+        Spacer(Modifier.height(Space.s))
+        PaymentQrSection()
         Spacer(Modifier.height(Space.l))
         SectionTitle("SYNC")
         Spacer(Modifier.height(Space.s))

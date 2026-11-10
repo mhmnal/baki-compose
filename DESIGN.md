@@ -881,3 +881,12 @@ Storage and sync fixes after the feasibility audit:
   the prompt can never lose it.
 - The last known reading is shown as a hint; a new reading must be positive and strictly higher.
 - Skip keeps the entry and asks again on the next fill. Adding it updates the same entry (loggedAt intact).
+
+## Payment QR wallet (unreleased)
+
+- Phone-only personal receive QR wallet in More: import up to 3 images, label them, show full-screen.
+- QR images and the index are sealed in device-local storage and never synced to the server.
+- Full-screen viewer keeps the screen awake but does not change brightness; dark system-bar icons are
+  forced while the white QR is open and restored on close.
+- Dynamic launcher shortcut “My QR” opens More.
+- Static codes only: if a bank/TNG code rotates, re-import it. No payment confirmation or balance access.
