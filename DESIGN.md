@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.5)
+## Current state (v0.36.6)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -890,3 +890,10 @@ Storage and sync fixes after the feasibility audit:
   forced while the white QR is open and restored on close.
 - Dynamic launcher shortcut “My QR” opens More.
 - Static codes only: if a bank/TNG code rotates, re-import it. No payment confirmation or balance access.
+
+## Payment QR wallet (v0.36.6)
+
+- Phone-only Receive QR card at the top of More: import up to 3 personal receive images, label, show
+  full-screen. Images/index are sealed locally, never synced. Auto brightness is deliberately not used.
+- Viewer keeps the screen awake and restores system-bar icon mode on close.
+- Dynamic launcher shortcut “My QR” opens More.
