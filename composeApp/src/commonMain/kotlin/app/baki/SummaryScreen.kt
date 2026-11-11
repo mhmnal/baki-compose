@@ -26,6 +26,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
     val baki = LocalBaki.current
     // aggregations are memoised per store+month: recomposition no longer re-scans everything
     val t = remember(store, month) { monthTotals(store, month) }
+    val cash = remember(store, month) { cashTruth(store, month) }
     val days = remember(store, month) { monthDays(store, month) }
     val best = days.maxByOrNull { it.second.net }
     val worst = days.minByOrNull { it.second.net }
@@ -122,23 +123,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             }
         }
 
-        payoutDue(store)?.let { due ->
-            item {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("AWAITING PAYOUT", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
-                        Text("RM ${"%.2f".format(due)}", color = if (due > 0) baki.up else baki.muted, style = BakiType.headline )
-                        statementCoveredUntil(store)?.let {
-                            Text("earned after the statement covering up to $it", color = baki.muted, style = BakiType.caption )
-                        }
-                    }
-                    Icon(BakiIcons.Wallet, contentDescription = null, tint = baki.up, modifier = Modifier.size(22.dp))
-                }
-            }
-        }
+        item { CashTruthCard(cash, month) }
 
         item {
             if (days.size > 1) {
@@ -286,5 +271,57 @@ private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
             color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong )
         Spacer(Modifier.width(Space.s))
         Text("acc ${"%.2f".format(fund.accrued)} · spent ${"%.2f".format(fund.spent)}", color = baki.muted, style = BakiType.caption )
+    }
+}
+
+
+/** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */
+@Composable
+private fun CashTruthCard(t: CashTruth, month: String) {
+    val baki = LocalBaki.current
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("CASH TRUTH", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Spacer(Modifier.weight(1f))
+            Text("not a bank balance", color = baki.muted, style = BakiType.nano )
+        }
+        Spacer(Modifier.height(Space.s))
+        CashLine("Recorded net", t.recordedNet, baki.onSurface, baki)
+        CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) baki.up else baki.down, baki)
+        Text(
+            "cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}",
+            color = baki.muted, style = BakiType.captionNumeric,
+        )
+        if (t.unpaid > 0) {
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "RM ${rm(t.unpaid)} still unpaid" +
+                    (t.payoutAnchor?.let { " after the statement through $it" } ?: " — no statement anchor"),
+                color = baki.warn, style = BakiType.caption,
+            )
+        }
+        if (t.prepaidBills > 0) {
+            Text(
+                "RM ${rm(t.prepaidBills)} paid ahead for future bills",
+                color = baki.muted, style = BakiType.caption,
+            )
+        }
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "Operating RM ${rm(t.operatingNet)} after estimated running costs. " +
+                "Cash counts payouts only when the latest statement or a payout breakdown settles them.",
+            color = baki.muted, style = BakiType.nano,
+        )
+    }
+}
+
+@Composable
+private fun CashLine(label: String, cents: Long, color: Color, baki: BakiPalette) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        Text(label, color = baki.muted, style = BakiType.label)
+        Spacer(Modifier.weight(1f))
+        Text("RM ${rm(cents)}", color = color, style = BakiType.bodyStrong )
     }
 }

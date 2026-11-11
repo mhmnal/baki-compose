@@ -949,3 +949,14 @@ Storage and sync fixes after the feasibility audit:
 - More → Receive QR row taps launch the same customer screen.
 - No app lock or privacy cover (not requested); discreet amounts deferred until the whole ledger can be masked.
 - Desktop remains deferred; cash-net model moves to 0.37.0.
+
+## Cash truth (0.37.0 Gate 1)
+
+- `CashTruth` distinguishes recorded net, operating net, cash received/spent/net, unpaid shift payouts,
+  prepaid bills, and the latest statement anchor.
+- A shift before the latest statement's covered day is settled; after it, only recorded payouts count
+  as cash, and the remainder is explicit unpaid. No statement = no anchor, shown explicitly.
+- Summary has a CASH TRUTH card; the old AWAITING PAYOUT card is removed to avoid contradictory totals.
+- Bill prepayments count as cash on the entry date and are surfaced as paid ahead, never deducted twice.
+- Transfers are still not an entry type; that remains an open Gate 1 gap.
+- 184 tests (6 cash invariants), preview checked dark/light.

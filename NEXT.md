@@ -30,3 +30,10 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Minimalist phone reskin (rejected).
 - Quick-entry sentence parser UI + voice (removed as unused; parser kept).
 - Desktop visual churn: material, depth, charts and scrollbar decisions are settled.
+
+## 0.37.0 gates
+
+1. Cash truth — model + summary + tests done (Gate 1; transfers still open).
+2. Service card + weekly review — next.
+3. Discreet amounts (tap-to-toggle) + accessibility/type pass.
+4. Desktop parity; final sign.

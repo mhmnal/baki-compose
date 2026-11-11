@@ -166,6 +166,79 @@ fun weekdayShort(iso: String): String {
     return d.dayOfWeek.name.take(3)
 }
 
+
+/**
+ * The honest money model. These are deliberately different numbers:
+ *
+ * - recorded: everything the ledger says was earned/spent, including payouts that have not arrived
+ * - operating: shift economics after estimated running/cover/overhead, not a cash figure
+ * - cash: money actually received minus money actually spent
+ * - unpaid: the part of shift earnings with a payout breakdown that has not been received yet
+ * - prepaid: active bill payments whose period is after the month being viewed
+ *
+ * Baki has no opening balance, so cashNet is a cash flow, never a bank balance.
+ */
+data class CashTruth(
+    val recordedNet: Long,
+    val operatingNet: Long,
+    val cashReceived: Long,
+    val cashSpent: Long,
+    val cashNet: Long,
+    val unpaid: Long,
+    val prepaidBills: Long,
+    /** The newest statement's last covered day, or null when there is no payout anchor. */
+    val payoutAnchor: String?,
+)
+
+private fun shiftCashSpent(sh: Shift): Long = if (sh.reimbursedTolls) 0L else sh.extra
+
+private fun isPrepaid(period: String, month: String): Boolean =
+    if (period.length == 4) period > month.take(4) else period > month
+
+fun cashTruth(store: Store, month: String? = null): CashTruth {
+    val entries = store.entries.filter { month == null || it.date.startsWith(month) }
+    val shifts = store.shifts.filter { month == null || it.date.startsWith(month) }
+    val incomeEntries = entries.filter { it.type == "income" }.sumOf { it.amount }
+    val expenseEntries = entries.filter { it.type != "income" }.sumOf { it.amount }
+    val earned = shifts.sumOf { it.gross + it.incentive }
+    val tolls = shifts.sumOf { shiftCashSpent(it) }
+    val recorded = incomeEntries + earned - expenseEntries - tolls
+
+    val operating = shifts.sumOf {
+        (shiftMetrics(it, store.settings.profit, overheadPerHour(store, it.date.take(7))).net * 100).roundToLong()
+    }
+
+    // A statement is the only honest settlement anchor. Before its last covered day, a shift is
+    // treated as paid; after it, only the payout breakdown counts as cash, and the rest is unpaid.
+    // Without a statement we cannot claim settlement, so leave the gap explicit.
+    val anchor = statementCoveredUntil(store)
+    val receivedShifts = shifts.sumOf { sh ->
+        if (anchor != null && sh.date <= anchor) sh.gross + sh.incentive
+        else sh.payouts.sumOf { it.c }
+    }
+    val received = incomeEntries + receivedShifts
+    val spent = expenseEntries + tolls
+    val unpaid = shifts.sumOf { sh ->
+        if (anchor != null && sh.date <= anchor) 0L
+        else (sh.gross + sh.incentive - sh.payouts.sumOf { it.c }).coerceAtLeast(0L)
+    }
+
+    val prepaid = if (month == null) 0L else store.billPayments
+        .filter { it.active && isPrepaid(it.period, month) && entries.any { e -> e.id == it.entryId } }
+        .sumOf { it.amount }
+
+    return CashTruth(
+        recordedNet = recorded,
+        operatingNet = operating,
+        cashReceived = received,
+        cashSpent = spent,
+        cashNet = received - spent,
+        unpaid = unpaid,
+        prepaidBills = prepaid,
+        payoutAnchor = anchor,
+    )
+}
+
 /** The last day the newest imported statement already accounts for. */
 fun statementCoveredUntil(store: Store): String? {
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return null
