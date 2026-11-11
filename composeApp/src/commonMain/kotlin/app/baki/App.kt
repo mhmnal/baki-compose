@@ -1243,6 +1243,9 @@ private fun BillEditorDialog(
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val baki = LocalBaki.current
     var url by remember { mutableStateOf(repo.config.serverUrl) }
+    var finding by remember { mutableStateOf(false) }
+    var foundMsg by remember { mutableStateOf<String?>(null) }
+    var foundOk by remember { mutableStateOf(false) }
     var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
     var editingProfit by remember { mutableStateOf(false) }
@@ -1291,6 +1294,38 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
                     border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                 ) { Text("Sync now") }
+            }
+            TextButton(
+                onClick = {
+                    if (finding) return@TextButton
+                    foundMsg = null
+                    finding = true
+                    scope.launch {
+                        val found = discoverBakiServer()
+                        finding = false
+                        if (found != null) {
+                            url = found.url
+                            foundOk = true
+                            foundMsg = "Found ${found.host}:${found.port}"
+                            repo.setServer(found.url)
+                            PlatformEffects.successFeedback()
+                        } else {
+                            foundOk = false
+                            foundMsg = "No Baki server found on this Wi-Fi"
+                        }
+                    }
+                },
+                enabled = !finding,
+                contentPadding = PaddingValues(horizontal = 0.dp),
+            ) {
+                Text(
+                    if (finding) "Searching this Wi-Fi…" else "Find server on this Wi-Fi",
+                    color = if (finding) baki.muted else baki.primary,
+                    style = BakiType.captionStrong,
+                )
+            }
+            foundMsg?.let {
+                Text(it, color = if (foundOk) baki.up else baki.down, style = BakiType.caption )
             }
             repo.lastError?.let {
                 Spacer(Modifier.height(Space.s))

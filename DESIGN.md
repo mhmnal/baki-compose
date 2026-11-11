@@ -916,3 +916,11 @@ Storage and sync fixes after the feasibility audit:
 - Maintenance entries now show the odometer field, labelled "Odometer at service".
 - Service rows render the reading ("41,250 km") alongside the date and logged time.
 - Fuel keeps its existing field and prompt; no schema change (Entry.odo already existed).
+
+## Find server on Wi-Fi (unreleased)
+
+- More → Sync has a one-tap "Find server on this Wi-Fi" action.
+- Android checks it is on Wi-Fi/Ethernet, probes the local /24 on the server's UDP responder (43872),
+  then writes the returned http/plainPort address, saves it and syncs.
+- Tested on the real phone: found 192.168.1.32:8787 and synced. No server or manifest changes.
+- Same-LAN only; it does not work over mobile data or a VPN and currently scans one /24 per interface.
