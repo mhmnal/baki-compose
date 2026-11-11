@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.7)
+## Current state (v0.36.8)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -933,3 +933,10 @@ Storage and sync fixes after the feasibility audit:
 - A 30s ticker rolls `day`/`month` to the new today at midnight only if the user was already on today.
 - Quick Add keeps four recurring amounts + a More chip; the category grid only appears when Quick Add is empty.
 - The duplicate + Add text link and the long cover-paid explanation are removed.
+
+## 0.36.8 release
+
+- Phone only (desktop intentionally deferred to 0.36.9).
+- Find server on Wi-Fi; live-shift Canvas route trace + spring entrance; maintenance odometer field;
+  date-aware Today actions; Add shift in Shifts; midnight rollover; Quick Add collapse.
+- 178 tests; phone 0.36.8 / code 102.
