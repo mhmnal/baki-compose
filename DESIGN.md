@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.9)
+## Current state (v0.37.0)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -979,3 +979,10 @@ Storage and sync fixes after the feasibility audit:
 - Type: label/caption/labelStrong/captionStrong 14sp, nano/micro/section 12sp; 48dp eye and Undo hit areas.
 - TalkBack custom Edit/Delete actions on swipe rows; eye has a content description.
 - 190 tests (privacy + type invariants); phone toggle verified. Desktop and final sign remain.
+
+## 0.37.0 release
+
+- Gate 1 cash truth; Gate 2 service + Mon-Sun weekly review; Gate 3 discreet amounts + type/touch/TalkBack rows; Gate 4 desktop parity.
+- Phone 0.37.0 / code 105. Desktop portable tar at dist/baki-desktop-0.37.0-linux-x64.tar.gz
+  (release AppImage unavailable offline: ProGuard 7.8.0 not cached).
+- Known gap: transfers are still not an Entry type; document this in the release notes.

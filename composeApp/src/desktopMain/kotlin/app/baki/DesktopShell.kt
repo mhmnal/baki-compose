@@ -154,6 +154,8 @@ actual fun DesktopRoot(repo: BakiRepo): Boolean {
                     onStatement = { statement = true },
                     onRefresh = { scope.launch { repo.sync() } },
                     onSettings = { settingsOpen = true },
+                    discreet = repo.config.discreet,
+                    onPrivacy = { repo.setDiscreet(!repo.config.discreet) },
                 )
                 }
                 Spacer(Modifier.height(Space.l))
@@ -209,6 +211,8 @@ private fun Header(
     onStatement: () -> Unit,
     onRefresh: () -> Unit,
     onSettings: () -> Unit,
+    discreet: Boolean,
+    onPrivacy: () -> Unit,
 ) {
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
         val wide = maxWidth >= 1180.dp
@@ -226,6 +230,8 @@ private fun Header(
                 Spacer(Modifier.weight(1f))
                 SyncBadge(neu, status)
                 Spacer(Modifier.width(Space.l))
+                PrivacyButton(neu, discreet, onPrivacy)
+                Spacer(Modifier.width(Space.s))
                 NeuButton(neu, "Statement", onClick = onStatement)
                 Spacer(Modifier.width(Space.s))
                 NeuButton(neu, "Refresh", primary = true, onClick = onRefresh)
@@ -242,6 +248,8 @@ private fun Header(
                     SyncBadge(neu, status)
                     Spacer(Modifier.width(Space.m))
                     NeuButton(neu, "Refresh", primary = true, onClick = onRefresh)
+                    Spacer(Modifier.width(Space.s))
+                    PrivacyButton(neu, discreet, onPrivacy)
                     Spacer(Modifier.width(Space.s))
                     SettingsButton(neu, onSettings)
                 }
@@ -331,6 +339,21 @@ private fun SyncBadge(neu: Neu, status: String) {
 }
 
 @Composable
+private fun PrivacyButton(neu: Neu, discreet: Boolean, onPrivacy: () -> Unit) {
+    Tip(if (discreet) "Show amounts" else "Hide amounts") {
+        NeuIconButton(
+            neu,
+            Modifier.size(48.dp).semantics {
+                contentDescription = if (discreet) "Show amounts" else "Hide amounts"
+            },
+            onClick = onPrivacy,
+        ) {
+            Text(if (discreet) "◉" else "◎", color = if (discreet) neu.accent else neu.ink, style = BakiType.title)
+        }
+    }
+}
+
+@Composable
 private fun SettingsButton(neu: Neu, onSettings: () -> Unit) {
     Tip("Settings") {
         NeuIconButton(neu, Modifier.size(36.dp), onClick = onSettings) {
@@ -395,11 +418,13 @@ private fun Overview(
                         val monthShifts = store.shifts.filter { it.date.startsWith(month) }
                         val monthHours = monthShifts.sumOf { it.hours }
                         if (monthHours > 0.05) {
-                            NeuMetric(neu, "REC. PER HOUR", "RM ${"%.2f".format(t.net / 100.0 / monthHours)}")
+                            NeuMetric(neu, "REC. PER HOUR", "RM ${rm(t.net / 100.0 / monthHours)}")
                         }
                     }
                 }
             }
+            Spacer(Modifier.height(Space.l))
+            SectionCard(neu) { CashTruthDesktop(store, month, neu) }
             Spacer(Modifier.height(Space.xxl))
             SectionCard(neu) { WeekChart(store, neu) }
             Spacer(Modifier.height(Space.l))
@@ -441,15 +466,21 @@ private fun Overview(
                     Spacer(Modifier.height(Space.m))
                     RailRule(neu)
                     Spacer(Modifier.height(Space.m))
+                    ServiceBlock(store, neu)
+                    Spacer(Modifier.height(Space.m))
+                    RailRule(neu)
+                    Spacer(Modifier.height(Space.m))
                     BillsBlock(store, month, neu)
                     Spacer(Modifier.height(Space.m))
                     RailRule(neu)
                     Spacer(Modifier.height(Space.m))
                     week?.let { (start, r) ->
+                        val below = shiftsBelowTarget(store, start, store.settings.profit.targetRate).size
                         NeuMetric(
                             neu, "OPERATING LAST WEEK",
                             "${"%.1f".format(r.hours)} h · RM ${rm(r.net)}",
-                            detail = "RM ${"%.2f".format(r.perHour)}/h · ${prettyDate(start)}",
+                            detail = "RM ${rm(r.perHour)}/h · ${prettyDate(start)}" +
+                                if (below > 0) " · $below below floor" else " · above floor",
                         )
                         Spacer(Modifier.height(Space.m))
                     }
@@ -779,6 +810,60 @@ private fun CategoryBlock(store: Store, month: String, neu: Neu) {
 
 
 @Composable
+private fun CashTruthDesktop(store: Store, month: String, neu: Neu) {
+    val t = remember(store, month) { cashTruth(store, month) }
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("CASH TRUTH", color = neu.muted, style = BakiType.section)
+            Spacer(Modifier.weight(1f))
+            Text("not a bank balance", color = neu.muted, style = BakiType.nano)
+        }
+        Spacer(Modifier.height(Space.s))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
+            NeuMetric(neu, "RECORDED", "RM ${rm(t.recordedNet)}")
+            NeuMetric(neu, "NET CASH", "RM ${rm(t.cashNet)}", valueColor = if (t.cashNet >= 0) neu.accent else neu.danger)
+            if (t.unpaid > 0) NeuMetric(neu, "UNPAID", "RM ${rm(t.unpaid)}", valueColor = neu.danger)
+            if (t.prepaidBills > 0) NeuMetric(neu, "PAID AHEAD", "RM ${rm(t.prepaidBills)}")
+        }
+        Text(
+            "cash in RM ${rm(t.cashReceived)} · out RM ${rm(t.cashSpent)} · operating RM ${rm(t.operatingNet)}",
+            color = neu.muted, style = BakiType.captionNumeric,
+        )
+    }
+}
+
+@Composable
+private fun ServiceBlock(store: Store, neu: Neu) {
+    val info = remember(store) { serviceInfo(store) }
+    Text("SERVICE", color = neu.muted, style = BakiType.section)
+    Spacer(Modifier.height(Space.s))
+    if (info.last == null) {
+        Text("No service logged", color = neu.muted, style = BakiType.caption)
+    } else {
+        Text(
+            "${prettyDate(info.last.date)} · ${info.last.note.ifBlank { "Maintenance" }}",
+            color = neu.ink, style = BakiType.bodySmallStrong,
+        )
+        Text(
+            info.last.odo?.let { "$it km" } ?: "odometer missing",
+            color = if (info.last.odo != null) neu.muted else neu.danger,
+            style = BakiType.captionNumeric,
+        )
+    }
+    if (info.targetKm != null || info.targetOn != null) {
+        Text(
+            "next " + listOfNotNull(info.targetKm?.let { "$it km" }, info.targetOn?.let { prettyDate(it) }).joinToString(" · "),
+            color = neu.muted, style = BakiType.caption,
+        )
+        info.remainingKm?.let {
+            Text(if (it > 0) "$it km to go" else "overdue", color = if (it > 0) neu.muted else neu.danger, style = BakiType.caption)
+        }
+    } else {
+        Text("No next-service target set on the phone", color = neu.muted, style = BakiType.caption)
+    }
+}
+
+@Composable
 private fun BillsBlock(store: Store, month: String, neu: Neu) {
     val committed = Bills.due(store, month)
     if (committed.isEmpty() && store.bills.none { it.optional }) return
@@ -952,11 +1037,11 @@ internal fun ShiftsView(store: Store, month: String) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(top = Space.xxl, bottom = Space.xl)) {
             SectionCard(neu) {
                 Text(
-                    "${shifts.size} shifts · net RM ${"%.2f".format(net)} (after fuel & wear) · avg RM ${"%.2f".format(avgRate)}/h",
+                    "${shifts.size} shifts · net RM ${rm(net)} (after fuel & wear) · avg RM ${rm(avgRate)}/h",
                     color = neu.ink, style = BakiType.label,
                 )
                 Text(
-                    "rate coloured against target RM ${"%.2f".format(cfg.targetRate)}/h · Overview adds other expenses",
+                    "rate coloured against target RM ${rm(cfg.targetRate)}/h · Overview adds other expenses",
                     color = neu.muted, style = BakiType.caption,
                 )
                 Spacer(Modifier.height(Space.m))
@@ -987,7 +1072,7 @@ internal fun ShiftsView(store: Store, month: String) {
                             Number("${"%.1f".format(s.km)}", neu.muted, Modifier.width(90.dp))
                             Number("RM ${rm(s.gross)}", neu.muted, Modifier.width(130.dp))
                             Number("RM ${rm((m.net * 100).toLong())}", neu.ink, Modifier.width(130.dp))
-                            Number("RM ${"%.2f".format(rate)}/h", rateColor(rate), Modifier.weight(1f))
+                            Number("RM ${rm(rate)}/h", rateColor(rate), Modifier.weight(1f))
                         }
                     }
                 }
@@ -1004,7 +1089,7 @@ internal fun ShiftsView(store: Store, month: String) {
                         Number("${"%.1f".format(sumKm)}", neu.ink, Modifier.width(90.dp))
                         Number("RM ${rm(sumGross)}", neu.ink, Modifier.width(130.dp))
                         Number("RM ${rm((net * 100).toLong())}", neu.ink, Modifier.width(130.dp))
-                        Number("RM ${"%.2f".format(avgRate)}/h", rateColor(avgRate), Modifier.weight(1f))
+                        Number("RM ${rm(avgRate)}/h", rateColor(avgRate), Modifier.weight(1f))
                     }
                 }
             }
@@ -1343,9 +1428,9 @@ internal fun RoutesView(repo: BakiRepo, month: String, neu: Neu) {
                         Spacer(Modifier.width(Space.l))
                         NeuMetric(neu, "NET", "RM ${rm((m.net * 100).toLong())}", valueColor = neu.accent)
                         Spacer(Modifier.width(Space.l))
-                        NeuMetric(neu, "RM / KM", "%.2f".format(if (shift.km > 0.01) m.net / shift.km else 0.0))
+                        NeuMetric(neu, "RM / KM", rm(if (shift.km > 0.01) m.net / shift.km else 0.0))
                         Spacer(Modifier.width(Space.l))
-                        NeuMetric(neu, "RM / H", "%.2f".format(if (shift.hours > 0.01) m.net / shift.hours else 0.0))
+                        NeuMetric(neu, "RM / H", rm(if (shift.hours > 0.01) m.net / shift.hours else 0.0))
                     }
                     Spacer(Modifier.height(Space.l))
                     Box(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(Radius.card))) {
