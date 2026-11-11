@@ -814,7 +814,11 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.surfaceHigh).padding(Space.l),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(9.dp).clip(RoundedCornerShape(Radius.pill)).background(if (onBreak) baki.warn else baki.primary))
+            LiveTrace(
+                active = !onBreak,
+                color = if (onBreak) baki.warn else baki.primary,
+                modifier = Modifier.width(52.dp).height(18.dp),
+            )
             Spacer(Modifier.width(Space.s))
             Text(
                 if (onBreak) "ON BREAK" else "LIVE SHIFT",

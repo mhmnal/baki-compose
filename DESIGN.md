@@ -903,3 +903,10 @@ Storage and sync fixes after the feasibility audit:
 - One swipe invokes one row action; entry deletion is additionally de-duplicated by id.
 - Undo is a compact label; the snackbar host sits above the floating + rather than under it.
 - 178 tests; phone 0.36.7 / code 101.
+
+## Live trace (unreleased)
+
+- Live header uses a 52×18dp Canvas route: a curved line, moving dashes, and a travelling head dot.
+  No scaling rings or Lottie. Paused freezes it; reduced-motion/system animation scale still applies.
+- The live card enters with a one-shot M3 spring (MutableTransitionState, fade + scale + small rise).
+- The trace only exists while a live shift is on screen; it is not in the seeded preview because preview has no live state.

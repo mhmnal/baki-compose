@@ -3,6 +3,11 @@ package app.baki
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
@@ -143,7 +148,20 @@ fun TodayScreen(
         }
 
         if (live != null && day == today) {
-            item { LiveCard(repo, live, onPayout, onPayouts) }
+            item {
+                // one-shot entrance: start from false so the first composition actually animates in
+                val visible = remember {
+                    MutableTransitionState(false).apply { targetState = true }
+                }
+                AnimatedVisibility(
+                    visibleState = visible,
+                    enter = fadeIn(BakiMotion.effects()) +
+                        scaleIn(initialScale = 0.97f, animationSpec = BakiMotion.spatial()) +
+                        slideInVertically(BakiMotion.spatialSlow()) { it / 12 },
+                ) {
+                    LiveCard(repo, live, onPayout, onPayouts)
+                }
+            }
         }
 
         item { WeekStrip(store, day) }
