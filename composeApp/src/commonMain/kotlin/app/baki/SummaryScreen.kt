@@ -27,6 +27,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
     // aggregations are memoised per store+month: recomposition no longer re-scans everything
     val t = remember(store, month) { monthTotals(store, month) }
     val cash = remember(store, month) { cashTruth(store, month) }
+    val weekReview = remember(store) { latestWeekWithData(store, todayIso()) }
     val days = remember(store, month) { monthDays(store, month) }
     val best = days.maxByOrNull { it.second.net }
     val worst = days.minByOrNull { it.second.net }
@@ -124,6 +125,12 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         }
 
         item { CashTruthCard(cash, month) }
+
+        weekReview?.let { (start, review) ->
+            item {
+                WeeklyReviewCard(start, review, store.settings.profit.targetRate, shiftsBelowTarget(store, start, store.settings.profit.targetRate).size)
+            }
+        }
 
         item {
             if (days.size > 1) {
@@ -323,5 +330,43 @@ private fun CashLine(label: String, cents: Long, color: Color, baki: BakiPalette
         Text(label, color = baki.muted, style = BakiType.label)
         Spacer(Modifier.weight(1f))
         Text("RM ${rm(cents)}", color = color, style = BakiType.bodyStrong )
+    }
+}
+
+
+@Composable
+private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, below: Int) {
+    val baki = LocalBaki.current
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("WEEKLY REVIEW", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Spacer(Modifier.weight(1f))
+            Text("MON–SUN", color = baki.muted, style = BakiType.nano )
+        }
+        Text(
+            "${prettyDate(start)} – ${prettyDate(addDays(start, 6))}",
+            color = baki.onSurface, style = BakiType.bodyStrong,
+        )
+        Text(
+            "${r.days} ${if (r.days == 1) "day" else "days"} · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net",
+            color = baki.onSurface, style = BakiType.label,
+        )
+        Text(
+            "RM ${"%.2f".format(r.perHour)}/hr · fuel RM ${"%.3f".format(r.fuelPerKm)}/km",
+            color = baki.muted, style = BakiType.captionNumeric,
+        )
+        if (r.bestDay.isNotEmpty()) {
+            Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = baki.muted, style = BakiType.caption )
+        }
+        if (below > 0) {
+            Text(
+                "$below ${if (below == 1) "shift" else "shifts"} below RM ${"%.0f".format(target)}/hr",
+                color = baki.warn, style = BakiType.caption,
+            )
+        } else {
+            Text("Every shift cleared RM ${"%.0f".format(target)}/hr", color = baki.up, style = BakiType.caption )
+        }
     }
 }

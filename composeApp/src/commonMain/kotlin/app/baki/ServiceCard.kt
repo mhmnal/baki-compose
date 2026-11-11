@@ -1,0 +1,154 @@
+package app.baki
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.datetime.LocalDate
+
+@Composable
+fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
+    val baki = LocalBaki.current
+    val info = remember(repo.store) { serviceInfo(repo.store) }
+    val last = info.last
+
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("LAST SERVICE", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = onSetTarget, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Set next", color = baki.primary, style = BakiType.captionStrong )
+            }
+        }
+        if (last == null) {
+            Text("No service logged yet", color = baki.onSurface, style = BakiType.bodyStrong )
+            Text("Add a Maintenance entry with the odometer.", color = baki.muted, style = BakiType.caption )
+        } else {
+            Text(last.note.ifBlank { "Maintenance" }, color = baki.onSurface, style = BakiType.bodyStrong )
+            Text(
+                prettyDate(last.date) +
+                    (last.odo?.takeIf { it > 0 }?.let { " · $it km" } ?: " · odometer missing"),
+                color = if (last.odo != null) baki.muted else baki.warn,
+                style = BakiType.captionNumeric,
+            )
+        }
+
+        Spacer(Modifier.height(Space.m))
+        Text("NEXT SERVICE", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+        if (info.targetKm == null && info.targetOn == null) {
+            Text("No target set — choose the km/date yourself.", color = baki.muted, style = BakiType.caption )
+        } else {
+            Text(
+                listOfNotNull(
+                    info.targetKm?.let { "$it km" },
+                    info.targetOn?.let { prettyDate(it) },
+                ).joinToString(" · "),
+                color = baki.onSurface, style = BakiType.bodyStrong,
+            )
+            val remaining = info.remainingKm
+            if (remaining != null) {
+                Text(
+                    if (remaining > 0) "$remaining km to go" else "overdue by ${-remaining} km",
+                    color = if (remaining > 0) baki.muted else baki.down,
+                    style = BakiType.caption,
+                )
+            }
+            if (info.overdue) Text("Target reached or date passed", color = baki.down, style = BakiType.caption )
+        }
+        Text("User-set target, not a guessed interval.", color = baki.muted, style = BakiType.nano )
+    }
+}
+
+@Composable
+fun ServiceTargetDialog(
+    initialKm: Int?,
+    initialDate: String?,
+    onDismiss: () -> Unit,
+    onSave: (Int?, String?) -> Unit,
+) {
+    val baki = LocalBaki.current
+    var km by remember { mutableStateOf(initialKm?.toString() ?: "") }
+    var date by remember { mutableStateOf(initialDate ?: "") }
+    var error by remember { mutableStateOf<String?>(null) }
+    val cleanDate = date.trim()
+    val validDate = cleanDate.isBlank() || runCatching { LocalDate.parse(cleanDate) }.isSuccess
+    val cleanKm = km.trim().toIntOrNull()
+    val validKm = km.isBlank() || (cleanKm != null && cleanKm > 0)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = baki.container,
+        title = { Text("Next service", color = baki.onSurface, style = BakiType.title ) },
+        text = {
+            Column {
+                Text(
+                    "Set the odometer and/or date you want to aim for. Baki never guesses a service interval.",
+                    color = baki.muted, style = BakiType.caption,
+                )
+                Spacer(Modifier.height(Space.m))
+                OutlinedTextField(
+                    value = km,
+                    onValueChange = { km = it.filter { c -> c.isDigit() } },
+                    label = { Text("Target odometer (km)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = !validKm,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+                Spacer(Modifier.height(Space.s))
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text("Target date (YYYY-MM-DD)") },
+                    singleLine = true,
+                    isError = !validDate,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+                error?.let { Text(it, color = baki.down, style = BakiType.caption ) }
+                if (initialKm != null || initialDate != null) {
+                    TextButton(
+                        onClick = { onSave(null, null) },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { Text("Clear target", color = baki.down, style = BakiType.caption ) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = validKm && validDate && (km.isNotBlank() || date.isNotBlank()),
+                onClick = {
+                    if (!validKm || !validDate) {
+                        error = "Check the km and date."
+                    } else {
+                        onSave(cleanKm, cleanDate.ifBlank { null })
+                    }
+                },
+            ) { Text("Save", color = baki.primary) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = baki.muted) } },
+    )
+}

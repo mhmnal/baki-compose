@@ -45,6 +45,10 @@ fun mergeStores(
             name = b.settings.name.ifEmpty { a.settings.name },
             cats = Cats(catsIn.values.toList(), catsOut.values.toList()),
             profit = b.settings.profit,
+            gpsCorrection = b.settings.gpsCorrection,
+            budgets = b.settings.budgets,
+            nextServiceKm = b.settings.nextServiceKm,
+            nextServiceOn = b.settings.nextServiceOn,
         ),
         // bills merge by id (newest wins); a payment is unique per bill+period
         bills = (a.bills + b.bills)

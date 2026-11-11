@@ -925,6 +925,17 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.setStatementReminder(on)
     }
 
+    /** The service target is user-set; null clears it. */
+    suspend fun setServiceTarget(km: Int?, date: String?) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(nextServiceKm = km, nextServiceOn = date),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+    }
+
     fun setThemeMode(mode: String) {
         config = config.copy(themeMode = mode)
         saveConfig(config)

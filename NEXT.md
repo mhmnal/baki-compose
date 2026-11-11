@@ -34,6 +34,6 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 ## 0.37.0 gates
 
 1. Cash truth — model + summary + tests done (Gate 1; transfers still open).
-2. Service card + weekly review — next.
-3. Discreet amounts (tap-to-toggle) + accessibility/type pass.
+2. Service card + weekly review — done (Gate 2).
+3. Discreet amounts (tap-to-toggle) + accessibility/type pass — next.
 4. Desktop parity; final sign.

@@ -539,3 +539,14 @@ fun statementCheck(store: Store, statement: Statement): StatementCheck {
         statementInsurance = statement.insuranceCount,
     )
 }
+
+/** Shifts in a Monday-Sunday week whose net rate is below the configured floor. */
+fun shiftsBelowTarget(store: Store, weekStart: String, target: Double): List<Shift> {
+    if (target <= 0) return emptyList()
+    val end = addDays(weekStart, 7)
+    return store.shifts.filter { it.date >= weekStart && it.date < end }.filter { sh ->
+        if (sh.hours <= 0.01) return@filter false
+        val m = shiftMetrics(sh, store.settings.profit, overheadPerHour(store, sh.date.take(7)))
+        (m.netHr ?: 0.0) < target
+    }
+}

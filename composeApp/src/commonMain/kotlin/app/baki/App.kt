@@ -1284,6 +1284,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var historyOpen by remember { mutableStateOf(false) }
     var statementHistoryOpen by remember { mutableStateOf(false) }
     var notifRefresh by remember { mutableStateOf(0) }
+    var serviceTargetOpen by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
@@ -1299,6 +1300,22 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("PAYMENT QR")
         Spacer(Modifier.height(Space.s))
         PaymentQrSection()
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("SERVICE")
+        Spacer(Modifier.height(Space.s))
+        ServiceCard(repo, onSetTarget = { serviceTargetOpen = true })
+        if (serviceTargetOpen) {
+            val info = remember(repo.store) { serviceInfo(repo.store) }
+            ServiceTargetDialog(
+                initialKm = info.targetKm,
+                initialDate = info.targetOn,
+                onDismiss = { serviceTargetOpen = false },
+                onSave = { km, date ->
+                    serviceTargetOpen = false
+                    scope.launch { repo.setServiceTarget(km, date) }
+                },
+            )
+        }
         Spacer(Modifier.height(Space.l))
         SectionTitle("SYNC")
         Spacer(Modifier.height(Space.s))

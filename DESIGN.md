@@ -960,3 +960,12 @@ Storage and sync fixes after the feasibility audit:
 - Bill prepayments count as cash on the entry date and are surfaced as paid ahead, never deducted twice.
 - Transfers are still not an entry type; that remains an open Gate 1 gap.
 - 184 tests (6 cash invariants), preview checked dark/light.
+
+## Gate 2: service and weekly review
+
+- Service card in More shows the last Maintenance entry with its odometer and a user-set next-service
+  km/date. No service interval is guessed; targets can be cleared.
+- Settings gained nextServiceKm/nextServiceOn; merge preserves them (and now also gpsCorrection/budgets).
+- Summary has a Monday-Sunday weekly review: days, hours, net, RM/hr, fuel/km, best day, and shifts below
+  the user's hourly floor.
+- 188 tests, previews checked dark. Gate 2 done; no sign yet.
