@@ -343,7 +343,11 @@ fun TodayScreen(
             RowCardIcon(
                 icon = categoryIcon(e.cat),
                 title = e.note.ifEmpty { e.cat },
-                sub = listOfNotNull(e.cat, loggedTime(e.loggedAt)?.let { "logged $it" }).joinToString(" · "),
+                sub = listOfNotNull(
+                    e.cat,
+                    e.odo?.takeIf { it > 0 }?.let { "$it km" },
+                    loggedTime(e.loggedAt)?.let { "logged $it" },
+                ).joinToString(" · "),
                 amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
                 tint = if (e.type == "income") baki.up else baki.down,
                 sharedKey = "entry-${e.id}",

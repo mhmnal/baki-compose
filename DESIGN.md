@@ -910,3 +910,9 @@ Storage and sync fixes after the feasibility audit:
   No scaling rings or Lottie. Paused freezes it; reduced-motion/system animation scale still applies.
 - The live card enters with a one-shot M3 spring (MutableTransitionState, fade + scale + small rise).
 - The trace only exists while a live shift is on screen; it is not in the seeded preview because preview has no live state.
+
+## Maintenance odometer (unreleased)
+
+- Maintenance entries now show the odometer field, labelled "Odometer at service".
+- Service rows render the reading ("41,250 km") alongside the date and logged time.
+- Fuel keeps its existing field and prompt; no schema change (Entry.odo already existed).

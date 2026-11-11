@@ -1068,7 +1068,11 @@ private fun SpendingScreen(
             items(entries, key = { it.id }) { e ->
                 RowCard(
                     e.note.ifEmpty { e.cat },
-                    prettyDate(e.date) + (loggedTime(e.loggedAt)?.let { " · logged $it" } ?: ""),
+                    buildString {
+                        append(prettyDate(e.date))
+                        e.odo?.takeIf { it > 0 }?.let { append(" · ${it} km") }
+                        loggedTime(e.loggedAt)?.let { append(" · logged $it") }
+                    },
                     (if (e.type == "income") "+" else "−") + rm(e.amount),
                     if (e.type == "income") baki.up else baki.down,
                     icon = categoryIcon(e.cat),
@@ -2106,15 +2110,24 @@ private fun EntryDialog(
                     label = { Text("Note (optional)") }, singleLine = true,
                     modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
                 )
-                // a fuel purchase with an odometer reading is what makes real km/L measurable
-                if (cat == "fuel" || odo.isNotEmpty()) {
+                // fuel needs it for km/L; maintenance needs it to tie the service to the car
+                if (cat == "fuel" || cat == "maintenance" || odo.isNotEmpty()) {
+                    val service = cat == "maintenance"
                     OutlinedTextField(
                         value = odo,
                         onValueChange = { odo = it.filter { c -> c.isDigit() } },
-                        label = { Text("Odometer at fill-up (optional)") }, singleLine = true,
+                        label = {
+                            Text(if (service) "Odometer at service (optional)" else "Odometer at fill-up (optional)")
+                        }, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
-                        supportingText = { Text("Add this and the app measures your real km/L", color = baki.muted, style = BakiType.caption ) },
+                        supportingText = {
+                            Text(
+                                if (service) "Keeps the service tied to the car's mileage"
+                                else "Add this and the app measures your real km/L",
+                                color = baki.muted, style = BakiType.caption,
+                            )
+                        },
                     )
                 }
                 OutlinedTextField(
