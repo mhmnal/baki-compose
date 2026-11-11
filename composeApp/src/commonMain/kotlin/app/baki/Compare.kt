@@ -120,8 +120,8 @@ fun compareMonths(store: Store, aMonth: String, bMonth: String): List<CompareRow
         val positive = if (text == null || text == "—") null else !text.startsWith("-")
         return CompareRow(
             label = label,
-            a = "%.2f".format(av),
-            b = "%.2f".format(bv),
+            a = rm(av),
+            b = rm(bv),
             changeLabel = text,
             good = isGood(positive, higherBetter),
             higherIsBetter = higherBetter,

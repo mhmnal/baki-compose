@@ -24,9 +24,9 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
     ) {
         Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, style = BakiType.captionStrong )
         Spacer(Modifier.height(Space.s))
-        Text("RM ${"%.2f".format(st.income)} gross", color = baki.onSurface, style = BakiType.title )
+        Text("RM ${rm(st.income)} gross", color = baki.onSurface, style = BakiType.title )
         Text(
-            "${st.insuranceCount} insurance charge(s) · RM ${"%.2f".format(st.deductions)} deducted",
+            "${st.insuranceCount} insurance charge(s) · RM ${rm(st.deductions)} deducted",
             color = baki.muted, style = BakiType.caption )
         if (st.rangeText.isNotEmpty()) {
             Text(st.rangeText, color = baki.muted, style = BakiType.caption )
@@ -63,11 +63,11 @@ fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
                         color = baki.onSurface, style = BakiType.labelStrong,
                         modifier = Modifier.weight(1f),
                     )
-                    Text("RM ${"%.2f".format(st.income)}", color = baki.onSurface, style = BakiType.titleNumeric )
+                    Text("RM ${rm(st.income)}", color = baki.onSurface, style = BakiType.titleNumeric )
                 }
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    "deductions RM ${"%.2f".format(st.deductions)} · weekly RM ${"%.2f".format(st.weekly)}",
+                    "deductions RM ${rm(st.deductions)} · weekly RM ${rm(st.weekly)}",
                     color = baki.muted, style = BakiType.captionNumeric,
                 )
                 Text(
@@ -80,7 +80,7 @@ fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
                     Text("no shifts logged for this week", color = baki.muted, style = BakiType.caption )
                 } else {
                     Text(
-                        "logged ${check.loggedShifts} shifts · RM ${"%.2f".format(check.loggedGross / 100.0)} · gap RM ${"%.2f".format(gap)}",
+                        "logged ${check.loggedShifts} shifts · RM ${rm(check.loggedGross / 100.0)} · gap RM ${rm(gap)}",
                         color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
                         style = BakiType.captionNumeric,
                     )

@@ -969,3 +969,13 @@ Storage and sync fixes after the feasibility audit:
 - Summary has a Monday-Sunday weekly review: days, hours, net, RM/hr, fuel/km, best day, and shifts below
   the user's hourly floor.
 - 188 tests, previews checked dark. Gate 2 done; no sign yet.
+
+## Gate 3: privacy, type and touch
+
+- Device-only discreet flag (ClientConfig.discreet), eye toggle in the header. Tap masks/reveals; rm()
+  renders bullets while rmRaw() keeps exports/tax raw. Input fields stay editable.
+- All primary amount surfaces audited: Today, Spending, Shifts, Summary/Cash/Weekly, More/statements/bills,
+  Compare rates, WeekStrip, service, snackbars.
+- Type: label/caption/labelStrong/captionStrong 14sp, nano/micro/section 12sp; 48dp eye and Undo hit areas.
+- TalkBack custom Edit/Delete actions on swipe rows; eye has a content description.
+- 190 tests (privacy + type invariants); phone toggle verified. Desktop and final sign remain.

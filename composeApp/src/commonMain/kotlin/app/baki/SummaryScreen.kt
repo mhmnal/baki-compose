@@ -106,7 +106,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                         val hit = actual >= target
                         Text(
                             (if (hit) "✓ " else "✗ ") +
-                                "RM ${"%.0f".format(actual)}/hr vs target RM ${"%.0f".format(target)}/hr",
+                                "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr",
                             color = if (hit) baki.up else baki.down, style = BakiType.caption )
                         // the shape of the week, not just its total
                         val last7 = remember(store, todayIso()) {
@@ -180,13 +180,13 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
                 Text("COST PER KM", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM ${"%.2f".format(cost.perKm)}", color = baki.onSurface, style = BakiType.headline )
+                    Text("RM ${rm(cost.perKm)}", color = baki.onSurface, style = BakiType.headline )
                     Spacer(Modifier.width(Space.s))
                     Text("${"%.0f".format(cost.km)} km", color = baki.muted, style = BakiType.label )
                 }
                 Text(
                     if (cost.km > 0.01)
-                        "running RM ${"%.2f".format(cost.running / cost.km)}/km · upkeep RM ${"%.2f".format(cost.upkeep / cost.km)}/km"
+                        "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
                     else "No distance recorded this month.",
                     color = baki.muted, style = BakiType.caption )
                 Spacer(Modifier.height(Space.m))
@@ -206,7 +206,7 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                             }
                             Text(m.month.takeLast(2), color = baki.muted, style = BakiType.caption )
                             Text(
-                                if (m.km > 0.01) "%.2f".format(m.perKm) else "–",
+                                if (m.km > 0.01) rm(m.perKm) else "–",
                                 color = if (m.month == month) baki.onSurface else baki.muted, fontWeight = if (m.month == month) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
                         }
                     }
@@ -231,12 +231,12 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                     Spacer(Modifier.height(Space.s))
                     Text(
                         "You drove ${"%.1f".format(r.hours)} h over ${r.days} day(s) and kept " +
-                            "RM ${rm(r.net)} — RM ${"%.2f".format(r.perHour)}/h.",
+                            "RM ${rm(r.net)} — RM ${rm(r.perHour)}/h.",
                         color = baki.onSurface, style = BakiType.body,
                     )
                     if (r.fuelPerKm > 0.0) {
                         Text(
-                            "Fuel took RM ${"%.2f".format(r.fuelPerKm)} of every km.",
+                            "Fuel took RM ${rm(r.fuelPerKm)} of every km.",
                             color = baki.muted, style = BakiType.caption,
                         )
                     }
@@ -274,10 +274,10 @@ private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label )
         Text(
-            "RM ${"%.2f".format(fund.balance)}",
+            "RM ${rm(fund.balance)}",
             color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong )
         Spacer(Modifier.width(Space.s))
-        Text("acc ${"%.2f".format(fund.accrued)} · spent ${"%.2f".format(fund.spent)}", color = baki.muted, style = BakiType.caption )
+        Text("acc ${rm(fund.accrued)} · spent ${rm(fund.spent)}", color = baki.muted, style = BakiType.caption )
     }
 }
 
@@ -354,7 +354,7 @@ private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, bel
             color = baki.onSurface, style = BakiType.label,
         )
         Text(
-            "RM ${"%.2f".format(r.perHour)}/hr · fuel RM ${"%.3f".format(r.fuelPerKm)}/km",
+            "RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km",
             color = baki.muted, style = BakiType.captionNumeric,
         )
         if (r.bestDay.isNotEmpty()) {
@@ -362,11 +362,11 @@ private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, bel
         }
         if (below > 0) {
             Text(
-                "$below ${if (below == 1) "shift" else "shifts"} below RM ${"%.0f".format(target)}/hr",
+                "$below ${if (below == 1) "shift" else "shifts"} below RM ${rm(target)}/hr",
                 color = baki.warn, style = BakiType.caption,
             )
         } else {
-            Text("Every shift cleared RM ${"%.0f".format(target)}/hr", color = baki.up, style = BakiType.caption )
+            Text("Every shift cleared RM ${rm(target)}/hr", color = baki.up, style = BakiType.caption )
         }
     }
 }

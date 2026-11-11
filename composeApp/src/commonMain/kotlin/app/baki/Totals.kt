@@ -1,5 +1,8 @@
 package app.baki
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlin.math.roundToLong
 
 import kotlinx.datetime.DatePeriod
@@ -63,8 +66,16 @@ fun monthTotals(store: Store, month: String): Totals {
     return Totals(income, expense, list.size, shifts.size)
 }
 
-/** RM formatting without locale surprises: 1234.5 -> "1,234.50". */
-fun rm(cents: Long): String {
+/**
+ * UI-only privacy switch. Exports use rmRaw() so a backup never contains bullets.
+ * A snapshot state makes every amount recompose when the eye is tapped.
+ */
+object BakiPrivacy {
+    var discreet by mutableStateOf(false)
+}
+
+/** Raw money formatting for files and tax output. */
+fun rmRaw(cents: Long): String {
     val neg = cents < 0
     val abs = if (neg) -cents else cents
     val whole = abs / 100
@@ -72,6 +83,11 @@ fun rm(cents: Long): String {
     val grouped = whole.toString().reversed().chunked(3).joinToString(",").reversed()
     return (if (neg) "-" else "") + grouped + "." + frac
 }
+
+fun rmRaw(ringgit: Double): String = rmRaw(Math.round(ringgit * 100).toLong())
+
+/** RM formatting without locale surprises; masked when discreet mode is on. */
+fun rm(cents: Long): String = if (BakiPrivacy.discreet) "••••" else rmRaw(cents)
 
 fun rm(ringgit: Double): String = rm(Math.round(ringgit * 100).toLong())
 

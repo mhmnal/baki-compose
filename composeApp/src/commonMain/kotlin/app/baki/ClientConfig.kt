@@ -25,6 +25,8 @@ data class ClientConfig(
     val routeSecret: String = "",
     /** Weekly Wednesday nudge to import the Grab statement. */
     val statementReminder: Boolean = true,
+    /** Device-only: mask ledger amounts until the eye is tapped again. */
+    val discreet: Boolean = false,
     /**
      * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
      * launch after this field was introduced reconciles any pre-existing local-only edits.

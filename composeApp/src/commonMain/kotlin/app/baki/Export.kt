@@ -58,13 +58,13 @@ fun statementHtml(store: Store, month: String): String {
     val rows = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
         .joinToString("") { e ->
             "<tr><td>${e.date}</td><td>${e.cat}</td><td>${e.note.escapeHtml()}</td>" +
-                "<td class=n>${if (e.type == "income") "+" else "−"}RM ${rm(e.amount)}</td></tr>"
+                "<td class=n>${if (e.type == "income") "+" else "−"}RM ${rmRaw(e.amount)}</td></tr>"
         }
     val shiftRows = shifts.joinToString("") { s ->
         val m = shiftMetrics(s, store.settings.profit)
         "<tr><td>${s.date} ${s.start}</td><td class=n>${"%.1f".format(s.hours)}</td>" +
-            "<td class=n>${"%.1f".format(s.km)}</td><td class=n>RM ${rm(s.gross)}</td>" +
-            "<td class=n>RM ${rm((m.net * 100).toLong())}</td></tr>"
+            "<td class=n>${"%.1f".format(s.km)}</td><td class=n>RM ${rmRaw(s.gross)}</td>" +
+            "<td class=n>RM ${rmRaw((m.net * 100).toLong())}</td></tr>"
     }
     return """<!doctype html><meta charset=utf-8><title>Baki · ${month}</title>
 <style>
@@ -79,8 +79,8 @@ fun statementHtml(store: Store, month: String): String {
   @media print{ body{margin:0} table{page-break-inside:auto} tr{page-break-inside:avoid} thead{display:table-header-group} h2{page-break-after:avoid} }
 </style>
 <h1>Baki · ${month}</h1><div class=sub>Shift logbook and spending</div>
-<div class=hero>RM ${rm(t.net)}</div>
-<div class=sub>${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}</div>
+<div class=hero>RM ${rmRaw(t.net)}</div>
+<div class=sub>${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rmRaw(t.income)} · out RM ${rmRaw(t.expense)}</div>
 <h2>SHIFTS</h2>
 <table><thead><tr><th>Shift</th><th class=n>Hours</th><th class=n>KM</th><th class=n>Gross</th><th class=n>Net</th></tr></thead><tbody>$shiftRows</tbody></table>
 <h2>ENTRIES</h2>

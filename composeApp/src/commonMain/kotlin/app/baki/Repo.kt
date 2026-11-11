@@ -936,6 +936,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(emptyList())
     }
 
+    fun setDiscreet(on: Boolean) {
+        config = config.copy(discreet = on)
+        saveConfig(config)
+        PlatformEffects.tapFeedback()
+    }
+
     fun setThemeMode(mode: String) {
         config = config.copy(themeMode = mode)
         saveConfig(config)

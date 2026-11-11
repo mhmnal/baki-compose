@@ -63,6 +63,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -103,6 +105,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     LaunchedEffect(repo.config.statementReminder) {
         PlatformEffects.setStatementReminder(repo.config.statementReminder)
     }
+    BakiPrivacy.discreet = repo.config.discreet
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         if (!PhonePreview.active && Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
@@ -557,6 +560,22 @@ private fun Header(repo: BakiRepo) {
             "syncing" -> baki.primary
             else -> baki.muted
         }
+        // privacy toggle: tap to mask every amount, tap again to reveal
+        Box(
+            Modifier.size(48.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .clickable { repo.setDiscreet(!repo.config.discreet) }
+                .semantics {
+                    contentDescription = if (repo.config.discreet) "Show amounts" else "Hide amounts"
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                if (repo.config.discreet) "◉" else "◎",
+                color = if (repo.config.discreet) baki.primary else baki.muted,
+                style = BakiType.title,
+            )
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
             Text(
@@ -754,6 +773,10 @@ fun RowCard(
             }
         },
     ) {
+    val a11yActions = buildList {
+        if (onLongPress != null) add(CustomAccessibilityAction("Edit") { onLongPress(); true })
+        if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
+    }
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container)
             .then(
@@ -761,6 +784,7 @@ fun RowCard(
                     detectTapGestures(onLongPress = { onLongPress() })
                 } else Modifier
             )
+            .semantics { customActions = a11yActions }
             .padding(Space.l),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -852,9 +876,9 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
         val be = liveBreakEven(repo.store, live, now)
         Text(
             when {
-                be.covered -> "✓ costs covered (RM ${"%.2f".format(be.costs)})"
-                be.minutesToGo != null -> "costs RM ${"%.2f".format(be.costs)} · break-even in ${be.minutesToGo.toInt()} min"
-                else -> "costs so far RM ${"%.2f".format(be.costs)} · add a payout to start earning"
+                be.covered -> "✓ costs covered (RM ${rm(be.costs)})"
+                be.minutesToGo != null -> "costs RM ${rm(be.costs)} · break-even in ${be.minutesToGo.toInt()} min"
+                else -> "costs so far RM ${rm(be.costs)} · add a payout to start earning"
             },
             color = if (be.covered) baki.up else baki.muted, style = BakiType.captionStrong )
         Text(
@@ -1067,9 +1091,9 @@ private fun SpendingScreen(
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(name, color = baki.onSurface, style = BakiType.labelStrong)
                                         Text(
-                                            "RM ${"%.0f".format(b.spent)} / ${"%.0f".format(b.limit)}" +
-                                                if (b.over) " · RM ${"%.0f".format(-b.remaining)} over"
-                                                else " · RM ${"%.0f".format(b.remaining)} left",
+                                            "RM ${rm(b.spent)} / ${rm(b.limit)}" +
+                                                if (b.over) " · RM ${rm(-b.remaining)} over"
+                                                else " · RM ${rm(b.remaining)} left",
                                             color = ink, style = BakiType.captionNumeric,
                                         )
                                     }
@@ -1126,7 +1150,7 @@ private fun ShiftsScreen(
         Spacer(Modifier.height(Space.l))
         Hero("NET AFTER CAR COST", cents(net), baki.onSurface, 40)
         Text(
-            "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${"%.2f".format(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
+            "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
             color = baki.muted, style = BakiType.label )
         Spacer(Modifier.height(Space.m))
         PillButton(
@@ -1147,7 +1171,7 @@ private fun ShiftsScreen(
                 RowCard(
                     "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
                     "${"%.1f".format(m.km)} km · ${m.band}",
-                    "RM ${"%.2f".format(m.net)}",
+                    "RM ${rm(m.net)}",
                     if (m.net < 0) baki.down else bandColor(m.band, baki),
                     onLongPress = { onEditShift(sh) },
                     onDelete = { onDeleteShift(sh) },
@@ -1423,11 +1447,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "${monthLabel(current)} · RM ${"%.2f".format(committedTotal / 100.0)} committed",
+                            "${monthLabel(current)} · RM ${rm(committedTotal / 100.0)} committed",
                             color = baki.onSurface, style = BakiType.bodyStrong,
                         )
                         Text(
-                            "$covered of ${committed.size} covered · average RM ${"%.2f".format(Bills.averageMonthly(repo.store) / 100.0)}/month incl. annual",
+                            "$covered of ${committed.size} covered · average RM ${rm(Bills.averageMonthly(repo.store) / 100.0)}/month incl. annual",
                             color = baki.muted, style = BakiType.caption,
                         )
                     }
@@ -1449,7 +1473,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     ) {
                         Text(bill.name, color = baki.onSurface, style = BakiType.label)
                         Text(
-                            "RM ${"%.2f".format(bill.amount / 100.0)} · ${if (bill.cadence == "annual") "annual" else "monthly"}",
+                            "RM ${rm(bill.amount / 100.0)} · ${if (bill.cadence == "annual") "annual" else "monthly"}",
                             color = baki.muted, style = BakiType.captionNumeric,
                         )
                     }
@@ -1490,7 +1514,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 Spacer(Modifier.height(Space.m))
                 val paid = Bills.isCovered(repo.store, bill, Bills.periodOf(bill, current))
                 Text(
-                    "leftover this month: RM ${"%.2f".format(net / 100.0)}",
+                    "leftover this month: RM ${rm(net / 100.0)}",
                     color = baki.muted, style = BakiType.captionNumeric,
                 )
                 if (paid) {
@@ -1501,7 +1525,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         enabled = net >= bill.amount,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
                         border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
-                    ) { Text("Pay ${bill.name} · RM ${"%.0f".format(bill.amount / 100.0)}") }
+                    ) { Text("Pay ${bill.name} · RM ${rm(bill.amount / 100.0)}") }
                 }
             }
         }
@@ -1533,7 +1557,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                                             style = BakiType.caption,
                                         )
                                     }
-                                    Text("RM ${"%.2f".format(p.amount / 100.0)}", color = baki.onSurface, style = BakiType.labelNumeric)
+                                    Text("RM ${rm(p.amount / 100.0)}", color = baki.onSurface, style = BakiType.labelNumeric)
                                 }
                             }
                         }
@@ -1549,7 +1573,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     title = { Text("Unlink ${bill.name} · $period", color = baki.onSurface, fontWeight = FontWeight.Bold) },
                     text = {
                         Text(
-                            "Only the covered mark is removed. The RM ${"%.2f".format((link?.amount ?: bill.amount) / 100.0)} expense stays in your ledger.",
+                            "Only the covered mark is removed. The RM ${rm((link?.amount ?: bill.amount) / 100.0)} expense stays in your ledger.",
                             color = baki.muted, style = BakiType.caption,
                         )
                     },
@@ -1607,7 +1631,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                                         contentPadding = PaddingValues(0.dp),
                                     ) {
                                         Text(
-                                            "${entry.date} · RM ${"%.2f".format(entry.amount / 100.0)} · ${entry.note.ifBlank { entry.cat }}",
+                                            "${entry.date} · RM ${rm(entry.amount / 100.0)} · ${entry.note.ifBlank { entry.cat }}",
                                             color = baki.onSurface, style = BakiType.label,
                                         )
                                     }
@@ -1710,19 +1734,19 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     color = baki.onSurface, style = BakiType.label,
                 )
                 Text(
-                    "income RM ${"%.2f".format(latest.income)} · deductions RM ${"%.2f".format(latest.deductions)} · weekly RM ${"%.2f".format(latest.weekly)}",
+                    "income RM ${rm(latest.income)} · deductions RM ${rm(latest.deductions)} · weekly RM ${rm(latest.weekly)}",
                     color = baki.muted, style = BakiType.captionNumeric,
                 )
                 val check = statementCheck(repo.store, latest)
                 val gap = check.loggedGross / 100.0 - latest.income
                 if (check.loggedShifts == 0) {
                     Text(
-                        "no shifts logged for this week (Grab RM ${"%.2f".format(latest.income)})",
+                        "no shifts logged for this week (Grab RM ${rm(latest.income)})",
                         color = baki.muted, style = BakiType.captionNumeric,
                     )
                 } else {
                     Text(
-                        "logged ${check.loggedShifts} shifts · RM ${"%.2f".format(check.loggedGross / 100.0)} · Grab RM ${"%.2f".format(latest.income)} · gap RM ${"%.2f".format(gap)}",
+                        "logged ${check.loggedShifts} shifts · RM ${rm(check.loggedGross / 100.0)} · Grab RM ${rm(latest.income)} · gap RM ${rm(gap)}",
                         color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
                         style = BakiType.captionNumeric,
                     )
@@ -1829,9 +1853,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(Space.s))
         val p = repo.store.settings.profit
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-            Text("RM ${"%.2f".format(p.fuelPrice)}/L · ${"%.1f".format(p.kmPerLitre)} km/L · wear RM ${"%.2f".format(p.wearPerKm)}/km",
+            Text("RM ${rm(p.fuelPrice)}/L · ${"%.1f".format(p.kmPerLitre)} km/L · wear RM ${rm(p.wearPerKm)}/km",
                 color = baki.onSurface, style = BakiType.labelStrong )
-            Text("target RM ${"%.0f".format(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${"%.2f".format(p.grabInsurance)}",
+            Text("target RM ${rm(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${rm(p.grabInsurance)}",
                 color = baki.muted, style = BakiType.caption )
             if (repo.store.settings.gpsCorrection != 1.0) {
                 Text("GPS correction ×${"%.2f".format(repo.store.settings.gpsCorrection)} (from your odometer)",

@@ -61,7 +61,7 @@ fun WeekStrip(store: Store, endDay: String) {
                     }
                     Spacer(Modifier.height(Space.xs))
                     Text(
-                        if (t.entryCount == 0 && t.shiftCount == 0) "–" else (t.net / 100).toInt().toString(),
+                        if (t.entryCount == 0 && t.shiftCount == 0) "–" else if (BakiPrivacy.discreet) "••" else (t.net / 100).toInt().toString(),
                         color = baki.muted, style = BakiType.caption )
                 }
             }

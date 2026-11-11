@@ -42,6 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,7 +131,7 @@ fun TodayScreen(
                             Text("OPERATING", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
                             Text(
                                 "RM ${rm(operating.net)}" +
-                                    (operating.perHour?.let { " · ${"%.2f".format(it)}/h" } ?: ""),
+                                    (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
                                 color = if (operating.net >= 0) baki.onSurface else baki.down,
                                 style = BakiType.labelNumeric,
                             )
@@ -202,14 +205,14 @@ fun TodayScreen(
                     }
                     Spacer(Modifier.height(Space.xs))
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("RM ${"%.2f".format(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
+                        Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
                         Spacer(Modifier.weight(1f))
                         m.netHr?.let {
-                            Text("RM ${"%.0f".format(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
+                            Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
                         }
                     }
                     Text(
-                        "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km · fuel + wear RM ${"%.2f".format(m.running)}",
+                        "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km · fuel + wear RM ${rm(m.running)}",
                         color = baki.muted, style = BakiType.caption )
                     // what this shift had to beat
                     m.netHr?.let { rate ->
@@ -220,9 +223,9 @@ fun TodayScreen(
                                 color = if (delta >= 0) baki.up else baki.down, style = BakiType.captionStrong )
                             Spacer(Modifier.width(Space.xs))
                             Text(
-                                "target RM ${"%.0f".format(cfg.targetRate)}/hr · " +
-                                    if (delta >= 0) "RM ${"%.0f".format(delta)} above"
-                                    else "RM ${"%.0f".format(-delta)} short",
+                                "target RM ${rm(cfg.targetRate)}/hr · " +
+                                    if (delta >= 0) "RM ${rm(delta)} above"
+                                    else "RM ${rm(-delta)} short",
                                 color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption )
                         }
                     }
@@ -323,7 +326,8 @@ fun TodayScreen(
         }
 
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // reserve the floating + gutter so the larger label never runs underneath it
+            Row(Modifier.fillMaxWidth().padding(end = 68.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
@@ -338,7 +342,7 @@ fun TodayScreen(
                 icon = BakiIcons.Car,
                 title = "Shift ${sh.start.ifEmpty { sh.date }}",
                 sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
-                amount = "RM ${"%.2f".format(m.net)}",
+                amount = "RM ${rm(m.net)}",
                 tint = baki.up,
                 onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
             )
@@ -475,9 +479,14 @@ fun RowCardIcon(
             }
         },
     ) {
+    val a11yActions = buildList {
+        add(CustomAccessibilityAction("Edit") { onEdit(); true })
+        if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
+    }
     Row(
         Modifier.fillMaxWidth().then(sharedMod).clip(RoundedCornerShape(Radius.card)).background(baki.container)
             .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
+            .semantics { customActions = a11yActions }
             .padding(Space.l),
         verticalAlignment = Alignment.CenterVertically,
     ) {

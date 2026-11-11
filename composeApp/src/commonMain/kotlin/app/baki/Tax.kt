@@ -86,9 +86,9 @@ fun taxYear(store: Store, year: Int, totalKmInput: Double? = null): TaxYear {
 
 /** Printable summary. Deliberately plain: an accountant or LHDN officer should read it without context. */
 fun taxPackHtml(t: TaxYear, driver: String = "Baki"): String {
-    fun rm(c: Long) = "RM " + "%,.2f".format(c / 100.0)
+    fun rmRaw(c: Long) = "RM " + "%,.2f".format(c / 100.0)
     val rows = t.lines.joinToString("") { line ->
-        "<tr><td>${line.label}</td><td class='n'>${rm(line.amount)}</td>" +
+        "<tr><td>${line.label}</td><td class='n'>${rmRaw(line.amount)}</td>" +
             "<td class='n'>${if (line.deductible) "yes" else "—"}</td></tr>"
     }
     return """
@@ -106,9 +106,9 @@ fun taxPackHtml(t: TaxYear, driver: String = "Baki"): String {
 
 <h2>Income</h2>
 <table>
-  <tr><td>Logged shift earnings</td><td class="n">${rm(t.shiftIncome)}</td></tr>
-  <tr><td>Other income entries (tips, bonuses, cash)</td><td class="n">${rm(t.entryIncome)}</td></tr>
-  <tr><td class="big">Total income</td><td class="n big">${rm(t.income)}</td></tr>
+  <tr><td>Logged shift earnings</td><td class="n">${rmRaw(t.shiftIncome)}</td></tr>
+  <tr><td>Other income entries (tips, bonuses, cash)</td><td class="n">${rmRaw(t.entryIncome)}</td></tr>
+  <tr><td class="big">Total income</td><td class="n big">${rmRaw(t.income)}</td></tr>
 </table>
 <div class="muted">Grab statements imported: ${t.statementsImported}
 ${if (t.statementsImported > 0) "· statement income ${"%,.2f".format(t.statementIncome)} (cross-check, not added)" else ""}</div>
@@ -116,7 +116,7 @@ ${if (t.statementsImported > 0) "· statement income ${"%,.2f".format(t.statemen
 <h2>Expenses</h2>
 <table><tr><th>Category</th><th class="n">Amount</th><th class="n">Deductible</th></tr>
 $rows
-<tr><td class="big">Deductible after ${"%.0f".format(t.businessUse * 100)}% business use</td><td class="n big">${rm(t.deductible)}</td></tr>
+<tr><td class="big">Deductible after ${"%.0f".format(t.businessUse * 100)}% business use</td><td class="n big">${rmRaw(t.deductible)}</td></tr>
 </table>
 
 <h2>Mileage</h2>
@@ -128,7 +128,7 @@ $rows
 </table>
 
 <h2>Result</h2>
-<div class="big">Net business income: ${rm(t.netBusinessIncome)}</div>
+<div class="big">Net business income: ${rmRaw(t.netBusinessIncome)}</div>
 <div class="muted">Tolls are reimbursed inside Grab fares and are not a separate deduction. Food and other
 personal spending are listed but not deducted. Only the business share of vehicle costs is claimed.</div>
 </body></html>

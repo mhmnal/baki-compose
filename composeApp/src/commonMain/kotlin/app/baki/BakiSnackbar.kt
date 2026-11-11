@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,6 +50,7 @@ fun BakiSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier
                     Box(
                         Modifier
                             .clip(RoundedCornerShape(Radius.pill))
+                            .heightIn(min = 48.dp)
                             .clickable { data.performAction() }
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                     ) {
