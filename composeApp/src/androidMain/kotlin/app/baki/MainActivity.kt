@@ -30,9 +30,10 @@ class MainActivity : ComponentActivity() {
         AppCtx.ctx = applicationContext
         LocalStore.attach(filesDir)
         installQrShortcut()
+        drainIntent(intent)
+        if (isFinishing) return
         askNotificationPermission()
         askLocationPermission()
-        drainIntent(intent)
 
         setContent {
             val dark = isSystemInDarkTheme()
@@ -54,7 +55,15 @@ class MainActivity : ComponentActivity() {
 
     /** Notification actions arrive as "payout" / "end"; the UI picks them up. */
     private fun drainIntent(intent: Intent?) {
-        if (intent?.action == ACTION_OPEN_QR) BakiIntents.deliver("qr")
+        // an old shortcut may still point at MainActivity until the next launch; never expose the ledger
+        if (intent?.action == ACTION_OPEN_QR) {
+            startActivity(
+                Intent(this, QrActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+            )
+            finish()
+            return
+        }
         val act = intent?.getStringExtra("baki.action")
         android.util.Log.i("BakiLive", "drainIntent: $act (intent=${intent?.action})")
         act?.let { BakiIntents.deliver(it) }

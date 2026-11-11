@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.36.8)
+## Current state (v0.36.9)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -940,3 +940,12 @@ Storage and sync fixes after the feasibility audit:
 - Find server on Wi-Fi; live-shift Canvas route trace + spring entrance; maintenance odometer field;
   date-aware Today actions; Add shift in Shifts; midnight rollover; Quick Add collapse.
 - 178 tests; phone 0.36.8 / code 102.
+
+## 0.36.9 QR-only customer mode
+
+- Dedicated QrActivity: only the QR, a label selector and Close; no dashboard, amounts, nav or server UI.
+- Its own task, excluded from Recents; Back/Close finishes and removes the task.
+- My QR shortcut targets QrActivity directly; old MainActivity QR intents redirect there.
+- More → Receive QR row taps launch the same customer screen.
+- No app lock or privacy cover (not requested); discreet amounts deferred until the whole ledger can be masked.
+- Desktop remains deferred; cash-net model moves to 0.37.0.

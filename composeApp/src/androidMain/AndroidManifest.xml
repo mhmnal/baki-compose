@@ -40,6 +40,13 @@
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".QrActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="app.baki.qr"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

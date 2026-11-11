@@ -1,6 +1,7 @@
 package app.baki
 
 import android.app.Activity
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,7 +53,7 @@ import kotlinx.serialization.builtins.ListSerializer
 private const val QR_INDEX = "payment-qr.json"
 private const val QR_MAX = 3
 
-private fun loadQrIndex(): List<PaymentQrMeta> {
+internal fun loadQrIndex(): List<PaymentQrMeta> {
     val raw = runCatching { LocalStore.readText(QR_INDEX) }.getOrNull() ?: return emptyList()
     return runCatching {
         BakiJson.decodeFromString(ListSerializer(PaymentQrMeta.serializer()), raw)
@@ -69,7 +70,7 @@ private fun saveQrImage(id: String, bytes: ByteArray) {
     LocalStore.writeText(qrName(id), Base64.encodeToString(bytes, Base64.NO_WRAP))
 }
 
-private fun loadQrBitmap(id: String): android.graphics.Bitmap? {
+internal fun loadQrBitmap(id: String): android.graphics.Bitmap? {
     val raw = runCatching { LocalStore.readText(qrName(id)) }.getOrNull() ?: return null
     val bytes = runCatching { Base64.decode(raw, Base64.NO_WRAP) }.getOrNull() ?: return null
     return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
@@ -82,7 +83,6 @@ actual fun PaymentQrSection() {
     var items by remember { mutableStateOf(loadQrIndex()) }
     var pending by remember { mutableStateOf<ByteArray?>(null) }
     var pendingLabel by remember { mutableStateOf("Receive QR") }
-    var show by remember { mutableStateOf<PaymentQrMeta?>(null) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -115,7 +115,13 @@ actual fun PaymentQrSection() {
             items.forEach { item ->
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh)
-                        .clickable { show = item }.padding(Space.m),
+                        .clickable {
+                            context.startActivity(
+                                Intent(context, QrActivity::class.java)
+                                    .putExtra(QrActivity.EXTRA_QR_ID, item.id)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                            )
+                        }.padding(Space.m),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
@@ -182,9 +188,6 @@ actual fun PaymentQrSection() {
         )
     }
 
-    show?.let { meta ->
-        PaymentQrViewer(meta, onClose = { show = null })
-    }
 }
 
 @Composable
