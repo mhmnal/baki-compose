@@ -130,6 +130,7 @@ private fun AppContent(repo: BakiRepo) {
     var adding by remember { mutableStateOf(0) }   // 0 none, 1 chooser, 2 entry, 3 shift, 4 payout
     var day by remember { mutableStateOf(todayIso()) }
     var month by remember { mutableStateOf(todayIso().take(7)) }
+    var todayTick by remember { mutableStateOf(todayIso()) }
     var editingEntry by remember { mutableStateOf<Entry?>(null) }
     var editingShift by remember { mutableStateOf<Shift?>(null) }
     var entryType by remember { mutableStateOf("expense") }
@@ -179,7 +180,19 @@ private fun AppContent(repo: BakiRepo) {
             }
         }
     }
-    LaunchedEffect(Unit) { repo.start() }
+    LaunchedEffect(Unit) {
+        repo.start()
+        // roll Today over at midnight; if the user deliberately browsed a past day, leave it there
+        while (true) {
+            val now = todayIso()
+            if (now != todayTick) {
+                if (day == todayTick) day = now
+                if (month == todayTick.take(7)) month = now.take(7)
+                todayTick = now
+            }
+            delay(30_000)
+        }
+    }
 
     // notification actions: "+ Payout" and "End shift" come back as intents
     val pendingAction = BakiIntents.pending
@@ -251,6 +264,7 @@ private fun AppContent(repo: BakiRepo) {
                 0 -> TodayScreen(
                     repo = repo,
                     day = day,
+                    today = todayTick,
                     onDay = { day = it },
                     onAdd = { adding = 1 },
                     onPayout = { adding = 4 },
@@ -269,7 +283,6 @@ private fun AppContent(repo: BakiRepo) {
                         presetCat = catId
                         adding = 2
                     },
-                    onAddShift = { editingShift = null; adding = 3 },
                     onSeeAll = { tab = 1 },
                 )
                 1 -> SpendingScreen(
@@ -281,6 +294,7 @@ private fun AppContent(repo: BakiRepo) {
                 )
                 2 -> ShiftsScreen(
                     repo = repo,
+                    onAddShift = { editingShift = null; adding = 3 },
                     onEditShift = { editingShift = it; adding = 3 },
                     onDeleteShift = { shift ->
                         scope.launch {
@@ -1091,7 +1105,12 @@ private fun SpendingScreen(
 }
 
 @Composable
-private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteShift: (Shift) -> Unit) {
+private fun ShiftsScreen(
+    repo: BakiRepo,
+    onAddShift: () -> Unit,
+    onEditShift: (Shift) -> Unit,
+    onDeleteShift: (Shift) -> Unit,
+) {
     val baki = LocalBaki.current
     val store = repo.store
     val cfg = store.settings.profit
@@ -1109,11 +1128,19 @@ private fun ShiftsScreen(repo: BakiRepo, onEditShift: (Shift) -> Unit, onDeleteS
         Text(
             "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${"%.2f".format(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
             color = baki.muted, style = BakiType.label )
+        Spacer(Modifier.height(Space.m))
+        PillButton(
+            "+ Add shift", baki.primary, baki.onPrimary,
+            Modifier.fillMaxWidth().height(48.dp), onAddShift,
+        )
         Spacer(Modifier.height(Space.l))
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(Space.s),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
+            if (rows.isEmpty()) item {
+                EmptyState("No shifts yet", "Add a shift to see what it really paid after running costs.")
+            }
             items(rows, key = { it.first.id }) { row ->
                 val sh = row.first
                 val m = row.second

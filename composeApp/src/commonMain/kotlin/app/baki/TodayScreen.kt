@@ -65,6 +65,7 @@ fun bandColor(band: String, baki: BakiPalette): Color = when (band) {
 fun TodayScreen(
     repo: BakiRepo,
     day: String,
+    today: String,
     onDay: (String) -> Unit,
     onPayout: () -> Unit,
     onPayouts: () -> Unit,
@@ -72,13 +73,11 @@ fun TodayScreen(
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onPreset: (String) -> Unit,
-    onAddShift: () -> Unit,
     onSeeAll: () -> Unit,
     onAdd: () -> Unit,
 ) {
     val baki = LocalBaki.current
     val store = repo.store
-    val today = todayIso()
     // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
     val operating = remember(store, day) { dayOperating(store, day) }
@@ -177,7 +176,7 @@ fun TodayScreen(
                     Spacer(Modifier.width(Space.s))
                     // weight so a wrapped line stays beside the icon instead of under it
                     Text(
-                        "Cover paid until ${clockOf(paidUntil)} — starting before then adds no RM ${"%.2f".format(cfg.grabInsurance)}",
+                        "Cover paid until ${clockOf(paidUntil)}",
                         color = baki.up, style = BakiType.caption, modifier = Modifier.weight(1f),
                     )
                 }
@@ -227,11 +226,12 @@ fun TodayScreen(
                                 color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption )
                         }
                     }
-                    Spacer(Modifier.height(Space.m))
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        PillButton("+ Add shift", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f), onAddShift)
-                        if (live == null) PillButton("▶ Live", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f)) { repo.startLive() }
-                        PillButton("All →", baki.surfaceHigh, baki.onSurface, Modifier.weight(1f), onSeeAll)
+                    if (day == today && live == null && !repo.readOnly) {
+                        Spacer(Modifier.height(Space.m))
+                        PillButton(
+                            "▶ Live", baki.surfaceHigh, baki.onSurface,
+                            Modifier.fillMaxWidth(), { repo.startLive() },
+                        )
                     }
                 }
             }
@@ -272,11 +272,21 @@ fun TodayScreen(
                             Text("RM ${rm(q.cents)}", color = baki.primary, style = BakiType.captionNumeric)
                         }
                     }
+                    Row(
+                        Modifier.heightIn(min = Control.secondary)
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(baki.container)
+                            .clickable { onAdd() }
+                            .padding(horizontal = Space.l),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("More", color = baki.muted, style = BakiType.labelStrong)
+                    }
                 }
             }
         }
 
-        item {
+        if (quick.isEmpty()) item {
             FlowRow(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
@@ -318,12 +328,6 @@ fun TodayScreen(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Spacer(Modifier.weight(1f))
-                Text(
-                    "+ Add", color = baki.primary,
-                    modifier = Modifier.clickable { onAdd() }.padding(horizontal = Space.s, vertical = Space.xs),
-                    style = BakiType.captionStrong,
-                )
-                Spacer(Modifier.width(Space.s))
                 Text("see all →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption )
             }
         }
@@ -370,7 +374,7 @@ fun TodayScreen(
                 Text("Nothing recorded yet", color = baki.onSurface, style = BakiType.bodyStrong)
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    "Tap a category above, or + to log something.",
+                    "Tap + to log a spending entry.",
                     color = baki.muted, style = BakiType.caption,
                 )
             }
@@ -400,7 +404,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).clickable { onClick() },
         contentAlignment = Alignment.Center,

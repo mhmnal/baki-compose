@@ -924,3 +924,12 @@ Storage and sync fixes after the feasibility audit:
   then writes the returned http/plainPort address, saves it and syncs.
 - Tested on the real phone: found 192.168.1.32:8787 and synced. No server or manifest changes.
 - Same-LAN only; it does not work over mobile data or a VPN and currently scans one /24 per interface.
+
+## Date-aware Today actions (unreleased)
+
+- Today no longer creates shifts: Add shift lives in the Shifts tab (top button + empty state).
+- A shift card on Today shows Live only when the selected day is today and no live shift exists;
+  past-day cards have no actions, and the redundant All→Spending shortcut is gone.
+- A 30s ticker rolls `day`/`month` to the new today at midnight only if the user was already on today.
+- Quick Add keeps four recurring amounts + a More chip; the category grid only appears when Quick Add is empty.
+- The duplicate + Add text link and the long cover-paid explanation are removed.
