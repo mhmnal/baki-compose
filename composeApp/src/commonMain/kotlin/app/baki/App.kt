@@ -2111,6 +2111,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(Space.s))
         RowCard("Status", repo.status, "", baki.muted)
         }
+        // keep the last card of every tab clear of the bottom bar / overlay
+        Spacer(Modifier.height(140.dp))
         }
     }
 
