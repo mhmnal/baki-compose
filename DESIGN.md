@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.37.1)
+## Current state (v0.37.2)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -1021,3 +1021,9 @@ This closes the former "transfer gap" by scope, not by missing code.
 - App: Sync & routes, Safety, Liquid Glass, Appearance, Diagnostics, Backup, On this device.
 - Removed the duplicate standalone Statement card; Weekly Statement already carries the latest details.
 - 194 tests; phone Debug checked all tabs and sticky behavior. No sign; phone remains 0.37.1.
+
+## 0.37.2 release
+
+- Live yield; daily food cap; More Money/Shift/App with sticky tabs; bottom gutter.
+- Personal route report is intentionally untracked under reports/ (contains GPS traces); not committed.
+- 194 tests; phone 0.37.2 / code 107; desktop remains 0.37.0.

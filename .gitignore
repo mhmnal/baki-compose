@@ -22,3 +22,6 @@ build/shots/
 
 # local run logs
 *.log
+
+# personal route maps / annotations — never commit
+reports/
