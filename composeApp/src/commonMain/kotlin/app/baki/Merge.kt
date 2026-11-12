@@ -47,6 +47,7 @@ fun mergeStores(
             profit = b.settings.profit,
             gpsCorrection = b.settings.gpsCorrection,
             budgets = b.settings.budgets,
+            dailyFoodCapCents = b.settings.dailyFoodCapCents,
             nextServiceKm = b.settings.nextServiceKm,
             nextServiceOn = b.settings.nextServiceOn,
         ),

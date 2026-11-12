@@ -84,6 +84,7 @@ fun TodayScreen(
     // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
     val operating = remember(store, day) { dayOperating(store, day) }
+    val food = remember(store, day) { dailyFood(store, day) }
     val entries = remember(store, day) {
         entriesOn(store, day).sortedWith(
             compareByDescending<Entry> { it.loggedAt.ifBlank { it.updated } },
@@ -146,6 +147,30 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 Chip("in RM ${rm(t.income)}", baki.up)
                 Chip("out RM ${rm(t.expense)}", baki.down)
+            }
+        }
+
+        food?.let { f ->
+            item {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input))
+                        .background(baki.container).padding(horizontal = Space.m, vertical = Space.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "RM ${rm(f.spent)} / ${rm(f.cap)}",
+                        color = if (f.over) baki.down else baki.onSurface,
+                        style = BakiType.labelNumeric,
+                    )
+                    Spacer(Modifier.width(Space.s))
+                    Text(
+                        if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
+                        color = if (f.over) baki.down else baki.up,
+                        style = BakiType.caption,
+                    )
+                }
             }
         }
 

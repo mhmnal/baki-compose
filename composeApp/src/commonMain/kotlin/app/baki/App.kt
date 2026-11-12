@@ -881,9 +881,19 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 else -> "costs so far RM ${rm(be.costs)} · add a payout to start earning"
             },
             color = if (be.covered) baki.up else baki.muted, style = BakiType.captionStrong )
+        if (be.netPerHour != null) {
+            val target = repo.store.settings.profit.targetRate
+            Text(
+                buildString {
+                    if (be.grossPerKm != null) append("RM ${rm(be.grossPerKm)}/km · ")
+                    append("RM ${rm(be.netPerHour)}/h net so far")
+                },
+                color = if ((be.netPerHour ?: 0.0) >= target) baki.up else baki.down,
+                style = BakiType.labelStrong,
+            )
+        }
         Text(
             buildString {
-                if (hours > 0.05) append("RM ${rm(total / 100.0 / hours)}/hr · ")
                 append("${live.payouts.size} payout(s) →")
                 if (live.km > 0.0) append(" · ${"%.1f".format(live.km)} km tracked")
                 if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
@@ -2507,6 +2517,9 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             repo.store.settings.budgets.forEach { (k, v) -> this[k] = "%.0f".format(v) }
         }
     }
+    var foodCap by remember {
+        mutableStateOf(repo.store.settings.dailyFoodCapCents?.let { "%.2f".format(it / 100.0) } ?: "")
+    }
 
     BakiSheet(
         onDismiss = onDismiss,
@@ -2514,7 +2527,11 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             Button(
                 onClick = {
                     val limits = draft.mapNotNull { (k, v) -> v.toDoubleOrNull()?.takeIf { it > 0 }?.let { k to it } }.toMap()
-                    scope.launch { repo.setBudgets(limits) }
+                    val cap = foodCap.toDoubleOrNull()?.takeIf { it > 0 }?.let { (it * 100).toLong() }
+                    scope.launch {
+                        repo.setDailyFoodCap(cap)
+                        repo.setBudgets(limits)
+                    }
                     onDismiss()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
@@ -2525,7 +2542,21 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
     ) {
         Text("Monthly limits", color = baki.onSurface, style = BakiType.title )
         Text("Leave a field blank for no cap. Applies to every month.", color = baki.muted, style = BakiType.caption )
-        Spacer(Modifier.height(Space.xs))
+        Spacer(Modifier.height(Space.m))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Daily food cap", color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.labelStrong )
+            OutlinedTextField(
+                value = foodCap,
+                onValueChange = { v -> foodCap = v.filter { it.isDigit() || it == '.' } },
+                placeholder = { Text("—", color = baki.muted, style = BakiType.label ) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.width(110.dp),
+                colors = bakiFieldColors(),
+            )
+        }
+        Text("Optional daily guardrail for the Food category; clear it for none.", color = baki.muted, style = BakiType.caption )
+        Spacer(Modifier.height(Space.m))
         cats.forEach { c ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))

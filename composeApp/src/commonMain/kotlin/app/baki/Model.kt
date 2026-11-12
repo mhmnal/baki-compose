@@ -116,6 +116,8 @@ data class Settings(
     val gpsCorrection: Double = 1.0,
     /** Monthly spending caps in ringgit, keyed by category id. Empty = no budgets set. */
     val budgets: Map<String, Double> = emptyMap(),
+    /** Optional daily food cap in cents; null means no daily guardrail. */
+    val dailyFoodCapCents: Long? = null,
     /** Optional service target. Deliberately user-set; Baki must not invent an interval. */
     val nextServiceKm: Int? = null,
     /** ISO date for the next service, or null. */

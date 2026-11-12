@@ -925,6 +925,17 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.setStatementReminder(on)
     }
 
+    /** A device-wide daily food guardrail; null clears it. */
+    suspend fun setDailyFoodCap(cents: Long?) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(dailyFoodCapCents = cents?.takeIf { it > 0 }),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+    }
+
     /** The service target is user-set; null clears it. */
     suspend fun setServiceTarget(km: Int?, date: String?) = mutex.withLock {
         if (blocked()) return@withLock

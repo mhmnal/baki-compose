@@ -135,6 +135,7 @@ class PhoneShot {
         runCatching { repo.addExpense(6_400, "fuel", "Petronas", today) }
         runCatching { repo.addExpense(320, "toll", "MEX", today) }
         runCatching { repo.addExpense(1_200, "wear", "tyre wear", today) }
+        runCatching { repo.setDailyFoodCap(2_500) }
         runCatching {
             repo.saveStatement(
                 Statement(

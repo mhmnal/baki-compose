@@ -1004,3 +1004,11 @@ Transfers are intentionally not an Entry type.
 - Loan repayments received are not earnings; note them rather than classifying them as shift/income.
 
 This closes the former "transfer gap" by scope, not by missing code.
+
+## Live yield and daily food cap (0.37.2 candidate)
+
+- LiveBreakEven exposes gross/km and net/hour after running costs/cover. The live card shows them as
+  "so far", coloured against the hourly target.
+- Settings gained dailyFoodCapCents; More → Budgets sets it, Today shows one compact food line with
+  spent/cap and remaining/over. Food category only.
+- Tests: LiveYieldTest + DailyFoodTest; 194 total. Uncommitted at Gate A/B.

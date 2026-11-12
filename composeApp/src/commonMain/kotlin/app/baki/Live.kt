@@ -87,6 +87,9 @@ data class LiveBreakEven(
     val perHour: Double,
     /** null once covered, or when there is no rate to project with. */
     val minutesToGo: Double?,
+    val km: Double = 0.0,
+    val grossPerKm: Double? = null,
+    val netPerHour: Double? = null,
 ) { val covered: Boolean get() = earned >= costs }
 
 fun liveBreakEven(store: Store, live: LiveShift, now: Long = nowMillis()): LiveBreakEven {
@@ -101,10 +104,12 @@ fun liveBreakEven(store: Store, live: LiveShift, now: Long = nowMillis()): LiveB
     val costs = running + cover + overhead
     val earned = liveTotalCents(live) / 100.0
     val perHour = if (workedHours > 0.01) earned / workedHours else 0.0
+    val netPerHour = if (workedHours > 0.01) (earned - costs) / workedHours else null
+    val grossPerKm = if (live.km > 0.01) earned / live.km else null
     val minutes = when {
         earned >= costs -> null
         perHour <= 0.01 -> null
         else -> (costs - earned) / perHour * 60.0
     }
-    return LiveBreakEven(costs, earned, perHour, minutes)
+    return LiveBreakEven(costs, earned, perHour, minutes, live.km, grossPerKm, netPerHour)
 }
