@@ -38,6 +38,8 @@ data class ShiftMetrics(
     val gross: Double, val extraCost: Double, val grabFee: Double, val net: Double,
     val hrs: Double, val netHr: Double?,
 ) {
+    /** Gross per km is a yield check that does not pretend to be net profit. */
+    val grossPerKm: Double? get() = if (km > 0.01) gross / km else null
     val band: String get() = when {
         netHr == null -> "none"
         netHr < 12 -> "quiet"
@@ -64,6 +66,10 @@ fun overheadPerHour(store: Store, month: String): Double {
     if (hours <= 0.0) return 0.0
     return monthlyOverhead(store.settings.profit) / hours
 }
+
+/** Gross needed for this shift shape to clear [target] per hour, all else unchanged. */
+fun grossToClearTarget(m: ShiftMetrics, target: Double): Double? =
+    if (m.hrs <= 0.01) null else m.gross + (target * m.hrs - m.net)
 
 fun shiftMetrics(sh: Shift, cfg: Profit = Profit(), overheadPerHour: Double = 0.0): ShiftMetrics {
     val c = costRates(cfg, sh.kmPerLitre)

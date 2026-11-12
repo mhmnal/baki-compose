@@ -212,7 +212,9 @@ fun TodayScreen(
                         }
                     }
                     Text(
-                        "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km · fuel + wear RM ${rm(m.running)}",
+                        "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km" +
+                            (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
+                            " · fuel + wear RM ${rm(m.running)}",
                         color = baki.muted, style = BakiType.caption )
                     // what this shift had to beat
                     m.netHr?.let { rate ->

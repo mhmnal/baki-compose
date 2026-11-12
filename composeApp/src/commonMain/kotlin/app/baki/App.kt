@@ -1170,7 +1170,9 @@ private fun ShiftsScreen(
                 val m = row.second
                 RowCard(
                     "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
-                    "${"%.1f".format(m.km)} km · ${m.band}",
+                    "${"%.1f".format(m.km)} km" +
+                        (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
+                        " · ${m.band}",
                     "RM ${rm(m.net)}",
                     if (m.net < 0) baki.down else bandColor(m.band, baki),
                     onLongPress = { onEditShift(sh) },
@@ -2369,8 +2371,18 @@ private fun ShiftDialog(
                 }
                 Text(
                     "cover RM ${rm(preview.grabFee)} · net RM ${rm(preview.net)}" +
-                        (preview.netHr?.let { " · RM ${rm(it)}/hr" } ?: ""),
+                        (preview.netHr?.let { " · RM ${rm(it)}/hr" } ?: "") +
+                        (preview.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: ""),
                     color = baki.muted, style = BakiType.caption )
+                val rate = preview.netHr
+                if (rate != null && hoursValue > 0 && rate < store.settings.profit.targetRate) {
+                    val needed = grossToClearTarget(preview, store.settings.profit.targetRate)
+                    Text(
+                        "Below RM ${rm(store.settings.profit.targetRate)}/hr" +
+                            (needed?.let { " · need RM ${rm(it)} gross" } ?: ""),
+                        color = baki.down, style = BakiType.captionStrong,
+                    )
+                }
             if (existing != null) {
                 if (existing.payouts.isNotEmpty()) {
                     TextButton(onClick = { onPayouts(existing) }) {

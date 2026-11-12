@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.37.0)
+## Current state (v0.37.1)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -986,3 +986,10 @@ Storage and sync fixes after the feasibility audit:
 - Phone 0.37.0 / code 105. Desktop portable tar at dist/baki-desktop-0.37.0-linux-x64.tar.gz
   (release AppImage unavailable offline: ProGuard 7.8.0 not cached).
 - Known gap: transfers are still not an Entry type; document this in the release notes.
+
+## Shift yield (0.37.1)
+
+- ShiftMetrics exposes gross/km; Today and Shifts rows show it beside net/hour.
+- Shift editor shows gross/km and a red below-target line with the gross needed to clear the RM18 target.
+  Warning only; saving is never blocked.
+- One yield invariant test. 191 tests; phone 0.37.1 / code 106. Desktop not rebuilt for this phone-only slice.
