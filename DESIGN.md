@@ -1012,3 +1012,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Settings gained dailyFoodCapCents; More → Budgets sets it, Today shows one compact food line with
   spent/cap and remaining/over. Food category only.
 - Tests: LiveYieldTest + DailyFoodTest; 194 total. Uncommitted at Gate A/B.
+
+## More restructure (0.37.2 candidate)
+
+- More is now a fixed three-way switcher: Money / Shift / App. Tabs stay above the scroll area.
+- Money: Bills, Weekly Statement, Vehicle & target, Categories, Budgets.
+- Shift: Payment QR, Service, Home Screen.
+- App: Sync & routes, Safety, Liquid Glass, Appearance, Diagnostics, Backup, On this device.
+- Removed the duplicate standalone Statement card; Weekly Statement already carries the latest details.
+- 194 tests; phone Debug checked all tabs and sticky behavior. No sign; phone remains 0.37.1.

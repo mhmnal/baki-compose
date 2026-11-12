@@ -1302,6 +1302,36 @@ private fun BillEditorDialog(
     )
 }
 
+private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Shift"), APP("App") }
+
+@Composable
+private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
+    val baki = LocalBaki.current
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill))
+            .background(baki.container).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        MoreTab.entries.forEach { tab ->
+            val on = tab == selected
+            Box(
+                Modifier.weight(1f).height(48.dp)
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(if (on) baki.primaryContainer else Color.Transparent)
+                    .clickable { onSelect(tab) }
+                    .semantics { contentDescription = "More: ${tab.label}" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    tab.label,
+                    color = if (on) baki.onPrimaryContainer else baki.muted,
+                    style = BakiType.labelStrong,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val baki = LocalBaki.current
@@ -1321,7 +1351,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     var statementHistoryOpen by remember { mutableStateOf(false) }
     var notifRefresh by remember { mutableStateOf(0) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
+    var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
+    val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
+    LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
             val added = repo.importJson(text)
@@ -1330,9 +1363,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().padding(horizontal = Space.l).verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().padding(horizontal = Space.l),
     ) {
         Spacer(Modifier.height(Space.l))
+        MoreTabs(moreTab, onSelect = { moreTab = it })
+        Spacer(Modifier.height(Space.l))
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(moreScroll)) {
+        if (moreTab == MoreTab.SHIFT) {
         SectionTitle("PAYMENT QR")
         Spacer(Modifier.height(Space.s))
         PaymentQrSection()
@@ -1352,7 +1389,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 },
             )
         }
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.APP) {
         SectionTitle("SYNC")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
@@ -1440,7 +1479,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
             ) { Text("Save route key") }
         }
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.MONEY) {
         SectionTitle("BILLS")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
@@ -1771,7 +1812,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 )
             }
         }
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.APP) {
         SectionTitle("SAFETY")
         Spacer(Modifier.height(Space.s))
         SwitchRow(
@@ -1860,7 +1903,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             checked = repo.config.matchWallpaper,
             onChange = { repo.setMatchWallpaper(it) },
         )
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.MONEY) {
         SectionTitle("VEHICLE & TARGET")
         Spacer(Modifier.height(Space.s))
         val p = repo.store.settings.profit
@@ -1899,13 +1944,6 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 shape = RoundedCornerShape(Radius.pill),
             ) { Text("Edit costs") }
         }
-        Spacer(Modifier.height(Space.l))
-        if (repo.store.statements.isNotEmpty()) {
-            SectionTitle("STATEMENT")
-            Spacer(Modifier.height(Space.s))
-            StatementCard(repo.store, onViewHistory = { statementHistoryOpen = true })
-            Spacer(Modifier.height(Space.l))
-        }
         SectionTitle("CATEGORIES")
         Spacer(Modifier.height(Space.s))
         CategoriesCard(repo, editable = !repo.readOnly)
@@ -1927,7 +1965,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 shape = RoundedCornerShape(Radius.pill),
             ) { Text("Set limits") }
         }
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.APP) {
         SectionTitle("DIAGNOSTICS")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
@@ -2003,7 +2043,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(Space.l))
+        }
+
+        if (moreTab == MoreTab.SHIFT) {
         SectionTitle("HOME SCREEN")
         Spacer(Modifier.height(Space.s))
         Button(
@@ -2011,8 +2053,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
             shape = RoundedCornerShape(Radius.pill), modifier = Modifier.fillMaxWidth(),
         ) { Text("Add the live widget", style = BakiType.label ) }
+        }
 
-        Spacer(Modifier.height(Space.l))
+        if (moreTab == MoreTab.APP) {
         SectionTitle("BACKUP")
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -2067,6 +2110,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         RowCard("Records", "${repo.store.entries.size} entries · ${repo.store.shifts.size} shifts", "", baki.muted)
         Spacer(Modifier.height(Space.s))
         RowCard("Status", repo.status, "", baki.muted)
+        }
+        }
     }
 
     if (statementHistoryOpen) {
