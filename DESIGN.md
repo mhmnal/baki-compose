@@ -993,3 +993,14 @@ Storage and sync fixes after the feasibility audit:
 - Shift editor shows gross/km and a red below-target line with the gross needed to clear the RM18 target.
   Warning only; saving is never blocked.
 - One yield invariant test. 191 tests; phone 0.37.1 / code 106. Desktop not rebuilt for this phone-only slice.
+
+## Transfers: explicit scope decision
+
+Transfers are intentionally not an Entry type.
+
+- Own-account transfers are not logged: they are neither income nor spending, and Baki's cash number is
+  a flow through the tracked ledger, not a bank balance.
+- Payments to another person are logged as Other with the reason in the note; that is real cash out.
+- Loan repayments received are not earnings; note them rather than classifying them as shift/income.
+
+This closes the former "transfer gap" by scope, not by missing code.
