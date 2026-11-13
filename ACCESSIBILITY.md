@@ -1,6 +1,6 @@
 # Accessibility
 
-Updated 2026-11-08 for **0.37.2**. Two surfaces with different constraints: the desk is a custom
+Updated 2026-11-08 for **0.37.3**. Two surfaces with different constraints: the desk is a custom
 neumorphic canvas; the phone is Material 3 + liquid glass. Accessibility is enforced where tests can
 prove it and documented honestly where it cannot.
 

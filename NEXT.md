@@ -1,6 +1,6 @@
 # State & next
 
-As of **0.37.2** (2026-11-08).
+As of **0.37.3** (2026-11-08).
 
 ## Current direction
 
@@ -31,14 +31,14 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Quick-entry sentence parser UI + voice (removed as unused; parser kept).
 - Desktop visual churn: material, depth, charts and scrollbar decisions are settled.
 
-## 0.37.2 gates
+## 0.37.3 gates
 
 1. Cash truth — model + summary + tests done (Gate 1; transfers still open).
 2. Service card + weekly review — done (Gate 2).
 3. Discreet amounts (tap-to-toggle) + accessibility/type pass — done (Gate 3).
 4. Desktop parity; final sign — next.
 
-### 0.37.2 candidate
+### 0.37.3 candidate
 
 - Live yield + daily food cap (committed checkpoint ad58611)
 - More Money/Shift/App restructure (this gate)

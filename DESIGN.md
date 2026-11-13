@@ -794,7 +794,7 @@ so every item is still reachable; there is simply no persistent track/thumb.
   notification; the device flag `statementReminder` (default on) is exposed as a switch on the statement
   card. Desktop compiles the same contract as a no-op.
 
-## Current state (v0.37.2)
+## Current state (v0.37.3)
 
 - **Phone**: the pre-minimal glass interface (v0.34.1) is the shipped design. The "less, but better"
   Today screen and its M3/WCAG pass are archived at tag `v0.35.4`; they are not in the build.
@@ -1036,3 +1036,9 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Break note: the saved shift uses worked hours for cover crossing; a break can still expose a separate
   wall-clock boundary bug. That is not what caused this duplicate.
 - 195 tests.
+
+## 0.37.3 release
+
+- Quick Add excludes grabfee; insurance remains shift-generated only.
+- Server duplicate `c-mweov39k6810fb` tombstoned; 13 Nov auto fee remains RM7.50.
+- 195 tests; phone 0.37.3 / code 108. Break/wall-clock cover bug still open separately.
