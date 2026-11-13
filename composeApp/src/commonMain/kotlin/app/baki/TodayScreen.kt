@@ -268,8 +268,13 @@ fun TodayScreen(
             item {
                 val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
                 Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+                    Modifier.fillMaxWidth()
+                        .then(
+                            if (baki.paper) Modifier.padding(vertical = Space.m)
+                            else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)
+                        ),
                 ) {
+                    if (baki.paper) LedgerRule(alpha = 0.18f)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp,
@@ -331,6 +336,10 @@ fun TodayScreen(
                             "▶ Live", baki.surfaceHigh, baki.onSurface,
                             Modifier.fillMaxWidth(), { repo.startLive() },
                         )
+                    }
+                    if (baki.paper) {
+                        Spacer(Modifier.height(Space.m))
+                        LedgerRule(alpha = 0.18f)
                     }
                 }
             }

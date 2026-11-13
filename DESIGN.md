@@ -1102,3 +1102,10 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Trend bars, heatmaps and calendar cells use square ink/rule language; sparkline already ledger marks.
 - Statement history rows are continuous; bill/profit dialogs use the paper surface.
 - Liquid-glass nav/+ untouched. 205 tests.
+
+## Completed-shift ticket
+
+- The latest completed shift on Today is no longer a filled card; it is a ruled ticket with top/bottom hairlines.
+- Same metrics, target check, band stamp and Live action preserved.
+- The Shifts list rows were already continuous.
+- 205 tests; liquid-glass nav/+ untouched.

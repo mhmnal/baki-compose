@@ -82,3 +82,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Live ticket, payout rows, flat sheets, entry/shift/budget forms, ledger charts, statement rows and dialogs.
 - 205 tests; live start/end smoke-tested on device.
 - No sign; phone remains 0.37.3.
+
+### Completed-shift ticket
+
+- Flattened the latest completed shift on Today into the ruled ledger ticket.
+- 205 tests; no sign yet.
