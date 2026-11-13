@@ -117,3 +117,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Collapsing header with compact glass state; 207 tests.
 - Signed versionCode 110; installed over 0.37.4.
 - Pending: frame-time profiling of the second glass surface; More tabs intentionally scroll with header.
+
+### Header glass refraction
+
+- Full-width glass header, stronger shared lens/blur, reduced tint.
+- 207 tests; build to sign next.

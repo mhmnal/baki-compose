@@ -236,6 +236,7 @@ private fun AppContent(repo: BakiRepo) {
         val fabSize = 56.dp
         // sit above the gesture bar, not on top of it
         val gestureInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val barGap = gestureInset + 14.dp
         val hasFab = tab == 0 && !repo.readOnly
         // keep Undo clear of the floating +, not underneath it
@@ -354,12 +355,9 @@ private fun AppContent(repo: BakiRepo) {
     ) {
         GlassSurface(
             backdrop = glassBackdrop,
-            shape = RoundedCornerShape(Radius.glass),
+            shape = RoundedCornerShape(Radius.tiny),
             tier = glassTier,
-            modifier = Modifier.fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = Space.m, vertical = Space.s)
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp + statusTop),
         ) {
             CompactHeader(repo)
         }
@@ -674,7 +672,9 @@ private fun CompactHeader(repo: BakiRepo) {
         "syncing" -> "SYNCING"; else -> "LOCAL"
     }
     Row(
-        Modifier.fillMaxSize().background(baki.surface.copy(alpha = 0.30f))
+        Modifier.fillMaxSize()
+            .background(baki.surface.copy(alpha = 0.22f))
+            .statusBarsPadding()
             .padding(horizontal = Space.l),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -748,8 +748,8 @@ private fun BottomBar(
                             shape = { shape },
                             effects = {
                                 vibrancy()
-                                blur(1f.dp.toPx())
-                                lens(12f.dp.toPx(), 22f.dp.toPx())
+                                blur(2f.dp.toPx())
+                                lens(20f.dp.toPx(), 36f.dp.toPx())
                             },
                             highlight = { Highlight(width = 1.dp, blurRadius = 2.dp, alpha = 0.45f) },
                         )

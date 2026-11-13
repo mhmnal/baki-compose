@@ -1153,3 +1153,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Signed with the existing release key, versionCode 110; installed over 0.37.4 with data retained.
 - 207 tests. Device check: Today collapse/expand, More and Spending collapse.
 - Trade-off: More's tab row scrolls with its header rather than staying pinned.
+
+## Header glass refraction
+
+- Collapsed header is now a full-width, edge-to-edge glass section, not a floating pill.
+- Status-bar area is included in the glass.
+- Refraction increased on the shared `GlassSurface` (strong tier: 4dp blur, 28/56dp lens; weak: 2dp/16/34) and the selected nav pill.
+- Header tint reduced to 0.22 so the effect comes from refraction, not opacity.
+- 207 tests; signed nav/+ geometry unchanged.

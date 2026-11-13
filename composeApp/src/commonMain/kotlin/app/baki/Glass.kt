@@ -44,11 +44,12 @@ fun GlassSurface(
             shape = { shape },
             effects = {
                 vibrancy()
-                blur(if (strong) 2f.dp.toPx() else 1f.dp.toPx())
-                // the rim bend: height controls how deep the edge distorts, amount how far it reaches
+                // More diffusion, then a deeper rim bend. This is what makes the glass read as
+                // refracting the page instead of relying on an opaque tint.
+                blur(if (strong) 4f.dp.toPx() else 2f.dp.toPx())
                 lens(
-                    if (strong) 18f.dp.toPx() else 10f.dp.toPx(),
-                    if (strong) 36f.dp.toPx() else 22f.dp.toPx(),
+                    if (strong) 28f.dp.toPx() else 16f.dp.toPx(),
+                    if (strong) 56f.dp.toPx() else 34f.dp.toPx(),
                 )
             },
             highlight = {
