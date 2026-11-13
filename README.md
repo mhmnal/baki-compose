@@ -14,15 +14,20 @@ Two surfaces, one ledger:
 Current version: **0.37.3** (`versionCode` 108+). The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
+Test suite: **195 JVM tests** (`:composeApp:desktopTest`).
+
 ## What it does
 
 **Shift economics**
 - live shift with foreground GPS distance, pause/break, payouts, insurance cover countdown
+- live yield so far: net RM/h and gross RM/km against the target
 - net per shift after fuel, wear and real expenses; rate against a target RM/h
 - odometer-based measured economy (km/L) when fills include readings
+- Grab insurance is shift-generated only: one fee per rolling 24h window, excluded from Quick Add
 
 **Money**
 - entries in and out, categories, search, day/month totals, budgets, funds (fuel/wear accrual)
+- optional daily food cap with a compact Today line
 - recurring bills tracked by **period**: settle next month before it ends, prepay ahead, link an existing
   expense, unlink without touching the ledger, optional leftovers goals (car loan)
 
@@ -39,6 +44,10 @@ same store through the sync server.
 **Desk extras**
 - read-only tables, route traces (sealed end-to-end), month comparison, year at a glance, statement preview
 - routes never leave the phone unsealed; the server stores ciphertext only
+
+**Phone UI**
+- More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
+- cash truth, service target, weekly review and privacy/discreet amounts
 
 ## Stack
 
@@ -104,3 +113,6 @@ committed.
 - The desk is read-only by design.
 - Dynamic (wallpaper) colour is not contrast-clamped.
 - Phone TalkBack coverage of custom canvases and swipe rows is incomplete.
+- Cover renewal uses a shift's worked hours, not its saved wall-clock end. A break that crosses a
+  24h window boundary can still misprice a renewal; the duplicate insurance entry fixed in 0.37.3
+  was a separate Quick Add issue.
