@@ -63,3 +63,10 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Paper Ledger refinement: Source Serif 4, M3 type mapping, static grain, adaptive hero/layouts.
 - 205 tests; viewport sweep at 360/390/412 and 1.3x type.
 - No sign yet; phone remains 0.37.3. Nav labels at 360/large type are intentionally untouched.
+
+## Paper Sheet v2
+
+- Continuous ledger rows and inset hairlines across Today, Spending, Shifts and simple More rows.
+- Flat paper panels retained only where actions/state require them.
+- 360/390/412 and 1.3x viewport sweep still green; 205 tests.
+- Ready for sign/install; phone remains 0.37.3.

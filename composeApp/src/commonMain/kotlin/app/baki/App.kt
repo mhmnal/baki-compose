@@ -809,29 +809,39 @@ fun RowCard(
         if (onLongPress != null) add(CustomAccessibilityAction("Edit") { onLongPress(); true })
         if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
     }
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container)
-            .then(
-                if (onLongPress != null) Modifier.pointerInput(title) {
-                    detectTapGestures(onLongPress = { onLongPress() })
-                } else Modifier
-            )
-            .semantics { customActions = a11yActions }
-            .padding(Space.l),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon != null) {
-            Box(
-                Modifier.size(32.dp).clip(RoundedCornerShape(Radius.small)).background(baki.surfaceHigh),
-                contentAlignment = Alignment.Center,
-            ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
-            Spacer(Modifier.width(Space.m))
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth()
+                .then(
+                    if (baki.paper) Modifier.background(baki.surface)
+                    else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                )
+                .then(
+                    if (onLongPress != null) Modifier.pointerInput(title) {
+                        detectTapGestures(onLongPress = { onLongPress() })
+                    } else Modifier
+                )
+                .semantics { customActions = a11yActions }
+                .padding(vertical = Space.m, horizontal = if (baki.paper) 0.dp else Space.l),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (icon != null) {
+                Box(
+                    Modifier.size(32.dp).then(
+                        if (baki.paper) Modifier
+                        else Modifier.clip(RoundedCornerShape(Radius.small)).background(baki.surfaceHigh)
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
+                Spacer(Modifier.width(Space.m))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
+                if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+            }
+            Text(amount, color = ink, style = BakiType.subtitleNumeric)
         }
-        Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
-            if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
-        }
-        Text(amount, color = ink, style = BakiType.subtitleNumeric)
+        if (baki.paper) LedgerRule(Modifier.padding(start = if (icon != null) 44.dp else 0.dp), alpha = 0.16f)
     }
     }
 }
@@ -1112,7 +1122,7 @@ private fun SpendingScreen(
         // envelopes first: the categories with a cap are what you actually check
         val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(Space.s),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
             if (envelopes.isNotEmpty()) {
@@ -1210,7 +1220,7 @@ private fun ShiftsScreen(
         )
         Spacer(Modifier.height(Space.l))
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(Space.s),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(bottom = 132.dp),
         ) {
             if (rows.isEmpty()) item {

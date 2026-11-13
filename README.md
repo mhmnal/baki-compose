@@ -49,6 +49,7 @@ Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
 - Paper Ledger: warm paper/ink light mode, warm-black/brass night mode
 - bundled **Source Serif 4** display/tabular money, paired with Inter controls
 - very subtle static paper grain, M3 typography roles, ruled sections and square controls
+- continuous ledger rows with inset hairlines; contained paper panels only for action-heavy groups
 - **liquid-glass nav and `+` are preserved**; Paper Ledger styles the content around them
 - More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
 - cash truth, service target, weekly review and privacy/discreet amounts

@@ -117,7 +117,7 @@ fun TodayScreen(
 
         item {
             BoxWithConstraints {
-                val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
+                val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text("RM", color = baki.muted,
@@ -180,9 +180,14 @@ fun TodayScreen(
         food?.let { f ->
             item {
                 BoxWithConstraints {
-                    val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
-                    val panel = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input))
-                        .background(baki.container).padding(horizontal = Space.m, vertical = Space.s)
+                    val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+                    val panel = Modifier.fillMaxWidth()
+                        .then(
+                            if (baki.paper) Modifier.padding(vertical = Space.s)
+                            else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.container)
+                                .padding(horizontal = Space.m, vertical = Space.s)
+                        )
+                    Column {
                     if (compact) {
                         Column(panel, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                             Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
@@ -215,6 +220,8 @@ fun TodayScreen(
                                 style = BakiType.caption,
                             )
                         }
+                    }
+                    if (baki.paper) LedgerRule(alpha = 0.16f)
                     }
                 }
             }
@@ -489,20 +496,27 @@ fun TodayScreen(
 @Composable
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val baki = LocalBaki.current
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = Space.s),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, style = BakiType.body ) }
-        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (day == today) "Today" else prettyDate(day), color = baki.onSurface, style = BakiType.bodyStrong )
-            Text(
-                if (day == today) prettyDate(day) else "${weekdayShort(day)} · ${prettyDate(day)}",
-                color = baki.muted, style = BakiType.caption )
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth()
+                .then(
+                    if (baki.paper) Modifier.padding(vertical = Space.s)
+                    else Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = Space.s)
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, style = BakiType.body ) }
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(if (day == today) "Today" else prettyDate(day), color = baki.onSurface, style = BakiType.bodyStrong )
+                Text(
+                    if (day == today) prettyDate(day) else "${weekdayShort(day)} · ${prettyDate(day)}",
+                    color = baki.muted, style = BakiType.caption )
+            }
+            TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
+                Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), style = BakiType.body )
+            }
         }
-        TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
-            Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), style = BakiType.body )
-        }
+        if (baki.paper) LedgerRule(alpha = 0.16f)
     }
 }
 
@@ -582,23 +596,33 @@ fun RowCardIcon(
         add(CustomAccessibilityAction("Edit") { onEdit(); true })
         if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
     }
-    Row(
-        Modifier.fillMaxWidth().then(sharedMod).clip(RoundedCornerShape(Radius.card)).background(baki.container)
-            .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
-            .semantics { customActions = a11yActions }
-            .padding(Space.l),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier.size(34.dp).clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
-        Spacer(Modifier.width(Space.m))
-        Column(Modifier.weight(1f)) {
-            Text(title, color = baki.onSurface, style = BakiType.bodyStrong )
-            if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption )
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().then(sharedMod)
+                .then(
+                    if (baki.paper) Modifier.background(baki.surface)
+                    else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                )
+                .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
+                .semantics { customActions = a11yActions }
+                .padding(vertical = Space.m, horizontal = if (baki.paper) 0.dp else Space.l),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.size(34.dp).then(
+                    if (baki.paper) Modifier
+                    else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh)
+                ),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
+            Spacer(Modifier.width(Space.m))
+            Column(Modifier.weight(1f)) {
+                Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
+                if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+            }
+            Text(amount, color = tint, style = BakiType.subtitleNumeric)
         }
-        Text(amount, color = tint, style = BakiType.subtitleNumeric)
+        if (baki.paper) LedgerRule(Modifier.padding(start = 46.dp), alpha = 0.16f)
     }
     }
 }

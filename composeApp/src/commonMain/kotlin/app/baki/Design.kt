@@ -63,7 +63,7 @@ object Radius {
     val bar = 2.dp
     val input = 2.dp
     /** A paper panel is nearly square. */
-    val card = 4.dp
+    val card = 2.dp
     /** Dialog / large component corner, slightly softer than a card. */
     val dialog = 6.dp
     val sheet = 12.dp
@@ -237,13 +237,17 @@ fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
 
 /** A paper rule. Double rules mark the hero total; single rules separate sections. */
 @Composable
-fun LedgerRule(modifier: Modifier = Modifier, double: Boolean = false) {
+fun LedgerRule(
+    modifier: Modifier = Modifier,
+    double: Boolean = false,
+    alpha: Float = 0.32f,
+) {
     val baki = LocalBaki.current
     Column(modifier.fillMaxWidth()) {
-        Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = 0.32f)))
+        Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = alpha)))
         if (double) {
             Spacer(Modifier.height(2.dp))
-            Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = 0.22f)))
+            Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = alpha * 0.70f)))
         }
     }
 }

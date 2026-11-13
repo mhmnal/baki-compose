@@ -1069,3 +1069,14 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Adaptive hero sizing and stacked metadata at 360dp / 1.3x font scale.
 - The liquid-glass nav and + remain protected and untouched; 360dp nav labels still truncate by explicit choice.
 - 205 tests and a 4-viewport × 5-tab visual sweep.
+
+## Paper Sheet v2
+
+- Simple lists render directly on the paper canvas: no card fill, no radius, no shadow.
+- Spending/Shifts rows are contiguous; Today rows and More device rows use the same RowCard language.
+- Inset 1dp hairlines use `LedgerRule(alpha = 0.16f)`; icon rows align the rule at 46dp.
+- WeekStrip, food cap and day selector are continuous sheet strips, not individual cards.
+- Bounded paper panels remain only for action-heavy groups: bills, statement import, live shift, cash truth,
+  weekly review, settings groups. Modal sheets/dialogs remain contained.
+- Swipe-to-edit/delete keeps its original gesture; the paper-colored foreground hides the reveal until a swipe.
+- Liquid-glass nav and + remain untouched. 205 tests.

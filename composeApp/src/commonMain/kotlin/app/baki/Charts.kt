@@ -44,7 +44,11 @@ fun WeekStrip(store: Store, endDay: String) {
                 val up = t.net >= 0
                 val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = Space.s),
+                    Modifier.weight(1f)
+                        .then(
+                            if (baki.paper) Modifier.padding(vertical = Space.s)
+                            else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = Space.s)
+                        ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
@@ -73,6 +77,10 @@ fun WeekStrip(store: Store, endDay: String) {
                     )
                 }
             }
+        }
+        if (baki.paper) {
+            Spacer(Modifier.height(Space.xs))
+            LedgerRule(alpha = 0.14f)
         }
     }
 }
