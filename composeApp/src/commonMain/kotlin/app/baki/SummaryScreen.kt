@@ -4,13 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,8 +26,19 @@ import androidx.compose.ui.unit.sp
 
 /** Month at a glance: totals, best/worst day, where the money went, funds. */
 @Composable
-fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
+fun SummaryScreen(
+    repo: BakiRepo,
+    store: Store,
+    month: String,
+    onMonth: (String) -> Unit,
+    onHeaderCollapsed: (Boolean) -> Unit = {},
+) {
     val baki = LocalBaki.current
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) -> onHeaderCollapsed(index > 0 || offset > 56) }
+    }
     // aggregations are memoised per store+month: recomposition no longer re-scans everything
     val t = remember(store, month) { monthTotals(store, month) }
     val cash = remember(store, month) { cashTruth(store, month) }
@@ -39,10 +53,12 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
     val dayLabel = if (days.size == 1) "1 day" else "${days.size} days"
 
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = Space.l),
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.m),
-        contentPadding = PaddingValues(top = 18.dp, bottom = 132.dp),
+        contentPadding = PaddingValues(top = 0.dp, bottom = 132.dp),
     ) {
+        item { Header(repo, embedded = true) }
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {

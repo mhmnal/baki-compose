@@ -19,6 +19,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,11 +33,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,8 +84,14 @@ fun TodayScreen(
     onPreset: (String) -> Unit,
     onSeeAll: () -> Unit,
     onAdd: () -> Unit,
+    onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
     val baki = LocalBaki.current
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) -> onHeaderCollapsed(index > 0 || offset > 56) }
+    }
     val store = repo.store
     // memoised: a sync tick or the 1s live tick must not re-scan the whole store
     val t = remember(store, day) { dayTotals(store, day) }
@@ -110,11 +119,13 @@ fun TodayScreen(
         indicator = {},
     ) {
     LazyColumn(
-        Modifier.fillMaxSize().padding(horizontal = Space.l),
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.m),
         // leave room for the floating bar and the + so nothing ends up underneath them
         contentPadding = PaddingValues(top = 6.dp, bottom = 132.dp),
     ) {
+        item { Header(repo, embedded = true) }
         item { DayPill(day, today, onDay) }
 
         item {

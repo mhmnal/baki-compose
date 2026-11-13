@@ -1136,3 +1136,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - 207 tests; a11y gate: 48dp controls, paper contrast, heading/tab/chart semantics.
 - Signed smoke test: Today, Add spending, Shift form, Shifts, More; no fatal/ANR.
 - Residual: no tablet max-width container; QR activity must be opened through Payment QR; widgets unchanged.
+
+## Collapsing header
+
+- Large brand header now lives inside each tab's scroll content, not the fixed shell.
+- More's header, tabs and sections share one scroll column.
+- A compact 56dp glass header fades in only after the large header scrolls 56dp away.
+- Uses the same backdrop, glass tier, fallback, privacy action and sync stamp as the nav.
+- Scroll state is tracked with `snapshotFlow`; returning to the top hides the compact bar.
+- 207 tests; glass nav/+ geometry unchanged.

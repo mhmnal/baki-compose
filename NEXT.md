@@ -105,3 +105,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - versionCode 109, signed release installed over 0.37.3 with data retained.
 - 207 tests. Signed smoke test passed (Today, Add, Shift form, Shifts, More).
 - Residual: tablet max width, QR in-app verification, widgets, TalkBack traversal.
+
+### Collapsing header
+
+- Large header scrolls with every tab; compact glass header appears after 56dp.
+- Tested on device: Today collapse/expand, More collapse, Spending collapse.
+- 207 tests; no sign yet for this header build.

@@ -20,6 +20,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.scale
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
@@ -29,6 +30,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 
@@ -52,6 +54,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -239,6 +242,8 @@ private fun AppContent(repo: BakiRepo) {
         val snackbarBottom = if (hasFab) barHeight + barGap + fabSize + 10.dp
         else barHeight + barGap + 10.dp
         val sheetOpen = adding != 0 || payoutsTarget != null
+        var headerCollapsed by remember { mutableStateOf(false) }
+        LaunchedEffect(tab) { headerCollapsed = false }
 
         // ---- level 1: the app itself, blurred while a sheet is up ----
         Box(
@@ -261,7 +266,6 @@ private fun AppContent(repo: BakiRepo) {
         },
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
-            Header(repo)
             // expressive motion: the emphasised curve, content rises slightly as it fades in
             val expressive = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
             AnimatedContent(
@@ -301,6 +305,7 @@ private fun AppContent(repo: BakiRepo) {
                         adding = 2
                     },
                     onSeeAll = { tab = 1 },
+                    onHeaderCollapsed = { headerCollapsed = it },
                 )
                 1 -> SpendingScreen(
                     repo = repo,
@@ -308,11 +313,13 @@ private fun AppContent(repo: BakiRepo) {
                     onMonth = { month = it },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
                     onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
+                    onHeaderCollapsed = { headerCollapsed = it },
                 )
                 2 -> ShiftsScreen(
                     repo = repo,
                     onAddShift = { editingShift = null; adding = 3 },
                     onEditShift = { editingShift = it; adding = 3 },
+                    onHeaderCollapsed = { headerCollapsed = it },
                     onDeleteShift = { shift ->
                         scope.launch {
                             repo.deleteShift(shift.id)
@@ -329,13 +336,33 @@ private fun AppContent(repo: BakiRepo) {
                         }
                     },
                 )
-                3 -> SummaryScreen(store = repo.store, month = month, onMonth = { month = it })
-                else -> MoreScreen(repo, onEditBudgets = { editingBudgets = true; adding = 5 })
+                3 -> SummaryScreen(repo = repo, store = repo.store, month = month, onMonth = { month = it }, onHeaderCollapsed = { headerCollapsed = it })
+                else -> MoreScreen(repo, onHeaderCollapsed = { headerCollapsed = it }, onEditBudgets = { editingBudgets = true; adding = 5 })
             }
             }
             }
         }
     }
+    }
+
+    // Compact glass header: appears only after the in-page header has scrolled away.
+    AnimatedVisibility(
+        visible = !sheetOpen && headerCollapsed,
+        modifier = Modifier.align(Alignment.TopCenter),
+        enter = fadeIn(BakiMotion.effects()) + slideInVertically(BakiMotion.spatial()) { -it / 2 },
+        exit = fadeOut(BakiMotion.effectsFast()) + slideOutVertically(BakiMotion.effectsFast()) { -it / 2 },
+    ) {
+        GlassSurface(
+            backdrop = glassBackdrop,
+            shape = RoundedCornerShape(Radius.glass),
+            tier = glassTier,
+            modifier = Modifier.fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = Space.m, vertical = Space.s)
+                .height(56.dp),
+        ) {
+            CompactHeader(repo)
+        }
     }
 
     // ---- glass: the bar and the + float over a blurred copy of the content ----
@@ -554,13 +581,14 @@ private fun AppContent(repo: BakiRepo) {
 }
 
 @Composable
-private fun Header(repo: BakiRepo) {
+fun Header(repo: BakiRepo, embedded: Boolean = false) {
     // read the status here, not in the caller: a sync tick then re-draws only this row
     val status = repo.status
     val baki = LocalBaki.current
+    val gutter = if (embedded) 0.dp else Space.l
     Column(Modifier.fillMaxWidth()) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Space.l).padding(top = 12.dp, bottom = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = gutter).padding(top = 12.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -624,9 +652,51 @@ private fun Header(repo: BakiRepo) {
         Text(
             "what your shift really pays",
             color = baki.muted, style = BakiType.caption,
-            modifier = Modifier.padding(start = Space.l + 36.dp + Space.m, bottom = 8.dp),
+            modifier = Modifier.padding(start = gutter + 36.dp + Space.m, bottom = 8.dp),
         )
-        if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.l))
+        if (baki.paper) LedgerRule(Modifier.padding(horizontal = gutter))
+    }
+}
+
+@Composable
+private fun CompactHeader(repo: BakiRepo) {
+    val baki = LocalBaki.current
+    val status = repo.status
+    val ink = when (status) {
+        "synced" -> baki.up
+        "offline" -> baki.down
+        "cached" -> baki.warn
+        "syncing" -> baki.primary
+        else -> baki.muted
+    }
+    val label = when (status) {
+        "synced" -> "SYNCED"; "offline" -> "OFFLINE"; "cached" -> "SAVED"
+        "syncing" -> "SYNCING"; else -> "LOCAL"
+    }
+    Row(
+        Modifier.fillMaxSize().background(baki.surface.copy(alpha = 0.30f))
+            .padding(horizontal = Space.l),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(28.dp).clip(RoundedCornerShape(Radius.glass)).background(baki.primary),
+            contentAlignment = Alignment.Center,
+        ) { Text("✓", color = baki.onPrimary, style = BakiType.captionStrong) }
+        Spacer(Modifier.width(Space.s))
+        Text("Baki", color = baki.onSurface, style = BakiType.bodyStrong, modifier = Modifier.weight(1f))
+        Box(
+            Modifier.size(48.dp).clip(RoundedCornerShape(Radius.pill))
+                .tactileClickable { repo.setDiscreet(!repo.config.discreet) }
+                .semantics { contentDescription = if (repo.config.discreet) "Show amounts" else "Hide amounts" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(if (repo.config.discreet) "◉" else "◎", color = if (repo.config.discreet) baki.primary else baki.muted, style = BakiType.title)
+        }
+        Spacer(Modifier.width(Space.s))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Box(Modifier.size(5.dp).clip(RoundedCornerShape(Radius.pill)).background(ink))
+            Text(label, color = ink, style = BakiType.micro.copy(letterSpacing = 0.8.sp), maxLines = 1)
+        }
     }
 }
 
@@ -1096,8 +1166,14 @@ private fun SpendingScreen(
     onMonth: (String) -> Unit,
     onEditEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
+    onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
     val baki = LocalBaki.current
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) -> onHeaderCollapsed(index > 0 || offset > 56) }
+    }
     var query by remember { mutableStateOf("") }
     var catFilter by remember { mutableStateOf("all") }
     val t = monthTotals(repo.store, month)
@@ -1123,71 +1199,70 @@ private fun SpendingScreen(
         else -> "SPENT THIS MONTH"
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = Space.l)) {
-        Spacer(Modifier.height(Space.m))
-        MonthHeader(month, onMonth)
-        Spacer(Modifier.height(Space.s))
-        Hero(shownLabel, shown, baki.down, 40)
-        Text(
-            (if (filtering) {
-                "${entries.size} purchase(s)${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
-            } else {
-                "${t.entryCount} purchases · ${t.shiftCount} shifts · in RM ${rm(t.income)}"
-            }),
-            color = baki.muted, style = BakiType.captionNumeric,
-        )
-        Spacer(Modifier.height(Space.m))
-        OutlinedTextField(
-            value = query, onValueChange = { query = it },
-            placeholder = { Text("Search note, category, amount", color = baki.muted, style = BakiType.label ) },
-            singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
-        )
-        Spacer(Modifier.height(Space.s))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
-            verticalArrangement = Arrangement.spacedBy(Space.s),
-        ) {
-            val usedCats = all.map { it.cat }.toSet()
-            val chips = listOf("all" to "All") +
-                cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
-            chips.forEach { (id, label) ->
-                val on = catFilter == id
-                Column(
-                    Modifier.width(IntrinsicSize.Max)
-                        .clickable { catFilter = id }
-                        .heightIn(min = Control.primary)
-                        .semantics { this.selected = catFilter == id; role = Role.Tab }
-                        .padding(horizontal = Space.s),
-                    verticalArrangement = Arrangement.Center,
+    val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+        contentPadding = PaddingValues(bottom = 132.dp),
+    ) {
+        item { Header(repo, embedded = true) }
+        item {
+            Column {
+                Spacer(Modifier.height(Space.m))
+                MonthHeader(month, onMonth)
+                Spacer(Modifier.height(Space.s))
+                Hero(shownLabel, shown, baki.down, 40)
+                Text(
+                    (if (filtering) {
+                        "${entries.size} purchase(s)${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
+                    } else {
+                        "${t.entryCount} purchases · ${t.shiftCount} shifts · in RM ${rm(t.income)}"
+                    }),
+                    color = baki.muted, style = BakiType.captionNumeric,
+                )
+                Spacer(Modifier.height(Space.m))
+                OutlinedTextField(
+                    value = query, onValueChange = { query = it },
+                    placeholder = { Text("Search note, category, amount", color = baki.muted, style = BakiType.label ) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                )
+                Spacer(Modifier.height(Space.s))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
-                    Row(
-                        Modifier.heightIn(min = Control.primary),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (id != "all") {
-                            Icon(
-                                categoryIcon(id), contentDescription = null,
-                                tint = if (on) baki.primary else baki.muted,
-                                modifier = Modifier.size(IconSize.inline),
-                            )
-                            Spacer(Modifier.width(Space.s))
+                    val usedCats = all.map { it.cat }.toSet()
+                    val chips = listOf("all" to "All") +
+                        cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
+                    chips.forEach { (id, label) ->
+                        val on = catFilter == id
+                        Column(
+                            Modifier.width(IntrinsicSize.Max)
+                                .clickable { catFilter = id }
+                                .heightIn(min = Control.primary)
+                                .semantics { this.selected = catFilter == id; role = Role.Tab }
+                                .padding(horizontal = Space.s),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Row(
+                                Modifier.heightIn(min = Control.primary),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (id != "all") {
+                                    Icon(categoryIcon(id), contentDescription = null, tint = if (on) baki.primary else baki.muted, modifier = Modifier.size(IconSize.inline))
+                                    Spacer(Modifier.width(Space.s))
+                                }
+                                Text(label, color = if (on) baki.primary else baki.muted, style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold))
+                            }
+                            if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
                         }
-                        Text(
-                            label, color = if (on) baki.primary else baki.muted,
-                            style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold),
-                        )
                     }
-                    if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
                 }
+                Spacer(Modifier.height(Space.m))
             }
         }
-        Spacer(Modifier.height(Space.m))
-        // envelopes first: the categories with a cap are what you actually check
-        val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-            contentPadding = PaddingValues(bottom = 132.dp),
-        ) {
+
             if (envelopes.isNotEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth()) {
@@ -1248,7 +1323,6 @@ private fun SpendingScreen(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -1257,8 +1331,14 @@ private fun ShiftsScreen(
     onAddShift: () -> Unit,
     onEditShift: (Shift) -> Unit,
     onDeleteShift: (Shift) -> Unit,
+    onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
     val baki = LocalBaki.current
+    val listState = rememberLazyListState()
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collect { (index, offset) -> onHeaderCollapsed(index > 0 || offset > 56) }
+    }
     val store = repo.store
     val cfg = store.settings.profit
     val rows = remember(store) {
@@ -1269,39 +1349,44 @@ private fun ShiftsScreen(
     val hours = remember(store) { rows.sumOf { it.first.hours } }
     val net = remember(store) { rows.sumOf { it.second.net } }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = Space.l)) {
-        Spacer(Modifier.height(Space.l))
-        Hero("NET AFTER CAR COST", cents(net), baki.onSurface, 40)
-        Text(
-            "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
-            color = baki.muted, style = BakiType.label )
-        Spacer(Modifier.height(Space.m))
-        PillButton(
-            "+ Add shift", baki.primary, baki.onPrimary,
-            Modifier.fillMaxWidth().height(48.dp), onAddShift,
-        )
-        Spacer(Modifier.height(Space.l))
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(0.dp),
-            contentPadding = PaddingValues(bottom = 132.dp),
-        ) {
-            if (rows.isEmpty()) item {
-                EmptyState("No shifts yet", "Add a shift to see what it really paid after running costs.")
-            }
-            items(rows, key = { it.first.id }) { row ->
-                val sh = row.first
-                val m = row.second
-                RowCard(
-                    "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
-                    "${"%.1f".format(m.km)} km" +
-                        (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
-                        " · ${m.band}",
-                    "RM ${rm(m.net)}",
-                    if (m.net < 0) baki.down else bandColor(m.band, baki),
-                    onLongPress = { onEditShift(sh) },
-                    onDelete = { onDeleteShift(sh) },
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
+        contentPadding = PaddingValues(bottom = 132.dp),
+    ) {
+        item { Header(repo, embedded = true) }
+        item {
+            Column {
+                Spacer(Modifier.height(Space.l))
+                Hero("NET AFTER CAR COST", cents(net), baki.onSurface, 40)
+                Text(
+                    "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
+                    color = baki.muted, style = BakiType.label)
+                Spacer(Modifier.height(Space.m))
+                PillButton(
+                    "+ Add shift", baki.primary, baki.onPrimary,
+                    Modifier.fillMaxWidth().height(48.dp), onAddShift,
                 )
+                Spacer(Modifier.height(Space.l))
             }
+        }
+        if (rows.isEmpty()) item {
+            EmptyState("No shifts yet", "Add a shift to see what it really paid after running costs.")
+        }
+        items(rows, key = { it.first.id }) { row ->
+            val sh = row.first
+            val m = row.second
+            RowCard(
+                "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
+                "${"%.1f".format(m.km)} km" +
+                    (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
+                    " · ${m.band}",
+                "RM ${rm(m.net)}",
+                if (m.net < 0) baki.down else bandColor(m.band, baki),
+                onLongPress = { onEditShift(sh) },
+                onDelete = { onDeleteShift(sh) },
+            )
         }
     }
 }
@@ -1448,7 +1533,7 @@ private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
 }
 
 @Composable
-private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
+private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollapsed: (Boolean) -> Unit = {}) {
     val baki = LocalBaki.current
     var url by remember { mutableStateOf(repo.config.serverUrl) }
     var finding by remember { mutableStateOf(false) }
@@ -1470,6 +1555,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
+    LaunchedEffect(moreScroll) {
+        snapshotFlow { moreScroll.value }.collect { onHeaderCollapsed(it > 56) }
+    }
     val pickImport = rememberJsonImport { text ->
         if (text != null) scope.launch {
             val added = repo.importJson(text)
@@ -1480,10 +1568,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(horizontal = Space.l),
     ) {
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(moreScroll)) {
+        Header(repo, embedded = true)
         Spacer(Modifier.height(Space.l))
         MoreTabs(moreTab, onSelect = { moreTab = it })
         Spacer(Modifier.height(Space.l))
-        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(moreScroll)) {
         if (moreTab == MoreTab.SHIFT) {
         SectionTitle("PAYMENT QR")
         Spacer(Modifier.height(Space.s))
