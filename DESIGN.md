@@ -1090,3 +1090,15 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Snackbar is a flat ruled margin strip on Paper; Undo hit target preserved.
 - EmptyState gains top/bottom rules on Paper; Today's empty icon loses its card fill.
 - 205 tests. Liquid-glass nav/+ untouched.
+
+## Paper Sheet ordered pass
+
+- Live card is a ruled ticket with one net-so-far hero and text actions; timer/pause/end/payouts unchanged.
+- Payout sheet uses a total header and continuous ruled payout rows.
+- `BakiSheet` is flat paper on paper themes (4dp corners, no shadow, rules under the handle/footer).
+- Entry form: ruled type switch, hero amount field, underlined categories.
+- Shift form grouped into WHEN / PAY & DISTANCE / ODOMETER with a ruled estimate block.
+- Budget form gains ruled sections and category rows.
+- Trend bars, heatmaps and calendar cells use square ink/rule language; sparkline already ledger marks.
+- Statement history rows are continuous; bill/profit dialogs use the paper surface.
+- Liquid-glass nav/+ untouched. 205 tests.

@@ -51,6 +51,7 @@ Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
 - very subtle static paper grain, M3 typography roles, ruled sections and square controls
 - continuous ledger rows with inset hairlines; contained paper panels only for action-heavy groups
 - ruled in/out metrics, quick actions, filter tabs, budget bars and ledger sparkline
+- flat live ticket, ruled payout rows, Paper-sheet forms, ledger charts and statement rows
 - **liquid-glass nav and `+` are preserved**; Paper Ledger styles the content around them
 - More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
 - cash truth, service target, weekly review and privacy/discreet amounts

@@ -68,10 +68,12 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -908,92 +910,128 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val onBreak = isPaused(live)
     val breakMs = pausedMs(live, now)
     val total = liveTotalCents(live)
-    val hours = worked / 3_600_000.0
+    val be = liveBreakEven(repo.store, live, now)
+    val net = be.earned - be.costs
+    val netCents = (net * 100).toLong()
 
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.surfaceHigh).padding(Space.l),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LiveTrace(
-                active = !onBreak,
-                color = if (onBreak) baki.warn else baki.primary,
-                modifier = Modifier.width(52.dp).height(18.dp),
-            )
-            Spacer(Modifier.width(Space.s))
-            Text(
-                if (onBreak) "ON BREAK" else "LIVE SHIFT",
-                color = if (onBreak) baki.warn else baki.primary, style = BakiType.captionStrong )
-            Spacer(Modifier.weight(1f))
-            Text("since ${startClock(live.start)}", color = baki.muted, style = BakiType.caption )
-        }
-        Spacer(Modifier.height(Space.m))
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                liveClock(worked),
-                color = if (onBreak) baki.muted else baki.onSurface, style = BakiType.headline )
-            Spacer(Modifier.weight(1f))
-            Text("RM ${rm(total)}", color = baki.onSurface, style = BakiType.headline )
-        }
-        // break-even: what the shift has cost so far, and how far the payouts are from covering it
-        val be = liveBreakEven(repo.store, live, now)
-        Text(
-            when {
-                be.covered -> "✓ costs covered (RM ${rm(be.costs)})"
-                be.minutesToGo != null -> "costs RM ${rm(be.costs)} · break-even in ${be.minutesToGo.toInt()} min"
-                else -> "costs so far RM ${rm(be.costs)} · add a payout to start earning"
-            },
-            color = if (be.covered) baki.up else baki.muted, style = BakiType.captionStrong )
-        if (be.netPerHour != null) {
-            val target = repo.store.settings.profit.targetRate
-            Text(
-                buildString {
-                    if (be.grossPerKm != null) append("RM ${rm(be.grossPerKm)}/km · ")
-                    append("RM ${rm(be.netPerHour)}/h net so far")
-                },
-                color = if ((be.netPerHour ?: 0.0) >= target) baki.up else baki.down,
-                style = BakiType.labelStrong,
-            )
-        }
-        Text(
-            buildString {
-                append("${live.payouts.size} payout(s) →")
-                if (live.km > 0.0) append(" · ${"%.1f".format(live.km)} km tracked")
-                if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
-            },
-            color = baki.muted,
-            // tapping the count opens the payout breakdown: correct a wrong amount, delete one
-            modifier = Modifier.clickable { onPayouts() }, style = BakiType.label )
-        Spacer(Modifier.height(Space.m))
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Button(
-                onClick = onPayout,
-                colors = ButtonDefaults.buttonColors(containerColor = baki.primaryContainer, contentColor = baki.onPrimaryContainer),
-                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1.1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
-            ) { Text("+ Payout", maxLines = 1, softWrap = false, style = BakiType.label ) }
-            Button(
-                enabled = !repo.readOnly,
-                onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
-                // tinted rather than filled: readable on every palette, including dynamic colour
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (onBreak) baki.warn.copy(alpha = 0.22f) else baki.surfaceHigh,
-                    contentColor = if (onBreak) baki.warn else baki.onSurface,
-                ),
-                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1.1f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
-            ) {
+    Column(Modifier.fillMaxWidth()) {
+        if (baki.paper) LedgerRule(alpha = 0.22f)
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LiveTrace(
+                    active = !onBreak,
+                    color = if (onBreak) baki.warn else baki.primary,
+                    modifier = Modifier.width(52.dp).height(18.dp),
+                )
+                Spacer(Modifier.width(Space.s))
                 Text(
-                    if (onBreak) "Resume" else "Pause",
-                    maxLines = 1, softWrap = false, style = BakiType.labelStrong )
+                    if (onBreak) "ON BREAK" else "LIVE SHIFT",
+                    color = if (onBreak) baki.warn else baki.primary,
+                    style = BakiType.captionStrong,
+                )
+                Spacer(Modifier.weight(1f))
+                Text("since ${startClock(live.start)}", color = baki.muted, style = BakiType.caption)
             }
-            Button(
-                enabled = !repo.readOnly,
-                onClick = { scope.launch { repo.endLive() } },
-                colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(0.9f),
-                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp),
-            ) { Text("End", maxLines = 1, softWrap = false, style = BakiType.labelStrong ) }
+            Spacer(Modifier.height(Space.m))
+            BoxWithConstraints {
+                val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+                if (compact) {
+                    Column {
+                        Text("NET SO FAR", color = baki.muted, style = BakiType.captionStrong)
+                        Text(
+                            "RM ${rm(netCents)}",
+                            color = if (net < 0) baki.down else baki.onSurface,
+                            style = heroMoneyStyle(netCents),
+                        )
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Column(Modifier.weight(1f)) {
+                            Text("NET SO FAR", color = baki.muted, style = BakiType.captionStrong)
+                            Text(
+                                "RM ${rm(netCents)}",
+                                color = if (net < 0) baki.down else baki.onSurface,
+                                style = BakiType.displaySmallNumeric,
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("ON CLOCK", color = baki.muted, style = BakiType.captionStrong)
+                            Text(liveClock(worked), color = if (onBreak) baki.muted else baki.onSurface, style = BakiType.headlineNumeric)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(Space.s))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${live.payouts.size} payout(s)",
+                    color = baki.primary, style = BakiType.captionStrong,
+                    modifier = Modifier.clickable { onPayouts() },
+                )
+                Spacer(Modifier.weight(1f))
+                Text("gross RM ${rm(total)}", color = baki.onSurface, style = BakiType.labelNumeric)
+            }
+            if (baki.paper) LedgerRule(alpha = 0.12f)
+            Spacer(Modifier.height(Space.xs))
+            LiveMetric("Costs so far", "RM ${rm(be.costs)}", baki.muted)
+            LiveMetric(
+                if (be.covered) "Break-even" else "Break-even in",
+                if (be.covered) "covered" else be.minutesToGo?.let { "${it.toInt()} min" } ?: "add a payout",
+                if (be.covered) baki.up else baki.muted,
+            )
+            if (be.netPerHour != null) {
+                LiveMetric(
+                    "Yield now",
+                    buildString {
+                        append("RM ${rm(be.netPerHour)}/h")
+                        be.grossPerKm?.let { append(" · RM ${rm(it)}/km") }
+                    },
+                    if ((be.netPerHour ?: 0.0) >= repo.store.settings.profit.targetRate) baki.up else baki.down,
+                )
+            }
+            LiveMetric(
+                "Tracked",
+                buildString {
+                    append("${"%.1f".format(live.km)} km")
+                    if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
+                },
+                baki.muted,
+            )
+            Spacer(Modifier.height(Space.s))
+            if (baki.paper) LedgerRule(alpha = 0.16f)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                TextButton(onClick = onPayout, modifier = Modifier.weight(1.1f).heightIn(min = 48.dp)) {
+                    Text("+ Payout", color = baki.primary, style = BakiType.labelStrong)
+                }
+                TextButton(
+                    enabled = !repo.readOnly,
+                    onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
+                    modifier = Modifier.weight(1.1f).heightIn(min = 48.dp),
+                ) {
+                    Text(if (onBreak) "Resume" else "Pause", color = if (onBreak) baki.warn else baki.onSurface, style = BakiType.labelStrong)
+                }
+                TextButton(
+                    enabled = !repo.readOnly,
+                    onClick = { scope.launch { repo.endLive() } },
+                    modifier = Modifier.weight(0.9f).heightIn(min = 48.dp),
+                ) {
+                    Text("End", color = baki.primary, style = BakiType.labelStrong)
+                }
+            }
         }
+        if (baki.paper) LedgerRule(alpha = 0.22f)
+    }
+}
+
+@Composable
+private fun LiveMetric(label: String, value: String, tint: Color) {
+    val baki = LocalBaki.current
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+        Text(value, color = tint, style = BakiType.labelNumeric)
     }
 }
 
@@ -1278,8 +1316,9 @@ private fun BillEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = baki.container,
-        title = { Text(if (existing == null) "New bill" else "Edit bill", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+        containerColor = baki.surface,
+        shape = RoundedCornerShape(Radius.dialog),
+        title = { Text(if (existing == null) "New bill" else "Edit bill", color = baki.onSurface, style = BakiType.title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 OutlinedTextField(
@@ -2318,21 +2357,38 @@ private fun EntryDialog(
                     SegButton("Spending", type == "expense", Modifier.weight(1f)) { type = "expense"; cat = settings.cats.catsOut.firstOrNull()?.id ?: "other" }
                     SegButton("Income", type == "income", Modifier.weight(1f)) { type = "income"; cat = settings.cats.catsIn.firstOrNull()?.id ?: "otherin" }
                 }
+                if (baki.paper) LedgerRule(alpha = 0.16f)
                 OutlinedTextField(
                     value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
                     label = { Text("Amount (RM)") }, singleLine = true,
+                    textStyle = if (baki.paper) BakiType.headlineNumeric else androidx.compose.material3.LocalTextStyle.current,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
                 )
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     cats.forEach { c ->
                         val on = c.id == cat
-                        Box(
-                            Modifier.clip(RoundedCornerShape(Radius.pill))
-                                .background(if (on) baki.primaryContainer else baki.surfaceHigh)
-                                .clickable { cat = c.id }
-                                .padding(horizontal = Space.m, vertical = 8.dp),
-                        ) { Text(c.name, color = if (on) baki.onPrimaryContainer else baki.muted, style = BakiType.labelStrong ) }
+                        if (baki.paper) {
+                            Column(
+                                Modifier.width(IntrinsicSize.Max).clickable { cat = c.id }
+                                    .heightIn(min = Control.secondary)
+                                    .padding(horizontal = Space.s),
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Text(
+                                    c.name, color = if (on) baki.primary else baki.muted,
+                                    textDecoration = if (on) TextDecoration.Underline else null,
+                                    style = BakiType.labelStrong,
+                                )
+                            }
+                        } else {
+                            Box(
+                                Modifier.clip(RoundedCornerShape(Radius.pill))
+                                    .background(if (on) baki.primaryContainer else baki.surfaceHigh)
+                                    .clickable { cat = c.id }
+                                    .padding(horizontal = Space.m, vertical = 8.dp),
+                            ) { Text(c.name, color = if (on) baki.onPrimaryContainer else baki.muted, style = BakiType.labelStrong ) }
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -2386,15 +2442,39 @@ private fun EntryDialog(
 @Composable
 private fun SegButton(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val baki = LocalBaki.current
-    Box(
-        modifier.clip(RoundedCornerShape(Radius.pill))
-            .background(if (selected) baki.primaryContainer else baki.surfaceHigh)
-            .clickable { onClick() }.padding(vertical = Space.s),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = if (selected) baki.onPrimaryContainer else baki.muted,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, style = BakiType.label )
+    if (baki.paper) {
+        Column(
+            modifier.heightIn(min = Control.secondary).clickable { onClick() },
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                label, color = if (selected) baki.primary else baki.muted,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                style = BakiType.label,
+            )
+            if (selected) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
+        }
+    } else {
+        Box(
+            modifier.clip(RoundedCornerShape(Radius.pill))
+                .background(if (selected) baki.primaryContainer else baki.surfaceHigh)
+                .clickable { onClick() }.padding(vertical = Space.s),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(label, color = if (selected) baki.onPrimaryContainer else baki.muted,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, style = BakiType.label )
+        }
     }
+}
+
+@Composable
+private fun FormSection(label: String) {
+    val baki = LocalBaki.current
+    Spacer(Modifier.height(Space.s))
+    Text(label, color = baki.muted, style = BakiType.section)
+    LedgerRule(alpha = 0.14f)
+    Spacer(Modifier.height(Space.s))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2440,6 +2520,7 @@ private fun ShiftDialog(
 
     BakiSheet(onDismiss = onDismiss) {
             Text(if (existing == null) "Log a shift" else "Edit shift", color = baki.onSurface, style = BakiType.title )
+                FormSection("WHEN")
                 OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date (YYYY-MM-DD)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors())
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -2448,6 +2529,7 @@ private fun ShiftDialog(
                     OutlinedTextField(value = hours, onValueChange = { hours = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("Hours") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
                 }
+                FormSection("PAY & DISTANCE")
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     OutlinedTextField(value = km, onValueChange = { km = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("Km") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
@@ -2468,6 +2550,7 @@ private fun ShiftDialog(
                     }
                     Switch(checked = reimbursed, onCheckedChange = { reimbursed = it })
                 }
+                FormSection("ODOMETER")
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     OutlinedTextField(value = odoA, onValueChange = { odoA = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("Odometer start") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
@@ -2494,11 +2577,29 @@ private fun ShiftDialog(
                         }
                     }
                 }
-                Text(
-                    "cover RM ${rm(preview.grabFee)} · net RM ${rm(preview.net)}" +
-                        (preview.netHr?.let { " · RM ${rm(it)}/hr" } ?: "") +
-                        (preview.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: ""),
-                    color = baki.muted, style = BakiType.caption )
+                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.18f)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Cover", color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+                    Text("RM ${rm(preview.grabFee)}", color = baki.onSurface, style = BakiType.captionNumeric)
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Estimated net", color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+                    Text("RM ${rm(preview.net)}", color = baki.onSurface, style = BakiType.labelNumeric)
+                }
+                preview.netHr?.let { rate ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Net rate", color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+                        Text("RM ${rm(rate)}/hr", color = baki.onSurface, style = BakiType.captionNumeric)
+                    }
+                }
+                preview.grossPerKm?.let { perKm ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Gross per km", color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+                        Text("RM ${rm(perKm)}/km", color = baki.onSurface, style = BakiType.captionNumeric)
+                    }
+                }
+                LedgerRule(alpha = 0.18f)
                 val rate = preview.netHr
                 if (rate != null && hoursValue > 0 && rate < store.settings.profit.targetRate) {
                     val needed = grossToClearTarget(preview, store.settings.profit.targetRate)
@@ -2547,8 +2648,9 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = baki.container,
-        title = { Text("Vehicle costs & target", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+        containerColor = baki.surface,
+        shape = RoundedCornerShape(Radius.dialog),
+        title = { Text("Vehicle costs & target", color = baki.onSurface, style = BakiType.title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 ProfitField("Fuel price RM/L", fuel, baki)
@@ -2655,9 +2757,10 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             ) { Text("Save limits", fontWeight = FontWeight.Bold) }
         },
     ) {
-        Text("Monthly limits", color = baki.onSurface, style = BakiType.title )
-        Text("Leave a field blank for no cap. Applies to every month.", color = baki.muted, style = BakiType.caption )
-        Spacer(Modifier.height(Space.m))
+        Text("Monthly limits", color = baki.onSurface, style = BakiType.title)
+        Text("Leave a field blank for no cap. Applies to every month.", color = baki.muted, style = BakiType.caption)
+        Spacer(Modifier.height(Space.s))
+        if (baki.paper) LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Daily food cap", color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.labelStrong )
             OutlinedTextField(
@@ -2670,10 +2773,11 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 colors = bakiFieldColors(),
             )
         }
-        Text("Optional daily guardrail for the Food category; clear it for none.", color = baki.muted, style = BakiType.caption )
-        Spacer(Modifier.height(Space.m))
-        cats.forEach { c ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("Optional daily guardrail for the Food category; clear it for none.", color = baki.muted, style = BakiType.caption)
+        Spacer(Modifier.height(Space.s))
+        if (baki.paper) LedgerRule(alpha = 0.16f)
+        cats.forEachIndexed { index, c ->
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = Space.s)) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
                 Text(c.name, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label )

@@ -73,15 +73,15 @@ fun PayoutsSheet(
             null
         },
     ) {
-        Text(title, color = baki.onSurface, style = BakiType.subtitle)
-        Text(
-            buildString {
-                append(if (payouts.size == 1) "1 payout" else "${payouts.size} payouts")
-                append(" · RM ${rm(total)}")
-                if (editable) append("  ·  tap to edit, swipe to delete")
-            },
-            color = baki.muted, style = BakiType.captionNumeric,
-        )
+        Text(title, color = baki.onSurface, style = BakiType.title)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Text(
+                if (payouts.size == 1) "1 payout" else "${payouts.size} payouts",
+                color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f),
+            )
+            Text("RM ${rm(total)}", color = baki.onSurface, style = BakiType.titleNumeric)
+        }
+        if (editable) Text("tap to edit · swipe to delete", color = baki.muted, style = BakiType.caption)
         Spacer(Modifier.height(Space.s))
 
         payouts.forEachIndexed { index, payout ->
@@ -104,12 +104,12 @@ fun PayoutsSheet(
                 },
                 onDismiss = { if (editable) onDelete(index) },
             ) {
+                Column(Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth()
-                        .clip(RoundedCornerShape(Radius.card))
-                        .background(baki.surfaceHigh)
+                        .background(baki.container)
                         .clickable(enabled = editable) { editing = index }
-                        .padding(horizontal = Space.l, vertical = 12.dp),
+                        .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -127,6 +127,8 @@ fun PayoutsSheet(
                     if (editable) {
                         Text("Edit", color = baki.primary, style = BakiType.caption)
                     }
+                }
+                LedgerRule(alpha = 0.14f)
                 }
             }
         }

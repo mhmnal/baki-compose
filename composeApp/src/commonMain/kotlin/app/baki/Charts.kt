@@ -94,7 +94,7 @@ fun TrendBars(store: Store, month: String) {
     val peak = days.maxOfOrNull { abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
     Column {
-        Text("TREND", color = baki.muted, style = BakiType.captionStrong )
+        Text("TREND", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
         Row(
             Modifier.fillMaxWidth().height(96.dp),
@@ -118,10 +118,11 @@ fun TrendBars(store: Store, month: String) {
                 }
             }
         }
+        if (baki.paper) LedgerRule(alpha = 0.14f)
         Spacer(Modifier.height(Space.xs))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(days.first().first.takeLast(5), color = baki.muted, style = BakiType.caption )
-            Text(days.last().first.takeLast(5), color = baki.muted, style = BakiType.caption )
+            Text(days.first().first.takeLast(5), color = baki.muted, style = BakiType.caption)
+            Text(days.last().first.takeLast(5), color = baki.muted, style = BakiType.caption)
         }
     }
 }
@@ -136,8 +137,9 @@ fun HoursHeatmap(store: Store) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column {
-        Text("BEST HOURS", color = baki.muted, style = BakiType.captionStrong )
+        Text("BEST HOURS", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
+        if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Spacer(Modifier.width(Space.l))
             listOf("00", "04", "08", "12", "16", "20").forEach {
@@ -158,7 +160,7 @@ fun HoursHeatmap(store: Store) {
                     val has = (cell?.hours ?: 0.0) >= 0.25
                     val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
                     Box(
-                        Modifier.weight(1f).height(16.dp).clip(RoundedCornerShape(Radius.tiny))
+                        Modifier.weight(1f).height(16.dp)
                             .background(if (has) baki.primary.copy(alpha = 0.15f + fraction * 0.85f) else baki.surfaceHigh),
                     )
                 }

@@ -76,3 +76,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Ruled metrics/actions/filters, linear budget bars, ledger sparkline, ruled categories/diagnostics, flat snackbar and empty states.
 - 205 tests; nav/+ untouched.
 - Next review: live card, forms, charts, payout/statement sheets (no code yet).
+
+### Paper Sheet ordered pass
+
+- Live ticket, payout rows, flat sheets, entry/shift/budget forms, ledger charts, statement rows and dialogs.
+- 205 tests; live start/end smoke-tested on device.
+- No sign; phone remains 0.37.3.

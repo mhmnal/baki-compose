@@ -46,8 +46,9 @@ fun BakiSheet(
     LaunchedEffect(Unit) { visible = true }
 
     // corners square off as the sheet is dragged down, like a sheet being pulled away
+    val maxCorner = if (baki.paper) 4f else 28f
     val corner by animateDpAsState(
-        targetValue = (28 * (1f - (dragOffset / dragPx).coerceIn(0f, 1f))).dp,
+        targetValue = (maxCorner * (1f - (dragOffset / dragPx).coerceIn(0f, 1f))).dp,
         animationSpec = BakiMotion.effects(),
         label = "corner",
     )
@@ -79,9 +80,9 @@ fun BakiSheet(
             exit = slideOutVertically(BakiMotion.effectsSlow()) { it } + fadeOut(BakiMotion.effectsSlow()),
         ) {
             Surface(
-                color = baki.container,
+                color = if (baki.paper) baki.surface else baki.container,
                 shape = RoundedCornerShape(topStart = corner, topEnd = corner),
-                shadowElevation = 24.dp,
+                shadowElevation = if (baki.paper) 0.dp else 24.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     // never taller than the screen, or the last control ends up unreachable
@@ -119,12 +120,14 @@ fun BakiSheet(
                                 .background(baki.muted.copy(alpha = 0.5f)),
                         )
                     }
+                    if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.ml), alpha = 0.16f)
                     Column(
                         Modifier
                             .fillMaxWidth()
                             .weight(1f, fill = false)
                             .verticalScroll(rememberScrollState())
-                            .padding(horizontal = Space.ml),
+                            .padding(horizontal = Space.ml)
+                            .padding(top = Space.m),
                         verticalArrangement = Arrangement.spacedBy(Space.m),
                     ) {
                         content()
@@ -132,6 +135,7 @@ fun BakiSheet(
                     }
                     // pinned: a long list can never push the primary action off-screen
                     if (footer != null) {
+                        if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.ml), alpha = 0.16f)
                         Box(Modifier.fillMaxWidth().padding(horizontal = Space.ml).padding(bottom = 26.dp, top = 6.dp)) {
                             footer()
                         }

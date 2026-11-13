@@ -51,11 +51,11 @@ fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
             "${rows.size} imported week${if (rows.size == 1) "" else "s"} · income and insurance reconciliation",
             color = baki.muted, style = BakiType.caption,
         )
-        rows.forEach { st ->
+        rows.forEachIndexed { index, st ->
             val check = statementCheck(store, st)
             val gap = check.loggedGross / 100.0 - st.income
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.surfaceHigh).padding(Space.l),
+                Modifier.fillMaxWidth().padding(vertical = Space.m),
             ) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
@@ -90,6 +90,7 @@ fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
                     color = baki.muted, style = BakiType.nano,
                 )
             }
+            if (index != rows.lastIndex) LedgerRule(alpha = 0.16f)
         }
     }
 }

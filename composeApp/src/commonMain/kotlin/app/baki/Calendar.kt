@@ -22,8 +22,9 @@ fun CalendarHeat(store: Store, month: String) {
     val today = todayIso()
 
     Column {
-        Text("CALENDAR", color = baki.muted, style = BakiType.captionStrong )
+        Text("CALENDAR", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
+        if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach {
                 Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
@@ -65,8 +66,10 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette)
     val isToday = iso == today
 
     Box(
-        Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.small)).background(fill)
-            .then(if (isToday) Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.small)) else Modifier),
+        Modifier.fillMaxSize()
+            .then(if (baki.paper) Modifier else Modifier.clip(RoundedCornerShape(Radius.small)))
+            .background(fill)
+            .then(if (isToday) Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.tiny)) else Modifier),
         contentAlignment = Alignment.Center,
     ) {
         Text(
