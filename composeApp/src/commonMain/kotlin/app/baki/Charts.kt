@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -34,7 +36,8 @@ fun WeekStrip(store: Store, endDay: String) {
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
     val today = todayIso()
 
-    Column {
+    BoxWithConstraints {
+        val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             days.forEachIndexed { i, d ->
                 val t = totals[i]
@@ -47,7 +50,10 @@ fun WeekStrip(store: Store, endDay: String) {
                     Text(
                         d.takeLast(2),
                         color = if (d == today) baki.primary else baki.muted,
-                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
+                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
+                        style = if (compact) BakiType.nano else BakiType.caption,
+                        maxLines = 1,
+                    )
                     Spacer(Modifier.height(Space.s))
                     Box(
                         Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh),
@@ -62,7 +68,9 @@ fun WeekStrip(store: Store, endDay: String) {
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         if (t.entryCount == 0 && t.shiftCount == 0) "–" else if (BakiPrivacy.discreet) "••" else (t.net / 100).toInt().toString(),
-                        color = baki.muted, style = BakiType.caption )
+                        color = baki.muted, style = if (compact) BakiType.nano else BakiType.caption,
+                        maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
+                    )
                 }
             }
         }

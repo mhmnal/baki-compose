@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -80,12 +81,26 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
                 Text("THIS WEEK", color = baki.muted, style = BakiType.captionStrong )
                 Spacer(Modifier.height(Space.s))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    EasedMoney(thisWeek.net, baki.onSurface, BakiType.title)
-                    Spacer(Modifier.width(Space.s))
-                    Text(
-                        "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
-                        color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption )
+                BoxWithConstraints {
+                    val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+                    if (compact) {
+                        Column {
+                            EasedMoney(thisWeek.net, baki.onSurface, BakiType.title)
+                            Text(
+                                "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
+                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
+                            )
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            EasedMoney(thisWeek.net, baki.onSurface, BakiType.title)
+                            Spacer(Modifier.width(Space.s))
+                            Text(
+                                "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
+                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
+                            )
+                        }
+                    }
                 }
                 Text(
                     "${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries · last week RM ${rm(lastWeek.net)}",

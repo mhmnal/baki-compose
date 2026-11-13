@@ -23,4 +23,11 @@ class PaperThemeTest {
         assertEquals(50, Radius.glass.value.toInt())
         assertTrue(Radius.glass > Radius.card)
     }
+
+    @Test
+    fun longMoneyStepsDownWithoutLosingTheHero() {
+        assertEquals(BakiType.displayNumeric.fontSize, heroMoneyStyle(8705).fontSize)
+        assertEquals(BakiType.displaySmallNumeric.fontSize, heroMoneyStyle(1_000_000).fontSize)
+        assertEquals(BakiType.headlineNumeric.fontSize, heroMoneyStyle(10_000_000).fontSize)
+    }
 }

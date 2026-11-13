@@ -57,3 +57,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - One-time migration from Sage default to Paper (a later Sage choice sticks).
 - Animated list placement and sync stamp; 203 tests.
 - Ready for sign/install after explicit instruction; phone remains 0.37.3.
+
+## 0.37.6 candidate
+
+- Paper Ledger refinement: Source Serif 4, M3 type mapping, static grain, adaptive hero/layouts.
+- 205 tests; viewport sweep at 360/390/412 and 1.3x type.
+- No sign yet; phone remains 0.37.3. Nav labels at 360/large type are intentionally untouched.

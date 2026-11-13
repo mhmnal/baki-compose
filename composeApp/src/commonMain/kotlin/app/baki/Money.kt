@@ -113,6 +113,8 @@ fun EasedMoney(
         prefix + rm(shown.value.roundToLong()),
         color = color,
         style = style,
+        maxLines = 1,
+        softWrap = false,
         modifier = modifier,
     )
 }

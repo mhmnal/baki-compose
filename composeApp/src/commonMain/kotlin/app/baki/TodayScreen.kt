@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -115,40 +116,62 @@ fun TodayScreen(
         item { DayPill(day, today, onDay) }
 
         item {
-            Column {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM", color = baki.muted,
-                        modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = BakiType.title )
-                    EasedMoney(t.net, baki.onSurface, BakiType.displayNumeric, prefix = "")
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
-                        color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (operating.shiftCount > 0) {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("OPERATING", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
+            BoxWithConstraints {
+                val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
+                Column {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("RM", color = baki.muted,
+                            modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = BakiType.title )
+                        EasedMoney(t.net, baki.onSurface, heroMoneyStyle(t.net), prefix = "")
+                    }
+                    if (compact) {
+                        Text(
+                            if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
+                            color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+                        )
+                        if (operating.shiftCount > 0) {
+                            Spacer(Modifier.height(Space.xs))
+                            Column {
+                                Text(
+                                    "OPERATING · RM ${rm(operating.net)}" +
+                                        (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
+                                    color = if (operating.net >= 0) baki.onSurface else baki.down,
+                                    style = BakiType.labelNumeric,
+                                )
+                                Text("after running costs", color = baki.muted, style = BakiType.nano)
+                            }
+                        }
+                    } else {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                             Text(
-                                "RM ${rm(operating.net)}" +
-                                    (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
-                                color = if (operating.net >= 0) baki.onSurface else baki.down,
-                                style = BakiType.labelNumeric,
+                                if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
+                                color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+                                modifier = Modifier.weight(1f),
                             )
-                            Text("after running costs", color = baki.muted, style = BakiType.nano)
+                            if (operating.shiftCount > 0) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("OPERATING", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
+                                    Text(
+                                        "RM ${rm(operating.net)}" +
+                                            (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
+                                        color = if (operating.net >= 0) baki.onSurface else baki.down,
+                                        style = BakiType.labelNumeric,
+                                    )
+                                    Text("after running costs", color = baki.muted, style = BakiType.nano)
+                                }
+                            }
                         }
                     }
-                }
-                if (baki.paper) {
-                    Spacer(Modifier.height(Space.s))
-                    LedgerRule(double = true)
+                    if (baki.paper) {
+                        Spacer(Modifier.height(Space.s))
+                        LedgerRule(double = true)
+                    }
                 }
             }
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 Chip("in RM ${rm(t.income)}", baki.up)
                 Chip("out RM ${rm(t.expense)}", baki.down)
             }
@@ -156,24 +179,43 @@ fun TodayScreen(
 
         food?.let { f ->
             item {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input))
-                        .background(baki.container).padding(horizontal = Space.m, vertical = Space.s),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                        color = if (f.over) baki.down else baki.onSurface,
-                        style = BakiType.labelNumeric,
-                    )
-                    Spacer(Modifier.width(Space.s))
-                    Text(
-                        if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
-                        color = if (f.over) baki.down else baki.up,
-                        style = BakiType.caption,
-                    )
+                BoxWithConstraints {
+                    val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
+                    val panel = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input))
+                        .background(baki.container).padding(horizontal = Space.m, vertical = Space.s)
+                    if (compact) {
+                        Column(panel, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                            Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                                Text(
+                                    "RM ${rm(f.spent)} / ${rm(f.cap)}",
+                                    color = if (f.over) baki.down else baki.onSurface,
+                                    style = BakiType.labelNumeric,
+                                )
+                                Text(
+                                    if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
+                                    color = if (f.over) baki.down else baki.up,
+                                    style = BakiType.caption,
+                                )
+                            }
+                        }
+                    } else {
+                        Row(panel, verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                "RM ${rm(f.spent)} / ${rm(f.cap)}",
+                                color = if (f.over) baki.down else baki.onSurface,
+                                style = BakiType.labelNumeric,
+                            )
+                            Spacer(Modifier.width(Space.s))
+                            Text(
+                                if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
+                                color = if (f.over) baki.down else baki.up,
+                                style = BakiType.caption,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -222,8 +264,10 @@ fun TodayScreen(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
-                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp,
+                            style = BakiType.captionStrong, modifier = Modifier.weight(1f),
+                        )
                         Box(
                             Modifier.clip(RoundedCornerShape(Radius.pill))
                                 .background(bandColor(m.band, baki).copy(alpha = 0.18f))
@@ -233,11 +277,23 @@ fun TodayScreen(
                         }
                     }
                     Spacer(Modifier.height(Space.xs))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
-                        Spacer(Modifier.weight(1f))
-                        m.netHr?.let {
-                            Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
+                    BoxWithConstraints {
+                        val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+                        if (compact) {
+                            Column {
+                                Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric, maxLines = 1)
+                                m.netHr?.let {
+                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong, maxLines = 1)
+                                }
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.Bottom) {
+                                Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
+                                Spacer(Modifier.weight(1f))
+                                m.netHr?.let {
+                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
+                                }
+                            }
                         }
                     }
                     Text(
@@ -257,7 +313,9 @@ fun TodayScreen(
                                 "target RM ${rm(cfg.targetRate)}/hr · " +
                                     if (delta >= 0) "RM ${rm(delta)} above"
                                     else "RM ${rm(-delta)} short",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption )
+                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                     if (day == today && live == null && !repo.readOnly) {

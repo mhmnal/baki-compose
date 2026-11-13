@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.inter_variable
 import baki_compose.composeapp.generated.resources.jetbrains_mono
+import baki_compose.composeapp.generated.resources.source_serif_4
 import baki_compose.composeapp.generated.resources.space_grotesk
 import baki_compose.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.Font
@@ -115,7 +116,7 @@ object BakiType {
     /** M3 labelSmall */
     var caption = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.15.sp)
     /** all-caps section header */
-    var section = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.44.sp)
+    var section = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.44.sp)
     var micro = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
     /** small print that still needs to shout: 14 sp, bold, no tracking */
     var captionStrong = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold)
@@ -184,6 +185,16 @@ object BakiType {
     }
 }
 
+/** Keeps a long money total inside its column without flattening the hierarchy. */
+fun heroMoneyStyle(cents: Long): TextStyle {
+    val value = kotlin.math.abs(cents)
+    return when {
+        value >= 100_000_00L -> BakiType.headlineNumeric
+        value >= 10_000_00L -> BakiType.displaySmallNumeric
+        else -> BakiType.displayNumeric
+    }
+}
+
 /**
  * Material 3 Expressive springs, carried here because the multiplatform material3 artifact keeps
  * `MotionScheme` internal. Spatial moves (position, size) may overshoot; effects moves (alpha,
@@ -218,8 +229,9 @@ fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
     val text = Font(Res.font.inter_variable, FontWeight.Normal)
     // Paper Ledger on the phone; the desk keeps its Space Grotesk / JetBrains Mono voice.
     val paper = !Caps.isDesktop || PhonePreview.active
-    val display = if (paper) FontFamily.Serif else FontFamily(Font(Res.font.space_grotesk, FontWeight.Normal))
-    val readout = if (paper) FontFamily.Serif else FontFamily(Font(Res.font.jetbrains_mono, FontWeight.Normal))
+    val serif = Font(Res.font.source_serif_4, FontWeight.Normal)
+    val display = if (paper) FontFamily(serif) else FontFamily(Font(Res.font.space_grotesk, FontWeight.Normal))
+    val readout = if (paper) FontFamily(serif) else FontFamily(Font(Res.font.jetbrains_mono, FontWeight.Normal))
     return remember { Triple(FontFamily(text), display, readout) }
 }
 

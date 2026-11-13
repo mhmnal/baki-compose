@@ -14,7 +14,7 @@ Two surfaces, one ledger:
 Current version: **0.37.3** (`versionCode` 108+). The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **203 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -46,11 +46,13 @@ Test suite: **203 JVM tests** (`:composeApp:desktopTest`).
 - routes never leave the phone unsealed; the server stores ciphertext only
 
 **Phone UI**
-- Paper Ledger: warm paper/ink light mode, warm-black/brass night mode, serif ledger amounts
+- Paper Ledger: warm paper/ink light mode, warm-black/brass night mode
+- bundled **Source Serif 4** display/tabular money, paired with Inter controls
+- very subtle static paper grain, M3 typography roles, ruled sections and square controls
 - **liquid-glass nav and `+` are preserved**; Paper Ledger styles the content around them
 - More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
 - cash truth, service target, weekly review and privacy/discreet amounts
-- press feedback, animated sync stamp and animated list placement
+- press feedback, animated sync stamp, animated list placement and adaptive 360–412dp layouts
 
 ## Stack
 
@@ -58,6 +60,8 @@ Test suite: **203 JVM tests** (`:composeApp:desktopTest`).
 - Desktop runs on JDK 21 (Backdrop ships Java 21 bytecode)
 - Server: Node (`../grab-tracker/server.mjs`), JSON store, merge-only writes, tombstones, 30 rotating backups
 - PDF: `pdfbox-android` on the phone, `pdfbox` on the desk
+- Phone display: **Source Serif 4** (SIL Open Font License 1.1), bundled under
+  `composeApp/src/commonMain/composeResources/files/source-serif-4-OFL.txt`
 
 ## Layout
 

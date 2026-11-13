@@ -1059,3 +1059,13 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Phone previews resolve the stored phone pack; the desk keeps its Sage neumorphic system.
 - Liquid-glass nav and + are explicitly protected; no tint/blur/geometry changes.
 - 203 tests including Paper light/dark contrast and glass geometry.
+
+## Paper Ledger refinement (0.37.5 candidate)
+
+- Bundled Source Serif 4 (OFL) for display and tabular money; Inter for controls/body.
+- M3 typography roles mapped to BakiType so Material controls stop using default type.
+- Static low-opacity paper grain tile behind content; no shader, no animation, no overlay on text.
+- 13sp section labels with increased tracking; 16dp screen gutters, 12dp block gaps, 16dp panels.
+- Adaptive hero sizing and stacked metadata at 360dp / 1.3x font scale.
+- The liquid-glass nav and + remain protected and untouched; 360dp nav labels still truncate by explicit choice.
+- 205 tests and a 4-viewport × 5-tab visual sweep.

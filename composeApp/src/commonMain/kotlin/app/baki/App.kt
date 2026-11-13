@@ -244,8 +244,12 @@ private fun AppContent(repo: BakiRepo) {
     Box(
         Modifier.fillMaxSize().then(Modifier.layerBackdrop(glassBackdrop)),
     ) {
+    // A static paper tooth behind every screen; cards stay opaque so only the page carries grain.
+    Box(Modifier.fillMaxSize().background(baki.surface)) {
+        PaperGrain(Modifier.fillMaxSize())
+    }
     Scaffold(
-        containerColor = baki.surface,
+        containerColor = Color.Transparent,
         snackbarHost = {
             BakiSnackbarHost(snackbar, Modifier.padding(horizontal = Space.m).padding(bottom = snackbarBottom))
         },
@@ -736,7 +740,7 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
         EasedMoney(
             cents = amountCents, color = ink,
             // tabular figures: the hero number keeps its width as digits change
-            style = if (size >= 40) BakiType.displayNumeric else BakiType.headlineNumeric,
+            style = if (size >= 40) heroMoneyStyle(amountCents) else BakiType.headlineNumeric,
         )
     }
 }

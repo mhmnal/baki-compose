@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -70,11 +71,33 @@ private val PaperShapes = Shapes(
     extraLarge = RoundedCornerShape(Radius.sheet),
 )
 
+/** Material components now speak the same type system as the hand-built screens. */
+private fun bakiTypography() = Typography(
+    displayLarge = BakiType.display,
+    displayMedium = BakiType.displaySmall,
+    displaySmall = BakiType.headline,
+    headlineLarge = BakiType.headline,
+    headlineMedium = BakiType.headline,
+    headlineSmall = BakiType.title,
+    titleLarge = BakiType.title,
+    titleMedium = BakiType.subtitle,
+    titleSmall = BakiType.labelStrong,
+    bodyLarge = BakiType.body,
+    bodyMedium = BakiType.caption,
+    bodySmall = BakiType.bodySmall,
+    labelLarge = BakiType.label,
+    labelMedium = BakiType.caption,
+    labelSmall = BakiType.micro,
+)
+
 private fun schemeOf(p: BakiPalette) = if (p.dark) darkColorScheme(
     primary = p.primary, onPrimary = p.onPrimary,
     primaryContainer = p.primaryContainer, onPrimaryContainer = p.onPrimaryContainer,
     surface = p.surface, onSurface = p.onSurface,
     surfaceVariant = p.container, onSurfaceVariant = p.muted,
+    surfaceContainerLowest = p.surface, surfaceContainerLow = p.container,
+    surfaceContainer = p.container, surfaceContainerHigh = p.surfaceHigh,
+    surfaceContainerHighest = p.surfaceHigh,
     outline = p.muted.copy(alpha = 0.55f), outlineVariant = p.surfaceHigh,
     background = p.surface, error = p.down,
 ) else lightColorScheme(
@@ -82,6 +105,9 @@ private fun schemeOf(p: BakiPalette) = if (p.dark) darkColorScheme(
     primaryContainer = p.primaryContainer, onPrimaryContainer = p.onPrimaryContainer,
     surface = p.surface, onSurface = p.onSurface,
     surfaceVariant = p.container, onSurfaceVariant = p.muted,
+    surfaceContainerLowest = p.surface, surfaceContainerLow = p.container,
+    surfaceContainer = p.container, surfaceContainerHigh = p.surfaceHigh,
+    surfaceContainerHighest = p.surfaceHigh,
     outline = p.muted.copy(alpha = 0.55f), outlineVariant = p.surfaceHigh,
     background = p.surface, error = p.down,
 )
@@ -179,6 +205,7 @@ fun BakiTheme(
     CompositionLocalProvider(LocalBaki provides palette) {
         MaterialTheme(
             colorScheme = schemeOf(palette),
+            typography = if (!Caps.isDesktop || PhonePreview.active) bakiTypography() else Typography(),
             shapes = if (!Caps.isDesktop || PhonePreview.active) PaperShapes else Shapes(),
             content = content,
         )
