@@ -14,7 +14,7 @@ Two surfaces, one ledger:
 Current version: **0.37.3** (`versionCode` 108+). The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **195 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **200 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -113,6 +113,5 @@ committed.
 - The desk is read-only by design.
 - Dynamic (wallpaper) colour is not contrast-clamped.
 - Phone TalkBack coverage of custom canvases and swipe rows is incomplete.
-- Cover renewal uses a shift's worked hours, not its saved wall-clock end. A break that crosses a
-  24h window boundary can still misprice a renewal; the duplicate insurance entry fixed in 0.37.3
-  was a separate Quick Add issue.
+- Cover renewal uses the saved wall-clock end (`hours + breakMinutes`). Older shifts without a
+  break value fall back to worked hours.

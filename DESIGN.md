@@ -1042,3 +1042,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Quick Add excludes grabfee; insurance remains shift-generated only.
 - Server duplicate `c-mweov39k6810fb` tombstoned; 13 Nov auto fee remains RM7.50.
 - 195 tests; phone 0.37.3 / code 108. Break/wall-clock cover bug still open separately.
+
+## Reliability gate (0.37.4 candidate)
+
+- Manual Grab insurance is rejected at the entry layer and hidden from manual categories.
+- Cover windows use `shiftEndMs()`: start + worked hours + saved break minutes.
+- Boundary tests cover a break crossing the 24h renewal, no-break fallback, linked fee creation and the end helper.
+- `scripts/preflight.sh` is the mandatory live-data check before ledger/fee/location answers.
+- 200 tests. No sign yet; phone remains 0.37.3.

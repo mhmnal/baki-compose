@@ -439,6 +439,9 @@ fun targetStreak(store: Store, today: String): Int {
     return streak
 }
 
+/** Categories whose rows are generated from another record; never add them by hand. */
+fun isDerivedCategory(cat: String): Boolean = cat == "grabfee"
+
 /** One remembered shortcut: the same category at the same amount, used more than once. */
 data class QuickAdd(val cat: String, val cents: Long, val count: Int)
 
@@ -446,7 +449,7 @@ data class QuickAdd(val cat: String, val cents: Long, val count: Int)
 fun quickAdds(store: Store, limit: Int = 4, sinceDays: Int = 60): List<QuickAdd> {
     val cutoff = addDays(todayIso(), -sinceDays)
     return store.entries
-        .filter { it.type != "income" && it.amount > 0 && it.date >= cutoff && it.cat != "grabfee" }
+        .filter { it.type != "income" && it.amount > 0 && it.date >= cutoff && !isDerivedCategory(it.cat) }
         .groupBy { it.cat to it.amount }
         .map { (key, rows) -> QuickAdd(key.first, key.second, rows.size) }
         .filter { it.count >= 2 }

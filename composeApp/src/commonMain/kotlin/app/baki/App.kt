@@ -2224,7 +2224,9 @@ private fun EntryDialog(
     var note by remember { mutableStateOf(existing?.note ?: "") }
     var date by remember { mutableStateOf(existing?.date ?: day) }
     var odo by remember { mutableStateOf(existing?.odo?.toString() ?: "") }
-    val cats = if (type == "income") settings.cats.catsIn else settings.cats.catsOut
+    // Grab insurance is derived from the shift timeline; manual entry would double-charge it.
+    val cats = (if (type == "income") settings.cats.catsIn else settings.cats.catsOut)
+        .filterNot { isDerivedCategory(it.id) }
     var cat by remember(type) { mutableStateOf(existing?.cat ?: initialCat ?: cats.firstOrNull()?.id ?: "other") }
     val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
 

@@ -33,6 +33,8 @@ data class Shift(
     val date: String,
     val start: String = "",
     val hours: Double = 0.0,
+    /** Break time excluded from [hours], kept so cover uses the real wall-clock end. */
+    val breakMinutes: Int = 0,
     val odoStart: Double? = null,
     val odoEnd: Double? = null,
     val km: Double = 0.0,

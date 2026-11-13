@@ -278,6 +278,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         type: String, amountCents: Long, cat: String, note: String, date: String, odo: Int? = null,
     ): String? = mutex.withLock {
         if (blocked()) return@withLock null
+        // Grab insurance is derived from the shift timeline. A manual duplicate would double the fee.
+        if (isDerivedCategory(cat)) return@withLock null
         val stamp = nowIso()
         val entry = Entry(
             id = newId(), date = date, type = type, cat = cat, amount = amountCents,
@@ -532,8 +534,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val total = liveTotalCents(current)
         val date = startDate(current.start)
         val start = startClock(current.start)
-        // breaks do not count as working time
+        // breaks do not count as working time, but they do extend the wall-clock cover window
         val hours = max(0.05, liveWorkedMs(current, now) / 3_600_000.0)
+        val breakMinutes = ((pausedMs(current, now) + 30_000L) / 60_000L).toInt().coerceIn(0, 24 * 60)
         // real distance when the tracker saw enough movement, else the old hours × average guess.
         // The correction makes up for chords cutting corners on a curving route.
         val measuredKm = current.km * store.settings.gpsCorrection
@@ -557,7 +560,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val pending = drainRouteBuffer()
         if (pending.isNotEmpty()) RouteStore.append(routeKey, date, pending)
         val shift = Shift(
-            id = shiftId, date = date, start = start, hours = hours,
+            id = shiftId, date = date, start = start, hours = hours, breakMinutes = breakMinutes,
             km = if (measuredKm >= 0.3) measuredKm else 0.0,
             gross = total, grabFee = charge, updated = nowIso(),
             payouts = current.payouts,

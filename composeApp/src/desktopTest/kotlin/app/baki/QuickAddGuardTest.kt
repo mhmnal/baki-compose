@@ -1,6 +1,7 @@
 package app.baki
 
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class QuickAddGuardTest {
@@ -17,5 +18,12 @@ class QuickAddGuardTest {
         val quick = quickAdds(store)
         assertTrue(quick.none { it.cat == "grabfee" })
         assertTrue(quick.any { it.cat == "food" })
+    }
+
+    @Test
+    fun onlyGrabfeeIsDerivedToday() {
+        assertTrue(isDerivedCategory("grabfee"))
+        assertFalse(isDerivedCategory("food"))
+        assertFalse(isDerivedCategory("fuel"))
     }
 }

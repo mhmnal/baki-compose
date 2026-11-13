@@ -38,6 +38,20 @@ Open the device or the desktop window when the question is one of those. Say whi
 renders never touch the real ledger. The amber "cached" pill in those frames is that fixture, not a
 bug in the app.
 
+## Reliability contract
+
+- **Live state first.** Before answering any ledger, fee or location question, run
+  `./scripts/preflight.sh` (or query `/api/data` and check `../grab-tracker/data.json` mtime).
+  Never conclude "not there" from one cached file.
+- **Money is integer cents.** Never introduce floating-point currency.
+- **Derived rows stay derived.** `grabfee` is generated from the shift timeline
+  (`isDerivedCategory`); Quick Add, manual category chips and `Repo.addEntry` must reject it.
+- **Cover is wall-clock.** A shift's end is `start + hours + breakMinutes`; use `shiftEndMs()`.
+  Test breaks that cross a 24h boundary.
+- **Preview is not device proof.** Render dark/light, then test interaction, GPS, services,
+  permissions and sync on the phone. State which checks were actually done.
+- **Sign/install only after explicit instruction.** Build, test and commit first.
+
 ## Environment
 
 This sandbox has no network. Use the checked-in toolchain:

@@ -43,3 +43,10 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Live yield + daily food cap (committed checkpoint ad58611)
 - More Money/Shift/App restructure (this gate)
 - Final review before signing; no sign yet.
+
+## 0.37.4 candidate
+
+- Reliability contract in AGENTS.md.
+- Hard manual-grabfee rejection and hidden category.
+- Wall-clock cover end with break minutes + boundary tests.
+- Live preflight script. Ready for review/sign; phone remains 0.37.3.

@@ -27,13 +27,19 @@ fun shiftStartMs(sh: Shift, tz: TimeZone = TimeZone.currentSystemDefault()): Lon
     return midnight + minutes * 60_000L
 }
 
+/** Wall-clock end: worked hours plus saved break time. */
+fun shiftEndMs(sh: Shift, tz: TimeZone = TimeZone.currentSystemDefault()): Long =
+    shiftStartMs(sh, tz) +
+        (sh.hours * 3_600_000.0).toLong() +
+        (sh.breakMinutes.coerceAtLeast(0) * 60_000L)
+
 /**
  * How many insurance windows each shift consumes.
  *
  * Grab bills a rolling 24h window. A shift that starts inside an already-paid window costs nothing
  * up front, but if it is still running when that window ends, a new one starts immediately — the
- * renewal belongs to the shift that is happening, not to the next shift. A 30h shift can consume two
- * renewals; the loop handles that without special cases.
+ * renewal belongs to the shift that is happening, not to the next shift. The end is wall-clock:
+ * worked hours plus any saved break time.
  */
 fun coverWindows(shifts: List<Shift>, tz: TimeZone = TimeZone.currentSystemDefault()): Map<String, Int> {
     val sorted = shifts.sortedBy { shiftStartMs(it, tz) }
@@ -41,7 +47,7 @@ fun coverWindows(shifts: List<Shift>, tz: TimeZone = TimeZone.currentSystemDefau
     var paidUntil = Long.MIN_VALUE
     for (sh in sorted) {
         val start = shiftStartMs(sh, tz)
-        val end = start + (sh.hours * 3_600_000.0).toLong()
+        val end = shiftEndMs(sh, tz)
         var count = 0
         if (paidUntil == Long.MIN_VALUE || start >= paidUntil) {
             count++
@@ -146,7 +152,7 @@ fun coverPaidUntil(store: Store, tz: TimeZone = TimeZone.currentSystemDefault())
     val sorted = store.shifts.sortedBy { shiftStartMs(it, tz) }
     for (sh in sorted) {
         val start = shiftStartMs(sh, tz)
-        val end = start + (sh.hours * 3_600_000.0).toLong()
+        val end = shiftEndMs(sh, tz)
         if (paidUntil == Long.MIN_VALUE || start >= paidUntil) paidUntil = start + DAY_MS
         while (paidUntil < end) paidUntil += DAY_MS
     }
