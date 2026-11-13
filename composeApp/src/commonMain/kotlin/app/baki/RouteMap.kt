@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -239,7 +240,8 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
                     }
                     Text(
                         "Close", color = baki.primary, style = BakiType.labelStrong,
-                        modifier = Modifier.clip(RoundedCornerShape(Radius.pill)).clickable { onDismiss() }
+                        modifier = Modifier.heightIn(min = Control.primary)
+                            .clip(RoundedCornerShape(Radius.pill)).clickable { onDismiss() }
                             .padding(horizontal = Space.m, vertical = 8.dp),
                     )
                 }

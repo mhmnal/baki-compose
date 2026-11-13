@@ -93,3 +93,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - QR screen, flat Summary/More, responsive forms and final polish.
 - 205 tests. QR activity is non-exported and was compile-verified, not shell-launched.
 - No sign; phone remains 0.37.3.
+
+### Accessibility gate
+
+- 48dp controls, paper contrast regression test, tab/heading/chart semantics.
+- 207 tests. Residual: no Android-tablet max-width container; loading/error banners unchanged.
+- No sign yet.

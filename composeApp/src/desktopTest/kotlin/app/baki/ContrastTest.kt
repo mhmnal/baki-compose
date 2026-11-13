@@ -60,6 +60,29 @@ class ContrastTest {
     }
 
     @Test
+    fun paperTextOnPaperSurfaces() {
+        // Paper is the shipping phone theme; links, values and raised-control ink have their own floor.
+        val failures = mutableListOf<String>()
+        listOf("paper" to PaperPalette, "paper night" to PaperNightPalette).forEach { (name, p) ->
+            listOf(
+                "primary/surface" to (p.primary to p.surface),
+                "primary/container" to (p.primary to p.container),
+                "primary/surfaceHigh" to (p.primary to p.surfaceHigh),
+                "onSurface/container" to (p.onSurface to p.container),
+                "onSurface/surfaceHigh" to (p.onSurface to p.surfaceHigh),
+                "muted/container" to (p.muted to p.container),
+                "up/container" to (p.up to p.container),
+                "down/container" to (p.down to p.container),
+                "warn/container" to (p.warn to p.container),
+            ).forEach { (pair, colors) ->
+                val r = ratio(colors.first, colors.second)
+                if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
+            }
+        }
+        assertTrue(failures.isEmpty(), "paper contrast failures:\n" + failures.joinToString("\n"))
+    }
+
+    @Test
     fun canvasTextMeetsTheReadableFloors() {
         // the neumorphic canvas is darker than the palette surface, so the derived colours must be
         // checked against it, not against the palette

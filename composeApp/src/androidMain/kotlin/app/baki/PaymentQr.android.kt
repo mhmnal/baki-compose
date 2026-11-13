@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -121,7 +122,7 @@ actual fun PaymentQrSection() {
                                     .putExtra(QrActivity.EXTRA_QR_ID, item.id)
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
                             )
-                        }.padding(vertical = Space.s),
+                        }.heightIn(min = Control.primary).padding(vertical = Space.s),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
@@ -233,7 +234,7 @@ private fun PaymentQrViewer(meta: PaymentQrMeta, onClose: () -> Unit) {
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = "Payment QR for ${meta.label}",
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 72.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = Space.l, vertical = 72.dp),
                 )
             } else {
                 Text(

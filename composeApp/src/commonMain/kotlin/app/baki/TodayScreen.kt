@@ -43,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -417,7 +419,12 @@ fun TodayScreen(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Spacer(Modifier.weight(1f))
-                Text("see all →", color = baki.muted, modifier = Modifier.clickable { onSeeAll() }, style = BakiType.caption )
+                Text(
+                    "see all →", color = baki.muted,
+                    modifier = Modifier.heightIn(min = Control.primary).clickable { onSeeAll() }
+                        .semantics { role = Role.Button },
+                    style = BakiType.caption,
+                )
             }
         }
 
@@ -557,7 +564,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
 @Composable
 fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).tactileClickable { onClick() },
+        modifier.heightIn(min = Control.primary).clip(RoundedCornerShape(Radius.pill)).background(bg).tactileClickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(label, color = ink,

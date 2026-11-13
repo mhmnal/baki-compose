@@ -12,6 +12,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -93,7 +95,7 @@ fun TrendBars(store: Store, month: String) {
     if (days.isEmpty()) return
     val peak = days.maxOfOrNull { abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
-    Column {
+    Column(Modifier.semantics { contentDescription = "Daily net trend for the month" }) {
         Text("TREND", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
         Row(
@@ -136,7 +138,7 @@ fun HoursHeatmap(store: Store) {
     val peak = blocks.maxOf { it.rate }.coerceAtLeast(1.0)
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
-    Column {
+    Column(Modifier.semantics { contentDescription = "Best earning hours heatmap" }) {
         Text("BEST HOURS", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
         if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }
@@ -187,7 +189,7 @@ fun Sparkline(
     fill: Color,
 ) {
     val baki = LocalBaki.current
-    Canvas(modifier) {
+    Canvas(modifier.semantics { contentDescription = "Seven day net trend" }) {
         if (values.size < 2) return@Canvas
         if (baki.paper) {
             // Ledger version: vertical ink marks, not a dashboard curve.

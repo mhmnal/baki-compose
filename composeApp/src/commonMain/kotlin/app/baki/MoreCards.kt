@@ -8,6 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -130,8 +134,9 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                 Spacer(Modifier.width(Space.s))
                 Text(
                     c.name, color = baki.onSurface,
-                    modifier = Modifier.weight(1f)
-                        .clickable(enabled = editable) { renaming = c; renameDraft = c.name },
+                    modifier = Modifier.weight(1f).heightIn(min = Control.primary)
+                        .clickable(enabled = editable) { renaming = c; renameDraft = c.name }
+                        .semantics { if (editable) role = Role.Button },
                     style = BakiType.label,
                 )
                 Text(if (used > 0) "$used" else "", color = baki.muted, style = BakiType.caption )
@@ -140,9 +145,14 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                     "×",
                     color = if (used > 0 || !editable) baki.muted.copy(alpha = 0.35f) else baki.down,
                     modifier = Modifier
+                        .heightIn(min = Control.primary)
                         .clip(RoundedCornerShape(Radius.pill))
                         .clickable(enabled = used == 0 && editable) {
                             scope.launch { repo.removeCategory(c.id) }
+                        }
+                        .semantics {
+                            contentDescription = "Remove ${c.name}"
+                            if (used == 0 && editable) role = Role.Button
                         }
                         .padding(horizontal = Space.m), style = BakiType.bodyStrong )
             }

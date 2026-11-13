@@ -38,6 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -94,7 +98,7 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
         PaperGrain(Modifier.fillMaxSize())
         Column(
             Modifier.fillMaxSize().systemBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = Space.l, vertical = Space.l),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Receive payment", color = baki.onSurface, style = BakiType.title)
@@ -112,7 +116,8 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
                         val on = index == selected
                         Column(
                             Modifier.width(IntrinsicSize.Max).clickable { selected = index }
-                                .heightIn(min = Control.primary),
+                                .heightIn(min = Control.primary)
+                                .semantics { this.selected = on; role = Role.Tab },
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {

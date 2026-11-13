@@ -1118,3 +1118,13 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Shift form pairs stack at narrow width/large type.
 - Field outlines are quieter; badges, emoji glyphs and inline empty states cleaned up.
 - Widgets intentionally remain a separate platform gate. 205 tests; glass nav/+ untouched.
+
+## Accessibility gate
+
+- All interactive controls use a 48dp minimum; `Control.secondary` was raised from 44dp.
+- Key text links, payout rows, category actions, route controls and settings segments were raised to 48dp.
+- Field boundaries use full muted ink (>3:1); Paper text pairs are enforced by `ContrastTest`.
+- Section labels and empty-state titles expose heading semantics; tabs expose selected state and Tab role.
+- Charts expose summary content descriptions.
+- `AccessibilityTest` enforces the 48dp control tokens; 207 tests.
+- Glass nav/+ geometry remains untouched (selection semantics only).

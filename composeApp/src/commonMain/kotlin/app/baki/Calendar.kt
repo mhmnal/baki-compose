@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -21,7 +23,7 @@ fun CalendarHeat(store: Store, month: String) {
     val cells = monthGrid(month)
     val today = todayIso()
 
-    Column {
+    Column(Modifier.semantics { contentDescription = "Calendar heatmap of daily net" }) {
         Text("CALENDAR", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
         Spacer(Modifier.height(Space.s))
         if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }

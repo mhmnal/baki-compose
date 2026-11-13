@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
@@ -78,10 +80,10 @@ object IconSize {
     val hero = 40.dp
 }
 
-/** Control heights: one for primary actions, one for anything that must still clear 44 dp. */
+/** Control heights: every interactive control clears the 48dp accessibility floor. */
 object Control {
     val primary = 48.dp
-    val secondary = 44.dp
+    val secondary = 48.dp
 }
 
 object Veil {
@@ -288,7 +290,7 @@ fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifie
     Column(modifier.fillMaxWidth().padding(vertical = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
         if (baki.paper) LedgerRule(alpha = 0.16f)
         if (baki.paper) Spacer(Modifier.height(Space.m))
-        Text(title, color = baki.onSurface, style = BakiType.bodyStrong, textAlign = TextAlign.Center)
+        Text(title, color = baki.onSurface, style = BakiType.bodyStrong, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
         if (hint != null) {
             Spacer(Modifier.height(Space.xs))
             Text(hint, color = baki.muted, style = BakiType.label, textAlign = TextAlign.Center)

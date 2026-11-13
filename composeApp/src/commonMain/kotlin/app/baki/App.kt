@@ -36,7 +36,11 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -710,7 +714,8 @@ private fun BottomBar(
                             if (liquid) Modifier
                             else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
                         )
-                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) },
+                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) }
+                        .semantics { this.selected = on; role = Role.Tab },
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -871,6 +876,7 @@ private fun SectionTitle(text: String, trailing: String = "") {
             Text(
                 text.uppercase(), color = baki.muted,
                 style = if (baki.paper) BakiType.section else BakiType.captionStrong,
+                modifier = Modifier.semantics { heading() },
             )
             if (trailing.isNotEmpty()) Text(trailing, color = baki.muted, style = BakiType.caption)
         }
@@ -885,7 +891,7 @@ private fun bakiFieldColors(): TextFieldColors {
     val baki = LocalBaki.current
     return OutlinedTextFieldDefaults.colors(
         focusedTextColor = baki.onSurface, unfocusedTextColor = baki.onSurface,
-        focusedBorderColor = baki.primary, unfocusedBorderColor = baki.muted.copy(alpha = 0.28f),
+        focusedBorderColor = baki.primary, unfocusedBorderColor = baki.muted,
         focusedLabelColor = baki.primary, unfocusedLabelColor = baki.muted,
         cursorColor = baki.primary,
         focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
@@ -967,7 +973,8 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                     "${live.payouts.size} payout(s)",
                     color = baki.primary, style = BakiType.captionStrong,
                     textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                    modifier = Modifier.clickable { onPayouts() },
+                    modifier = Modifier.heightIn(min = Control.primary).clickable { onPayouts() }
+                        .semantics { role = Role.Button },
                 )
                 Spacer(Modifier.weight(1f))
                 Text("gross RM ${rm(total)}", color = baki.onSurface, style = BakiType.labelNumeric)
@@ -1149,6 +1156,7 @@ private fun SpendingScreen(
                     Modifier.width(IntrinsicSize.Max)
                         .clickable { catFilter = id }
                         .heightIn(min = Control.primary)
+                        .semantics { this.selected = catFilter == id; role = Role.Tab }
                         .padding(horizontal = Space.s),
                     verticalArrangement = Arrangement.Center,
                 ) {
@@ -1419,7 +1427,11 @@ private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
             Column(
                 Modifier.weight(1f).height(48.dp)
                     .clickable { onSelect(tab) }
-                    .semantics { contentDescription = "More: ${tab.label}" },
+                    .semantics {
+                        contentDescription = "More: ${tab.label}"
+                        this.selected = on
+                        role = Role.Tab
+                    },
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -1625,7 +1637,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 val isPaid = Bills.isCovered(repo.store, bill, period)
                 Row(Modifier.fillMaxWidth().padding(vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
                     Column(
-                        Modifier.weight(1f).clickable { editingBill = bill },
+                        Modifier.weight(1f).heightIn(min = Control.primary).clickable { editingBill = bill },
                     ) {
                         Text(bill.name, color = baki.onSurface, style = BakiType.label)
                         Text(
@@ -1637,7 +1649,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         Text(
                             "covered ${Bills.paidOn(repo.store, bill, period) ?: ""}",
                             color = baki.up, style = BakiType.caption,
-                            modifier = Modifier.clickable { unlinkTarget = bill to period },
+                            modifier = Modifier.heightIn(min = Control.primary).clickable { unlinkTarget = bill to period },
                         )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
@@ -1940,7 +1952,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 color = baki.muted, style = BakiType.caption )
             Spacer(Modifier.height(Space.m))
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh).padding(Space.xs),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(Space.xs),
                 horizontalArrangement = Arrangement.spacedBy(Space.xs),
             ) {
                 listOf("auto" to "Auto", "on" to "On", "off" to "Off").forEach { (value, label) ->
@@ -1949,6 +1961,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
                             .background(if (on) baki.primaryContainer else Color.Transparent)
                             .clickable { repo.setGlassMode(value) }
+                            .heightIn(min = Control.primary)
+                            .semantics { this.selected = on; role = Role.Tab }
                             .padding(vertical = Space.s),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -1971,6 +1985,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
                         .background(if (on) baki.primaryContainer else Color.Transparent)
                         .clickable { repo.setThemeMode(value) }
+                        .heightIn(min = Control.primary)
+                        .semantics { this.selected = on; role = Role.Tab }
                         .padding(vertical = Space.s),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -1991,6 +2007,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     Modifier.weight(1f).clip(RoundedCornerShape(Radius.pill))
                         .background(if (on) baki.primaryContainer else Color.Transparent)
                         .clickable { repo.setPalette(value) }
+                        .heightIn(min = Control.primary)
+                        .semantics { this.selected = on; role = Role.Tab }
                         .padding(vertical = Space.s),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -2202,7 +2220,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             ) { Text("Import JSON", style = BakiType.label ) }
             Button(
                 onClick = { confirmReset = true },
-                colors = ButtonDefaults.buttonColors(containerColor = baki.surfaceHigh, contentColor = baki.down),
+                colors = ButtonDefaults.buttonColors(containerColor = baki.container, contentColor = baki.down),
                 shape = RoundedCornerShape(Radius.pill), modifier = Modifier.weight(1f),
             ) { Text("Reset device", style = BakiType.label ) }
         }
@@ -2444,7 +2462,8 @@ private fun SegButton(label: String, selected: Boolean, modifier: Modifier = Mod
     val baki = LocalBaki.current
     if (baki.paper) {
         Column(
-            modifier.heightIn(min = Control.secondary).clickable { onClick() },
+            modifier.heightIn(min = Control.secondary).clickable { onClick() }
+                .semantics { this.selected = selected; role = Role.Tab },
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
