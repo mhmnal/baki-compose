@@ -1027,3 +1027,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Live yield; daily food cap; More Money/Shift/App with sticky tabs; bottom gutter.
 - Personal route report is intentionally untracked under reports/ (contains GPS traces); not committed.
 - 194 tests; phone 0.37.2 / code 107; desktop remains 0.37.0.
+
+## Grab insurance duplicate guard
+
+- The 13 Nov shift carried the correct RM7.50 shift-linked fee but a manual `grabfee` quick-add
+  duplicated it. Server tombstone removed `c-mweov39k6810fb`; the auto `fee-s-...` remains.
+- quickAdds now excludes `grabfee`, so insurance cannot be added manually from Quick Add again.
+- Break note: the saved shift uses worked hours for cover crossing; a break can still expose a separate
+  wall-clock boundary bug. That is not what caused this duplicate.
+- 195 tests.

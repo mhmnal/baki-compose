@@ -446,7 +446,7 @@ data class QuickAdd(val cat: String, val cents: Long, val count: Int)
 fun quickAdds(store: Store, limit: Int = 4, sinceDays: Int = 60): List<QuickAdd> {
     val cutoff = addDays(todayIso(), -sinceDays)
     return store.entries
-        .filter { it.type != "income" && it.amount > 0 && it.date >= cutoff }
+        .filter { it.type != "income" && it.amount > 0 && it.date >= cutoff && it.cat != "grabfee" }
         .groupBy { it.cat to it.amount }
         .map { (key, rows) -> QuickAdd(key.first, key.second, rows.size) }
         .filter { it.count >= 2 }
