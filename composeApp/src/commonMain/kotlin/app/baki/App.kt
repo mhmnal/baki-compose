@@ -813,7 +813,7 @@ fun RowCard(
                 horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
             ) {
                 Text(
-                    if (editing) "✎  Edit" else "Delete  🗑",
+                    if (editing) "Edit" else "Delete",
                     color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong )
             }
         },
@@ -885,7 +885,7 @@ private fun bakiFieldColors(): TextFieldColors {
     val baki = LocalBaki.current
     return OutlinedTextFieldDefaults.colors(
         focusedTextColor = baki.onSurface, unfocusedTextColor = baki.onSurface,
-        focusedBorderColor = baki.primary, unfocusedBorderColor = baki.muted.copy(alpha = 0.45f),
+        focusedBorderColor = baki.primary, unfocusedBorderColor = baki.muted.copy(alpha = 0.28f),
         focusedLabelColor = baki.primary, unfocusedLabelColor = baki.muted,
         cursorColor = baki.primary,
         focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
@@ -966,6 +966,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 Text(
                     "${live.payouts.size} payout(s)",
                     color = baki.primary, style = BakiType.captionStrong,
+                    textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
                     modifier = Modifier.clickable { onPayouts() },
                 )
                 Spacer(Modifier.weight(1f))
@@ -1232,10 +1233,11 @@ private fun SpendingScreen(
                 )
             }
             if (entries.isEmpty()) item {
-                Text(
-                    if (query.isNotBlank() || catFilter != "all") "Nothing matches that filter."
-                    else "Nothing recorded this month.",
-                    color = baki.muted, style = BakiType.label )
+                if (query.isNotBlank() || catFilter != "all") {
+                    EmptyState("Nothing matches that filter", "Clear the search or choose another category.")
+                } else {
+                    EmptyState("Nothing recorded this month", "Expenses you log will appear here.")
+                }
             }
         }
     }
@@ -1411,29 +1413,26 @@ private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Shift"), 
 @Composable
 private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
     val baki = LocalBaki.current
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.pill))
-            .background(baki.container).padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
+    Row(Modifier.fillMaxWidth()) {
         MoreTab.entries.forEach { tab ->
             val on = tab == selected
-            Box(
+            Column(
                 Modifier.weight(1f).height(48.dp)
-                    .clip(RoundedCornerShape(Radius.pill))
-                    .background(if (on) baki.primaryContainer else Color.Transparent)
                     .clickable { onSelect(tab) }
                     .semantics { contentDescription = "More: ${tab.label}" },
-                contentAlignment = Alignment.Center,
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     tab.label,
-                    color = if (on) baki.onPrimaryContainer else baki.muted,
+                    color = if (on) baki.primary else baki.muted,
                     style = BakiType.labelStrong,
                 )
+                if (on) Box(Modifier.fillMaxWidth(0.45f).height(2.dp).background(baki.primary))
             }
         }
     }
+    if (baki.paper) LedgerRule(alpha = 0.14f)
 }
 
 @Composable
@@ -1498,7 +1497,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         if (moreTab == MoreTab.APP) {
         SectionTitle("SYNC")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Server address", color = baki.onSurface, style = BakiType.bodyStrong )
             Text("where the tracker server is running", color = baki.muted, style = BakiType.caption )
             Spacer(Modifier.height(Space.m))
@@ -1556,7 +1555,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             }
         }
         Spacer(Modifier.height(Space.m))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Route traces", color = baki.onSurface, style = BakiType.bodyStrong)
             Text(
                 "Sealed with a key only your devices know, so the desk can review your drives. The server never sees coordinates.",
@@ -1588,7 +1587,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         if (moreTab == MoreTab.MONEY) {
         SectionTitle("BILLS")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             val current = Bills.monthPeriod(todayIso())
             val target = Bills.nextOpenMonth(repo.store, current)
             val committed = Bills.due(repo.store, current)
@@ -1802,7 +1801,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(Space.l))
         SectionTitle("WEEKLY STATEMENT")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Import the Wednesday PDF", color = baki.onSurface, style = BakiType.bodyStrong)
             Text(
                 "Grab's weekly statement is the income side of your books. Import it once a week; the desk shows how it compares with what you logged.",
@@ -1931,7 +1930,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(Space.l))
         SectionTitle("LIQUID GLASS")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Nav bar & +", color = baki.onSurface, style = BakiType.bodyStrong )
             Text(
                 when (effectiveGlassTier(repo.config.glassMode, DeviceTier.level)) {
@@ -2013,7 +2012,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         SectionTitle("VEHICLE & TARGET")
         Spacer(Modifier.height(Space.s))
         val p = repo.store.settings.profit
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("RM ${rm(p.fuelPrice)}/L · ${"%.1f".format(p.kmPerLitre)} km/L · wear RM ${rm(p.wearPerKm)}/km",
                 color = baki.onSurface, style = BakiType.labelStrong )
             Text("target RM ${rm(p.targetRate)}/hr · avg ${"%.0f".format(p.avgSpeed)} km/h · cover RM ${rm(p.grabInsurance)}",
@@ -2054,7 +2053,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         Spacer(Modifier.height(Space.l))
         SectionTitle("BUDGETS")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Monthly limits", color = baki.onSurface, style = BakiType.bodyStrong )
             val n = repo.store.settings.budgets.size
             Text(
@@ -2074,7 +2073,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
         if (moreTab == MoreTab.APP) {
         SectionTitle("DIAGNOSTICS")
         Spacer(Modifier.height(Space.s))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             val h = healthOf(repo)
             var routeStats by remember { mutableStateOf<Pair<Int, Int>?>(null) }
             LaunchedEffect(h.entries, h.shifts) {
@@ -2263,7 +2262,7 @@ private fun SwitchRow(
 ) {
     val baki = LocalBaki.current
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+        Modifier.fillMaxWidth().padding(vertical = Space.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -2391,6 +2390,7 @@ private fun EntryDialog(
                         }
                     }
                 }
+                if (baki.paper) LedgerRule(alpha = 0.12f)
                 OutlinedTextField(
                     value = note, onValueChange = { note = it },
                     label = { Text("Note (optional)") }, singleLine = true,
@@ -2469,6 +2469,27 @@ private fun SegButton(label: String, selected: Boolean, modifier: Modifier = Mod
 }
 
 @Composable
+private fun PairFields(
+    first: @Composable (Modifier) -> Unit,
+    second: @Composable (Modifier) -> Unit,
+) {
+    BoxWithConstraints {
+        val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+        if (compact) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                first(Modifier.fillMaxWidth())
+                second(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                first(Modifier.weight(1f))
+                second(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
 private fun FormSection(label: String) {
     val baki = LocalBaki.current
     Spacer(Modifier.height(Space.s))
@@ -2523,25 +2544,25 @@ private fun ShiftDialog(
                 FormSection("WHEN")
                 OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date (YYYY-MM-DD)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors())
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start HH:MM") },
-                        singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                    OutlinedTextField(value = hours, onValueChange = { hours = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Hours") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                }
+                PairFields(
+                    first = { m -> OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start HH:MM") },
+                        singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                    second = { m -> OutlinedTextField(value = hours, onValueChange = { hours = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Hours") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                )
                 FormSection("PAY & DISTANCE")
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    OutlinedTextField(value = km, onValueChange = { km = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Km") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                    OutlinedTextField(value = gross, onValueChange = { gross = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Payout (RM)") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    OutlinedTextField(value = extra, onValueChange = { extra = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Tolls (RM)") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                    OutlinedTextField(value = kml, onValueChange = { kml = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("km/L (opt)") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                }
+                PairFields(
+                    first = { m -> OutlinedTextField(value = km, onValueChange = { km = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Km") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                    second = { m -> OutlinedTextField(value = gross, onValueChange = { gross = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Payout (RM)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                )
+                PairFields(
+                    first = { m -> OutlinedTextField(value = extra, onValueChange = { extra = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Tolls (RM)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                    second = { m -> OutlinedTextField(value = kml, onValueChange = { kml = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("km/L (opt)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Tolls reimbursed", color = baki.onSurface, style = BakiType.bodyStrong )
@@ -2551,12 +2572,12 @@ private fun ShiftDialog(
                     Switch(checked = reimbursed, onCheckedChange = { reimbursed = it })
                 }
                 FormSection("ODOMETER")
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    OutlinedTextField(value = odoA, onValueChange = { odoA = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Odometer start") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                    OutlinedTextField(value = odoB, onValueChange = { odoB = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Odometer end") }, singleLine = true, modifier = Modifier.weight(1f), colors = bakiFieldColors())
-                }
+                PairFields(
+                    first = { m -> OutlinedTextField(value = odoA, onValueChange = { odoA = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Odometer start") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                    second = { m -> OutlinedTextField(value = odoB, onValueChange = { odoB = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Odometer end") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                )
                 if (odoStart != null && odoEnd != null && odoEnd >= odoStart) {
                     Text("odometer says ${"%.1f".format(odoEnd - odoStart)} km — this wins over the Km field",
                         color = baki.muted, style = BakiType.caption )

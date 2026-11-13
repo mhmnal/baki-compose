@@ -87,3 +87,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Flattened the latest completed shift on Today into the ruled ledger ticket.
 - 205 tests; no sign yet.
+
+### Paper Sheet broad pass
+
+- QR screen, flat Summary/More, responsive forms and final polish.
+- 205 tests. QR activity is non-exported and was compile-verified, not shell-launched.
+- No sign; phone remains 0.37.3.

@@ -1109,3 +1109,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Same metrics, target check, band stamp and Live action preserved.
 - The Shifts list rows were already continuous.
 - 205 tests; liquid-glass nav/+ untouched.
+
+## Paper Sheet broad pass
+
+- QR customer activity uses Paper light, paper grain, ruled label tabs and a white scan slip.
+- Summary cash truth/weekly review/funds/cost panels are ruled sections, not cards.
+- More switcher is an underlined tab row; Bills/statement/settings/service/QR panels are flat.
+- Shift form pairs stack at narrow width/large type.
+- Field outlines are quieter; badges, emoji glyphs and inline empty states cleaned up.
+- Widgets intentionally remain a separate platform gate. 205 tests; glass nav/+ untouched.

@@ -98,7 +98,7 @@ actual fun PaymentQrSection() {
     }
 
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+        Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
         Text("Receive QR", color = baki.onSurface, style = BakiType.bodyStrong )
         Text(
@@ -114,14 +114,14 @@ actual fun PaymentQrSection() {
         } else {
             items.forEach { item ->
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh)
+                    Modifier.fillMaxWidth().background(baki.surface)
                         .clickable {
                             context.startActivity(
                                 Intent(context, QrActivity::class.java)
                                     .putExtra(QrActivity.EXTRA_QR_ID, item.id)
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
                             )
-                        }.padding(Space.m),
+                        }.padding(vertical = Space.s),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
@@ -142,7 +142,7 @@ actual fun PaymentQrSection() {
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) { Text("Remove", color = baki.down, style = BakiType.nano ) }
                 }
-                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.12f)
             }
         }
 
@@ -154,13 +154,16 @@ actual fun PaymentQrSection() {
         ) {
             Text(if (items.size >= QR_MAX) "Maximum 3 QR codes" else "Add receive QR", style = BakiType.label )
         }
+        Spacer(Modifier.height(Space.s))
+        LedgerRule(alpha = 0.14f)
     }
 
     pending?.let { bytes ->
         AlertDialog(
             onDismissRequest = { pending = null },
-            containerColor = baki.container,
-            title = { Text("Name this QR", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+            containerColor = baki.surface,
+            shape = RoundedCornerShape(Radius.dialog),
+            title = { Text("Name this QR", color = baki.onSurface, style = BakiType.title) },
             text = {
                 OutlinedTextField(
                     value = pendingLabel,

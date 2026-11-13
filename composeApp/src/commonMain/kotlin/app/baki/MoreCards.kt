@@ -20,7 +20,7 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
     val baki = LocalBaki.current
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+        Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
         Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, style = BakiType.captionStrong )
         Spacer(Modifier.height(Space.s))
@@ -109,7 +109,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         repo.store.entries.filter { it.type != "income" }.groupingBy { it.cat }.eachCount()
     }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Spending categories", color = baki.onSurface, style = BakiType.bodyStrong )

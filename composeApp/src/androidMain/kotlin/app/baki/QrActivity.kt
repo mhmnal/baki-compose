@@ -17,9 +17,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -63,7 +68,7 @@ class QrActivity : ComponentActivity() {
         setContent {
             val faces = bakiFontFamilies()
             BakiType.install(faces.first, faces.second, faces.third)
-            BakiTheme(mode = "light") {
+            BakiTheme(mode = "light", pack = "paper") {
                 val view = LocalView.current
                 androidx.compose.runtime.SideEffect {
                     val bars = WindowCompat.getInsetsController(window, view)
@@ -78,62 +83,81 @@ class QrActivity : ComponentActivity() {
 
 @Composable
 private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
+    val baki = LocalBaki.current
     var items by remember { mutableStateOf(loadQrIndex()) }
     var selected by remember {
         mutableIntStateOf(items.indexOfFirst { it.id == initialId }.takeIf { it >= 0 } ?: 0)
     }
     val meta = items.getOrNull(selected)
 
-    Column(
-        Modifier.fillMaxSize().background(Color.White).systemBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Receive payment", color = QrInk, style = BakiType.title )
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onClose) { Text("Close", color = QrInk, style = BakiType.labelStrong) }
-        }
+    Box(Modifier.fillMaxSize().background(baki.surface)) {
+        PaperGrain(Modifier.fillMaxSize())
+        Column(
+            Modifier.fillMaxSize().systemBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Receive payment", color = baki.onSurface, style = BakiType.title)
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onClose) { Text("Close", color = baki.primary, style = BakiType.labelStrong) }
+            }
+            LedgerRule(alpha = 0.18f)
 
-        if (items.size > 1) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items.forEachIndexed { index, item ->
-                    val on = index == selected
-                    Text(
-                        item.label,
-                        color = if (on) QrInk else QrInk.copy(alpha = 0.55f),
-                        style = BakiType.labelStrong,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(if (on) Color(0xFFE6F0DC) else Color.Transparent)
-                            .clickable { selected = index }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                    )
+            if (items.size > 1) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                    modifier = Modifier.padding(top = Space.m),
+                ) {
+                    items.forEachIndexed { index, item ->
+                        val on = index == selected
+                        Column(
+                            Modifier.width(IntrinsicSize.Max).clickable { selected = index }
+                                .heightIn(min = Control.primary),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                item.label,
+                                color = if (on) baki.primary else baki.muted,
+                                style = BakiType.labelStrong,
+                            )
+                            if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
+                        }
+                    }
                 }
             }
-        }
 
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            if (meta == null) {
-                Text("No QR saved", color = QrInk, style = BakiType.bodyStrong)
-            } else {
-                val bitmap = remember(meta.id) { loadQrBitmap(meta.id) }
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Payment QR for ${meta.label}",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize().padding(vertical = 16.dp),
-                    )
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                if (meta == null) {
+                    Text("No QR saved", color = baki.onSurface, style = BakiType.bodyStrong)
                 } else {
-                    Text("This QR could not be read", color = QrInk, style = BakiType.bodyStrong)
+                    val bitmap = remember(meta.id) { loadQrBitmap(meta.id) }
+                    if (bitmap != null) {
+                        // The QR stays a true white slip for camera contrast; the page around it is paper.
+                        Box(
+                            Modifier.fillMaxWidth(0.92f).aspectRatio(1f)
+                                .background(Color.White)
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Payment QR for ${meta.label}",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    } else {
+                        Text("This QR could not be read", color = baki.onSurface, style = BakiType.bodyStrong)
+                    }
                 }
             }
-        }
 
-        Text(
-            "Scan with any banking or e-wallet app",
-            color = QrInk.copy(alpha = 0.6f), style = BakiType.caption,
-            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
-        )
+            Text(
+                "Scan with any banking or e-wallet app",
+                color = baki.muted, style = BakiType.caption,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
+            )
+        }
     }
 }

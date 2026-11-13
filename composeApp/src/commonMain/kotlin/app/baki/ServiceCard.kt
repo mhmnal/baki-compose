@@ -33,7 +33,7 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
     val last = info.last
 
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
+        Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("LAST SERVICE", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
@@ -77,7 +77,9 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
             }
             if (info.overdue) Text("Target reached or date passed", color = baki.down, style = BakiType.caption )
         }
-        Text("User-set target, not a guessed interval.", color = baki.muted, style = BakiType.nano )
+        Text("User-set target, not a guessed interval.", color = baki.muted, style = BakiType.nano)
+        Spacer(Modifier.height(Space.s))
+        LedgerRule(alpha = 0.14f)
     }
 }
 
