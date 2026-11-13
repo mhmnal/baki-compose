@@ -1161,3 +1161,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Refraction increased on the shared `GlassSurface` (strong tier: 4dp blur, 28/56dp lens; weak: 2dp/16/34) and the selected nav pill.
 - Header tint reduced to 0.22 so the effect comes from refraction, not opacity.
 - 207 tests; signed nav/+ geometry unchanged.
+
+## 0.37.6 release
+
+- Full-width glass header (status bar included), no floating pill.
+- Shared refraction strengthened: strong tier 4dp blur + 28/56dp lens; weak 2dp + 16/34.
+- Selected nav pill uses 2dp blur + 20/36dp lens.
+- Header tint reduced to 0.22; legibility comes from diffusion/refraction.
+- Signed with existing key, versionCode 111; installed over 0.37.5 with data retained.
+- 207 tests; collapse and expand verified on the signed package.

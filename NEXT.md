@@ -122,3 +122,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Full-width glass header, stronger shared lens/blur, reduced tint.
 - 207 tests; build to sign next.
+
+### 0.37.6 signed
+
+- Full-width glass header with stronger shared refraction; versionCode 111.
+- 207 tests; signed collapse/expand verified.
+- Pending: frame-time profile for the heavier blur/lens.
