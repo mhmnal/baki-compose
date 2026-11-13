@@ -1128,3 +1128,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Charts expose summary content descriptions.
 - `AccessibilityTest` enforces the 48dp control tokens; 207 tests.
 - Glass nav/+ geometry remains untouched (selection semantics only).
+
+## 0.37.4 release
+
+- Signed with the existing release key (`f73c832f...`), versionCode 109.
+- Installed over 0.37.3; data retained.
+- 207 tests; a11y gate: 48dp controls, paper contrast, heading/tab/chart semantics.
+- Signed smoke test: Today, Add spending, Shift form, Shifts, More; no fatal/ANR.
+- Residual: no tablet max-width container; QR activity must be opened through Payment QR; widgets unchanged.

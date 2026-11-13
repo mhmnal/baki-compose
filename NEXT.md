@@ -99,3 +99,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - 48dp controls, paper contrast regression test, tab/heading/chart semantics.
 - 207 tests. Residual: no Android-tablet max-width container; loading/error banners unchanged.
 - No sign yet.
+
+### 0.37.4 signed
+
+- versionCode 109, signed release installed over 0.37.3 with data retained.
+- 207 tests. Signed smoke test passed (Today, Add, Shift form, Shifts, More).
+- Residual: tablet max width, QR in-app verification, widgets, TalkBack traversal.
