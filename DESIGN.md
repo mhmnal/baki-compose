@@ -1145,3 +1145,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Uses the same backdrop, glass tier, fallback, privacy action and sync stamp as the nav.
 - Scroll state is tracked with `snapshotFlow`; returning to the top hides the compact bar.
 - 207 tests; glass nav/+ geometry unchanged.
+
+## 0.37.5 release
+
+- Full header now scrolls inside every tab; compact 56dp liquid-glass header appears after 56dp.
+- Compact bar shares the nav backdrop/tier, privacy action and sync stamp.
+- Signed with the existing release key, versionCode 110; installed over 0.37.4 with data retained.
+- 207 tests. Device check: Today collapse/expand, More and Spending collapse.
+- Trade-off: More's tab row scrolls with its header rather than staying pinned.
