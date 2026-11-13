@@ -746,15 +746,26 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
 }
 
 @Composable
-fun Chip(text: String, tint: Color) {
+fun Chip(text: String, tint: Color, modifier: Modifier = Modifier) {
     val baki = LocalBaki.current
-    Row(
-        Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(horizontal = Space.l, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(tint))
-        Spacer(Modifier.width(Space.s))
-        Text(text, color = baki.onSurface, style = BakiType.labelStrong )
+    if (baki.paper) {
+        Column(modifier) {
+            Row(Modifier.padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(tint))
+                Spacer(Modifier.width(Space.s))
+                Text(text, color = baki.onSurface, style = BakiType.labelStrong)
+            }
+            LedgerRule(alpha = 0.14f)
+        }
+    } else {
+        Row(
+            Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(horizontal = Space.l, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(7.dp).clip(RoundedCornerShape(Radius.pill)).background(tint))
+            Spacer(Modifier.width(Space.s))
+            Text(text, color = baki.onSurface, style = BakiType.labelStrong)
+        }
     }
 }
 
@@ -1095,26 +1106,31 @@ private fun SpendingScreen(
                 cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
             chips.forEach { (id, label) ->
                 val on = catFilter == id
-                Row(
-                    Modifier.clip(RoundedCornerShape(Radius.pill))
-                        .background(if (on) baki.primaryContainer else baki.container)
+                Column(
+                    Modifier.width(IntrinsicSize.Max)
                         .clickable { catFilter = id }
                         .heightIn(min = Control.primary)
-                        .padding(horizontal = Space.m),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(horizontal = Space.s),
+                    verticalArrangement = Arrangement.Center,
                 ) {
-                    if (id != "all") {
-                        Icon(
-                            categoryIcon(id), contentDescription = null,
-                            tint = if (on) baki.onPrimaryContainer else baki.muted,
-                            modifier = Modifier.size(IconSize.inline),
+                    Row(
+                        Modifier.heightIn(min = Control.primary),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (id != "all") {
+                            Icon(
+                                categoryIcon(id), contentDescription = null,
+                                tint = if (on) baki.primary else baki.muted,
+                                modifier = Modifier.size(IconSize.inline),
+                            )
+                            Spacer(Modifier.width(Space.s))
+                        }
+                        Text(
+                            label, color = if (on) baki.primary else baki.muted,
+                            style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold),
                         )
-                        Spacer(Modifier.width(Space.s))
                     }
-                    Text(
-                        label, color = if (on) baki.onPrimaryContainer else baki.muted,
-                        style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold),
-                    )
+                    if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
                 }
             }
         }
@@ -1127,8 +1143,8 @@ private fun SpendingScreen(
         ) {
             if (envelopes.isNotEmpty()) {
                 item {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-                        Text("BUDGETS", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+                    Column(Modifier.fillMaxWidth()) {
+                        SectionTitle("BUDGETS")
                         Spacer(Modifier.height(Space.s))
                         envelopes.forEach { b ->
                             val name = repo.store.settings.cats.catsOut.firstOrNull { it.id == b.cat }?.name ?: b.cat
@@ -1137,29 +1153,27 @@ private fun SpendingScreen(
                                 b.fraction >= 0.8 -> baki.warn
                                 else -> baki.up
                             }
-                            Row(
-                                Modifier.fillMaxWidth().padding(vertical = Space.s),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                ProgressRing(
-                                    progress = b.fraction.toFloat(),
-                                    color = ink,
-                                    track = baki.surfaceHigh,
-                                    size = 28.dp,
-                                )
-                                Spacer(Modifier.width(Space.m))
-                                Column(Modifier.weight(1f)) {
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(name, color = baki.onSurface, style = BakiType.labelStrong)
-                                        Text(
-                                            "RM ${rm(b.spent)} / ${rm(b.limit)}" +
-                                                if (b.over) " · RM ${rm(-b.remaining)} over"
-                                                else " · RM ${rm(b.remaining)} left",
-                                            color = ink, style = BakiType.captionNumeric,
-                                        )
-                                    }
+                            Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(name, color = baki.onSurface, style = BakiType.labelStrong)
+                                    Text(
+                                        "RM ${rm(b.spent)} / ${rm(b.limit)}" +
+                                            if (b.over) " · RM ${rm(-b.remaining)} over"
+                                            else " · RM ${rm(b.remaining)} left",
+                                        color = ink, style = BakiType.captionNumeric,
+                                    )
+                                }
+                                Spacer(Modifier.height(Space.s))
+                                Box(
+                                    Modifier.fillMaxWidth().height(3.dp).background(baki.surfaceHigh),
+                                ) {
+                                    Box(
+                                        Modifier.fillMaxWidth(b.fraction.toFloat().coerceIn(0f, 1f))
+                                            .fillMaxHeight().background(ink),
+                                    )
                                 }
                             }
+                            LedgerRule(alpha = 0.14f)
                         }
                     }
                 }
@@ -2061,11 +2075,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     )
                 }
             }
-            rows.forEach { (k, v) ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            rows.forEachIndexed { index, (k, v) ->
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.s), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(k, color = baki.muted, style = BakiType.label)
                     Text(v, color = baki.onSurface, style = BakiType.labelNumeric, modifier = Modifier.weight(1f).padding(start = Space.m), textAlign = TextAlign.End)
                 }
+                if (index != rows.lastIndex) LedgerRule(alpha = 0.14f)
             }
             h.lastError?.let { err ->
                 Spacer(Modifier.height(Space.s))

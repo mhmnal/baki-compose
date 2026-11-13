@@ -1080,3 +1080,13 @@ This closes the former "transfer gap" by scope, not by missing code.
   weekly review, settings groups. Modal sheets/dialogs remain contained.
 - Swipe-to-edit/delete keeps its original gesture; the paper-colored foreground hides the reveal until a swipe.
 - Liquid-glass nav and + remain untouched. 205 tests.
+
+## Paper Sheet controls pass
+
+- In/out metrics are a single ruled row; Quick Add and Spending filters are underlined paper actions.
+- Spending budgets use ruled envelope rows with linear ink bars instead of progress rings/cards.
+- Summary sparkline uses narrow ledger marks on a baseline, not a gradient curve.
+- Categories and Diagnostics add internal 1dp hairlines.
+- Snackbar is a flat ruled margin strip on Paper; Undo hit target preserved.
+- EmptyState gains top/bottom rules on Paper; Today's empty icon loses its card fill.
+- 205 tests. Liquid-glass nav/+ untouched.

@@ -70,3 +70,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Flat paper panels retained only where actions/state require them.
 - 360/390/412 and 1.3x viewport sweep still green; 205 tests.
 - Ready for sign/install; phone remains 0.37.3.
+
+### Highest-value paper controls
+
+- Ruled metrics/actions/filters, linear budget bars, ledger sparkline, ruled categories/diagnostics, flat snackbar and empty states.
+- 205 tests; nav/+ untouched.
+- Next review: live card, forms, charts, payout/statement sheets (no code yet).

@@ -184,8 +184,33 @@ fun Sparkline(
     line: Color,
     fill: Color,
 ) {
+    val baki = LocalBaki.current
     Canvas(modifier) {
         if (values.size < 2) return@Canvas
+        if (baki.paper) {
+            // Ledger version: vertical ink marks, not a dashboard curve.
+            val peak = values.maxOfOrNull { kotlin.math.abs(it) }?.coerceAtLeast(0.01) ?: 0.01
+            val step = size.width / values.size
+            val barWidth = (step * 0.28f).coerceAtLeast(2f)
+            val baseline = size.height - 1.dp.toPx()
+            drawLine(
+                color = baki.muted.copy(alpha = 0.30f),
+                start = Offset(0f, baseline),
+                end = Offset(size.width, baseline),
+                strokeWidth = 1.dp.toPx(),
+            )
+            values.forEachIndexed { i, v ->
+                val usable = (size.height - 4.dp.toPx()).coerceAtLeast(1f)
+                val h = (kotlin.math.abs(v) / peak).toFloat().coerceIn(0f, 1f) * usable
+                val left = i * step + (step - barWidth) / 2f
+                drawRect(
+                    color = if (v >= 0) line.copy(alpha = 0.80f) else baki.down.copy(alpha = 0.80f),
+                    topLeft = Offset(left, baseline - h),
+                    size = Size(barWidth, h),
+                )
+            }
+            return@Canvas
+        }
         val min = values.min()
         val max = values.max()
         val span = (max - min).takeIf { kotlin.math.abs(it) > 0.001 } ?: 1.0
@@ -198,7 +223,6 @@ fun Sparkline(
         val stroke = Path().apply {
             moveTo(pts[0].x, pts[0].y)
             for (i in 1 until pts.size) {
-                // gentle curve between points
                 val prev = pts[i - 1]
                 val cur = pts[i]
                 val midX = (prev.x + cur.x) / 2f
@@ -216,7 +240,6 @@ fun Sparkline(
             stroke, line,
             style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
-        // the latest point gets a dot, so the eye lands on "now"
         drawCircle(line, radius = 2.5.dp.toPx(), center = pts.last())
     }
 }

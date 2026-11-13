@@ -8,6 +8,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
@@ -44,44 +46,50 @@ fun BakiSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier
         var tick by remember(message) { mutableStateOf(false) }
         LaunchedEffect(message) { tick = true }
 
-        Snackbar(
-            action = data.visuals.actionLabel?.let { label ->
-                {
-                    Box(
-                        Modifier
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .heightIn(min = 48.dp)
-                            .clickable { data.performAction() }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
-                        Text(label, color = baki.primary, style = BakiType.labelStrong )
+        Column(Modifier.fillMaxWidth()) {
+            if (baki.paper) LedgerRule(alpha = 0.20f)
+            Snackbar(
+                action = data.visuals.actionLabel?.let { label ->
+                    {
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .heightIn(min = 48.dp)
+                                .clickable { data.performAction() }
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        ) {
+                            Text(label, color = baki.primary, style = BakiType.labelStrong)
+                        }
                     }
-                }
-            },
-            shape = RoundedCornerShape(Radius.pill),
-            containerColor = baki.surfaceHigh,
-            contentColor = baki.onSurface,
-            actionContentColor = baki.primary,
-            dismissActionContentColor = baki.muted,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AnimatedVisibility(
-                    visible = success && tick,
-                    enter = scaleIn(
-                        initialScale = 0.6f,
-                        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
-                    ) + fadeIn(),
-                ) {
-                    Box(
-                        Modifier.size(22.dp).clip(CircleShape).background(baki.primaryContainer),
-                        contentAlignment = Alignment.Center,
+                },
+                shape = if (baki.paper) RoundedCornerShape(Radius.tiny) else RoundedCornerShape(Radius.pill),
+                containerColor = if (baki.paper) baki.surface else baki.surfaceHigh,
+                contentColor = baki.onSurface,
+                actionContentColor = baki.primary,
+                dismissActionContentColor = baki.muted,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AnimatedVisibility(
+                        visible = success && tick,
+                        enter = scaleIn(
+                            initialScale = 0.6f,
+                            animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
+                        ) + fadeIn(),
                     ) {
-                        Text("✓", color = baki.onPrimaryContainer, style = BakiType.labelStrong )
+                        Box(
+                            Modifier.size(22.dp)
+                                .clip(if (baki.paper) RoundedCornerShape(Radius.tiny) else CircleShape)
+                                .background(baki.primaryContainer),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("✓", color = baki.onPrimaryContainer, style = BakiType.labelStrong)
+                        }
                     }
+                    if (success) Spacer(Modifier.width(Space.s))
+                    Text(message, style = BakiType.label)
                 }
-                if (success) Spacer(Modifier.width(Space.s))
-                Text(message, style = BakiType.label)
             }
+            if (baki.paper) LedgerRule(alpha = 0.20f)
         }
     }
 }

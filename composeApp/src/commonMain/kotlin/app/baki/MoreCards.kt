@@ -119,10 +119,10 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
             }
         }
         Spacer(Modifier.height(Space.s))
-        cats.forEach { c ->
+        cats.forEachIndexed { index, c ->
             val used = usage[c.id] ?: 0
             Row(
-                Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                Modifier.fillMaxWidth().padding(vertical = Space.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
@@ -145,6 +145,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                         }
                         .padding(horizontal = Space.m), style = BakiType.bodyStrong )
             }
+            if (index != cats.lastIndex) LedgerRule(alpha = 0.14f)
         }
     }
 

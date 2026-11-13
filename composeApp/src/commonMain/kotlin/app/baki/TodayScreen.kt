@@ -171,9 +171,9 @@ fun TodayScreen(
         }
 
         item {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                Chip("in RM ${rm(t.income)}", baki.up)
-                Chip("out RM ${rm(t.expense)}", baki.down)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                Chip("in RM ${rm(t.income)}", baki.up, Modifier.weight(1f))
+                Chip("out RM ${rm(t.expense)}", baki.down, Modifier.weight(1f))
             }
         }
 
@@ -358,32 +358,12 @@ fun TodayScreen(
                     val cats = store.settings.cats.catsOut
                     quick.forEach { q ->
                         val name = cats.firstOrNull { it.id == q.cat }?.name ?: q.cat
-                        Row(
-                            Modifier.heightIn(min = Control.secondary)
-                                .clip(RoundedCornerShape(Radius.pill))
-                                .background(baki.surfaceHigh)
-                                .clickable {
-                                    PlatformEffects.haptic(Haptic.Tick)
-                                    onQuickAdd(q.cat, q.cents)
-                                }
-                                .padding(horizontal = Space.l),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(Space.s),
-                        ) {
-                            Text(name, color = baki.onSurface, style = BakiType.labelStrong)
-                            Text("RM ${rm(q.cents)}", color = baki.primary, style = BakiType.captionNumeric)
+                        QuickAction(name, "RM ${rm(q.cents)}") {
+                            PlatformEffects.haptic(Haptic.Tick)
+                            onQuickAdd(q.cat, q.cents)
                         }
                     }
-                    Row(
-                        Modifier.heightIn(min = Control.secondary)
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(baki.container)
-                            .clickable { onAdd() }
-                            .padding(horizontal = Space.l),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("More", color = baki.muted, style = BakiType.labelStrong)
-                    }
+                    QuickAction("More", null) { onAdd() }
                 }
             }
         }
@@ -405,23 +385,9 @@ fun TodayScreen(
                         .take(6)
                 }
                 presets.forEach { c ->
-                    Row(
-                        Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
-                            .clickable {
-                                PlatformEffects.haptic(Haptic.Tick)
-                                onPreset(c.id)
-                            }
-                            // 48dp minimum touch target, per the accessibility guidance
-                            .heightIn(min = Control.primary)
-                            .padding(horizontal = Space.l),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            categoryIcon(c.id, c.name), contentDescription = null,
-                            tint = baki.primary, modifier = Modifier.size(IconSize.inline),
-                        )
-                        Spacer(Modifier.width(Space.s))
-                        Text(c.name, color = baki.onSurface, style = BakiType.bodySmallStrong )
+                    QuickAction(c.name, null, icon = categoryIcon(c.id, c.name)) {
+                        PlatformEffects.haptic(Haptic.Tick)
+                        onPreset(c.id)
                     }
                 }
             }
@@ -475,7 +441,10 @@ fun TodayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    Modifier.size(52.dp).clip(RoundedCornerShape(Radius.card)).background(baki.container),
+                    Modifier.size(52.dp).then(
+                        if (baki.paper) Modifier
+                        else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                    ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(BakiIcons.Receipt, contentDescription = null, tint = baki.muted, modifier = Modifier.size(IconSize.bar))
@@ -490,6 +459,50 @@ fun TodayScreen(
             }
         }
     }
+    }
+}
+
+@Composable
+private fun QuickAction(
+    label: String,
+    amount: String?,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onClick: () -> Unit,
+) {
+    val baki = LocalBaki.current
+    if (baki.paper) {
+        Column(
+            Modifier.clickable { onClick() }.padding(horizontal = Space.s),
+        ) {
+            Row(
+                Modifier.heightIn(min = Control.secondary),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                }
+                Text(label, color = baki.onSurface, style = BakiType.labelStrong)
+                amount?.let { Text(it, color = baki.primary, style = BakiType.captionNumeric) }
+            }
+            LedgerRule(alpha = 0.12f)
+        }
+    } else {
+        Row(
+            Modifier.heightIn(min = Control.secondary)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(baki.surfaceHigh)
+                .clickable { onClick() }
+                .padding(horizontal = Space.l),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+            }
+            Text(label, color = baki.onSurface, style = BakiType.labelStrong)
+            amount?.let { Text(it, color = baki.primary, style = BakiType.captionNumeric) }
+        }
     }
 }
 

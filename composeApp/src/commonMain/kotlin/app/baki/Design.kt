@@ -286,10 +286,16 @@ fun Modifier.tactileClickable(
 fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifier) {
     val baki = LocalBaki.current
     Column(modifier.fillMaxWidth().padding(vertical = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (baki.paper) LedgerRule(alpha = 0.16f)
+        if (baki.paper) Spacer(Modifier.height(Space.m))
         Text(title, color = baki.onSurface, style = BakiType.bodyStrong, textAlign = TextAlign.Center)
         if (hint != null) {
             Spacer(Modifier.height(Space.xs))
             Text(hint, color = baki.muted, style = BakiType.label, textAlign = TextAlign.Center)
+        }
+        if (baki.paper) {
+            Spacer(Modifier.height(Space.m))
+            LedgerRule(alpha = 0.16f)
         }
     }
 }
