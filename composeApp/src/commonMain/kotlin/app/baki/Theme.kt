@@ -1,7 +1,9 @@
 package app.baki
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -10,6 +12,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 /**
  * One sage family, two tones — the same rule the web app uses.
@@ -34,6 +37,8 @@ data class BakiPalette(
     val warn: Color,
     /** Neutral grey soft-UI canvas and grey shadows, instead of toning the canvas with the accent. */
     val softUi: Boolean = false,
+    /** Paper Ledger: receipt rules, serif amounts and stamp-like status labels. */
+    val paper: Boolean = false,
 )
 
 val DarkPalette = BakiPalette(
@@ -56,15 +61,28 @@ val LightPalette = BakiPalette(
     up = Color(0xFF0F6B4F), down = Color(0xFFA63C26), warn = Color(0xFF7A5A00),
 )
 
+/** Material 3 component shapes for paper: controls and dialogs are nearly square. */
+private val PaperShapes = Shapes(
+    extraSmall = RoundedCornerShape(Radius.tiny),
+    small = RoundedCornerShape(Radius.small),
+    medium = RoundedCornerShape(Radius.card),
+    large = RoundedCornerShape(Radius.dialog),
+    extraLarge = RoundedCornerShape(Radius.sheet),
+)
+
 private fun schemeOf(p: BakiPalette) = if (p.dark) darkColorScheme(
     primary = p.primary, onPrimary = p.onPrimary,
     primaryContainer = p.primaryContainer, onPrimaryContainer = p.onPrimaryContainer,
-    surface = p.surface, onSurface = p.onSurface, onSurfaceVariant = p.muted,
+    surface = p.surface, onSurface = p.onSurface,
+    surfaceVariant = p.container, onSurfaceVariant = p.muted,
+    outline = p.muted.copy(alpha = 0.55f), outlineVariant = p.surfaceHigh,
     background = p.surface, error = p.down,
 ) else lightColorScheme(
     primary = p.primary, onPrimary = p.onPrimary,
     primaryContainer = p.primaryContainer, onPrimaryContainer = p.onPrimaryContainer,
-    surface = p.surface, onSurface = p.onSurface, onSurfaceVariant = p.muted,
+    surface = p.surface, onSurface = p.onSurface,
+    surfaceVariant = p.container, onSurfaceVariant = p.muted,
+    outline = p.muted.copy(alpha = 0.55f), outlineVariant = p.surfaceHigh,
     background = p.surface, error = p.down,
 )
 
@@ -85,15 +103,26 @@ val NightPalette = BakiPalette(
     up = Color(0xFF74E0B0), down = Color(0xFFFF8F7A), warn = Color(0xFFFFC857),
 )
 
-/** "Paper": warm off-white, ink-brown accent, for daylight legibility. */
+/** Paper Ledger light: warm paper, ink, forest and a red audit stamp. */
 val PaperPalette = BakiPalette(
-    dark = false,
-    primary = Color(0xFF6B5636), onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFEDE3CE), onPrimaryContainer = Color(0xFF2B2416),
-    accentStrong = Color(0xFF57452B), onAccent = Color(0xFFFFFFFF),
-    surface = Color(0xFFFBF7EF), container = Color(0xFFF3EDE1), surfaceHigh = Color(0xFFEAE2D2),
-    onSurface = Color(0xFF1C1913), muted = Color(0xFF6B6355),
-    up = Color(0xFF2C6E52), down = Color(0xFFA83E2A), warn = Color(0xFF7A5A00),
+    dark = false, paper = true,
+    primary = Color(0xFF3F5E49), onPrimary = Color(0xFFF7F0DF),
+    primaryContainer = Color(0xFFDDE5D2), onPrimaryContainer = Color(0xFF1E2A20),
+    accentStrong = Color(0xFF2F4636), onAccent = Color(0xFFF7F0DF),
+    surface = Color(0xFFF6EFE0), container = Color(0xFFEFE6D5), surfaceHigh = Color(0xFFE2D6C1),
+    onSurface = Color(0xFF211E18), muted = Color(0xFF6E6555),
+    up = Color(0xFF3F5E49), down = Color(0xFFA34532), warn = Color(0xFF8A5A1F),
+)
+
+/** Paper Ledger night: warm black paper, cream ink, brass rules and a soft red stamp. */
+val PaperNightPalette = BakiPalette(
+    dark = true, paper = true,
+    primary = Color(0xFFC9A66B), onPrimary = Color(0xFF1A1910),
+    primaryContainer = Color(0xFF3A3323), onPrimaryContainer = Color(0xFFF0E3C8),
+    accentStrong = Color(0xFF8E7448), onAccent = Color(0xFF000000),
+    surface = Color(0xFF1B1F18), container = Color(0xFF22271E), surfaceHigh = Color(0xFF2D3327),
+    onSurface = Color(0xFFECE3D0), muted = Color(0xFFA29782),
+    up = Color(0xFFA9C29A), down = Color(0xFFCF785F), warn = Color(0xFFD6A35E),
 )
 
 /** "Mist": the classic soft-UI board — neutral cool grey, near-white faces, blue accent. */
@@ -123,7 +152,7 @@ val MistDark = BakiPalette(
 /** Resolves the user's chosen pack against light/dark. */
 fun paletteFor(pack: String, dark: Boolean): BakiPalette = when (pack) {
     "night" -> NightPalette
-    "paper" -> PaperPalette
+    "paper" -> if (dark) PaperNightPalette else PaperPalette
     "mist" -> if (dark) MistDark else MistLight
     else -> if (dark) DarkPalette else LightPalette
 }
@@ -144,10 +173,13 @@ fun BakiTheme(
     // The desk is palette-independent (Obsidian Slate / Soft UI 2.0 are fixed per mode), so a stored
     // colour pack like "paper" must not keep it light when the user chose Dark.
     val fallback = if (Caps.isDesktop) paletteFor("sage", dark) else paletteFor(pack, dark)
-    val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: fallback } else fallback
+    // Offscreen phone previews run on the desk JVM but must see the actual phone pack.
+    val resolved = if (Caps.isDesktop && PhonePreview.active) paletteFor(pack, dark) else fallback
+    val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: resolved } else resolved
     CompositionLocalProvider(LocalBaki provides palette) {
         MaterialTheme(
             colorScheme = schemeOf(palette),
+            shapes = if (!Caps.isDesktop || PhonePreview.active) PaperShapes else Shapes(),
             content = content,
         )
     }

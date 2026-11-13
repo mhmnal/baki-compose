@@ -1050,3 +1050,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Boundary tests cover a break crossing the 24h renewal, no-break fallback, linked fee creation and the end helper.
 - `scripts/preflight.sh` is the mandatory live-data check before ledger/fee/location answers.
 - 200 tests. No sign yet; phone remains 0.37.3.
+
+## Paper Ledger phone UI (0.37.4 candidate)
+
+- Paper palette: warm paper/ink/forest light, warm black/cream/brass night.
+- Serif display and tabular money on the phone; Inter controls/body; small radii and ruled sections.
+- Header uses a stamp-like sync status and a paper rule; Today uses a double rule under the hero.
+- Phone previews resolve the stored phone pack; the desk keeps its Sage neumorphic system.
+- Liquid-glass nav and + are explicitly protected; no tint/blur/geometry changes.
+- 203 tests including Paper light/dark contrast and glass geometry.

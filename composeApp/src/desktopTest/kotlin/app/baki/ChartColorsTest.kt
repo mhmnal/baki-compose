@@ -9,7 +9,7 @@ class ChartColorsTest {
     @Test
     fun noTwoSlicesShareAColour() {
         val ids = listOf("food", "fuel", "toll", "parking", "carwash", "maintenance")
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, PaperNightPalette, MistLight, MistDark).forEach { p ->
             val colors = chartColors(p, ids)
             assertEquals(colors.size, colors.distinct().size, "duplicate slice colour in ${if (p.dark) "dark" else "light"} pack")
         }

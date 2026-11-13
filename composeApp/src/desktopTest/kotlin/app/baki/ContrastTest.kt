@@ -34,6 +34,7 @@ class ContrastTest {
         "sage dark" to DarkPalette,
         "night" to NightPalette,
         "paper" to PaperPalette,
+        "paper night" to PaperNightPalette,
         "mist light" to MistLight,
         "mist dark" to MistDark,
     )

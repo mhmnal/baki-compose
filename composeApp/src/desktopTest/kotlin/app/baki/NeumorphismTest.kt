@@ -31,7 +31,7 @@ class NeumorphismTest {
     @Test
     fun theFaceIsTheCanvasExactly() {
         // true neumorphism: depth is shadow alone, the face carries no second colour
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, PaperNightPalette, MistLight, MistDark).forEach { p ->
             val n = neuOf(p)
             assertEquals(n.base, n.panel, "raised face must equal the canvas in pack dark=${p.dark}")
             assertTrue(lum(n.light) > lum(n.base), "highlight must be lighter than the base")
@@ -62,7 +62,7 @@ class NeumorphismTest {
 
     @Test
     fun shadowsKeepEnoughSeparationToRead() {
-        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, MistLight, MistDark).forEach { p ->
+        listOf(LightPalette, DarkPalette, NightPalette, PaperPalette, PaperNightPalette, MistLight, MistDark).forEach { p ->
             val n = neuOf(p)
             val spread = abs(lum(n.light) - lum(n.dark))
             assertTrue(spread > 0.05, "shadows too close in pack ${p.dark}: $spread")

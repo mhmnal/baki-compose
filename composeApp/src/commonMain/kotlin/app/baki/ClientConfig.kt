@@ -15,8 +15,10 @@ data class ClientConfig(
     val allowWrites: Boolean = false,
     /** "auto" | "light" | "dark" — the web app's Auto/Light/Dark selector. */
     val themeMode: String = "auto",
-    /** "sage" | "night" | "paper" — the colour pack. */
-    val palette: String = "sage",
+    /** "sage" | "night" | "paper" | "mist" — the colour pack. */
+    val palette: String = "paper",
+    /** One-time move from the old sage default to Paper Ledger; a later Sage choice sticks. */
+    val paperThemeMigrated: Boolean = false,
     /** "auto" | "on" | "off" — liquid glass, resolved against the device tier. */
     val glassMode: String = "auto",
     /** Opt-in: upload sealed traces so the desk can review them. Off by default. */

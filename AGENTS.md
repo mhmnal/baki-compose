@@ -48,6 +48,8 @@ bug in the app.
   (`isDerivedCategory`); Quick Add, manual category chips and `Repo.addEntry` must reject it.
 - **Cover is wall-clock.** A shift's end is `start + hours + breakMinutes`; use `shiftEndMs()`.
   Test breaks that cross a 24h boundary.
+- **The liquid-glass nav and `+` are protected.** Do not restyle their geometry, tint, blur,
+  refraction or highlight; Paper Ledger applies to the content around them.
 - **Preview is not device proof.** Render dark/light, then test interaction, GPS, services,
   permissions and sync on the phone. State which checks were actually done.
 - **Sign/install only after explicit instruction.** Build, test and commit first.

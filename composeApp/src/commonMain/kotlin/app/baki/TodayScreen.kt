@@ -140,6 +140,10 @@ fun TodayScreen(
                         }
                     }
                 }
+                if (baki.paper) {
+                    Spacer(Modifier.height(Space.s))
+                    LedgerRule(double = true)
+                }
             }
         }
 
@@ -293,7 +297,10 @@ fun TodayScreen(
                             Modifier.heightIn(min = Control.secondary)
                                 .clip(RoundedCornerShape(Radius.pill))
                                 .background(baki.surfaceHigh)
-                                .clickable { onQuickAdd(q.cat, q.cents) }
+                                .clickable {
+                                    PlatformEffects.haptic(Haptic.Tick)
+                                    onQuickAdd(q.cat, q.cents)
+                                }
                                 .padding(horizontal = Space.l),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(Space.s),
@@ -335,7 +342,10 @@ fun TodayScreen(
                 presets.forEach { c ->
                     Row(
                         Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container)
-                            .clickable { onPreset(c.id) }
+                            .clickable {
+                                PlatformEffects.haptic(Haptic.Tick)
+                                onPreset(c.id)
+                            }
                             // 48dp minimum touch target, per the accessibility guidance
                             .heightIn(min = Control.primary)
                             .padding(horizontal = Space.l),
@@ -363,32 +373,36 @@ fun TodayScreen(
             }
         }
 
-        items(shifts) { sh ->
+        items(shifts, key = { it.id }) { sh ->
             val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
-            RowCardIcon(
-                icon = BakiIcons.Car,
-                title = "Shift ${sh.start.ifEmpty { sh.date }}",
-                sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
-                amount = "RM ${rm(m.net)}",
-                tint = baki.up,
-                onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
-            )
+            Box(Modifier.animateItem()) {
+                RowCardIcon(
+                    icon = BakiIcons.Car,
+                    title = "Shift ${sh.start.ifEmpty { sh.date }}",
+                    sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
+                    amount = "RM ${rm(m.net)}",
+                    tint = baki.up,
+                    onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
+                )
+            }
         }
         items(entries, key = { it.id }) { e ->
-            RowCardIcon(
-                icon = categoryIcon(e.cat),
-                title = e.note.ifEmpty { e.cat },
-                sub = listOfNotNull(
-                    e.cat,
-                    e.odo?.takeIf { it > 0 }?.let { "$it km" },
-                    loggedTime(e.loggedAt)?.let { "logged $it" },
-                ).joinToString(" · "),
-                amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
-                tint = if (e.type == "income") baki.up else baki.down,
-                sharedKey = "entry-${e.id}",
-                onEdit = { onEditEntry(e) },
-                onDelete = { onDeleteEntry(e) },
-            )
+            Box(Modifier.animateItem()) {
+                RowCardIcon(
+                    icon = categoryIcon(e.cat),
+                    title = e.note.ifEmpty { e.cat },
+                    sub = listOfNotNull(
+                        e.cat,
+                        e.odo?.takeIf { it > 0 }?.let { "$it km" },
+                        loggedTime(e.loggedAt)?.let { "logged $it" },
+                    ).joinToString(" · "),
+                    amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
+                    tint = if (e.type == "income") baki.up else baki.down,
+                    sharedKey = "entry-${e.id}",
+                    onEdit = { onEditEntry(e) },
+                    onDelete = { onDeleteEntry(e) },
+                )
+            }
         }
         if (shifts.isEmpty() && entries.isEmpty()) item {
             Column(
@@ -437,7 +451,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
 @Composable
 fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).clickable { onClick() },
+        modifier.clip(RoundedCornerShape(Radius.pill)).background(bg).tactileClickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(label, color = ink,

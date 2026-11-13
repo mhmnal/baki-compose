@@ -8,13 +8,13 @@ Two surfaces, one ledger:
 | | Phone (Android) | Desktop (JVM) |
 |---|---|---|
 | Role | capture and decide in the moment | review, compare, print |
-| Design | Material 3 + liquid glass | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
+| Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
 Current version: **0.37.3** (`versionCode` 108+). The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **200 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **203 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -46,8 +46,11 @@ Test suite: **200 JVM tests** (`:composeApp:desktopTest`).
 - routes never leave the phone unsealed; the server stores ciphertext only
 
 **Phone UI**
+- Paper Ledger: warm paper/ink light mode, warm-black/brass night mode, serif ledger amounts
+- **liquid-glass nav and `+` are preserved**; Paper Ledger styles the content around them
 - More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
 - cash truth, service target, weekly review and privacy/discreet amounts
+- press feedback, animated sync stamp and animated list placement
 
 ## Stack
 

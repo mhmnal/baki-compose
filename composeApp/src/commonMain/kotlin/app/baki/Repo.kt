@@ -918,7 +918,17 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     fun setPalette(pack: String) {
-        config = config.copy(palette = pack)
+        config = config.copy(palette = pack, paperThemeMigrated = true)
+        saveConfig(config)
+    }
+
+    /** Move existing sage-default installs to Paper Ledger once, without breaking a later choice. */
+    fun ensurePaperTheme() {
+        if (config.paperThemeMigrated) return
+        config = config.copy(
+            palette = if (config.palette == "sage") "paper" else config.palette,
+            paperThemeMigrated = true,
+        )
         saveConfig(config)
     }
 

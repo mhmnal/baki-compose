@@ -50,3 +50,10 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Hard manual-grabfee rejection and hidden category.
 - Wall-clock cover end with break minutes + boundary tests.
 - Live preflight script. Ready for review/sign; phone remains 0.37.3.
+
+## 0.37.5 candidate
+
+- Paper Ledger phone UI, both light and dark; liquid-glass nav/+ preserved.
+- One-time migration from Sage default to Paper (a later Sage choice sticks).
+- Animated list placement and sync stamp; 203 tests.
+- Ready for sign/install after explicit instruction; phone remains 0.37.3.

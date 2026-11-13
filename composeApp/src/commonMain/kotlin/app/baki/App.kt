@@ -26,6 +26,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
@@ -84,7 +85,7 @@ import kotlinx.coroutines.withContext
 fun App(repo: BakiRepo = remember { BakiRepo() }) {
     // install the typefaces before anything composes text
     val (textFace, displayFace, readoutFace) = bakiFontFamilies()
-    BakiType.install(textFace, displayFace, readoutFace)
+    BakiType.install(textFace, displayFace, readoutFace, paper = !Caps.isDesktop || PhonePreview.active)
 
     // A PDF shared into the app is a statement import; the effect keeps it off the composition thread.
     val shared = SharedStatement.pending
@@ -106,6 +107,9 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         PlatformEffects.setStatementReminder(repo.config.statementReminder)
     }
     BakiPrivacy.discreet = repo.config.discreet
+    LaunchedEffect(repo.config.paperThemeMigrated) {
+        repo.ensurePaperTheme()
+    }
     BakiTheme(matchWallpaper = repo.config.matchWallpaper, mode = repo.config.themeMode, pack = repo.config.palette) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         if (!PhonePreview.active && Caps.isDesktop && DesktopRoot(repo)) return@BakiTheme
@@ -329,7 +333,7 @@ private fun AppContent(repo: BakiRepo) {
     if (!sheetOpen) {
     GlassSurface(
         backdrop = glassBackdrop,
-        shape = RoundedCornerShape(Radius.pill),
+        shape = RoundedCornerShape(Radius.glass),
         tier = glassTier,
         modifier = Modifier.align(Alignment.BottomCenter)
             .fillMaxWidth().padding(horizontal = Space.m).padding(bottom = barGap).height(barHeight),
@@ -344,13 +348,13 @@ private fun AppContent(repo: BakiRepo) {
     if (tab == 0 && !repo.readOnly) {
         GlassSurface(
             backdrop = glassBackdrop,
-            shape = RoundedCornerShape(Radius.pill),
+            shape = RoundedCornerShape(Radius.glass),
             tier = glassTier,
             modifier = Modifier.align(Alignment.BottomEnd)
                 .padding(end = Space.l)
                 .padding(bottom = barHeight + barGap + 6.dp)
                 .size(fabSize)
-                .shadow(10.dp, RoundedCornerShape(Radius.pill))
+                .shadow(10.dp, RoundedCornerShape(Radius.glass))
                 .semantics { contentDescription = "Add entry" },
         ) {
             Box(
@@ -544,51 +548,75 @@ private fun Header(repo: BakiRepo) {
     // read the status here, not in the caller: a sync tick then re-draws only this row
     val status = repo.status
     val baki = LocalBaki.current
-    Row(Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primary), contentAlignment = Alignment.Center) {
-            Text("✓", color = baki.onPrimary, style = BakiType.bodyStrong )
-        }
-        Spacer(Modifier.width(Space.m))
-        Column(Modifier.weight(1f)) {
-            Text("Baki", color = baki.onSurface, style = BakiType.title )
-            Text("what your shift really pays", color = baki.muted, style = BakiType.caption )
-        }
-        val dot = when (status) {
-            "synced" -> baki.up
-            "offline" -> baki.down
-            "cached" -> baki.warn
-            "syncing" -> baki.primary
-            else -> baki.muted
-        }
-        // privacy toggle: tap to mask every amount, tap again to reveal
-        Box(
-            Modifier.size(48.dp)
-                .clip(RoundedCornerShape(Radius.pill))
-                .clickable { repo.setDiscreet(!repo.config.discreet) }
-                .semantics {
-                    contentDescription = if (repo.config.discreet) "Show amounts" else "Hide amounts"
-                },
-            contentAlignment = Alignment.Center,
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = Space.l).padding(top = 12.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                if (repo.config.discreet) "◉" else "◎",
-                color = if (repo.config.discreet) baki.primary else baki.muted,
-                style = BakiType.title,
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(dot))
-            Text(
-                when (status) {
-                    "synced" -> "synced"
-                    "offline" -> "offline"
-                    "cached" -> "cached"
-                    "syncing" -> "syncing"
-                    else -> "local"
+            Box(
+                Modifier.size(36.dp).clip(RoundedCornerShape(Radius.glass)).background(baki.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("✓", color = baki.onPrimary, style = BakiType.bodyStrong)
+            }
+            Spacer(Modifier.width(Space.m))
+            Text("Baki", color = baki.onSurface, style = BakiType.title, modifier = Modifier.weight(1f))
+            // privacy toggle: tap to mask every amount, tap again to reveal
+            Box(
+                Modifier.size(48.dp)
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .tactileClickable { repo.setDiscreet(!repo.config.discreet) }
+                    .semantics {
+                        contentDescription = if (repo.config.discreet) "Show amounts" else "Hide amounts"
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (repo.config.discreet) "◉" else "◎",
+                    color = if (repo.config.discreet) baki.primary else baki.muted,
+                    style = BakiType.title,
+                )
+            }
+            AnimatedContent(
+                targetState = status,
+                transitionSpec = {
+                    (fadeIn(BakiMotion.effects()) + scaleIn(initialScale = 0.92f, animationSpec = BakiMotion.spatialFast()))
+                        .togetherWith(fadeOut(BakiMotion.effectsFast()))
                 },
-                color = baki.muted, style = BakiType.caption,
-            )
+                label = "syncStamp",
+            ) { now ->
+                val ink = when (now) {
+                    "synced" -> baki.up
+                    "offline" -> baki.down
+                    "cached" -> baki.warn
+                    "syncing" -> baki.primary
+                    else -> baki.muted
+                }
+                val label = when (now) {
+                    "synced" -> "SYNCED"
+                    "offline" -> "OFFLINE"
+                    "cached" -> "SAVED"
+                    "syncing" -> "SYNCING"
+                    else -> "LOCAL"
+                }
+                Row(
+                    Modifier.clip(RoundedCornerShape(Radius.tiny))
+                        .background(ink.copy(alpha = 0.08f))
+                        .padding(horizontal = 7.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Box(Modifier.size(5.dp).clip(RoundedCornerShape(Radius.pill)).background(ink))
+                    Text(label, color = ink, style = BakiType.micro.copy(letterSpacing = 0.8.sp), maxLines = 1)
+                }
+            }
         }
+        Text(
+            "what your shift really pays",
+            color = baki.muted, style = BakiType.caption,
+            modifier = Modifier.padding(start = Space.l + 36.dp + Space.m, bottom = 8.dp),
+        )
+        if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.l))
     }
 }
 
@@ -605,7 +633,7 @@ private fun BottomBar(
 
     BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = Space.xs, vertical = 6.dp)) {
         val tabWidth = maxWidth / items.size
-        val shape = RoundedCornerShape(Radius.pill)
+        val shape = RoundedCornerShape(Radius.glass)
 
         // The liquid selection.
         // Motion follows the library's own LiquidBottomTabs example: one surface that flows
@@ -807,9 +835,18 @@ fun RowCard(
 @Composable
 private fun SectionTitle(text: String, trailing: String = "") {
     val baki = LocalBaki.current
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(text, color = baki.muted, style = BakiType.captionStrong )
-        if (trailing.isNotEmpty()) Text(trailing, color = baki.muted, style = BakiType.caption )
+    Column(Modifier.fillMaxWidth()) {
+        if (baki.paper) {
+            LedgerRule()
+            Spacer(Modifier.height(Space.s))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                text.uppercase(), color = baki.muted,
+                style = if (baki.paper) BakiType.section else BakiType.captionStrong,
+            )
+            if (trailing.isNotEmpty()) Text(trailing, color = baki.muted, style = BakiType.caption)
+        }
     }
 }
 
@@ -1404,11 +1441,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
             )
             Spacer(Modifier.height(Space.m))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Button(
+                Button( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                     onClick = { repo.setServer(url) },
                     colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 ) { Text("Save & sync") }
-                OutlinedButton(
+                OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                     onClick = { scope.launch { repo.sync() } },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
                     border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
@@ -1474,7 +1511,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
             )
             Spacer(Modifier.height(Space.m))
-            Button(
+            Button( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                 onClick = { repo.setRouteSync(routeSync, routeKey) },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
             ) { Text("Save route key") }
@@ -1538,13 +1575,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                         )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-                            OutlinedButton(
+                            OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                                 onClick = { scope.launch { repo.payBill(bill.id, period) } },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
                                 border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                             ) { Text("Mark paid", style = BakiType.label) }
-                            OutlinedButton(
+                            OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                                 onClick = { linkTarget = bill to period },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
@@ -1555,7 +1592,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(Space.s))
-            if (repo.store.bills.isNotEmpty()) Button(
+            if (repo.store.bills.isNotEmpty()) Button( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                 onClick = { scope.launch { repo.settleBills(target) } },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 enabled = Bills.unpaid(repo.store, target).isNotEmpty(),
@@ -1573,7 +1610,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                 if (paid) {
                     Text("${bill.name} covered", color = baki.up, style = BakiType.caption)
                 } else {
-                    OutlinedButton(
+                    OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                         onClick = { scope.launch { repo.payBill(bill.id, Bills.periodOf(bill, current)) } },
                         enabled = net >= bill.amount,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
@@ -1727,7 +1764,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit) {
                     }
                 }
             }
-            Button(
+            Button( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                 onClick = { pickStatement() },
                 colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
             ) { Text("Import statement PDFs") }

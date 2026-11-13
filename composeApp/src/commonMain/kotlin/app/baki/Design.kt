@@ -1,5 +1,6 @@
 package app.baki
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,7 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.inter_variable
@@ -45,19 +53,19 @@ object Space {
 }
 
 object Radius {
-    /** M3 "full": chips, buttons, the nav bar */
-    val pill = 50.dp
-    /** M3 extraSmall */
-    val tiny = 4.dp
-    /** M3 small */
-    val small = 8.dp
-    /** M3 medium — inputs and small surfaces */
-    val bar = 6.dp
-    val input = 12.dp
-    /** M3 large — the standard card */
-    val card = 16.dp
-    /** M3 extraLarge — bottom sheets */
-    val sheet = 28.dp
+    /** Ledger controls: buttons, chips, segmented controls. */
+    val pill = 4.dp
+    /** The liquid-glass nav and + only. */
+    val glass = 50.dp
+    val tiny = 0.dp
+    val small = 2.dp
+    val bar = 2.dp
+    val input = 2.dp
+    /** A paper panel is nearly square. */
+    val card = 4.dp
+    /** Dialog / large component corner, slightly softer than a card. */
+    val dialog = 6.dp
+    val sheet = 12.dp
 }
 
 /** Overlay opacities, named by intent so they stop being magic numbers. */
@@ -89,13 +97,13 @@ object BakiType {
     // Weights run heavier than stock M3: the app's voice is a bold money figure.
 
     /** the one hero number on a screen — M3 displayLarge */
-    var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1.2).sp)
+    var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Normal, letterSpacing = (-1.2).sp)
     /** secondary hero — M3 displaySmall */
-    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.8).sp)
+    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.8).sp)
     /** card headline — M3 headlineMedium */
-    var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp)
+    var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.4).sp)
     /** dialog titles — M3 titleLarge */
-    var title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)
+    var title = TextStyle(fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.sp)
     /** M3 titleMedium */
     var subtitle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold)
     /** M3 bodyLarge */
@@ -140,14 +148,16 @@ object BakiType {
      * Three faces, three jobs: Space Grotesk for display, JetBrains Mono for readouts (money and
      * chart labels, so figures read like an instrument), Inter for everything else.
      */
-    fun install(text: FontFamily, displayFace: FontFamily, readoutFace: FontFamily) {
+    fun install(text: FontFamily, displayFace: FontFamily, readoutFace: FontFamily, paper: Boolean = true) {
         if (textFamily === text && displayFamily === displayFace && readoutFamily === readoutFace) return
         textFamily = text; displayFamily = displayFace; readoutFamily = readoutFace
 
-        display = display.copy(fontFamily = displayFace)
-        displaySmall = displaySmall.copy(fontFamily = displayFace)
-        headline = headline.copy(fontFamily = displayFace)
-        title = title.copy(fontFamily = displayFace)
+        val displayWeight = if (paper) FontWeight.Normal else FontWeight.Bold
+        val titleWeight = if (paper) FontWeight.Normal else FontWeight.SemiBold
+        display = display.copy(fontFamily = displayFace, fontWeight = displayWeight)
+        displaySmall = displaySmall.copy(fontFamily = displayFace, fontWeight = displayWeight)
+        headline = headline.copy(fontFamily = displayFace, fontWeight = displayWeight)
+        title = title.copy(fontFamily = displayFace, fontWeight = titleWeight)
 
         subtitle = subtitle.copy(fontFamily = text)
         body = body.copy(fontFamily = text)
@@ -206,9 +216,50 @@ data class BakiSemantic(val income: Color, val expense: Color, val warn: Color)
 @Composable
 fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
     val text = Font(Res.font.inter_variable, FontWeight.Normal)
-    val display = Font(Res.font.space_grotesk, FontWeight.Normal)
-    val readout = Font(Res.font.jetbrains_mono, FontWeight.Normal)
-    return remember { Triple(FontFamily(text), FontFamily(display), FontFamily(readout)) }
+    // Paper Ledger on the phone; the desk keeps its Space Grotesk / JetBrains Mono voice.
+    val paper = !Caps.isDesktop || PhonePreview.active
+    val display = if (paper) FontFamily.Serif else FontFamily(Font(Res.font.space_grotesk, FontWeight.Normal))
+    val readout = if (paper) FontFamily.Serif else FontFamily(Font(Res.font.jetbrains_mono, FontWeight.Normal))
+    return remember { Triple(FontFamily(text), display, readout) }
+}
+
+/** A paper rule. Double rules mark the hero total; single rules separate sections. */
+@Composable
+fun LedgerRule(modifier: Modifier = Modifier, double: Boolean = false) {
+    val baki = LocalBaki.current
+    Column(modifier.fillMaxWidth()) {
+        Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = 0.32f)))
+        if (double) {
+            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = 0.22f)))
+        }
+    }
+}
+
+/** Press feedback for the few surfaces that are not Material buttons. */
+@Composable
+fun Modifier.tactileClickable(
+    enabled: Boolean = true,
+    haptic: Boolean = true,
+    onClick: () -> Unit,
+): Modifier {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.98f else 1f,
+        animationSpec = BakiMotion.spatialFast(),
+        label = "pressScale",
+    )
+    return this.graphicsLayer {
+        scaleX = scale; scaleY = scale
+    }.clickable(
+        interactionSource = interaction,
+        indication = LocalIndication.current,
+        enabled = enabled,
+    ) {
+        if (haptic) PlatformEffects.haptic(Haptic.Tick)
+        onClick()
+    }
 }
 
 /**
