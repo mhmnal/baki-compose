@@ -280,12 +280,20 @@ fun TodayScreen(
                             "SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp,
                             style = BakiType.captionStrong, modifier = Modifier.weight(1f),
                         )
-                        Box(
-                            Modifier.clip(RoundedCornerShape(Radius.pill))
-                                .background(bandColor(m.band, baki).copy(alpha = 0.18f))
-                                .padding(horizontal = Space.m, vertical = 4.dp),
-                        ) {
-                            Text(BANDS[m.band] ?: "—", color = bandColor(m.band, baki), style = BakiType.captionStrong )
+                        if (baki.paper) {
+                            Text(
+                                (BANDS[m.band] ?: "—").uppercase(),
+                                color = bandColor(m.band, baki),
+                                style = BakiType.captionStrong,
+                            )
+                        } else {
+                            Box(
+                                Modifier.clip(RoundedCornerShape(Radius.pill))
+                                    .background(bandColor(m.band, baki).copy(alpha = 0.18f))
+                                    .padding(horizontal = Space.m, vertical = 4.dp),
+                            ) {
+                                Text(BANDS[m.band] ?: "—", color = bandColor(m.band, baki), style = BakiType.captionStrong)
+                            }
                         }
                     }
                     Spacer(Modifier.height(Space.xs))
@@ -333,7 +341,7 @@ fun TodayScreen(
                     if (day == today && live == null && !repo.readOnly) {
                         Spacer(Modifier.height(Space.m))
                         PillButton(
-                            "▶ Live", baki.surfaceHigh, baki.onSurface,
+                            "Live", baki.surfaceHigh, baki.onSurface,
                             Modifier.fillMaxWidth(), { repo.startLive() },
                         )
                     }
@@ -465,6 +473,10 @@ fun TodayScreen(
                     "Tap + to log a spending entry.",
                     color = baki.muted, style = BakiType.caption,
                 )
+                if (baki.paper) {
+                    Spacer(Modifier.height(Space.m))
+                    LedgerRule(alpha = 0.16f)
+                }
             }
         }
     }
@@ -609,7 +621,7 @@ fun RowCardIcon(
                 horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
             ) {
                 Text(
-                    if (editing) "✎  Edit" else "Delete  🗑",
+                    if (editing) "Edit" else "Delete",
                     color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong )
             }
         },

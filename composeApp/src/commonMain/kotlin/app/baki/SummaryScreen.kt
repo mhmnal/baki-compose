@@ -78,8 +78,9 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             val thisWeek = weekTotals(store, weekStartOf(todayIso()))
             val lastWeek = weekTotals(store, addDays(weekStartOf(todayIso()), -7))
             val delta = thisWeek.net - lastWeek.net
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-                Text("THIS WEEK", color = baki.muted, style = BakiType.captionStrong )
+            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+                LedgerRule(alpha = 0.16f)
+                Text("THIS WEEK", color = baki.muted, style = BakiType.section)
                 Spacer(Modifier.height(Space.s))
                 BoxWithConstraints {
                     val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
@@ -136,6 +137,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                         )
                     }
                 }
+                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.16f)
             }
         }
 
@@ -159,14 +162,17 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         }
 
         item {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-                Text("FUNDS", color = baki.muted, style = BakiType.captionStrong )
+            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+                LedgerRule(alpha = 0.16f)
+                Text("FUNDS", color = baki.muted, style = BakiType.section)
                 Spacer(Modifier.height(Space.s))
                 FundRow("Fuel", funds.fuel, baki)
                 Spacer(Modifier.height(Space.s))
                 FundRow("Wear & tear", funds.wear, baki)
                 Spacer(Modifier.height(Space.s))
-                Text("accrued from km · drained by real spending", color = baki.muted, style = BakiType.caption )
+                Text("accrued from km · drained by real spending", color = baki.muted, style = BakiType.caption)
+                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.16f)
             }
         }
 
@@ -192,8 +198,9 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
             val cost = remember(store, month) { monthCost(store, month) }
             val series = remember(store, month) { monthCostSeries(store, month, 4) }
             val peak = series.maxOfOrNull { it.perKm }?.coerceAtLeast(0.01) ?: 0.01
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-                Text("COST PER KM", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+                LedgerRule(alpha = 0.16f)
+                Text("COST PER KM", color = baki.muted, style = BakiType.section)
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text("RM ${rm(cost.perKm)}", color = baki.onSurface, style = BakiType.headline )
                     Spacer(Modifier.width(Space.s))
@@ -226,6 +233,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                         }
                     }
                 }
+                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.16f)
             }
         }
         item { HoursHeatmap(store); Spacer(Modifier.height(Space.m)) }
@@ -233,11 +242,9 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
         latestWeekWithData(store, todayIso())?.let { (start, r) ->
             item {
                 Column(
-                    Modifier.fillMaxWidth()
-                        .clip(RoundedCornerShape(Radius.card))
-                        .background(baki.container)
-                        .padding(Space.l),
+                    Modifier.fillMaxWidth().padding(vertical = Space.m),
                 ) {
+                    LedgerRule(alpha = 0.16f)
                     Text(
                         (if (start == weekStartOf(todayIso())) "THIS WEEK" else "LAST WEEK") +
                             " · ${prettyDate(start)} – ${prettyDate(addDays(start, 6))}",
@@ -261,6 +268,8 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
                             color = baki.up, style = BakiType.caption,
                         )
                     }
+                    Spacer(Modifier.height(Space.s))
+                    LedgerRule(alpha = 0.16f)
                 }
                 Spacer(Modifier.height(Space.m))
             }
@@ -277,10 +286,11 @@ fun SummaryScreen(store: Store, month: String, onMonth: (String) -> Unit) {
 @Composable
 private fun StatTile(label: String, value: String, sub: String, tint: Color, modifier: Modifier = Modifier) {
     val baki = LocalBaki.current
-    Column(modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)) {
-        Text(label, color = baki.muted, style = BakiType.caption )
-        Text(value, color = tint, style = BakiType.title )
-        if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption )
+    Column(modifier.padding(vertical = Space.m)) {
+        LedgerRule(alpha = 0.14f)
+        Text(label, color = baki.muted, style = BakiType.caption)
+        Text(value, color = tint, style = BakiType.title)
+        if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
     }
 }
 
@@ -301,11 +311,10 @@ private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
 @Composable
 private fun CashTruthCard(t: CashTruth, month: String) {
     val baki = LocalBaki.current
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+        LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("CASH TRUTH", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Text("CASH TRUTH", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.weight(1f))
             Text("not a bank balance", color = baki.muted, style = BakiType.nano )
         }
@@ -336,6 +345,8 @@ private fun CashTruthCard(t: CashTruth, month: String) {
                 "Cash counts payouts only when the latest statement or a payout breakdown settles them.",
             color = baki.muted, style = BakiType.nano,
         )
+        Spacer(Modifier.height(Space.s))
+        LedgerRule(alpha = 0.16f)
     }
 }
 
@@ -352,11 +363,10 @@ private fun CashLine(label: String, cents: Long, color: Color, baki: BakiPalette
 @Composable
 private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, below: Int) {
     val baki = LocalBaki.current
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l),
-    ) {
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+        LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("WEEKLY REVIEW", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Text("WEEKLY REVIEW", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.weight(1f))
             Text("MON–SUN", color = baki.muted, style = BakiType.nano )
         }
@@ -381,7 +391,9 @@ private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, bel
                 color = baki.warn, style = BakiType.caption,
             )
         } else {
-            Text("Every shift cleared RM ${rm(target)}/hr", color = baki.up, style = BakiType.caption )
+            Text("Every shift cleared RM ${rm(target)}/hr", color = baki.up, style = BakiType.caption)
         }
+        Spacer(Modifier.height(Space.s))
+        LedgerRule(alpha = 0.16f)
     }
 }
