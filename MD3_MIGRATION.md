@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.2 / code 123 — signed and installed**
+Version: **0.40.3 / code 124 — signed and installed**
 
 ## Design direction
 
@@ -186,7 +186,8 @@ No financial feature was removed.
 
 - Deleted `Glass.kt` and `PaperTexture.kt`; removed QR paper grain.
 - Removed every custom `BorderStroke` and `.border(...)` from cards, buttons and calendar cells.
-- All cards now use the single-surface 16dp `MaterialTheme.shapes.large` treatment.
+- All cards now use the single-surface 16dp `MaterialTheme.shapes.large` treatment. The
+  swipe-to-delete background is transparent when settled, removing the last card rim.
 - Calendar today/best markers use tonal fills, not outlines.
 - Removed the forced serif source for display and money. All text is sans; money remains tabular.
 - Rebuilt Month in Ink with rounded primary/error bars, a solid target line, FilterChip ranges,
@@ -195,4 +196,4 @@ No financial feature was removed.
 - NavigationBar keeps explicit 80dp geometry, standard active indicator, tonal container and
   one-line labels. NavigationRail/FAB remain adaptive.
 - Shortened explanatory copy and removed dead layout hacks.
-- 225 tests pass; signed 0.40.2, code 123.
+- 225 tests pass; signed 0.40.3, code 124.

@@ -849,16 +849,20 @@ fun RowCard(
         enableDismissFromEndToStart = onDelete != null,
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-            Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.large))
-                    .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
-                    .padding(horizontal = Space.ml),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
-            ) {
-                Text(
-                    if (editing) "Edit" else "Delete",
-                    color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong )
+            if (swipe.dismissDirection != SwipeToDismissBoxValue.Settled) {
+                Row(
+                    Modifier.fillMaxSize().clip(MaterialTheme.shapes.large)
+                        .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
+                        .padding(horizontal = Space.ml),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
+                ) {
+                    Text(
+                        if (editing) "Edit" else "Delete",
+                        color = if (editing) baki.onPrimaryContainer else baki.down,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
             }
         },
     ) {
