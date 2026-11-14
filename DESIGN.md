@@ -1231,3 +1231,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Spending rows show an entries-running balance margin.
 - 216 tests; signed versionCode 115, installed on the phone.
 - 360dp and 1.3x day-page checks passed.
+
+## Phase 2: close and reconciliation
+
+- Day page can be closed/reopened; closing is a review stamp, not a lock.
+- Day close state is a last-writer-wins map and syncs across devices.
+- Statement weeks get a separate reconciliation mark map; Mark reconciled/Reopen never mutates imported data.
+- Matched/difference status combines gross gap and insurance count.
+- Write actions are disabled visibly in read-only mode.
+- 220 tests; signed next.

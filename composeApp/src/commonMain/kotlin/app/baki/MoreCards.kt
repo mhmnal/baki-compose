@@ -35,7 +35,14 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
         if (st.rangeText.isNotEmpty()) {
             Text(st.rangeText, color = baki.muted, style = BakiType.caption )
         }
-        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, style = BakiType.caption )
+        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, style = BakiType.caption)
+        val latestMark = store.statementMarks[st.weekStart]
+        Text(
+            if (latestMark?.reconciled == true) "reconciled ${latestMark.updated.take(16).replace('T', ' ')}"
+            else "not reconciled",
+            color = if (latestMark?.reconciled == true) baki.up else baki.warn,
+            style = BakiType.caption,
+        )
         if (onViewHistory != null && store.statements.size > 1) {
             TextButton(onClick = onViewHistory, contentPadding = PaddingValues(0.dp)) {
                 Text("View all ${store.statements.size} weeks", color = baki.primary, style = BakiType.captionStrong )
@@ -46,8 +53,10 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
 
 /** All imported weekly statements, newest first; week-level reconciliation, no day stamps. */
 @Composable
-fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
+fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
     val baki = LocalBaki.current
+    val store = repo.store
+    val scope = rememberCoroutineScope()
     val rows = store.statements.values.sortedByDescending { it.weekStart }
     BakiSheet(onDismiss = onDismiss) {
         Text("Statement history", color = baki.onSurface, style = BakiType.title )
@@ -81,13 +90,43 @@ fun StatementHistorySheet(store: Store, onDismiss: () -> Unit) {
                     style = BakiType.caption,
                 )
                 if (check.loggedShifts == 0) {
-                    Text("no shifts logged for this week", color = baki.muted, style = BakiType.caption )
+                    Text("no shifts logged for this week", color = baki.muted, style = BakiType.caption)
                 } else {
                     Text(
                         "logged ${check.loggedShifts} shifts · RM ${rm(check.loggedGross / 100.0)} · gap RM ${rm(gap)}",
                         color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
                         style = BakiType.captionNumeric,
                     )
+                }
+                val mark = store.statementMarks[st.weekStart]
+                val matches = check.loggedShifts > 0 && kotlin.math.abs(gap) < 1.0 && check.insuranceMatches
+                Text(
+                    when {
+                        matches -> "MATCHED · gross and insurance agree"
+                        check.loggedShifts == 0 -> "NOT LOGGED · import has no matching shifts yet"
+                        else -> "DIFFERENCE · review gross and insurance in the margin"
+                    },
+                    color = if (matches) baki.up else baki.warn,
+                    style = BakiType.captionStrong,
+                )
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (mark?.reconciled == true) "reconciled ${mark.updated.take(16).replace('T', ' ')}"
+                        else "not reconciled",
+                        color = if (mark?.reconciled == true) baki.up else baki.muted,
+                        style = BakiType.caption,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        enabled = !repo.readOnly,
+                        onClick = { scope.launch { repo.setStatementReconciled(st.weekStart, mark?.reconciled != true) } },
+                    ) {
+                        Text(
+                            if (mark?.reconciled != true) "Mark reconciled" else "Reopen",
+                            color = if (mark?.reconciled != true) baki.primary else baki.muted,
+                            style = BakiType.captionStrong,
+                        )
+                    }
                 }
                 Text(
                     "imported ${st.importedAt.take(16).replace('T', ' ')}",

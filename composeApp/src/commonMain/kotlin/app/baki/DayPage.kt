@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -66,6 +67,11 @@ fun DayPage(
     var pendingReceipt by remember { mutableStateOf<String?>(null) }
     var receiptStatus by remember { mutableStateOf("") }
     var preview by remember { mutableStateOf<String?>(null) }
+    var confirmClose by remember(day) { mutableStateOf(false) }
+    var sealStatus by remember(day) { mutableStateOf("") }
+    val dayClose = store.dayCloses[day]
+    val closed = dayClose?.closed == true
+    val canWrite = !repo.readOnly
     val pickReceipt = rememberReceiptPicker { data ->
         val target = pendingReceipt
         pendingReceipt = null
@@ -118,6 +124,28 @@ fun DayPage(
                 }
 
                 item {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (closed) "CLOSED · ${dayClose?.updated?.take(16)?.replace('T', ' ').orEmpty()}" else "PAGE OPEN",
+                            color = if (closed) baki.up else baki.muted, style = BakiType.captionStrong,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            enabled = canWrite,
+                            onClick = {
+                                if (closed) scope.launch {
+                                    sealStatus = if (repo.setDayClosed(day, false)) "Day reopened" else "Could not reopen · ${repo.lastError ?: "write blocked"}"
+                                } else confirmClose = true
+                            },
+                        ) {
+                            Text(if (closed) "Reopen day" else "Close the day", color = if (closed) baki.muted else baki.primary, style = BakiType.labelStrong)
+                        }
+                    }
+                    if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = baki.warn, style = BakiType.caption)
+                    else if (sealStatus.isNotEmpty()) Text(sealStatus, color = baki.warn, style = BakiType.caption)
+                }
+
+                item {
                     Text("ENTRIES · RUNNING", color = baki.muted, style = BakiType.section)
                     Spacer(Modifier.height(Space.xs))
                     LedgerRule(alpha = 0.14f)
@@ -132,9 +160,9 @@ fun DayPage(
                                 runningCents = running,
                                 onEdit = { onEditEntry(entry) },
                                 onDelete = { onDeleteEntry(entry) },
-                                onAttach = { pendingReceipt = entry.id; pickReceipt() },
+                                onAttach = { if (canWrite) { pendingReceipt = entry.id; pickReceipt() } },
                                 onRemoveReceipt = {
-                                    scope.launch {
+                                    if (canWrite) scope.launch {
                                         receiptStatus = if (repo.setEntryReceipt(entry.id, "")) "Receipt removed" else "Could not remove receipt"
                                     }
                                 },
@@ -173,13 +201,14 @@ fun DayPage(
                         onValueChange = { noteText = it.take(500) },
                         placeholder = { Text("A line for this day…", color = baki.muted, style = BakiType.label) },
                         minLines = 3,
+                        enabled = canWrite,
                         modifier = Modifier.fillMaxWidth(),
                         colors = bakiFieldColorsPublic(),
                     )
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(noteStatus, color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
                         TextButton(
-                            enabled = noteText != savedNote,
+                            enabled = canWrite && noteText != savedNote,
                             onClick = {
                                 scope.launch {
                                     val ok = repo.setDayNote(day, noteText)
@@ -195,6 +224,31 @@ fun DayPage(
 
         preview?.let { receipt ->
             ReceiptPreview(receipt, onClose = { preview = null })
+        }
+
+        if (confirmClose) {
+            AlertDialog(
+                onDismissRequest = { confirmClose = false },
+                containerColor = baki.surface,
+                shape = RoundedCornerShape(Radius.dialog),
+                title = { Text("Close this day?", color = baki.onSurface, style = BakiType.title) },
+                text = {
+                    Text(
+                        "${entries.size} entries · ${shifts.size} shifts · net RM ${rm(totals.net)}. " +
+                            "Closing marks the page reviewed. You can still edit it later.",
+                        color = baki.muted, style = BakiType.body,
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmClose = false
+                        scope.launch {
+                            sealStatus = if (repo.setDayClosed(day, true)) "Day closed" else "Could not close · ${repo.lastError ?: "write blocked"}"
+                        }
+                    }) { Text("Close the day", color = baki.primary, style = BakiType.labelStrong) }
+                },
+                dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Cancel", color = baki.muted) } },
+            )
         }
     }
 }

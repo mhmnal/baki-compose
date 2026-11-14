@@ -2044,6 +2044,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     color = if (check.insuranceMatches) baki.up else baki.down,
                     style = BakiType.caption,
                 )
+                Text(
+                    if (repo.store.statementMarks[latest.weekStart]?.reconciled == true) "statement reconciled"
+                    else "statement not reconciled · open history to review",
+                    color = if (repo.store.statementMarks[latest.weekStart]?.reconciled == true) baki.up else baki.warn,
+                    style = BakiType.caption,
+                )
             }
         }
         }
@@ -2358,7 +2364,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     }
 
     if (statementHistoryOpen) {
-        StatementHistorySheet(repo.store) { statementHistoryOpen = false }
+        StatementHistorySheet(repo = repo, onDismiss = { statementHistoryOpen = false })
     }
 
     if (confirmReset) {

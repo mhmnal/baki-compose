@@ -33,6 +33,20 @@ data class DayNote(
     val updated: String = "",
 )
 
+/** A reviewed day page. Closing is a stamp, not a lock: edits remain allowed. */
+@Serializable
+data class DayClose(
+    val closed: Boolean = true,
+    val updated: String = "",
+)
+
+/** A week-level statement reconciliation mark, separate from the imported statement itself. */
+@Serializable
+data class StatementMark(
+    val reconciled: Boolean = true,
+    val updated: String = "",
+)
+
 @Serializable
 data class Payout(val c: Long, val at: Long)
 
@@ -173,6 +187,10 @@ data class Store(
     val billPayments: List<BillPayment> = emptyList(),
     /** Notes written on a day page; absent from older stores. */
     val dayNotes: Map<String, DayNote> = emptyMap(),
+    /** Reviewed/closed day pages; absent from older stores. */
+    val dayCloses: Map<String, DayClose> = emptyMap(),
+    /** Reconciliation marks keyed by statement week. */
+    val statementMarks: Map<String, StatementMark> = emptyMap(),
 )
 
 val BakiJson = Json {

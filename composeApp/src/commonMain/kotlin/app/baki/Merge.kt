@@ -44,6 +44,16 @@ fun mergeStores(
         val cur = dayNotes[date]
         if (cur == null || note.updated >= cur.updated) dayNotes[date] = note
     }
+    val dayCloses = LinkedHashMap<String, DayClose>()
+    for ((date, close) in a.dayCloses + b.dayCloses) {
+        val cur = dayCloses[date]
+        if (cur == null || close.updated >= cur.updated) dayCloses[date] = close
+    }
+    val statementMarks = LinkedHashMap<String, StatementMark>()
+    for ((week, mark) in a.statementMarks + b.statementMarks) {
+        val cur = statementMarks[week]
+        if (cur == null || mark.updated >= cur.updated) statementMarks[week] = mark
+    }
 
     return Store(
         v = 1,
@@ -69,6 +79,8 @@ fun mergeStores(
             .groupBy { it.billId to it.period }
             .map { (_, list) -> list.maxByOrNull { it.updated }!! },
         dayNotes = dayNotes,
+        dayCloses = dayCloses,
+        statementMarks = statementMarks,
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),

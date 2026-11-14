@@ -642,6 +642,33 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         true
     }
 
+    /** Mark a day page reviewed, or reopen it. Edits remain allowed either way. */
+    suspend fun setDayClosed(date: String, closed: Boolean): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(
+            dayCloses = store.dayCloses + (date to DayClose(closed, stamp)),
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
+    /** Mark a statement week reconciled, or reopen it. */
+    suspend fun setStatementReconciled(weekStart: String, reconciled: Boolean): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        if (weekStart !in store.statements) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(
+            statementMarks = store.statementMarks + (weekStart to StatementMark(reconciled, stamp)),
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     /** Attach an odometer to an already-saved entry without changing its amount or date. */
     suspend fun setEntryOdometer(id: String, odo: Int): Boolean = mutex.withLock {
         if (blocked()) return@withLock false

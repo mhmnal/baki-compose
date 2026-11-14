@@ -109,6 +109,7 @@ fun TodayScreen(
     val shift = shifts.maxByOrNull { it.updated }
     val scope = rememberCoroutineScope()
     val quick = remember(store) { quickAdds(store) }
+    val dayClosed = store.dayCloses[day]?.closed == true
 
 
 
@@ -428,7 +429,7 @@ fun TodayScreen(
             // reserve the floating + gutter so the larger label never runs underneath it
             Row(Modifier.fillMaxWidth().padding(end = 68.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
+                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES" + if (dayClosed) " · CLOSED" else "",
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Spacer(Modifier.weight(1f))
                 Text(
