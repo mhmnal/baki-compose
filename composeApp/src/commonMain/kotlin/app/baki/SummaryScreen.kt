@@ -3,11 +3,18 @@ package app.baki
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -15,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -30,10 +38,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 /** Month at a glance: statement cover, month-in-ink, week strip, spend, calendar, reserves. */
 @Composable
@@ -63,6 +73,7 @@ fun SummaryScreen(
     val prevNet = remember(store, prevMonth) { monthTotals(store, prevMonth).net }
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
     val streak = remember(store) { targetStreak(store, todayIso()) }
+    var managingFund by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         state = listState,
@@ -84,7 +95,7 @@ fun SummaryScreen(
             WhereItWent(cats = cats, total = t.expense)
         }
         item { CalendarHeat(store, month, compact = true) }
-        item { FundsSection(funds) }
+        item { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) }
         item { CashTruthCard(cash, month, compact = true) }
         weekReview?.let { (start, review) ->
             item {
@@ -95,6 +106,9 @@ fun SummaryScreen(
         if (cats.isEmpty()) item {
             EmptyState("Nothing this month", "Expenses you log will appear here.")
         }
+    }
+    managingFund?.let { fund ->
+        ReserveSheet(repo = repo, fund = fund, onDismiss = { managingFund = null })
     }
 }
 
@@ -327,30 +341,41 @@ private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long) {
 }
 
 @Composable
-private fun FundsSection(funds: Funds) {
+private fun FundsSection(repo: BakiRepo, funds: Funds, onManage: (String) -> Unit) {
     val baki = LocalBaki.current
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         LedgerRule(alpha = 0.16f)
         Text("FUNDS · ROLLING", color = baki.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.s))
-        FundRow("Fuel", funds.fuel, baki)
+        FundRow("Fuel", "fuel", funds.fuel, repo.store.settings.reserveTargets["fuel"] ?: 0.0, baki) { onManage("fuel") }
         Spacer(Modifier.height(Space.s))
-        FundRow("Wear & tear", funds.wear, baki)
+        FundRow("Wear & tear", "wear", funds.wear, repo.store.settings.reserveTargets["wear"] ?: 0.0, baki) { onManage("wear") }
         Spacer(Modifier.height(Space.xs))
-        Text("rolling reserve · one-month target", color = baki.muted, style = BakiType.caption)
+        Text("rolling reserve · top-ups are virtual allocations from cash", color = baki.muted, style = BakiType.caption)
         Spacer(Modifier.height(Space.xs))
         LedgerRule(alpha = 0.16f)
     }
 }
 
 @Composable
-private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
-    val target = maxOf(fund.monthSpent, fund.monthAccrued, 1.0)
+private fun FundRow(
+    label: String,
+    fundKey: String,
+    fund: Fund,
+    configuredTarget: Double,
+    baki: BakiPalette,
+    onManage: () -> Unit,
+) {
+    val target = configuredTarget.takeIf { it > 0.0 } ?: maxOf(fund.monthSpent, fund.monthAccrued, 1.0)
     val progress = (fund.balance.coerceAtLeast(0.0) / target).coerceIn(0.0, 1.0)
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
             Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong)
+            Spacer(Modifier.width(Space.xs))
+            TextButton(onClick = onManage, contentPadding = PaddingValues(horizontal = Space.xs)) {
+                Text("Manage", color = baki.primary, style = BakiType.captionStrong)
+            }
         }
         Spacer(Modifier.height(Space.xs))
         Box(Modifier.fillMaxWidth().height(4.dp).background(baki.surfaceHigh)) {
@@ -361,11 +386,115 @@ private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
         }
         Spacer(Modifier.height(Space.xs))
         Text(
+            "target RM ${rm(target)}" +
+                (if (configuredTarget > 0.0) "" else " · one-month default"),
+            color = baki.muted, style = BakiType.nano,
+        )
+        Text(
             "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
                 if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
             color = if (fund.monthNet < 0) baki.down else baki.muted, style = BakiType.caption,
         )
     }
+}
+
+@Composable
+private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
+    val baki = LocalBaki.current
+    val scope = rememberCoroutineScope()
+    val canWrite = !repo.readOnly
+    val state = if (fund == "fuel") repo.store.settings.reserveTargets["fuel"] ?: 0.0 else repo.store.settings.reserveTargets["wear"] ?: 0.0
+    var target by remember(fund) { mutableStateOf(if (state > 0) "%.2f".format(state) else "") }
+    var amount by remember(fund) { mutableStateOf("") }
+    var status by remember(fund) { mutableStateOf("") }
+    val fundName = if (fund == "fuel") "Fuel" else "Wear & tear"
+    val txns = remember(repo.store.reserveTxns, fund) {
+        repo.store.reserveTxns.filter { it.fund == fund }.sortedByDescending { it.updated }.take(6)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = baki.surface,
+        shape = RoundedCornerShape(Radius.dialog),
+        title = { Text("$fundName reserve", color = baki.onSurface, style = BakiType.title) },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                Text("A virtual reserve. No bank transfer happens.", color = baki.muted, style = BakiType.caption)
+                if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = baki.warn, style = BakiType.caption)
+                LedgerRule(alpha = 0.14f)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Target RM", color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
+                    OutlinedTextField(
+                        value = target,
+                        onValueChange = { target = it.filter { c -> c.isDigit() || c == '.' } },
+                        placeholder = { Text("auto", color = baki.muted) }, singleLine = true,
+                        modifier = Modifier.width(120.dp), colors = bakiFieldColorsPublic(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+                Text("Leave blank for the one-month default.", color = baki.muted, style = BakiType.nano)
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    label = { Text("Amount RM") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    Button(
+                        enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                        onClick = {
+                            val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                            scope.launch {
+                                val ok = repo.addReserveTxn(fund, cents)
+                                status = if (ok) "Added RM ${rm(cents)} to reserve" else "Could not add"
+                                amount = ""
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
+                        shape = RoundedCornerShape(Radius.pill),
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Top up") }
+                    TextButton(
+                        enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                        onClick = {
+                            val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                            scope.launch {
+                                val ok = repo.addReserveTxn(fund, -cents)
+                                status = if (ok) "Withdrew RM ${rm(cents)} from reserve" else "Could not withdraw"
+                                amount = ""
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Withdraw", color = if (canWrite) baki.down else baki.muted) }
+                }
+                TextButton(
+                    enabled = canWrite,
+                    onClick = {
+                        val value = target.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
+                        scope.launch { repo.setReserveTarget(fund, value); status = if (value > 0) "Target saved" else "Using one-month default" }
+                    },
+                ) { Text("Save target", color = if (canWrite) baki.primary else baki.muted, style = BakiType.captionStrong) }
+                if (status.isNotEmpty()) Text(status, color = baki.primary, style = BakiType.caption)
+                if (txns.isNotEmpty()) {
+                    Text("RECENT MOVEMENTS", color = baki.muted, style = BakiType.section)
+                    LedgerRule(alpha = 0.12f)
+                    txns.forEach { tx ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(tx.date, color = baki.muted, style = BakiType.caption)
+                            Text(
+                                (if (tx.amount > 0) "+" else "−") + "RM ${rm(kotlin.math.abs(tx.amount))}",
+                                color = if (tx.amount > 0) baki.up else baki.down, style = BakiType.captionNumeric,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = baki.primary, style = BakiType.labelStrong) } },
+    )
 }
 
 /** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */

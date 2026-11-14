@@ -106,9 +106,11 @@ data class Fund(
     val spent: Double,
     val monthAccrued: Double = accrued,
     val monthSpent: Double = spent,
+    val manual: Double = 0.0,
+    val monthManual: Double = 0.0,
 ) {
-    val balance: Double get() = accrued - spent
-    val monthNet: Double get() = monthAccrued - monthSpent
+    val balance: Double get() = accrued - spent + manual
+    val monthNet: Double get() = monthAccrued - monthSpent + monthManual
 }
 
 data class Funds(val fuel: Fund, val wear: Fund)
@@ -139,9 +141,21 @@ fun fundStats(store: Store, month: String? = null): Funds {
     val monthFuelSpent = monthExpenses.filter { isFuelCat(it.cat) }.sumOf { it.amount } / 100.0
     val monthWearSpent = monthExpenses.filter { it.cat == "maintenance" || it.cat == "carwash" || it.cat == "roadtax" }
         .sumOf { it.amount } / 100.0
+    var fuelManual = 0.0
+    var wearManual = 0.0
+    var monthFuelManual = 0.0
+    var monthWearManual = 0.0
+    for (tx in store.reserveTxns) {
+        if (!throughSelected(tx.date)) continue
+        val amount = tx.amount / 100.0
+        if (tx.fund == "fuel") fuelManual += amount else wearManual += amount
+        if (month == null || tx.date.startsWith(month)) {
+            if (tx.fund == "fuel") monthFuelManual += amount else monthWearManual += amount
+        }
+    }
     return Funds(
-        Fund(fuelAcc, fuelSpent, monthFuelAcc, monthFuelSpent),
-        Fund(wearAcc, wearSpent, monthWearAcc, monthWearSpent),
+        Fund(fuelAcc, fuelSpent, monthFuelAcc, monthFuelSpent, fuelManual, monthFuelManual),
+        Fund(wearAcc, wearSpent, monthWearAcc, monthWearSpent, wearManual, monthWearManual),
     )
 }
 
@@ -425,21 +439,50 @@ fun monthCostSeries(store: Store, endMonth: String, count: Int = 4): List<MonthC
 
 // ---------------------------------------------------------------- budgets
 
-data class BudgetUse(val cat: String, val limit: Double, val spent: Double) {
+data class BudgetUse(
+    val cat: String,
+    val base: Double,
+    val carried: Double,
+    val moved: Double,
+    val spent: Double,
+) {
+    val limit: Double get() = base + carried + moved
     val remaining: Double get() = limit - spent
     val fraction: Double get() = if (limit > 0) (spent / limit).coerceIn(0.0, 1.5) else 0.0
     val over: Boolean get() = spent > limit
 }
 
-/** Envelopes for the month, worst first — the ones that need attention stay on top. */
+/**
+ * Envelopes are a base monthly allocation plus optional carry from the previous month and explicit
+ * month moves. Carry is recursive but bounded, so an old unspent envelope can roll forward without
+ * an accidental infinite history walk.
+ */
 fun budgetUsage(store: Store, month: String): List<BudgetUse> {
-    val limits = store.settings.budgets
-    if (limits.isEmpty()) return emptyList()
-    val spent = store.entries
-        .filter { it.type != "income" && it.date.startsWith(month) }
-        .groupBy { it.cat }
-        .mapValues { (_, rows) -> rows.sumOf { it.amount } / 100.0 }
-    return limits.map { (cat, limit) -> BudgetUse(cat, limit, spent[cat] ?: 0.0) }
+    val base = store.settings.budgets
+    val moves = store.envelopeMoves
+    fun spentIn(cat: String, m: String): Double = store.entries
+        .filter { it.type != "income" && it.cat == cat && it.date.startsWith(m) }
+        .sumOf { it.amount } / 100.0
+    fun carryFor(cat: String, m: String): Double {
+        if (!store.settings.envelopeCarry) return 0.0
+        val prev = addDays("$m-01", -1).take(7)
+        val prevMoved = moves[prev]?.get(cat) ?: 0.0
+        val prevSpent = spentIn(cat, prev)
+        // Do not invent a carry for months with no envelope activity at all.
+        if (prevMoved == 0.0 && prevSpent <= 0.0) return 0.0
+        val prevAllocated = (base[cat] ?: 0.0) + prevMoved
+        return (prevAllocated - prevSpent).coerceAtLeast(0.0)
+    }
+    val cats = (base.keys + moves[month].orEmpty().keys).toSet()
+    return cats.map { cat ->
+        BudgetUse(
+            cat = cat,
+            base = base[cat] ?: 0.0,
+            carried = carryFor(cat, month),
+            moved = moves[month]?.get(cat) ?: 0.0,
+            spent = spentIn(cat, month),
+        )
+    }.filter { it.limit > 0.0 }
         .sortedByDescending { it.fraction }
 }
 

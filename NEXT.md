@@ -175,3 +175,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Daily close/seal and statement reconciliation installed; 220 tests.
 - Next: Phase 3 envelope budgets and reserve targets/top-ups.
+
+### Phase 3
+
+- Envelope carry/moves and reserve targets/top-ups implemented; 223 tests.
+- Signed next.

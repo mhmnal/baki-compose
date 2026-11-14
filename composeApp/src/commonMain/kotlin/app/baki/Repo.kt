@@ -932,6 +932,57 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(emptyList())
     }
 
+    suspend fun setEnvelopeCarry(on: Boolean) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(envelopeCarry = on),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithAllTombs()
+    }
+
+    /** Move envelope money within one month without changing the base allocation. */
+    suspend fun moveEnvelope(month: String, from: String, to: String, amount: Double): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        if (from == to || amount <= 0.0) return@withLock false
+        val current = store.envelopeMoves[month].orEmpty()
+        val updated = current + (from to (current[from] ?: 0.0) - amount) + (to to (current[to] ?: 0.0) + amount)
+        store = store.copy(
+            envelopeMoves = store.envelopeMoves + (month to updated),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
+    suspend fun setReserveTarget(fund: String, target: Double) = mutex.withLock {
+        if (blocked()) return@withLock
+        if (fund !in setOf("fuel", "wear")) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(
+                reserveTargets = if (target > 0.0) store.settings.reserveTargets + (fund to target)
+                else store.settings.reserveTargets - fund,
+            ),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+    }
+
+    /** Positive amount adds to the virtual reserve; negative withdraws from it. */
+    suspend fun addReserveTxn(fund: String, amountCents: Long, note: String = "", date: String = todayIso()): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        if (fund !in setOf("fuel", "wear") || amountCents == 0L) return@withLock false
+        val stamp = nowIso()
+        val tx = ReserveTxn(newId("res"), fund, amountCents, date, note.trim().take(120), stamp)
+        store = store.copy(reserveTxns = store.reserveTxns + tx, updatedAt = stamp)
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     /**
      * Upload sealed traces for recent shifts. Opt-in and silent: a failure here must never disturb a
      * ledger sync, so the caller wraps it.

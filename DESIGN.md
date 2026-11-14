@@ -1248,3 +1248,13 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Server preserves both maps. 220 tests.
 - Signed versionCode 117, installed. Day-close and statement mark/reopen tested on-device.
 - 360dp day-page close row checked.
+
+## Phase 3: envelopes and reserves
+
+- Envelopes use base allocation + previous-month carry + per-month moves.
+- Carry is opt-in and only applies when the previous month had activity.
+- Envelope move dialog adjusts the current month without changing the base.
+- Reserve targets are explicit RM values, with a one-month default.
+- Reserve top-ups/withdrawals are signed virtual transactions with recent history.
+- Settings, moves and reserve transactions are preserved server-side.
+- 223 tests; signed next.

@@ -54,6 +54,18 @@ fun mergeStores(
         val cur = statementMarks[week]
         if (cur == null || mark.updated >= cur.updated) statementMarks[week] = mark
     }
+    val reserveTxns = LinkedHashMap<String, ReserveTxn>()
+    for (tx in a.reserveTxns + b.reserveTxns) {
+        if (tx.id in deadIds) continue
+        val cur = reserveTxns[tx.id]
+        if (cur == null || tx.updated >= cur.updated) reserveTxns[tx.id] = tx
+    }
+    val envelopeMoves = LinkedHashMap<String, Map<String, Double>>()
+    for (source in listOf(a.envelopeMoves, b.envelopeMoves)) {
+        for ((month, moves) in source) {
+            envelopeMoves[month] = (envelopeMoves[month].orEmpty() + moves)
+        }
+    }
 
     return Store(
         v = 1,
@@ -70,6 +82,8 @@ fun mergeStores(
             dailyFoodCapCents = b.settings.dailyFoodCapCents,
             nextServiceKm = b.settings.nextServiceKm,
             nextServiceOn = b.settings.nextServiceOn,
+            envelopeCarry = b.settings.envelopeCarry,
+            reserveTargets = b.settings.reserveTargets,
         ),
         // bills merge by id (newest wins); a payment is unique per bill+period
         bills = (a.bills + b.bills)
@@ -81,6 +95,8 @@ fun mergeStores(
         dayNotes = dayNotes,
         dayCloses = dayCloses,
         statementMarks = statementMarks,
+        envelopeMoves = envelopeMoves,
+        reserveTxns = reserveTxns.values.toList(),
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),

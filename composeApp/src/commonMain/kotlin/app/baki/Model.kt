@@ -47,6 +47,18 @@ data class StatementMark(
     val updated: String = "",
 )
 
+/** A virtual movement in or out of a reserve. Positive is a top-up; negative is a withdrawal. */
+@Serializable
+data class ReserveTxn(
+    val id: String,
+    val fund: String,
+    /** cents; signed */
+    val amount: Long,
+    val date: String,
+    val note: String = "",
+    val updated: String = "",
+)
+
 @Serializable
 data class Payout(val c: Long, val at: Long)
 
@@ -147,6 +159,10 @@ data class Settings(
     val nextServiceKm: Int? = null,
     /** ISO date for the next service, or null. */
     val nextServiceOn: String? = null,
+    /** Carry positive envelope remainder into the next month. */
+    val envelopeCarry: Boolean = false,
+    /** Explicit reserve target in RM, keyed by fuel/wear. Empty = one-month default. */
+    val reserveTargets: Map<String, Double> = emptyMap(),
 )
 
 @Serializable
@@ -191,6 +207,10 @@ data class Store(
     val dayCloses: Map<String, DayClose> = emptyMap(),
     /** Reconciliation marks keyed by statement week. */
     val statementMarks: Map<String, StatementMark> = emptyMap(),
+    /** Per-month envelope transfers: month -> category -> signed RM adjustment. */
+    val envelopeMoves: Map<String, Map<String, Double>> = emptyMap(),
+    /** Virtual reserve top-ups and withdrawals. */
+    val reserveTxns: List<ReserveTxn> = emptyList(),
 )
 
 val BakiJson = Json {

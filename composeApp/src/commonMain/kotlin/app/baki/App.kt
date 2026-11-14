@@ -1295,7 +1295,11 @@ private fun SpendingScreen(
             if (envelopes.isNotEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth()) {
-                        SectionTitle("BUDGETS")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("ENVELOPES", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+                            Text("base + carry + moves", color = baki.muted, style = BakiType.nano)
+                        }
+                        LedgerRule(alpha = 0.14f)
                         Spacer(Modifier.height(Space.s))
                         envelopes.forEach { b ->
                             val name = repo.store.settings.cats.catsOut.firstOrNull { it.id == b.cat }?.name ?: b.cat
@@ -1312,6 +1316,14 @@ private fun SpendingScreen(
                                             if (b.over) " · RM ${rm(-b.remaining)} over"
                                             else " · RM ${rm(b.remaining)} left",
                                         color = ink, style = BakiType.captionNumeric,
+                                    )
+                                }
+                                if (b.carried != 0.0 || b.moved != 0.0) {
+                                    Text(
+                                        "base RM ${rm(b.base)}" +
+                                            (if (b.carried != 0.0) " · carry +RM ${rm(b.carried)}" else "") +
+                                            (if (b.moved != 0.0) " · move ${if (b.moved > 0) "+" else "−"}RM ${rm(kotlin.math.abs(b.moved))}" else ""),
+                                        color = baki.muted, style = BakiType.nano,
                                     )
                                 }
                                 Spacer(Modifier.height(Space.s))
@@ -2902,17 +2914,22 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
     var foodCap by remember {
         mutableStateOf(repo.store.settings.dailyFoodCapCents?.let { "%.2f".format(it / 100.0) } ?: "")
     }
+    var carry by remember { mutableStateOf(repo.store.settings.envelopeCarry) }
+    var moveOpen by remember { mutableStateOf(false) }
+    val canWrite = !repo.readOnly
 
     BakiSheet(
         onDismiss = onDismiss,
         footer = {
             Button(
+                enabled = canWrite,
                 onClick = {
                     val limits = draft.mapNotNull { (k, v) -> v.toDoubleOrNull()?.takeIf { it > 0 }?.let { k to it } }.toMap()
                     val cap = foodCap.toDoubleOrNull()?.takeIf { it > 0 }?.let { (it * 100).toLong() }
                     scope.launch {
                         repo.setDailyFoodCap(cap)
                         repo.setBudgets(limits)
+                        repo.setEnvelopeCarry(carry)
                     }
                     onDismiss()
                 },
@@ -2922,9 +2939,17 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             ) { Text("Save limits", fontWeight = FontWeight.Bold) }
         },
     ) {
-        Text("Monthly limits", color = baki.onSurface, style = BakiType.title)
-        Text("Leave a field blank for no cap. Applies to every month.", color = baki.muted, style = BakiType.caption)
+        Text("Monthly envelopes", color = baki.onSurface, style = BakiType.title)
+        if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = baki.warn, style = BakiType.caption)
+        Text("Leave a field blank for no envelope. Base allocation applies every month.", color = baki.muted, style = BakiType.caption)
         Spacer(Modifier.height(Space.s))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Carry unspent forward", color = baki.onSurface, style = BakiType.labelStrong)
+                Text("Positive remainder rolls into next month.", color = baki.muted, style = BakiType.caption)
+            }
+            Switch(checked = carry, onCheckedChange = { carry = it })
+        }
         if (baki.paper) LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Daily food cap", color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.labelStrong )
@@ -2957,5 +2982,77 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 )
             }
         }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Move money between envelopes for this month.", color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+            TextButton(onClick = { moveOpen = true }, enabled = cats.size > 1 && canWrite) {
+                Text("Move", color = baki.primary, style = BakiType.labelStrong)
+            }
+        }
     }
+    if (moveOpen) {
+        EnvelopeMoveDialog(repo, todayIso().take(7), cats.map { it.id to it.name }, onDismiss = { moveOpen = false })
+    }
+}
+
+@Composable
+private fun EnvelopeMoveDialog(
+    repo: BakiRepo,
+    month: String,
+    cats: List<Pair<String, String>>,
+    onDismiss: () -> Unit,
+) {
+    val baki = LocalBaki.current
+    val scope = rememberCoroutineScope()
+    var from by remember { mutableStateOf(cats.firstOrNull()?.first ?: "") }
+    var to by remember { mutableStateOf(cats.getOrNull(1)?.first ?: "") }
+    var amount by remember { mutableStateOf("") }
+    val value = amount.toDoubleOrNull() ?: 0.0
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = baki.surface,
+        shape = RoundedCornerShape(Radius.dialog),
+        title = { Text("Move envelope money", color = baki.onSurface, style = BakiType.title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                Text("From", color = baki.muted, style = BakiType.section)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    cats.forEach { (id, name) ->
+                        val on = from == id
+                        Text(
+                            name, color = if (on) baki.primary else baki.muted,
+                            modifier = Modifier.heightIn(min = Control.primary).clickable { from = id }.semantics { selected = on; role = Role.Tab },
+                            style = BakiType.label,
+                        )
+                    }
+                }
+                Text("To", color = baki.muted, style = BakiType.section)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    cats.forEach { (id, name) ->
+                        val on = to == id
+                        Text(
+                            name, color = if (on) baki.primary else baki.muted,
+                            modifier = Modifier.heightIn(min = Control.primary).clickable { to = id }.semantics { selected = on; role = Role.Tab },
+                            style = BakiType.label,
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    label = { Text("Amount (RM)") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = from.isNotBlank() && to.isNotBlank() && from != to && value > 0.0,
+                onClick = {
+                    scope.launch { repo.moveEnvelope(month, from, to, value) }
+                    onDismiss()
+                },
+            ) { Text("Move", color = baki.primary, style = BakiType.labelStrong) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = baki.muted) } },
+    )
 }
