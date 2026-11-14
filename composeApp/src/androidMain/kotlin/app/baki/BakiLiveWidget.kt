@@ -19,7 +19,7 @@ class BakiLiveWidget : AppWidgetProvider() {
 
     override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
         AppCtx.attach(ctx)
-        ids.forEach { id -> mgr.updateAppWidget(id, build(ctx)) }
+        ids.forEach { id -> runCatching { mgr.updateAppWidget(id, safeBuild(ctx)) } }
     }
 
     companion object {
@@ -27,7 +27,28 @@ class BakiLiveWidget : AppWidgetProvider() {
             val mgr = AppWidgetManager.getInstance(ctx)
             val ids = mgr.getAppWidgetIds(ComponentName(ctx, BakiLiveWidget::class.java))
             if (ids.isEmpty()) return
-            ids.forEach { id -> mgr.updateAppWidget(id, build(ctx)) }
+            ids.forEach { id -> runCatching { mgr.updateAppWidget(id, safeBuild(ctx)) } }
+        }
+
+        private fun safeBuild(ctx: Context): RemoteViews =
+            runCatching { build(ctx) }.getOrElse { fallback(ctx) }
+
+        private fun fallback(ctx: Context): RemoteViews {
+            val views = RemoteViews(ctx.packageName, R.layout.baki_live_widget)
+            val dark = isNight(ctx)
+            views.setInt(
+                R.id.live_root,
+                "setBackgroundResource",
+                if (dark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light,
+            )
+            views.setTextViewText(R.id.live_label, "BAKI")
+            views.setTextViewText(R.id.live_idle, "Open Baki to unlock this widget")
+            views.setViewVisibility(R.id.live_clock, android.view.View.GONE)
+            views.setViewVisibility(R.id.live_money, android.view.View.GONE)
+            views.setViewVisibility(R.id.live_toggle, android.view.View.GONE)
+            views.setViewVisibility(R.id.live_idle, android.view.View.VISIBLE)
+            views.setOnClickPendingIntent(R.id.live_root, openApp(ctx))
+            return views
         }
 
         private fun build(ctx: Context): RemoteViews {

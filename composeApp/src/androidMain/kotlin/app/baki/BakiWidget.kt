@@ -20,7 +20,24 @@ class BakiWidget : AppWidgetProvider() {
             val mgr = AppWidgetManager.getInstance(ctx)
             val ids = mgr.getAppWidgetIds(ComponentName(ctx, BakiWidget::class.java))
             if (ids.isEmpty()) return
-            ids.forEach { id -> mgr.updateAppWidget(id, build(ctx)) }
+            ids.forEach { id -> runCatching { mgr.updateAppWidget(id, safeBuild(ctx)) } }
+        }
+
+        private fun safeBuild(ctx: Context): RemoteViews =
+            runCatching { build(ctx) }.getOrElse { fallback(ctx) }
+
+        private fun fallback(ctx: Context): RemoteViews {
+            val views = RemoteViews(ctx.packageName, R.layout.baki_widget)
+            views.setTextViewText(R.id.widget_amount, "RM —")
+            views.setTextViewText(R.id.widget_sub, "Tap to open Baki")
+            val open = Intent(ctx, MainActivity::class.java)
+            val pending = PendingIntent.getActivity(
+                ctx, 0, open,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            views.setOnClickPendingIntent(R.id.widget_amount, pending)
+            views.setOnClickPendingIntent(R.id.widget_label, pending)
+            return views
         }
 
         private fun build(ctx: Context): RemoteViews {
@@ -45,6 +62,6 @@ class BakiWidget : AppWidgetProvider() {
     }
 
     override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
-        ids.forEach { id -> mgr.updateAppWidget(id, build(ctx)) }
+        ids.forEach { id -> runCatching { mgr.updateAppWidget(id, safeBuild(ctx)) } }
     }
 }

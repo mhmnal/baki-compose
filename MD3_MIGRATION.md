@@ -310,3 +310,13 @@ No financial feature was removed.
 - `FlexibleTopAppBar` is not present in the pinned Material3 artifact; a standard TopAppBar remains.
 - `FloatingToolbar` is not forced because no multi-select/contextual-action flow exists.
 - `SplitButton` is not duplicated because FABMenu already owns the quick-add action.
+
+## 0.42.1 recovery
+
+- The unified release exposed an existing local-encryption edge case during first launch:
+  `loadLive()` did not handle an invalid Keystore/GCM live snapshot. The app now quarantines that
+  snapshot, records the error in StoreHealth and continues; `loadLocal()` already had this recovery.
+- Both home-screen widgets now catch local decrypt/render failures and show a safe fallback instead
+  of crashing the app process.
+- Verified on-device: the signed app launches to Today instead of the crash dialog.
+- Desktop/phone unified UI, 194 tests, Material3 1.12.0-alpha03 pinned.

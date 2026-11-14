@@ -29,7 +29,14 @@ private const val LIVE_FILE = "live.json"
 
 fun lifeOf(l: LiveShift?): LiveShift? = l
 fun loadLive(): LiveShift? {
-    val raw = LocalStore.readText(LIVE_FILE) ?: return null
+    val raw = try {
+        LocalStore.readText(LIVE_FILE)
+    } catch (e: Exception) {
+        // A keystore invalidation or damaged live snapshot must not take the whole app down.
+        runCatching { LocalStore.quarantine(LIVE_FILE) }
+        StoreHealth.loadError = "Live shift snapshot could not be opened (${e.message ?: "decrypt failed"})."
+        return null
+    } ?: return null
     val decoded = runCatching { BakiJson.decodeFromString<LiveShift>(raw) }.getOrNull() ?: return null
     // a live shift without an id cannot have its path filed against it; heal it on load so
     // files written by older builds (or by a path that forgot to mint one) still record a route
