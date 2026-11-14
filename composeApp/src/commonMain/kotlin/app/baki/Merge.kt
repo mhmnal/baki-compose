@@ -78,12 +78,14 @@ fun mergeStores(
             cats = Cats(catsIn.values.toList(), catsOut.values.toList()),
             profit = b.settings.profit,
             gpsCorrection = b.settings.gpsCorrection,
-            budgets = b.settings.budgets,
+            budgets = b.settings.budgets.ifEmpty { a.settings.budgets },
             dailyFoodCapCents = b.settings.dailyFoodCapCents,
             nextServiceKm = b.settings.nextServiceKm,
             nextServiceOn = b.settings.nextServiceOn,
-            envelopeCarry = b.settings.envelopeCarry,
-            reserveTargets = b.settings.reserveTargets,
+            // Older servers do not carry the Phase 3 settings fields. Do not erase a locally
+            // configured envelope/reserve just because the remote payload predates them.
+            envelopeCarry = b.settings.envelopeCarry || a.settings.envelopeCarry,
+            reserveTargets = a.settings.reserveTargets + b.settings.reserveTargets,
         ),
         // bills merge by id (newest wins); a payment is unique per bill+period
         bills = (a.bills + b.bills)

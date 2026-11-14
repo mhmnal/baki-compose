@@ -47,6 +47,16 @@ class PhaseThreeDataTest {
     }
 
     @Test
+    fun oldRemoteSettingsDoNotEraseLocalEnvelopeSettings() {
+        val local = Store(settings = Settings(budgets = mapOf("food" to 100.0), envelopeCarry = true, reserveTargets = mapOf("fuel" to 250.0)))
+        val oldRemote = Store(settings = Settings())
+        val merged = mergeStores(local, oldRemote)
+        assertEquals(100.0, merged.settings.budgets.getValue("food"), 0.001)
+        assertTrue(merged.settings.envelopeCarry)
+        assertEquals(250.0, merged.settings.reserveTargets.getValue("fuel"), 0.001)
+    }
+
+    @Test
     fun envelopeMovesAndReserveTxnsMergeSafely() {
         val a = Store(
             envelopeMoves = mapOf("2026-11" to mapOf("food" to 10.0)),
