@@ -248,12 +248,8 @@ private fun AppContent(repo: BakiRepo) {
         var headerCollapsed by remember { mutableStateOf(false) }
         LaunchedEffect(tab) { headerCollapsed = false }
 
-        // ---- level 1: the app itself, blurred while a sheet is up ----
-        Box(
-            Modifier.fillMaxSize().then(
-                if (sheetOpen) Modifier.blur(18.dp, BlurredEdgeTreatment.Unbounded) else Modifier,
-            ),
-        ) {
+        // ---- level 1: the app itself. The modal sheet owns the standard MD3 scrim. ----
+        Box(Modifier.fillMaxSize()) {
 
     Box(Modifier.fillMaxSize()) {
     Box(Modifier.fillMaxSize().background(baki.surface)) {}
@@ -669,114 +665,6 @@ fun Header(repo: BakiRepo) {
 }
 
 @Composable
-private fun BottomBar(
-    selected: Int,
-    onSelect: (Int) -> Unit,
-    liquid: Boolean = false,
-    backdrop: com.kyant.backdrop.Backdrop? = null,
-) {
-    val baki = LocalBaki.current
-    val items = listOf("Today", "Spending", "Shifts", "Summary", "More")
-    val icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More)
-
-    BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = Space.xs, vertical = 6.dp)) {
-        val tabWidth = maxWidth / items.size
-        val shape = RoundedCornerShape(Radius.glass)
-
-        // The liquid selection.
-        // Motion follows the library's own LiquidBottomTabs example: one surface that flows
-        // between tabs, stretching along the direction of travel and squashing across it.
-        // The surface itself is glass (drawBackdrop + lens), so the refraction travels with it.
-        val flow = remember { Animatable(selected.toFloat()) }
-        LaunchedEffect(selected) {
-            flow.animateTo(
-                targetValue = selected.toFloat(),
-                animationSpec = spring(dampingRatio = 0.88f, stiffness = 320f),
-            )
-        }
-        val stretch by remember {
-            derivedStateOf { (abs(flow.velocity) / 900f).coerceIn(0f, 0.70f) }
-        }
-
-        if (liquid) {
-            val pill = Modifier
-                .offset { IntOffset((tabWidth * flow.value).roundToPx(), 0) }
-                .width(tabWidth)
-                .fillMaxHeight()
-                .graphicsLayer {
-                    scaleX = 1f + stretch
-                    scaleY = 1f - stretch * 0.22f
-                }
-
-            if (backdrop != null) {
-                Box(
-                    pill
-                        .drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { shape },
-                            effects = {
-                                vibrancy()
-                                blur(2f.dp.toPx())
-                                lens(20f.dp.toPx(), 36f.dp.toPx())
-                            },
-                            highlight = { Highlight(width = 1.dp, blurRadius = 2.dp, alpha = 0.45f) },
-                        )
-                        .clip(shape)
-                        // a light tint so "selected" still reads through the glass
-                        .background(baki.primaryContainer.copy(alpha = 0.35f)),
-                )
-            } else {
-                Box(pill.clip(shape).background(baki.primaryContainer))
-            }
-        }
-
-        Row(
-            Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(Space.xxs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEachIndexed { i, label ->
-                val on = i == selected
-                val ink by animateColorAsState(
-                    targetValue = if (on) baki.onPrimaryContainer else baki.muted,
-                    animationSpec = BakiMotion.effects(), label = "navInk",
-                )
-                val lift by animateFloatAsState(
-                    targetValue = if (on) 1f else 0.94f,
-                    animationSpec = BakiMotion.spatialFast(), label = "navLift",
-                )
-                Box(
-                    Modifier.weight(1f).height(52.dp)
-                        .clip(shape)
-                        .then(
-                            if (liquid) Modifier
-                            else Modifier.background(if (on) baki.primaryContainer else Color.Transparent),
-                        )
-                        .clickable { PlatformEffects.haptic(Haptic.Tick); onSelect(i) }
-                        .semantics { this.selected = on; role = Role.Tab },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            icons[i], contentDescription = null, tint = ink,
-                            modifier = Modifier.size(IconSize.inline).scale(lift),
-                        )
-                        Spacer(Modifier.height(Space.xxs))
-                        Text(
-                            label, color = ink,
-                            fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1, softWrap = false,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center, style = BakiType.caption )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecified, size: Int = 46) {
     val baki = LocalBaki.current
     val ink = if (tint == Color.Unspecified) baki.onSurface else tint
@@ -965,115 +853,110 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val be = liveBreakEven(repo.store, live, now)
     val net = be.earned - be.costs
     val netCents = (net * 100).toLong()
+    val accent = if (onBreak) baki.warn else baki.primary
 
-    Column(Modifier.fillMaxWidth()) {
-        if (baki.paper) LedgerRule(alpha = 0.22f)
-        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Space.s),
+        shape = RoundedCornerShape(Radius.chart),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LiveTrace(
-                    active = !onBreak,
-                    color = if (onBreak) baki.warn else baki.primary,
-                    modifier = Modifier.width(52.dp).height(18.dp),
-                )
+                Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(accent))
                 Spacer(Modifier.width(Space.s))
-                Text(
-                    if (onBreak) "ON BREAK" else "LIVE SHIFT",
-                    color = if (onBreak) baki.warn else baki.primary,
-                    style = BakiType.captionStrong,
-                )
-                Spacer(Modifier.weight(1f))
-                Text("since ${startClock(live.start)}", color = baki.muted, style = BakiType.caption)
-            }
-            Spacer(Modifier.height(Space.m))
-            BoxWithConstraints {
-                val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
-                if (compact) {
-                    Column {
-                        Text("NET SO FAR", color = baki.muted, style = BakiType.captionStrong)
-                        Text(
-                            "RM ${rm(netCents)}",
-                            color = if (net < 0) baki.down else baki.onSurface,
-                            style = heroMoneyStyle(netCents),
-                        )
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Column(Modifier.weight(1f)) {
-                            Text("NET SO FAR", color = baki.muted, style = BakiType.captionStrong)
-                            Text(
-                                "RM ${rm(netCents)}",
-                                color = if (net < 0) baki.down else baki.onSurface,
-                                style = BakiType.displaySmallNumeric,
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("ON CLOCK", color = baki.muted, style = BakiType.captionStrong)
-                            Text(liveClock(worked), color = if (onBreak) baki.muted else baki.onSurface, style = BakiType.headlineNumeric)
-                        }
-                    }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (onBreak) "On break" else "Live shift",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text("since ${startClock(live.start)}", color = baki.muted, style = MaterialTheme.typography.labelMedium)
                 }
+                Text(
+                    if (onBreak) "PAUSED" else "ACTIVE",
+                    color = accent,
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
+            Spacer(Modifier.height(Space.l))
+            Text("Net so far", color = baki.muted, style = MaterialTheme.typography.labelLarge)
+            Text(
+                "RM ${rm(netCents)}",
+                color = if (net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
+            )
             Spacer(Modifier.height(Space.s))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "${live.payouts.size} payout(s)",
-                    color = baki.primary, style = BakiType.captionStrong,
-                    textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
-                    modifier = Modifier.heightIn(min = Control.primary).clickable { onPayouts() }
-                        .semantics { role = Role.Button },
-                )
-                Spacer(Modifier.weight(1f))
-                Text("gross RM ${rm(total)}", color = baki.onSurface, style = BakiType.labelNumeric)
-            }
-            if (baki.paper) LedgerRule(alpha = 0.12f)
-            Spacer(Modifier.height(Space.xs))
-            LiveMetric("Costs so far", "RM ${rm(be.costs)}", baki.muted)
-            LiveMetric(
-                if (be.covered) "Break-even" else "Break-even in",
-                if (be.covered) "covered" else be.minutesToGo?.let { "${it.toInt()} min" } ?: "add a payout",
-                if (be.covered) baki.up else baki.muted,
-            )
-            if (be.netPerHour != null) {
-                LiveMetric(
-                    "Yield now",
-                    buildString {
-                        append("RM ${rm(be.netPerHour)}/h")
-                        be.grossPerKm?.let { append(" · RM ${rm(it)}/km") }
-                    },
-                    if ((be.netPerHour ?: 0.0) >= repo.store.settings.profit.targetRate) baki.up else baki.down,
-                )
-            }
-            LiveMetric(
-                "Tracked",
-                buildString {
-                    append("${"%.1f".format(live.km)} km")
-                    if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
-                },
-                baki.muted,
-            )
-            Spacer(Modifier.height(Space.s))
-            if (baki.paper) LedgerRule(alpha = 0.16f)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                TextButton(onClick = onPayout, modifier = Modifier.weight(1.1f).heightIn(min = 48.dp)) {
-                    Text("+ Payout", color = baki.primary, style = BakiType.labelStrong)
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                ) {
+                    Text(
+                        "${live.payouts.size} payouts",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = Space.m, vertical = Space.xs),
+                    )
                 }
-                TextButton(
+                Spacer(Modifier.weight(1f))
+                Text("gross RM ${rm(total)}", color = baki.muted, style = MaterialTheme.typography.labelLarge)
+            }
+            Spacer(Modifier.height(Space.m))
+            Surface(
+                shape = RoundedCornerShape(Radius.large),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(horizontal = Space.m, vertical = Space.xs)) {
+                    LiveMetric("On clock", liveClock(worked), MaterialTheme.colorScheme.onSurface)
+                    LiveMetric("Costs so far", "RM ${rm(be.costs)}", baki.muted)
+                    LiveMetric(
+                        if (be.covered) "Break-even" else "Break-even in",
+                        if (be.covered) "covered" else be.minutesToGo?.let { "${it.toInt()} min" } ?: "add a payout",
+                        if (be.covered) baki.up else baki.muted,
+                    )
+                    if (be.netPerHour != null) {
+                        LiveMetric(
+                            "Yield now",
+                            buildString {
+                                append("RM ${rm(be.netPerHour)}/h")
+                                be.grossPerKm?.let { append(" · RM ${rm(it)}/km") }
+                            },
+                            if ((be.netPerHour ?: 0.0) >= repo.store.settings.profit.targetRate) baki.up else baki.down,
+                        )
+                    }
+                    LiveMetric(
+                        "Tracked",
+                        buildString {
+                            append("${"%.1f".format(live.km)} km")
+                            if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
+                        },
+                        baki.muted,
+                    )
+                }
+            }
+            Spacer(Modifier.height(Space.l))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                FilledTonalButton(
+                    onClick = onPayout,
+                    modifier = Modifier.weight(1f),
+                ) { Text("+ Payout") }
+                Button(
                     enabled = !repo.readOnly,
                     onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
-                    modifier = Modifier.weight(1.1f).heightIn(min = 48.dp),
-                ) {
-                    Text(if (onBreak) "Resume" else "Pause", color = if (onBreak) baki.warn else baki.onSurface, style = BakiType.labelStrong)
-                }
-                TextButton(
+                    modifier = Modifier.weight(1f),
+                ) { Text(if (onBreak) "Resume" else "Pause") }
+                Button(
                     enabled = !repo.readOnly,
                     onClick = { scope.launch { repo.endLive() } },
-                    modifier = Modifier.weight(0.9f).heightIn(min = 48.dp),
-                ) {
-                    Text("End", color = baki.primary, style = BakiType.labelStrong)
-                }
+                    modifier = Modifier.weight(0.82f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                ) { Text("End") }
             }
         }
-        if (baki.paper) LedgerRule(alpha = 0.22f)
     }
 }
 

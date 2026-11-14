@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.4 / code 125 — signed and installed**
+Version: **0.40.5 / code 126 — signed and installed**
 
 ## Design direction
 
@@ -149,8 +149,8 @@ No financial feature was removed.
 - All hardcoded palette hex was removed from common source. Legacy palette names now alias Material
   baseline roles for persisted-config compatibility; the active scheme is dynamic/baseline MD3.
 - All custom `BorderStroke` card outlines were removed. Cards use single 16dp tonal surfaces.
-- Both charts were rebuilt inside explicit `surfaceContainerHigh` cards with **24dp** corners and
-  24dp content padding. Bars sit in tonal tracks; active positive bars are `primary`, weekly
+- Both charts sit inside explicit `surfaceContainerHigh` cards with **24dp** corners and
+  24dp content padding, with tonal tracks and rounded `primary`/`primaryContainer` bars. Bars sit in tonal tracks; active positive bars are `primary`, weekly
   non-today bars use `primaryContainer`, and negatives use `error`. The target is a solid line.
 - Chart range selector and category chips have no outline: they are filled tonal FilterChips.
 - Spend/Shift rows use roomier 20dp vertical card padding, 16dp single surfaces and 12dp gaps.
@@ -200,3 +200,16 @@ No financial feature was removed.
   one-line labels. NavigationRail/FAB remain adaptive.
 - Shortened explanatory copy and removed dead layout hacks.
 - 225 tests pass; signed 0.40.4, code 125.
+
+## Live Shift and sheets (0.40.5)
+
+- Live Shift is now a single `surfaceContainerHigh` card with 24dp corners and 20dp padding.
+- The dashed animated live trace and all ledger rules were deleted from the card.
+- Net-so-far uses a sans `headlineLarge` tabular figure; status is a tonal dot + label.
+- Payout and Pause are `FilledTonalButton`/`Button`; End is a destructive `Button` using
+  `errorContainer` / `onErrorContainer`.
+- `BakiSheet` was rewritten as the standard Material 3 `ModalBottomSheet`: 28dp top corners,
+  standard drag handle, standard scrim, tonal container. The app-level 18dp background blur was
+  removed entirely.
+- Deleted the dead glass bottom-bar code and the animated dashed LiveTrace file.
+- 225 tests pass; signed 0.40.5, code 126.
