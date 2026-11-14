@@ -126,7 +126,7 @@ fun TodayScreen(
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.s),
         // leave room for the floating bar and the + so nothing ends up underneath them
-        contentPadding = PaddingValues(top = 6.dp, bottom = 132.dp),
+        contentPadding = PaddingValues(top = 6.dp, bottom = 190.dp),
     ) {
         item { DayPill(day, today, onDay) }
 
@@ -286,7 +286,7 @@ fun TodayScreen(
                     Modifier.fillMaxWidth()
                         .then(
                             if (baki.paper) Modifier.padding(vertical = Space.m)
-                            else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container).padding(Space.l)
+                            else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container).padding(Space.l)
                         ),
                 ) {
                     if (baki.paper) LedgerRule(alpha = 0.18f)
@@ -480,7 +480,7 @@ fun TodayScreen(
                 Box(
                     Modifier.size(52.dp).then(
                         if (baki.paper) Modifier
-                        else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                        else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
                     ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -634,7 +634,7 @@ fun RowCardIcon(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.card))
+                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.large))
                     .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
                     .padding(horizontal = Space.ml),
                 verticalAlignment = Alignment.CenterVertically,
@@ -655,7 +655,7 @@ fun RowCardIcon(
             Modifier.fillMaxWidth().then(sharedMod)
                 .then(
                     if (baki.paper) Modifier.background(baki.surface)
-                    else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                    else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
                 )
                 .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
                 .semantics { customActions = a11yActions }

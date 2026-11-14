@@ -94,7 +94,7 @@ fun PayoutsSheet(
                 backgroundContent = {
                     Row(
                         Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(Radius.card))
+                            .clip(RoundedCornerShape(Radius.large))
                             .background(baki.down.copy(alpha = 0.22f))
                             .padding(horizontal = Space.ml),
                         verticalAlignment = Alignment.CenterVertically,

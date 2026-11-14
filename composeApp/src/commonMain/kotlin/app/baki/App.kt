@@ -33,7 +33,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -851,7 +850,7 @@ fun RowCard(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.card))
+                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.large))
                     .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
                     .padding(horizontal = Space.ml),
                 verticalAlignment = Alignment.CenterVertically,
@@ -872,7 +871,7 @@ fun RowCard(
             Modifier.fillMaxWidth()
                 .then(
                     if (baki.paper) Modifier.background(baki.surface)
-                    else Modifier.clip(RoundedCornerShape(Radius.card)).background(baki.container)
+                    else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
                 )
                 .then(
                     if (onLongPress != null) Modifier.pointerInput(title) {
@@ -1591,7 +1590,6 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                     onClick = { scope.launch { repo.sync() } },
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                    border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                 ) { Text("Sync now") }
             }
             TextButton(
@@ -1722,13 +1720,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                 onClick = { scope.launch { repo.payBill(bill.id, period) } },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                                border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                             ) { Text("Mark paid", style = BakiType.label) }
                             OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
                                 onClick = { linkTarget = bill to period },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                                border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                             ) { Text("Link", style = BakiType.label) }
                         }
                     }
@@ -1756,7 +1752,6 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                         onClick = { scope.launch { repo.payBill(bill.id, Bills.periodOf(bill, current)) } },
                         enabled = net >= bill.amount,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                        border = BorderStroke(1.dp, baki.muted.copy(alpha = 0.45f)),
                     ) { Text("Pay ${bill.name} · RM ${rm(bill.amount / 100.0)}") }
                 }
             }
@@ -2318,7 +2313,7 @@ private fun AddChoiceDialog(
 @Composable
 private fun ChoiceTile(label: String, sub: String, bg: Color, ink: Color, onClick: () -> Unit) {
     Box(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.card)).background(bg).clickable { onClick() }.padding(Space.l),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.large)).background(bg).clickable { onClick() }.padding(Space.l),
     ) {
         Column {
             Text(label, color = ink, style = BakiType.bodyStrong )

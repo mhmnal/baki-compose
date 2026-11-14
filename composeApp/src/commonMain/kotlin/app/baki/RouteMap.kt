@@ -72,7 +72,7 @@ fun RouteMap(
 
     BoxWithConstraints(
         modifier
-            .clip(RoundedCornerShape(Radius.card))
+            .clip(RoundedCornerShape(Radius.large))
             .background(baki.surfaceHigh),
     ) {
         val sizePx = with(LocalDensity.current) {
@@ -185,7 +185,7 @@ fun DayMapCard(
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.card))
+            .clip(RoundedCornerShape(Radius.large))
             .background(baki.container)
             .then(if (onOpen != null) Modifier.clickable { onOpen() } else Modifier),
     ) {

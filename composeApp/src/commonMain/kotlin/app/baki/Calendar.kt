@@ -62,30 +62,30 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette,
     }
     val positive = t.net >= 0
     val base = if (positive) baki.primary else baki.down
-    val fill = when (magnitude) {
-        0 -> baki.surfaceHigh
-        1 -> base.copy(alpha = 0.22f)
-        2 -> base.copy(alpha = 0.45f)
+    val fill = when {
+        iso == today -> baki.primaryContainer
+        iso == bestDay -> baki.warn.copy(alpha = 0.22f)
+        magnitude == 0 -> baki.surfaceHigh
+        magnitude == 1 -> base.copy(alpha = 0.22f)
+        magnitude == 2 -> base.copy(alpha = 0.45f)
         else -> base.copy(alpha = 0.75f)
     }
     val isToday = iso == today
 
     Box(
         Modifier.fillMaxSize()
-            .then(if (baki.paper) Modifier else Modifier.clip(RoundedCornerShape(Radius.small)))
-            .background(fill)
-            .then(
-                when {
-                    isToday -> Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.tiny))
-                    iso == bestDay -> Modifier.border(1.dp, baki.warn, RoundedCornerShape(Radius.tiny))
-                    else -> Modifier
-                },
-            ),
+            .clip(RoundedCornerShape(Radius.small))
+            .background(fill),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             iso.takeLast(2),
-            color = if (future) baki.muted.copy(alpha = 0.4f) else if (positive && magnitude >= 2) baki.onPrimary else baki.onSurface,
+            color = when {
+                future -> baki.muted.copy(alpha = 0.4f)
+                isToday -> baki.onPrimaryContainer
+                positive && magnitude >= 2 -> baki.onPrimary
+                else -> baki.onSurface
+            },
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
     }
 }

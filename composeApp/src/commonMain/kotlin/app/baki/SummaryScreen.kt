@@ -1,6 +1,7 @@
 package app.baki
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,9 +35,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -186,7 +190,7 @@ private fun StatementCover(
         EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
         Text(
             if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
-            color = if (delta >= 0) baki.up else baki.down,
+            color = if (delta >= 0) baki.onSurface else baki.down,
             style = BakiType.caption,
         )
         Text(
@@ -210,8 +214,9 @@ private data class InkDay(val iso: String, val net: Long, val active: Boolean)
 
 @Composable
 private fun MonthInkChart(store: Store, month: String) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var range by remember(month) { mutableStateOf(7) }
+    var selected by remember(month, range) { mutableStateOf<Int?>(null) }
     val allDays = remember(store, month) {
         monthGrid(month).filterNotNull().map { iso ->
             val t = dayTotals(store, iso)
@@ -230,66 +235,117 @@ private fun MonthInkChart(store: Store, month: String) {
     }
     val targetPerDay = if (active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
-    val pad = Space.l
+    val selectedDay = selected?.let { shown.getOrNull(it) }
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Month in ink", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                 FilterChip(selected = range == 7, onClick = { range = 7 }, label = { Text("7D") })
                 FilterChip(selected = range == 30, onClick = { range = 30 }, label = { Text("30D") })
             }
         }
-        Spacer(Modifier.height(Space.s))
-        Canvas(
-            Modifier.fillMaxWidth().height(118.dp)
-                .semantics { contentDescription = "Daily net chart for $month" },
-        ) {
-            val zeroY = size.height * 0.60f
-            val usable = size.height * 0.48f
-            val targetY = (zeroY - (targetPerDay / maxAbs * usable).toFloat()).coerceIn(4.dp.toPx(), size.height - 4.dp.toPx())
-            drawLine(baki.muted.copy(alpha = 0.30f), Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
-            if (targetPerDay > 0.01) {
-                drawLine(
-                    baki.warn.copy(alpha = 0.65f),
-                    Offset(0f, targetY), Offset(size.width, targetY), 1.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)),
+        Spacer(Modifier.height(Space.xs))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
+                Text(
+                    "Target RM ${rm(targetPerDay)}/day",
+                    color = scheme.onTertiaryContainer,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                 )
             }
+            Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(Modifier.height(Space.s))
+        Canvas(
+            Modifier.fillMaxWidth().height(142.dp)
+                .pointerInput(shown) {
+                    detectTapGestures { point ->
+                        if (shown.isNotEmpty()) {
+                            val index = (point.x / (size.width.toFloat() / shown.size))
+                                .toInt().coerceIn(0, shown.lastIndex)
+                            selected = if (selected == index) null else index
+                        }
+                    }
+                }
+                .semantics { contentDescription = "Daily net chart for $month. Tap a bar for details." },
+        ) {
+            val zeroY = size.height * 0.64f
+            val usable = size.height * 0.50f
+            val targetY = (zeroY - (targetPerDay / maxAbs * usable).toFloat())
+                .coerceIn(4.dp.toPx(), size.height - 4.dp.toPx())
+            // A single quiet baseline and one solid target line; no floating dashes.
+            drawLine(scheme.outlineVariant, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
+            if (targetPerDay > 0.01) {
+                drawLine(scheme.tertiary.copy(alpha = 0.7f), Offset(0f, targetY), Offset(size.width, targetY), 1.5.dp.toPx())
+            }
             val step = size.width / shown.size.coerceAtLeast(1)
-            val barW = (step * 0.52f).coerceAtLeast(2f)
+            val barW = (step * 0.54f).coerceAtLeast(4.dp.toPx())
             shown.forEachIndexed { i, day ->
                 val value = day.net / 100.0
-                val h = (abs(value) / maxAbs * usable).toFloat().coerceAtLeast(if (day.active) 2.dp.toPx() else 1.dp.toPx())
+                val h = (abs(value) / maxAbs * usable).toFloat()
+                    .coerceAtLeast(if (day.active) 3.dp.toPx() else 1.dp.toPx())
                 val left = i * step + (step - barW) / 2f
                 val top = if (value >= 0) zeroY - h else zeroY
                 val color = when {
-                    day == best -> baki.warn
-                    value < 0 -> baki.down
-                    else -> baki.primary
+                    !day.active -> scheme.outlineVariant.copy(alpha = 0.38f)
+                    value < 0 -> scheme.error
+                    else -> scheme.primary
                 }
-                drawRect(color.copy(alpha = if (day.active) 0.90f else 0.22f), Offset(left, top), Size(barW, h))
+                drawRoundRect(
+                    color = if (i == selected) scheme.onSurface else color,
+                    topLeft = Offset(left, top),
+                    size = Size(barW, h),
+                    cornerRadius = CornerRadius(barW / 2f, barW / 2f),
+                )
+                if (i == selected) {
+                    drawRoundRect(
+                        color = scheme.onSurface,
+                        topLeft = Offset(left, top),
+                        size = Size(barW, h),
+                        cornerRadius = CornerRadius(barW / 2f, barW / 2f),
+                        style = Stroke(width = 1.5.dp.toPx()),
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(Space.xs))
+        Spacer(Modifier.height(Space.s))
+        selectedDay?.let { day ->
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = scheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.s),
+            ) {
+                Row(Modifier.padding(horizontal = Space.m, vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(day.iso, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            if (day.active) "Net RM ${rm(day.net)}" else "No entries",
+                            color = if (day.net < 0) scheme.error else scheme.onSurface,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    Text("tap again to close", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = baki.muted, style = BakiType.caption)
-            Text("target RM ${rm(targetPerDay)}/day", color = baki.muted, style = BakiType.caption)
-            Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = baki.muted, style = BakiType.caption)
+            Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text("0", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            best?.let { Text("+RM ${rm(it.net)} · ${it.iso.takeLast(5)}", color = baki.up, style = BakiType.caption, modifier = Modifier.weight(1f)) }
-            worst?.let { Text("${rm(it.net)} · ${it.iso.takeLast(5)}", color = baki.down, style = BakiType.caption) }
+            best?.let {
+                Text("+RM ${rm(it.net)} · ${it.iso.takeLast(5)}", color = scheme.tertiary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+            }
+            worst?.let { Text("${rm(it.net)} · ${it.iso.takeLast(5)}", color = scheme.error, style = MaterialTheme.typography.labelMedium) }
         }
-        Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.16f)
     }
 }
-
 @Composable
 private fun WeekSection(store: Store, today: String) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val start = remember(today) { weekStartOf(today) }
     val dates = remember(start) { (0..6).map { addDays(start, it) } }
     val values = remember(store, start) { dates.map { dayTotals(store, it) } }
@@ -299,43 +355,66 @@ private fun WeekSection(store: Store, today: String) {
     val actual = if (hours > 0) thisWeek.net / 100.0 / hours else 0.0
     val target = store.settings.profit.targetRate
     val peak = maxOf(1L, values.maxOfOrNull { abs(it.net) } ?: 1L)
+    val best = values.maxByOrNull { it.net }
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("This week", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
-            Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, style = BakiType.labelNumeric)
+            Text("This week", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text("RM ${rm(thisWeek.net)}", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleMedium)
         }
         Text(
             "${if (thisWeek.net - lastWeek.net >= 0) "+" else "−"}RM ${rm(abs(thisWeek.net - lastWeek.net))} vs last week · " +
                 if (hours > 0) "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr" else "no hours yet",
-            color = if (hours > 0 && actual >= target) baki.up else baki.down,
-            style = BakiType.caption,
+            color = scheme.onSecondaryContainer.copy(alpha = 0.78f),
+            style = MaterialTheme.typography.bodySmall,
         )
-        Spacer(Modifier.height(Space.s))
+        Spacer(Modifier.height(Space.m))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             dates.forEachIndexed { i, iso ->
                 val v = values[i].net
+                val active = v != 0L || (iso == today && thisWeek.shiftCount > 0)
+                val color = when {
+                    v < 0 -> scheme.error
+                    iso == today -> scheme.primary
+                    values[i] == best -> scheme.tertiary
+                    active -> scheme.primary.copy(alpha = 0.55f)
+                    else -> scheme.onSecondaryContainer.copy(alpha = 0.18f)
+                }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.fillMaxWidth().height(38.dp), contentAlignment = Alignment.BottomCenter) {
-                        Box(
-                            Modifier.fillMaxWidth(0.55f)
-                                .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.04f, 1f))
-                                .background(if (v < 0) baki.down.copy(alpha = 0.72f) else if (iso == today) baki.primary else baki.primary.copy(alpha = 0.55f)),
-                        )
+                    Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.BottomCenter) {
+                        if (active) {
+                            Box(
+                                Modifier.fillMaxWidth(0.58f)
+                                    .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.05f, 1f))
+                                    .clip(RoundedCornerShape(topStart = Radius.small, topEnd = Radius.small, bottomStart = Radius.tiny, bottomEnd = Radius.tiny))
+                                    .background(color),
+                            )
+                        } else {
+                            Box(
+                                Modifier.size(4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(scheme.onSecondaryContainer.copy(alpha = 0.20f)),
+                            )
+                        }
                     }
-                    Text(weekdayShort(iso).take(1), color = baki.muted, style = BakiType.caption)
-                    Text(iso.takeLast(2), color = if (iso == today) baki.primary else baki.muted, style = BakiType.nano)
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        weekdayShort(iso).take(1),
+                        color = if (iso == today) scheme.primary else scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                    Text(
+                        iso.takeLast(2),
+                        color = if (iso == today) scheme.primary else scheme.onSecondaryContainer.copy(alpha = 0.55f),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
             }
         }
-        Spacer(Modifier.height(Space.xs))
-        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = baki.muted, style = BakiType.caption)
-        Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.16f)
+        Spacer(Modifier.height(Space.s))
+        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.bodySmall)
     }
 }
-
 @Composable
 private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Store) {
     val baki = LocalBaki.current

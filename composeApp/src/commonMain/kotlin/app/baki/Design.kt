@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.inter_variable
 import baki_compose.composeapp.generated.resources.jetbrains_mono
-import baki_compose.composeapp.generated.resources.source_serif_4
 import baki_compose.composeapp.generated.resources.space_grotesk
 import baki_compose.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.Font
@@ -100,10 +99,10 @@ object BakiType {
     // Sizes and line heights follow the M3 type scale (57/45/28/22/16/12/11).
     // Weights run heavier than stock M3: the app's voice is a bold money figure.
 
-    /** the one hero number on a screen — M3 displayLarge */
+    /** the one hero number on a screen — M3 displayLarge, sans/tabular */
     var display = TextStyle(fontSize = 57.sp, lineHeight = 64.sp, fontWeight = FontWeight.Normal, letterSpacing = (-1.2).sp)
     /** secondary hero — M3 displaySmall */
-    var displaySmall = TextStyle(fontSize = 45.sp, lineHeight = 52.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.8).sp)
+    var displaySmall = TextStyle(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.8).sp)
     /** card headline — M3 headlineMedium */
     var headline = TextStyle(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Normal, letterSpacing = (-0.4).sp)
     /** dialog titles — M3 titleLarge */
@@ -149,15 +148,14 @@ object BakiType {
     /**
      * Applied once at startup, before any text is composed.
      *
-     * Three faces, three jobs: Space Grotesk for display, JetBrains Mono for readouts (money and
-     * chart labels, so figures read like an instrument), Inter for everything else.
+     * One sans family: display, labels and tabular money figures all use Inter.
      */
     fun install(text: FontFamily, displayFace: FontFamily, readoutFace: FontFamily, paper: Boolean = true) {
         if (textFamily === text && displayFamily === displayFace && readoutFamily === readoutFace) return
         textFamily = text; displayFamily = displayFace; readoutFamily = readoutFace
 
-        val displayWeight = if (paper) FontWeight.Normal else FontWeight.Bold
-        val titleWeight = if (paper) FontWeight.Normal else FontWeight.SemiBold
+        val displayWeight = FontWeight.Normal
+        val titleWeight = FontWeight.SemiBold
         display = display.copy(fontFamily = displayFace, fontWeight = displayWeight)
         displaySmall = displaySmall.copy(fontFamily = displayFace, fontWeight = displayWeight)
         headline = headline.copy(fontFamily = text, fontWeight = titleWeight)
@@ -229,13 +227,9 @@ data class BakiSemantic(val income: Color, val expense: Color, val warn: Color)
 /** Three families, each with one job: Space Grotesk for display, JetBrains Mono for readouts. */
 @Composable
 fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
-    val text = Font(Res.font.inter_variable, FontWeight.Normal)
-    // Paper Ledger on the phone; the desk keeps its Space Grotesk / JetBrains Mono voice.
-    val paper = !Caps.isDesktop || PhonePreview.active
-    val serif = Font(Res.font.source_serif_4, FontWeight.Normal)
-    val display = if (paper) FontFamily(serif) else FontFamily(Font(Res.font.space_grotesk, FontWeight.Normal))
-    val readout = if (paper) FontFamily(serif) else FontFamily(Font(Res.font.jetbrains_mono, FontWeight.Normal))
-    return remember { Triple(FontFamily(text), display, readout) }
+    // One sans family across display, body, labels and tabular money figures.
+    val inter = FontFamily(Font(Res.font.inter_variable, FontWeight.Normal))
+    return Triple(inter, inter, inter)
 }
 
 /** Retained as a zero-height compatibility shim for older layouts; MD3 separates by tone. */

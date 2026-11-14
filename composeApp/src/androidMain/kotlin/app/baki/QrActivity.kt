@@ -95,7 +95,6 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
     val meta = items.getOrNull(selected)
 
     Box(Modifier.fillMaxSize().background(baki.surface)) {
-        PaperGrain(Modifier.fillMaxSize())
         Column(
             Modifier.fillMaxSize().systemBarsPadding()
                 .padding(horizontal = Space.l, vertical = Space.l),

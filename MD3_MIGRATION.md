@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.0 / code 121 — signed and installed**
+Version: **0.40.2 / code 123 — signed and installed**
 
 ## Design direction
 
@@ -14,12 +14,15 @@ The design system is now:
 - **Tonal surfaces** through `surface`, `surfaceContainerLow`, `surfaceContainer`,
   `surfaceContainerHigh`, `primaryContainer` and `onSurfaceVariant`.
 - **MD3 shape scale**: 4dp extra-small, 8dp small, 12dp medium, 16dp large, 28dp extra-large.
-- **Material type roles**: display/headline/title/body/label, with an expressive serif display face
-  reserved for monetary hero figures and Inter for reading and controls.
+- **Material type roles**: display/headline/title/body/label, all using the Inter sans family.
+  Money uses tabular sans figures, not a serif override. No Source Serif, Space Grotesk or
+  JetBrains Mono is loaded by the phone UI.
 - **Standard MD3 components**: TopAppBar, NavigationBar, NavigationRail, morphing FAB, Cards,
   PrimaryTabRow, SegmentedButtons, filled search, FilterChips, tonal buttons, dialogs and bottom sheets.
 - **Expressive containers**: primaryContainer statement cover, secondaryContainer week card,
   tertiaryContainer reserve card, surfaceContainerHigh chart and cash cards.
+- **Interactive charts**: rounded tonal bars, solid target line, no dashed floating rules, 7D/30D
+  FilterChips and tap-to-inspect day details.
 
 ## Features removed or simplified
 
@@ -132,6 +135,7 @@ No financial feature was removed.
 ## Expressive pass (0.40.0)
 
 - Removed the remaining divider/rule shim; all separation now comes from tonal surfaces.
+- Deleted the unused glass and paper-texture source files and removed the QR paper grain.
 - Statement cover now uses `primaryContainer` / `onPrimaryContainer`.
 - Week summary uses `secondaryContainer`; reserves use `tertiaryContainer`; chart/cash use
   `surfaceContainerHigh`.
@@ -144,6 +148,9 @@ No financial feature was removed.
   damped fades.
 - All hardcoded palette hex was removed from common source. Legacy palette names now alias Material
   baseline roles for persisted-config compatibility; the active scheme is dynamic/baseline MD3.
+- All custom `BorderStroke` card outlines were removed. Cards use single 16dp tonal surfaces.
+- Both charts were rebuilt: rounded bars with primary/tertiary/error roles, a solid target line,
+  selected-bar state and tap detail. Weekly empty days are dots at the baseline, not floating rules.
 - Verbose bills/statement/vehicle helper copy was shortened.
 - Live-start and add-shift actions are tonal rather than high-contrast dark pills.
 
@@ -174,3 +181,18 @@ No financial feature was removed.
 - The month chart is still a custom Canvas inside a Material card; a future pass could replace it
   with a dedicated chart component with accessible data table semantics.
 - Widgets and a desktop Material shell were not part of this migration.
+
+## Hard cleanup (0.40.2)
+
+- Deleted `Glass.kt` and `PaperTexture.kt`; removed QR paper grain.
+- Removed every custom `BorderStroke` and `.border(...)` from cards, buttons and calendar cells.
+- All cards now use the single-surface 16dp `MaterialTheme.shapes.large` treatment.
+- Calendar today/best markers use tonal fills, not outlines.
+- Removed the forced serif source for display and money. All text is sans; money remains tabular.
+- Rebuilt Month in Ink with rounded primary/error bars, a solid target line, FilterChip ranges,
+  tap-to-select state and a selected-day detail card.
+- Rebuilt weekly bars with rounded tonal bars and baseline dots for empty days.
+- NavigationBar keeps explicit 80dp geometry, standard active indicator, tonal container and
+  one-line labels. NavigationRail/FAB remain adaptive.
+- Shortened explanatory copy and removed dead layout hacks.
+- 225 tests pass; signed 0.40.2, code 123.

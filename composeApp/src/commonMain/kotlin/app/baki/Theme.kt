@@ -66,7 +66,7 @@ fun paletteFor(pack: String, dark: Boolean): BakiPalette = when (pack) {
 private val Md3Shapes = Shapes(
     extraSmall = RoundedCornerShape(Radius.tiny),
     small = RoundedCornerShape(Radius.small),
-    medium = RoundedCornerShape(Radius.card),
+    medium = RoundedCornerShape(Radius.large),
     large = RoundedCornerShape(Radius.large),
     extraLarge = RoundedCornerShape(Radius.sheet),
 )

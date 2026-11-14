@@ -276,7 +276,7 @@ private fun DayEntryRow(
     var menu by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Column(Modifier.padding(horizontal = Space.m)) {
@@ -357,7 +357,7 @@ private fun DayShiftRow(shift: Shift, net: Double, km: Double, onEdit: () -> Uni
     val baki = LocalBaki.current
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
     Row(

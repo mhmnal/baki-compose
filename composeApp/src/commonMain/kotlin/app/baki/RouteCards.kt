@@ -85,7 +85,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.card))
+            .clip(RoundedCornerShape(Radius.large))
             .background(baki.container),
     ) {
         Row(
