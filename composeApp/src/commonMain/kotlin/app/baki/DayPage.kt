@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 /**
- * A single day as a paper page: chronological entries with a running margin, shifts, receipt
+ * A single day: chronological entries with a running margin, shifts, receipt
  * attachments and one note. The page lives above the normal tab shell.
  */
 @Composable
@@ -51,7 +51,7 @@ fun DayPage(
     onAddEntry: () -> Unit,
     onEditShift: (Shift) -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val store = repo.store
     val scope = rememberCoroutineScope()
     val entries = remember(store, day) {
@@ -95,17 +95,17 @@ fun DayPage(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = { onDay(addDays(day, -1)) }) {
-                    Text("‹", color = baki.onSurface, style = BakiType.body)
+                    Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (day == todayIso()) "Today" else "Day page", color = baki.onSurface, style = BakiType.bodyStrong)
-                    Text(prettyDate(day), color = baki.muted, style = BakiType.caption)
+                    Text(if (day == todayIso()) "Today" else "Day page", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(prettyDate(day), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
                 TextButton(onClick = { onDay(addDays(day, 1)) }) {
-                    Text("›", color = baki.onSurface, style = BakiType.body)
+                    Text("›", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
                 }
                 TextButton(onClick = onClose) {
-                    Text("Close", color = baki.primary, style = BakiType.labelStrong)
+                    Text("Close", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 }
             }
             LazyColumn(
@@ -116,14 +116,14 @@ fun DayPage(
                 item {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Column(Modifier.weight(1f)) {
-                            Text("DAY NET", color = baki.muted, style = BakiType.section)
-                            EasedMoney(totals.net, baki.onSurface, BakiType.displaySmallNumeric)
+                            Text("DAY NET", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
+                            EasedMoney(totals.net, scheme.onSurface, MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"))
                             Text(
                                 "${entries.size} entries · ${shifts.size} shifts · in RM ${rm(totals.income)} · out RM ${rm(totals.expense)}",
-                                color = baki.muted, style = BakiType.captionNumeric,
+                                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                             )
                         }
-                        TextButton(onClick = onAddEntry) { Text("+ Entry", color = baki.primary, style = BakiType.labelStrong) }
+                        TextButton(onClick = onAddEntry) { Text("+ Entry", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
                     }
                 }
 
@@ -131,7 +131,7 @@ fun DayPage(
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             if (closed) "CLOSED · ${dayClose?.updated?.take(16)?.replace('T', ' ').orEmpty()}" else "PAGE OPEN",
-                            color = if (closed) baki.up else baki.muted, style = BakiType.captionStrong,
+                            color = if (closed) scheme.tertiary else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(
@@ -142,17 +142,16 @@ fun DayPage(
                                 } else confirmClose = true
                             },
                         ) {
-                            Text(if (closed) "Reopen day" else "Close the day", color = if (closed) baki.muted else baki.primary, style = BakiType.labelStrong)
+                            Text(if (closed) "Reopen day" else "Close the day", color = if (closed) scheme.onSurfaceVariant else scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         }
                     }
-                    if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = baki.warn, style = BakiType.caption)
-                    else if (sealStatus.isNotEmpty()) Text(sealStatus, color = baki.warn, style = BakiType.caption)
+                    if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
+                    else if (sealStatus.isNotEmpty()) Text(sealStatus, color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
                 }
 
                 item {
-                    Text("ENTRIES · RUNNING", color = baki.muted, style = BakiType.section)
+                    Text("ENTRIES · RUNNING", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(Space.xs))
-                    LedgerRule(alpha = 0.14f)
                 }
                 if (entries.isEmpty()) {
                     item { EmptyState("No entries on this page", "Add a spending or income entry.") }
@@ -177,16 +176,15 @@ fun DayPage(
                     }
                 }
                 if (receiptStatus.isNotEmpty()) item {
-                    Text(receiptStatus, color = baki.primary, style = BakiType.caption)
+                    Text(receiptStatus, color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
                 }
 
                 item {
-                    Text("SHIFTS", color = baki.muted, style = BakiType.section)
+                    Text("SHIFTS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(Space.xs))
-                    LedgerRule(alpha = 0.14f)
                 }
                 if (shifts.isEmpty()) {
-                    item { Text("No shift recorded on this day.", color = baki.muted, style = BakiType.caption) }
+                    item { Text("No shift recorded on this day.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium) }
                 } else {
                     shifts.forEach { shift ->
                         val m = shiftMetrics(shift, store.settings.profit, overheadPerHour(store, shift.date.take(7)))
@@ -197,21 +195,20 @@ fun DayPage(
                 }
 
                 item {
-                    Text("PAGE NOTE", color = baki.muted, style = BakiType.section)
+                    Text("PAGE NOTE", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(Space.xs))
-                    LedgerRule(alpha = 0.14f)
                     Spacer(Modifier.height(Space.s))
                     OutlinedTextField(
                         value = noteText,
                         onValueChange = { noteText = it.take(500) },
-                        placeholder = { Text("A line for this day…", color = baki.muted, style = BakiType.label) },
+                        placeholder = { Text("A line for this day…", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge) },
                         minLines = 3,
                         enabled = canWrite,
                         modifier = Modifier.fillMaxWidth(),
                         colors = bakiFieldColorsPublic(),
                     )
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(noteStatus, color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f))
+                        Text(noteStatus, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         TextButton(
                             enabled = canWrite && noteText != savedNote,
                             onClick = {
@@ -221,7 +218,7 @@ fun DayPage(
                                     if (ok) savedNote = noteText
                                 }
                             },
-                        ) { Text("Save note", color = if (noteText != savedNote) baki.primary else baki.muted) }
+                        ) { Text("Save note", color = if (noteText != savedNote) scheme.primary else scheme.onSurfaceVariant) }
                     }
                 }
             }
@@ -235,13 +232,13 @@ fun DayPage(
             AlertDialog(
                 onDismissRequest = { confirmClose = false },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(Radius.dialog),
-                title = { Text("Close this day?", color = baki.onSurface, style = BakiType.title) },
+                shape = MaterialTheme.shapes.extraLarge,
+                title = { Text("Close this day?", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
                 text = {
                     Text(
                         "${entries.size} entries · ${shifts.size} shifts · net RM ${rm(totals.net)}. " +
                             "Closing marks the page reviewed. You can still edit it later.",
-                        color = baki.muted, style = BakiType.body,
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge,
                     )
                 },
                 confirmButton = {
@@ -250,9 +247,9 @@ fun DayPage(
                         scope.launch {
                             sealStatus = if (repo.setDayClosed(day, true)) "Day closed" else "Could not close · ${repo.lastError ?: "write blocked"}"
                         }
-                    }) { Text("Close the day", color = baki.primary, style = BakiType.labelStrong) }
+                    }) { Text("Close the day", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
                 },
-                dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Cancel", color = baki.muted) } },
+                dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Cancel", color = scheme.onSurfaceVariant) } },
             )
         }
     }
@@ -269,7 +266,7 @@ private fun DayEntryRow(
     onRemoveReceipt: () -> Unit,
     onPreview: () -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val bitmap = remember(entry.receipt) { entry.receipt?.takeIf { it.isNotBlank() }?.let(::decodeReceiptImage) }
     var menu by remember { mutableStateOf(false) }
     Surface(
@@ -284,15 +281,15 @@ private fun DayEntryRow(
                 .semantics { contentDescription = "${entry.note.ifEmpty { categoryLabel(store, entry.cat) }}, ${if (entry.type == "income") "income" else "expense"} RM ${rm(entry.amount)}" },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(categoryIcon(entry.cat), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+            Icon(categoryIcon(entry.cat), contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
             Spacer(Modifier.width(Space.s))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(entry.note.ifEmpty { categoryLabel(store, entry.cat) }, color = baki.onSurface, style = BakiType.bodyStrong)
+                    Text(entry.note.ifEmpty { categoryLabel(store, entry.cat) }, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                     if (bitmap != null) {
                         Spacer(Modifier.width(Space.xs))
                         Surface(
-                            shape = RoundedCornerShape(Radius.small),
+                            shape = MaterialTheme.shapes.small,
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.padding(2.dp),
                         ) {
@@ -300,47 +297,47 @@ private fun DayEntryRow(
                                 bitmap = bitmap, contentDescription = "Receipt attached",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.padding(2.dp).size(22.dp)
-                                    .clip(RoundedCornerShape(Radius.tiny)).clickable { onPreview() },
+                                    .clip(MaterialTheme.shapes.extraSmall).clickable { onPreview() },
                             )
                         }
                     }
                 }
                 Text(
                     listOfNotNull(categoryLabel(store, entry.cat), loggedTime(entry.loggedAt)?.let { "logged $it" }).joinToString(" · "),
-                    color = baki.muted, style = BakiType.caption,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     (if (entry.type == "income") "+" else "−") + rm(entry.amount),
-                    color = if (entry.type == "income") baki.up else baki.down, style = BakiType.labelNumeric,
+                    color = if (entry.type == "income") scheme.tertiary else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                 )
-                Text("entry bal RM ${rm(runningCents)}", color = baki.muted, style = BakiType.nano)
+                Text("entry bal RM ${rm(runningCents)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
             Box {
                 Text(
-                    "⋮", color = baki.muted, style = BakiType.bodyStrong,
+                    "⋮", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.size(48.dp).clickable { menu = true }
                         .semantics { contentDescription = "Entry actions" },
                     textAlign = TextAlign.Center,
                 )
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
-                        text = { Text(if (bitmap == null) "Attach receipt" else "Replace receipt", color = baki.onSurface) },
+                        text = { Text(if (bitmap == null) "Attach receipt" else "Replace receipt", color = scheme.onSurface) },
                         onClick = { menu = false; onAttach() },
                     )
                     if (bitmap != null) {
                         DropdownMenuItem(
-                            text = { Text("View receipt", color = baki.onSurface) },
+                            text = { Text("View receipt", color = scheme.onSurface) },
                             onClick = { menu = false; onPreview() },
                         )
                         DropdownMenuItem(
-                            text = { Text("Remove receipt", color = baki.down) },
+                            text = { Text("Remove receipt", color = scheme.error) },
                             onClick = { menu = false; onRemoveReceipt() },
                         )
                     }
                     DropdownMenuItem(
-                        text = { Text("Delete entry", color = baki.down) },
+                        text = { Text("Delete entry", color = scheme.error) },
                         onClick = { menu = false; onDelete() },
                     )
                 }
@@ -352,7 +349,7 @@ private fun DayEntryRow(
 
 @Composable
 private fun DayShiftRow(shift: Shift, net: Double, km: Double, onEdit: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
         shape = MaterialTheme.shapes.large,
@@ -362,33 +359,32 @@ private fun DayShiftRow(shift: Shift, net: Double, km: Double, onEdit: () -> Uni
         Modifier.fillMaxWidth().heightIn(min = Control.primary).clickable { onEdit() }.padding(horizontal = Space.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(BakiIcons.Car, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+        Icon(BakiIcons.Car, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
         Spacer(Modifier.width(Space.s))
         Column(Modifier.weight(1f)) {
-            Text("Shift ${shift.start.ifEmpty { shift.date }}", color = baki.onSurface, style = BakiType.bodyStrong)
-            Text("${"%.1f".format(shift.hours)}h · ${"%.0f".format(km)} km · ${shift.payouts.size} payouts", color = baki.muted, style = BakiType.caption)
+            Text("Shift ${shift.start.ifEmpty { shift.date }}", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            Text("${"%.1f".format(shift.hours)}h · ${"%.0f".format(km)} km · ${shift.payouts.size} payouts", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
-        Text("RM ${rm(net)}", color = if (net < 0) baki.down else baki.up, style = BakiType.labelNumeric)
+        Text("RM ${rm(net)}", color = if (net < 0) scheme.error else scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
     }
     }
 }
 
 @Composable
 private fun ReceiptPreview(receipt: String, onClose: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val bitmap = remember(receipt) { decodeReceiptImage(receipt) }
-    Box(Modifier.fillMaxSize().background(baki.surface).statusBarsPadding().padding(Space.l)) {
+    Box(Modifier.fillMaxSize().background(scheme.surface).statusBarsPadding().padding(Space.l)) {
         Column(Modifier.fillMaxSize()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("RECEIPT", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
-                TextButton(onClick = onClose) { Text("Close", color = baki.primary, style = BakiType.labelStrong) }
+                Text("RECEIPT", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                TextButton(onClick = onClose) { Text("Close", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
             }
-            LedgerRule(alpha = 0.18f)
             Spacer(Modifier.height(Space.m))
             if (bitmap != null) {
                 Image(bitmap, contentDescription = "Receipt", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().weight(1f))
             } else {
-                Text("Receipt could not be read.", color = baki.muted, style = BakiType.body)
+                Text("Receipt could not be read.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
             }
         }
     }

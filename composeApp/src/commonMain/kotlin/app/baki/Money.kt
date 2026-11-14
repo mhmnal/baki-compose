@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
@@ -103,10 +105,11 @@ fun EasedMoney(
     prefix: String = "RM ",
 ) {
     val shown = remember { Animatable(0f) }
+    val motion = MaterialTheme.motionScheme
     LaunchedEffect(cents) {
         shown.animateTo(
             targetValue = cents.toFloat(),
-            animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow),
+            animationSpec = motion.defaultSpatialSpec(),
         )
     }
     Text(

@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -39,7 +43,7 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun BakiSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     SnackbarHost(hostState, modifier) { data ->
         val message = data.visuals.message
         val success = message.startsWith("Added ") || message.startsWith("Saved")
@@ -47,49 +51,47 @@ fun BakiSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier
         LaunchedEffect(message) { tick = true }
 
         Column(Modifier.fillMaxWidth()) {
-            if (baki.paper) LedgerRule(alpha = 0.20f)
             Snackbar(
                 action = data.visuals.actionLabel?.let { label ->
                     {
                         Box(
                             Modifier
-                                .clip(RoundedCornerShape(Radius.pill))
+                                .clip(CircleShape)
                                 .heightIn(min = 48.dp)
                                 .clickable { data.performAction() }
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                         ) {
-                            Text(label, color = baki.primary, style = BakiType.labelStrong)
+                            Text(label, color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                 },
-                shape = if (baki.paper) RoundedCornerShape(Radius.tiny) else RoundedCornerShape(Radius.pill),
-                containerColor = if (baki.paper) baki.surface else baki.surfaceHigh,
-                contentColor = baki.onSurface,
-                actionContentColor = baki.primary,
-                dismissActionContentColor = baki.muted,
+                shape = CircleShape,
+                containerColor = scheme.surfaceContainerHigh,
+                contentColor = scheme.onSurface,
+                actionContentColor = scheme.primary,
+                dismissActionContentColor = scheme.onSurfaceVariant,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AnimatedVisibility(
                         visible = success && tick,
                         enter = scaleIn(
                             initialScale = 0.6f,
-                            animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
+                            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                         ) + fadeIn(),
                     ) {
                         Box(
                             Modifier.size(22.dp)
-                                .clip(if (baki.paper) RoundedCornerShape(Radius.tiny) else CircleShape)
-                                .background(baki.primaryContainer),
+                                .clip(CircleShape)
+                                .background(scheme.primaryContainer),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("✓", color = baki.onPrimaryContainer, style = BakiType.labelStrong)
+                            Text("✓", color = scheme.onPrimaryContainer, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                     if (success) Spacer(Modifier.width(Space.s))
-                    Text(message, style = BakiType.label)
+                    Text(message, style = MaterialTheme.typography.labelLarge)
                 }
             }
-            if (baki.paper) LedgerRule(alpha = 0.20f)
         }
     }
 }

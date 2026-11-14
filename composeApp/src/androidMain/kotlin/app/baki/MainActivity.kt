@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
-        val act = intent?.getStringExtra("baki.action")
+        val act = intent?.getStringExtra("scheme.action")
         android.util.Log.i("BakiLive", "drainIntent: $act (intent=${intent?.action})")
         act?.let { BakiIntents.deliver(it) }
         readStatement(intent)

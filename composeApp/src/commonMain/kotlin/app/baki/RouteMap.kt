@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,16 +68,18 @@ fun RouteMap(
     modifier: Modifier = Modifier,
     showAttribution: Boolean = true,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     // subscribe to the tile cache so newly arrived tiles redraw the canvas
     val tileVersion = TileCache.version
     val measurer = rememberTextMeasurer()
+    val attributionStyle = MaterialTheme.typography.labelSmall.copy(color = scheme.onSurfaceVariant)
+    val endpointStyle = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontWeight = FontWeight.Bold)
     val allPoints = remember(routes) { routes.flatMap { it.route.points } }
 
     BoxWithConstraints(
         modifier
-            .clip(RoundedCornerShape(Radius.large))
-            .background(baki.surfaceHigh),
+            .clip(MaterialTheme.shapes.large)
+            .background(scheme.surfaceContainerHigh),
     ) {
         val sizePx = with(LocalDensity.current) {
             Size(maxWidth.toPx(), maxHeight.toPx())
@@ -102,7 +108,7 @@ fun RouteMap(
                 )
             }
             // a faint veil keeps the paths readable over busy streets
-            drawRect(baki.surface.copy(alpha = 0.18f))
+            drawRect(scheme.surface.copy(alpha = 0.18f))
 
             // routes: white casing then the colour, so lines read on any basemap
             routes.forEach { mapRoute ->
@@ -127,18 +133,18 @@ fun RouteMap(
 
             // A / B markers per shift
             routes.forEach { mapRoute ->
-                mapRoute.route.start?.let { drawEndpoint(proj.project(it), mapRoute.color, "A", measurer) }
-                mapRoute.route.end?.let { drawEndpoint(proj.project(it), mapRoute.color, "B", measurer) }
+                mapRoute.route.start?.let { drawEndpoint(proj.project(it), mapRoute.color, "A", measurer, endpointStyle) }
+                mapRoute.route.end?.let { drawEndpoint(proj.project(it), mapRoute.color, "B", measurer, endpointStyle) }
             }
 
             if (showAttribution) {
                 val layout = measurer.measure(
                     AnnotatedString("© OpenStreetMap"),
-                    BakiType.nano.copy(color = baki.muted),
+                    attributionStyle,
                 )
                 val pad = 6.dp.toPx()
                 drawRect(
-                    color = baki.surface.copy(alpha = 0.72f),
+                    color = scheme.surface.copy(alpha = 0.72f),
                     topLeft = Offset(pad, size.height - layout.size.height - pad * 1.6f),
                     size = Size(layout.size.width + pad, layout.size.height + pad * 0.6f),
                 )
@@ -156,12 +162,13 @@ private fun DrawScope.drawEndpoint(
     color: Color,
     label: String,
     measurer: TextMeasurer,
+    style: TextStyle,
 ) {
     drawCircle(Color.White, radius = 8.dp.toPx(), center = center)
     drawCircle(color, radius = 6.dp.toPx(), center = center)
     val layout = measurer.measure(
         AnnotatedString(label),
-        BakiType.nano.copy(color = Color.White, fontWeight = FontWeight.Bold),
+        style,
     )
     drawText(
         layout,
@@ -180,13 +187,13 @@ fun DayMapCard(
     onOpen: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val km = routes.sumOf { routeMetres(it.route.points) } / 1000.0
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.large))
-            .background(baki.container)
+            .clip(MaterialTheme.shapes.large)
+            .background(scheme.surfaceContainerLow)
             .then(if (onOpen != null) Modifier.clickable { onOpen() } else Modifier),
     ) {
         Row(
@@ -195,7 +202,7 @@ fun DayMapCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text(prettyDate(date), color = baki.onSurface, style = BakiType.bodyStrong)
+                Text(prettyDate(date), color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 val shifts = routes.size
                 Text(
                     buildString {
@@ -203,11 +210,11 @@ fun DayMapCard(
                         append(" · ")
                         append("%.1f km".format(km))
                     },
-                    color = baki.muted, style = BakiType.captionNumeric,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
             }
             if (onOpen != null) {
-                Text("Open", color = baki.primary, style = BakiType.labelStrong)
+                Text("Open", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
         RouteMap(
@@ -222,26 +229,26 @@ fun DayMapCard(
 /** Full-screen read-only day map. Still inert: it is a bigger card, not an interactive map. */
 @Composable
 fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val km = routes.sumOf { routeMetres(it.route.points) } / 1000.0
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
-            Modifier.fillMaxSize().background(baki.surface).padding(Space.l),
+            Modifier.fillMaxSize().background(scheme.surface).padding(Space.l),
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text(prettyDate(date), color = baki.onSurface, style = BakiType.headline)
+                        Text(prettyDate(date), color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium)
                         Text(
                             "${routes.size} shift${if (routes.size == 1) "" else "s"} · %.1f km".format(km),
-                            color = baki.muted, style = BakiType.captionNumeric,
+                            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                         )
                     }
                     Text(
-                        "Close", color = baki.primary, style = BakiType.labelStrong,
+                        "Close", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.heightIn(min = Control.primary)
-                            .clip(RoundedCornerShape(Radius.pill)).clickable { onDismiss() }
+                            .clip(CircleShape).clickable { onDismiss() }
                             .padding(horizontal = Space.m, vertical = 8.dp),
                     )
                 }
@@ -252,13 +259,13 @@ fun DayMapFullScreen(date: String, routes: List<MapRoute>, onDismiss: () -> Unit
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                     routes.forEach { mapRoute ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(10.dp).clip(RoundedCornerShape(Radius.pill)).background(mapRoute.color))
+                            Box(Modifier.size(10.dp).clip(CircleShape).background(mapRoute.color))
                             Spacer(Modifier.width(Space.s))
-                            Text(mapRoute.label, color = baki.muted, style = BakiType.caption)
+                            Text(mapRoute.label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                             Spacer(Modifier.weight(1f))
                             Text(
                                 "${clockLabel(mapRoute.route.start)} – ${clockLabel(mapRoute.route.end)}",
-                                color = baki.muted, style = BakiType.captionNumeric,
+                                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                             )
                         }
                     }

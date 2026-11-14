@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +36,7 @@ import kotlin.math.abs
 /** The last seven days ending at [endDay]: a bar per day, green when money stayed. */
 @Composable
 fun WeekStrip(store: Store, endDay: String) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val days = (6 downTo 0).map { addDays(endDay, -it) }
     val totals = remember(store, endDay) { days.map { dayTotals(store, it) } }
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
@@ -48,55 +52,51 @@ fun WeekStrip(store: Store, endDay: String) {
                 Column(
                     Modifier.weight(1f)
                         .then(
-                            if (baki.paper) Modifier.padding(vertical = Space.s)
-                            else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.container).padding(vertical = Space.s)
+                            Modifier.clip(MaterialTheme.shapes.medium).background(scheme.surfaceContainerLow).padding(vertical = Space.s)
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         d.takeLast(2),
-                        color = if (d == today) baki.primary else baki.muted,
+                        color = if (d == today) scheme.primary else scheme.onSurfaceVariant,
                         fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
-                        style = if (compact) BakiType.nano else BakiType.caption,
+                        style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                     )
                     Spacer(Modifier.height(Space.s))
                     Box(
-                        Modifier.height(28.dp).width(10.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh),
+                        Modifier.height(28.dp).width(10.dp).clip(CircleShape).background(scheme.surfaceContainerHigh),
                         contentAlignment = Alignment.BottomCenter,
                     ) {
                         Box(
                             Modifier.fillMaxWidth().fillMaxHeight(fraction)
-                                .clip(RoundedCornerShape(Radius.pill))
-                                .background(if (t.entryCount == 0 && t.shiftCount == 0) baki.surfaceHigh else if (up) baki.primary else baki.down),
+                                .clip(CircleShape)
+                                .background(if (t.entryCount == 0 && t.shiftCount == 0) scheme.surfaceContainerHigh else if (up) scheme.primary else scheme.error),
                         )
                     }
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         if (t.entryCount == 0 && t.shiftCount == 0) "–" else if (BakiPrivacy.discreet) "••" else (t.net / 100).toInt().toString(),
-                        color = baki.muted, style = if (compact) BakiType.nano else BakiType.caption,
+                        color = scheme.onSurfaceVariant, style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
                     )
                 }
             }
         }
-        if (baki.paper) {
-            Spacer(Modifier.height(Space.xs))
-            LedgerRule(alpha = 0.14f)
-        }
+        
     }
 }
 
 /** Net per day across the month, as bars above and below a zero line. */
 @Composable
 fun TrendBars(store: Store, month: String) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val days = remember(store, month) { monthDays(store, month) }
     if (days.isEmpty()) return
     val peak = days.maxOfOrNull { abs(it.second.net) }?.coerceAtLeast(1) ?: 1
 
     Column(Modifier.semantics { contentDescription = "Daily net trend for the month" }) {
-        Text("TREND", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
+        Text("TREND", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         Spacer(Modifier.height(Space.s))
         Row(
             Modifier.fillMaxWidth().height(96.dp),
@@ -111,20 +111,19 @@ fun TrendBars(store: Store, month: String) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (t.net >= 0) {
-                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(Radius.tiny)).background(baki.primary))
+                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(MaterialTheme.shapes.extraSmall).background(scheme.primary))
                         Spacer(Modifier.fillMaxHeight(0.02f))
                     } else {
                         Box(Modifier.fillMaxHeight(fraction * 0.5f).fillMaxWidth())
-                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(RoundedCornerShape(Radius.tiny)).background(baki.down))
+                        Box(Modifier.fillMaxWidth().fillMaxHeight(fraction * 0.5f).clip(MaterialTheme.shapes.extraSmall).background(scheme.error))
                     }
                 }
             }
         }
-        if (baki.paper) LedgerRule(alpha = 0.14f)
         Spacer(Modifier.height(Space.xs))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(days.first().first.takeLast(5), color = baki.muted, style = BakiType.caption)
-            Text(days.last().first.takeLast(5), color = baki.muted, style = BakiType.caption)
+            Text(days.first().first.takeLast(5), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            Text(days.last().first.takeLast(5), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -132,20 +131,19 @@ fun TrendBars(store: Store, month: String) {
 /** Which hours actually pay: rows are weekdays, columns are 4-hour blocks. */
 @Composable
 fun HoursHeatmap(store: Store) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val blocks = remember(store) { hourHeatmap(store) }
     if (blocks.isEmpty()) return
     val peak = blocks.maxOf { it.rate }.coerceAtLeast(1.0)
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column(Modifier.semantics { contentDescription = "Best earning hours heatmap" }) {
-        Text("BEST HOURS", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
+        Text("BEST HOURS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         Spacer(Modifier.height(Space.s))
-        if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Spacer(Modifier.width(Space.l))
             listOf("00", "04", "08", "12", "16", "20").forEach {
-                Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
+                Text(it, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium )
             }
         }
         Spacer(Modifier.height(3.dp))
@@ -155,7 +153,7 @@ fun HoursHeatmap(store: Store) {
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(days[d], color = baki.muted, modifier = Modifier.width(14.dp), style = BakiType.caption )
+                Text(days[d], color = scheme.onSurfaceVariant, modifier = Modifier.width(14.dp), style = MaterialTheme.typography.bodyMedium )
                 for (b in 0..5) {
                     val cell = blocks.firstOrNull { it.day == d && it.block == b }
                     val rate = cell?.rate ?: 0.0
@@ -163,7 +161,7 @@ fun HoursHeatmap(store: Store) {
                     val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
                     Box(
                         Modifier.weight(1f).height(16.dp)
-                            .background(if (has) baki.primary.copy(alpha = 0.15f + fraction * 0.85f) else baki.surfaceHigh),
+                            .background(if (has) scheme.primary.copy(alpha = 0.15f + fraction * 0.85f) else scheme.surfaceContainerHigh),
                     )
                 }
             }
@@ -174,9 +172,9 @@ fun HoursHeatmap(store: Store) {
             val end = "%02d:00".format((best.block + 1) * 4)
             Text(
                 "best: ${listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")[best.day]} $start–$end · RM ${"%.0f".format(best.rate)}/hr over ${"%.1f".format(best.hours)}h",
-                color = baki.up, style = BakiType.caption )
+                color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium )
         }
-        Text("darker = better rate · empty = not driven", color = baki.muted, style = BakiType.caption )
+        Text("darker = better rate · empty = not driven", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
     }
 }
 
@@ -188,33 +186,10 @@ fun Sparkline(
     line: Color,
     fill: Color,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Canvas(modifier.semantics { contentDescription = "Seven day net trend" }) {
         if (values.size < 2) return@Canvas
-        if (baki.paper) {
-            // Ledger version: vertical ink marks, not a dashboard curve.
-            val peak = values.maxOfOrNull { kotlin.math.abs(it) }?.coerceAtLeast(0.01) ?: 0.01
-            val step = size.width / values.size
-            val barWidth = (step * 0.28f).coerceAtLeast(2f)
-            val baseline = size.height - 1.dp.toPx()
-            drawLine(
-                color = baki.muted.copy(alpha = 0.30f),
-                start = Offset(0f, baseline),
-                end = Offset(size.width, baseline),
-                strokeWidth = 1.dp.toPx(),
-            )
-            values.forEachIndexed { i, v ->
-                val usable = (size.height - 4.dp.toPx()).coerceAtLeast(1f)
-                val h = (kotlin.math.abs(v) / peak).toFloat().coerceIn(0f, 1f) * usable
-                val left = i * step + (step - barWidth) / 2f
-                drawRect(
-                    color = if (v >= 0) line.copy(alpha = 0.80f) else baki.down.copy(alpha = 0.80f),
-                    topLeft = Offset(left, baseline - h),
-                    size = Size(barWidth, h),
-                )
-            }
-            return@Canvas
-        }
+        
         val min = values.min()
         val max = values.max()
         val span = (max - min).takeIf { kotlin.math.abs(it) > 0.001 } ?: 1.0

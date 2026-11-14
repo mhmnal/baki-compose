@@ -9,14 +9,14 @@ import androidx.compose.ui.window.rememberWindowState
 import java.util.prefs.Preferences
 
 /** Remembers where the window was, like a desktop app should. */
-private val prefs = Preferences.userRoot().node("app/baki/window")
+private val prefs = Preferences.userRoot().node("app/scheme/window")
 
 private var instanceLock: java.nio.channels.FileLock? = null
 private var instanceChannel: java.nio.channels.FileChannel? = null
 
 /** Two instances overlap and produce hard window edges over each other; only one may run. */
 private fun acquireSingleInstance(): Boolean {
-    val dir = java.io.File(System.getProperty("user.home"), ".local/share/baki")
+    val dir = java.io.File(System.getProperty("user.home"), ".local/share/scheme")
     dir.mkdirs()
     val channel = java.nio.channels.FileChannel.open(
         java.io.File(dir, "instance.lock").toPath(),

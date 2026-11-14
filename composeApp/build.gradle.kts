@@ -23,7 +23,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
                 implementation("io.ktor:ktor-client-core:3.0.3")
-                implementation("io.github.kyant0:backdrop:2.0.1")
                 implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
             }

@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.material3.MaterialTheme
+
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -70,9 +74,7 @@ class QrActivity : ComponentActivity() {
 
         val selectedId = intent?.getStringExtra(EXTRA_QR_ID)
         setContent {
-            val faces = bakiFontFamilies()
-            BakiType.install(faces.first, faces.second, faces.third)
-            BakiTheme(mode = "light", pack = "paper") {
+            BakiTheme(mode = "light") {
                 val view = LocalView.current
                 androidx.compose.runtime.SideEffect {
                     val bars = WindowCompat.getInsetsController(window, view)
@@ -87,24 +89,23 @@ class QrActivity : ComponentActivity() {
 
 @Composable
 private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var items by remember { mutableStateOf(loadQrIndex()) }
     var selected by remember {
         mutableIntStateOf(items.indexOfFirst { it.id == initialId }.takeIf { it >= 0 } ?: 0)
     }
     val meta = items.getOrNull(selected)
 
-    Box(Modifier.fillMaxSize().background(baki.surface)) {
+    Box(Modifier.fillMaxSize().background(scheme.surface)) {
         Column(
             Modifier.fillMaxSize().systemBarsPadding()
                 .padding(horizontal = Space.l, vertical = Space.l),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Receive payment", color = baki.onSurface, style = BakiType.title)
+                Text("Receive payment", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = onClose) { Text("Close", color = baki.primary, style = BakiType.labelStrong) }
+                TextButton(onClick = onClose) { Text("Close", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
             }
-            LedgerRule(alpha = 0.18f)
 
             if (items.size > 1) {
                 Row(
@@ -122,10 +123,10 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
                         ) {
                             Text(
                                 item.label,
-                                color = if (on) baki.primary else baki.muted,
-                                style = BakiType.labelStrong,
+                                color = if (on) scheme.primary else scheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             )
-                            if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
+                            if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(scheme.primary))
                         }
                     }
                 }
@@ -133,7 +134,7 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
 
             Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                 if (meta == null) {
-                    Text("No QR saved", color = baki.onSurface, style = BakiType.bodyStrong)
+                    Text("No QR saved", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 } else {
                     val bitmap = remember(meta.id) { loadQrBitmap(meta.id) }
                     if (bitmap != null) {
@@ -152,14 +153,14 @@ private fun QrCustomerScreen(initialId: String?, onClose: () -> Unit) {
                             )
                         }
                     } else {
-                        Text("This QR could not be read", color = baki.onSurface, style = BakiType.bodyStrong)
+                        Text("This QR could not be read", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
 
             Text(
                 "Scan with any banking or e-wallet app",
-                color = baki.muted, style = BakiType.caption,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
             )
         }

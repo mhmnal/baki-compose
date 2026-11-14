@@ -5,8 +5,8 @@ actual object PlatformEffects {
     /** Write the statement, then hand it to the default browser: Ctrl/⌘+P gives a clean PDF. */
     actual fun printStatement(html: String) {
         runCatching {
-            val dir = java.io.File(System.getProperty("java.io.tmpdir"), "baki").apply { mkdirs() }
-            val file = java.io.File(dir, "baki-statement-${todayStamp()}.html")
+            val dir = java.io.File(System.getProperty("java.io.tmpdir"), "scheme").apply { mkdirs() }
+            val file = java.io.File(dir, "scheme-statement-${todayStamp()}.html")
             file.writeText(html)
             if (java.awt.Desktop.isDesktopSupported()) {
                 java.awt.Desktop.getDesktop().browse(file.toURI())
@@ -17,7 +17,7 @@ actual object PlatformEffects {
     actual fun requestLiveWidget() {}
 
     actual fun notice(text: String) {
-        println("[baki] $text")
+        println("[scheme] $text")
     }
 
     actual fun setStatementReminder(enabled: Boolean) {
@@ -31,7 +31,7 @@ actual object PlatformEffects {
     actual fun dataChanged() = Unit
 
     actual fun exportFile(name: String, mime: String, content: String) {
-        val f = java.io.File(System.getProperty("user.home"), "baki-$name")
+        val f = java.io.File(System.getProperty("user.home"), "scheme-$name")
         f.writeText(content)
         println("exported to ${f.absolutePath}")
     }
@@ -40,4 +40,4 @@ actual object PlatformEffects {
 }
 
 /** No Monet on the desktop. */
-actual fun dynamicPalette(dark: Boolean): BakiPalette? = null
+actual fun dynamicColorScheme(dark: Boolean): androidx.compose.material3.ColorScheme? = null

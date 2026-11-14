@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.material3.MaterialTheme
+
 import android.app.Activity
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -79,7 +83,7 @@ internal fun loadQrBitmap(id: String): android.graphics.Bitmap? {
 
 @Composable
 actual fun PaymentQrSection() {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val context = LocalContext.current
     var items by remember { mutableStateOf(loadQrIndex()) }
     var pending by remember { mutableStateOf<ByteArray?>(null) }
@@ -101,21 +105,21 @@ actual fun PaymentQrSection() {
     Column(
         Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
-        Text("Receive QR", color = baki.onSurface, style = BakiType.bodyStrong )
+        Text("Receive QR", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
         Text(
             "Your own receive QR codes, kept on this phone. No bank login and no speed-of-light refresh: " +
                 "if a code rotates, re-import it.",
-            color = baki.muted, style = BakiType.caption,
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(Space.m))
 
         if (items.isEmpty()) {
-            Text("No QR saved yet.", color = baki.muted, style = BakiType.caption )
+            Text("No QR saved yet.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
             Spacer(Modifier.height(Space.s))
         } else {
             items.forEach { item ->
                 Row(
-                    Modifier.fillMaxWidth().background(baki.surface)
+                    Modifier.fillMaxWidth().background(scheme.surface)
                         .clickable {
                             context.startActivity(
                                 Intent(context, QrActivity::class.java)
@@ -126,13 +130,13 @@ actual fun PaymentQrSection() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
-                        Modifier.size(34.dp).clip(RoundedCornerShape(Radius.input)).background(baki.primaryContainer),
+                        Modifier.size(34.dp).clip(MaterialTheme.shapes.medium).background(scheme.primaryContainer),
                         contentAlignment = Alignment.Center,
-                    ) { Text("QR", color = baki.onPrimaryContainer, style = BakiType.labelStrong ) }
+                    ) { Text("QR", color = scheme.onPrimaryContainer, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) ) }
                     Spacer(Modifier.width(Space.s))
                     Column(Modifier.weight(1f)) {
-                        Text(item.label, color = baki.onSurface, style = BakiType.labelStrong )
-                        Text("tap to show", color = baki.muted, style = BakiType.nano )
+                        Text(item.label, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
+                        Text("tap to show", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall )
                     }
                     TextButton(
                         onClick = {
@@ -141,30 +145,28 @@ actual fun PaymentQrSection() {
                             LocalStore.writeText(qrName(item.id), "")
                         },
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                    ) { Text("Remove", color = baki.down, style = BakiType.nano ) }
+                    ) { Text("Remove", color = scheme.error, style = MaterialTheme.typography.labelSmall ) }
                 }
-                LedgerRule(alpha = 0.12f)
             }
         }
 
         Button(
             onClick = { picker.launch("image/*") },
             enabled = items.size < QR_MAX,
-            colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-            shape = RoundedCornerShape(Radius.pill),
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+            shape = CircleShape,
         ) {
-            Text(if (items.size >= QR_MAX) "Maximum 3 QR codes" else "Add receive QR", style = BakiType.label )
+            Text(if (items.size >= QR_MAX) "Maximum 3 QR codes" else "Add receive QR", style = MaterialTheme.typography.labelLarge )
         }
         Spacer(Modifier.height(Space.s))
-        LedgerRule(alpha = 0.14f)
     }
 
     pending?.let { bytes ->
         AlertDialog(
             onDismissRequest = { pending = null },
-            containerColor = baki.surface,
-            shape = RoundedCornerShape(Radius.dialog),
-            title = { Text("Name this QR", color = baki.onSurface, style = BakiType.title) },
+            containerColor = scheme.surface,
+            shape = MaterialTheme.shapes.extraLarge,
+            title = { Text("Name this QR", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = pendingLabel,
@@ -186,9 +188,9 @@ actual fun PaymentQrSection() {
                         saveQrIndex(items)
                         pending = null
                     },
-                ) { Text("Add QR", color = baki.primary) }
+                ) { Text("Add QR", color = scheme.primary) }
             },
-            dismissButton = { TextButton(onClick = { pending = null }) { Text("Cancel", color = baki.muted) } },
+            dismissButton = { TextButton(onClick = { pending = null }) { Text("Cancel", color = scheme.onSurfaceVariant) } },
         )
     }
 
@@ -196,7 +198,7 @@ actual fun PaymentQrSection() {
 
 @Composable
 private fun PaymentQrViewer(meta: PaymentQrMeta, onClose: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val view = LocalView.current
     val activity = LocalContext.current as? Activity
     val bitmap = remember(meta.id) { loadQrBitmap(meta.id) }
@@ -223,11 +225,11 @@ private fun PaymentQrViewer(meta: PaymentQrMeta, onClose: () -> Unit) {
         ) {
             Text(
                 meta.label,
-                color = Color(0xFF1C2117), style = BakiType.labelStrong,
+                color = Color(0xFF1C2117), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.align(Alignment.TopStart).padding(24.dp),
             )
             TextButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                Text("Close", color = Color(0xFF1C2117), style = BakiType.labelStrong )
+                Text("Close", color = Color(0xFF1C2117), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             }
             if (bitmap != null) {
                 Image(
@@ -239,7 +241,7 @@ private fun PaymentQrViewer(meta: PaymentQrMeta, onClose: () -> Unit) {
             } else {
                 Text(
                     "This QR image could not be read. Remove it and import again.",
-                    color = Color(0xFF1C2117), style = BakiType.label,
+                    color = Color(0xFF1C2117), style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.align(Alignment.Center).padding(24.dp),
                 )
             }

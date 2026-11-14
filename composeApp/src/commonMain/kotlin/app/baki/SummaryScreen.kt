@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.background
@@ -20,9 +22,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.toShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,7 +68,7 @@ fun SummaryScreen(
     onMonth: (String) -> Unit,
     onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val listState = rememberLazyListState()
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -103,11 +106,11 @@ fun SummaryScreen(
                 )
             }
         }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(Radius.chart), padding = 24.dp) { MonthInkChart(store = store, month = month) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = 24.dp) { MonthInkChart(store = store, month = month) } }
         item {
             Md3Card(
                 container = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(Radius.chart),
+                shape = MaterialTheme.shapes.extraLarge,
                 padding = 24.dp,
             ) { WeekSection(store = store, today = todayIso()) }
         }
@@ -140,14 +143,16 @@ private fun Md3Card(
     padding: androidx.compose.ui.unit.Dp = Space.l,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
-    val base = LocalBaki.current
-    val local = base.copy(
+    val base = MaterialTheme.colorScheme
+    val cardScheme = base.copy(
         onSurface = contentColor,
-        muted = contentColor.copy(alpha = 0.72f),
-        primary = if (container == MaterialTheme.colorScheme.primaryContainer) contentColor else MaterialTheme.colorScheme.primary,
+        onSurfaceVariant = contentColor.copy(alpha = 0.72f),
         surface = container,
-        container = container,
-        surfaceHigh = container,
+        surfaceContainer = container,
+        surfaceContainerLow = container,
+        surfaceContainerHigh = container,
+        primary = if (container == base.primaryContainer) contentColor else base.primary,
+        onPrimary = if (container == base.primaryContainer) container else base.onPrimary,
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -155,12 +160,17 @@ private fun Md3Card(
         colors = CardDefaults.cardColors(containerColor = container, contentColor = contentColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        CompositionLocalProvider(LocalBaki provides local) {
+        MaterialTheme(
+            colorScheme = cardScheme,
+            typography = MaterialTheme.typography,
+            shapes = MaterialTheme.shapes,
+        ) {
             Column(Modifier.padding(padding), content = content)
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StatementCover(
     month: String,
@@ -173,45 +183,67 @@ private fun StatementCover(
     streak: Int,
     onMonth: (String) -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val delta = t.net - prevNet
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
-                Text("‹", color = baki.onSurface, style = BakiType.body)
+                Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             }
             Text(
-                monthLabel(month), color = baki.onSurface,
-                textAlign = TextAlign.Center, modifier = Modifier.weight(1f), style = BakiType.bodyStrong,
+                monthLabel(month), color = scheme.onSurface,
+                textAlign = TextAlign.Center, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             )
             TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
-                Text("›", color = baki.onSurface, style = BakiType.body)
+                Text("›", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             }
         }
-        Text("Monthly statement", color = baki.muted, style = BakiType.section)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "Monthly statement",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f),
+            )
+            if (streak > 0) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(MaterialShapes.Cookie9Sided.toShape())
+                        .background(scheme.tertiaryContainer)
+                        .semantics { contentDescription = "$streak-day target streak" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "${streak}d",
+                        color = scheme.onTertiaryContainer,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(Space.xs))
-        EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
+        EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
         Text(
             if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
-            color = if (delta >= 0) baki.onSurface else baki.down,
-            style = BakiType.caption,
+            color = if (delta >= 0) scheme.onSurface else scheme.error,
+            style = MaterialTheme.typography.bodyMedium,
         )
         Text(
             "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
-            color = baki.muted, style = BakiType.label,
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge,
         )
         if (streak >= 2) {
-            Text("$streak days in a row above target", color = baki.up, style = BakiType.caption)
+            Text("$streak days in a row above target", color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium)
         }
         Text(
             if (cost.km > 0.01) "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
             else "No distance recorded this month.",
-            color = baki.muted, style = BakiType.caption,
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.16f)
     }
 }
 
@@ -434,52 +466,47 @@ private fun WeekSection(store: Store, today: String) {
 }
 @Composable
 private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Store) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Where it went", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
-            Text("Share", color = baki.muted, style = BakiType.nano)
+            Text("Where it went", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text("Share", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Spacer(Modifier.height(Space.s))
         cats.forEachIndexed { index, (cat, cents) ->
             val share = if (total > 0) cents.toDouble() / total else 0.0
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(categoryIcon(cat), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                Icon(categoryIcon(cat), contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
-                Text(categoryLabel(store, cat), color = baki.onSurface, style = BakiType.label, modifier = Modifier.weight(1f))
-                Text("RM ${rm(cents)}", color = baki.onSurface, style = BakiType.labelStrong)
+                Text(categoryLabel(store, cat), color = scheme.onSurface, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Text("RM ${rm(cents)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.width(Space.s))
-                Text("${(share * 100).toInt()}%", color = baki.muted, style = BakiType.captionNumeric, modifier = Modifier.width(34.dp), textAlign = TextAlign.End)
+                Text("${(share * 100).toInt()}%", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"), modifier = Modifier.width(34.dp), textAlign = TextAlign.End)
             }
             Spacer(Modifier.height(Space.xs))
-            Box(Modifier.fillMaxWidth().height(3.dp).background(baki.surfaceHigh)) {
-                Box(Modifier.fillMaxWidth(share.toFloat().coerceIn(0.01f, 1f)).fillMaxHeight().background(baki.primary))
+            Box(Modifier.fillMaxWidth().height(3.dp).background(scheme.surfaceContainerHigh)) {
+                Box(Modifier.fillMaxWidth(share.toFloat().coerceIn(0.01f, 1f)).fillMaxHeight().background(scheme.primary))
             }
             if (index != cats.lastIndex) {
                 Spacer(Modifier.height(Space.s))
-                LedgerRule(alpha = 0.10f)
             }
         }
         Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.16f)
     }
 }
 
 @Composable
 private fun FundsSection(repo: BakiRepo, funds: Funds, onManage: (String) -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.16f)
-        Text("FUNDS · ROLLING", color = baki.muted, style = BakiType.section)
+        Text("FUNDS · ROLLING", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(Space.s))
-        FundRow("Fuel", "fuel", funds.fuel, repo.store.settings.reserveTargets["fuel"] ?: 0.0, baki) { onManage("fuel") }
+        FundRow("Fuel", "fuel", funds.fuel, repo.store.settings.reserveTargets["fuel"] ?: 0.0, scheme) { onManage("fuel") }
         Spacer(Modifier.height(Space.s))
-        FundRow("Wear & tear", "wear", funds.wear, repo.store.settings.reserveTargets["wear"] ?: 0.0, baki) { onManage("wear") }
+        FundRow("Wear & tear", "wear", funds.wear, repo.store.settings.reserveTargets["wear"] ?: 0.0, scheme) { onManage("wear") }
         Spacer(Modifier.height(Space.xs))
-        Text("rolling reserve · top-ups are virtual allocations from cash", color = baki.muted, style = BakiType.caption)
+        Text("rolling reserve · top-ups are virtual allocations from cash", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.16f)
     }
 }
 
@@ -489,44 +516,44 @@ private fun FundRow(
     fundKey: String,
     fund: Fund,
     configuredTarget: Double,
-    baki: BakiPalette,
+    scheme: androidx.compose.material3.ColorScheme,
     onManage: () -> Unit,
 ) {
     val target = configuredTarget.takeIf { it > 0.0 } ?: maxOf(fund.monthSpent, fund.monthAccrued, 1.0)
     val progress = (fund.balance.coerceAtLeast(0.0) / target).coerceIn(0.0, 1.0)
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
-            Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong)
+            Text(label, color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+            Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             Spacer(Modifier.width(Space.xs))
             TextButton(onClick = onManage, contentPadding = PaddingValues(horizontal = Space.xs)) {
-                Text("Manage", color = baki.primary, style = BakiType.captionStrong)
+                Text("Manage", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
         Spacer(Modifier.height(Space.xs))
-        Box(Modifier.fillMaxWidth().height(4.dp).background(baki.surfaceHigh)) {
+        Box(Modifier.fillMaxWidth().height(4.dp).background(scheme.surfaceContainerHigh)) {
             Box(
                 Modifier.fillMaxWidth(progress.toFloat()).fillMaxHeight()
-                    .background(if (fund.balance >= 0) baki.up else baki.down),
+                    .background(if (fund.balance >= 0) scheme.tertiary else scheme.error),
             )
         }
         Spacer(Modifier.height(Space.xs))
         Text(
             "target RM ${rm(target)}" +
                 (if (configuredTarget > 0.0) "" else " · one-month default"),
-            color = baki.muted, style = BakiType.nano,
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
         )
         Text(
             "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
                 if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
-            color = if (fund.monthNet < 0) baki.down else baki.muted, style = BakiType.caption,
+            color = if (fund.monthNet < 0) scheme.error else scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
 
 @Composable
 private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val canWrite = !repo.readOnly
     val state = if (fund == "fuel") repo.store.settings.reserveTargets["fuel"] ?: 0.0 else repo.store.settings.reserveTargets["wear"] ?: 0.0
@@ -540,27 +567,26 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(Radius.dialog),
-        title = { Text("$fundName reserve", color = baki.onSurface, style = BakiType.title) },
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("$fundName reserve", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Space.s),
             ) {
-                Text("A virtual reserve. No bank transfer happens.", color = baki.muted, style = BakiType.caption)
-                if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = baki.warn, style = BakiType.caption)
-                LedgerRule(alpha = 0.14f)
+                Text("A virtual reserve. No bank transfer happens.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Target RM", color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
+                    Text("Target RM", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
                     OutlinedTextField(
                         value = target,
                         onValueChange = { target = it.filter { c -> c.isDigit() || c == '.' } },
-                        placeholder = { Text("auto", color = baki.muted) }, singleLine = true,
+                        placeholder = { Text("auto", color = scheme.onSurfaceVariant) }, singleLine = true,
                         modifier = Modifier.width(120.dp), colors = bakiFieldColorsPublic(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     )
                 }
-                Text("Leave blank for the one-month default.", color = baki.muted, style = BakiType.nano)
+                Text("Leave blank for the one-month default.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
@@ -579,8 +605,8 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                                 amount = ""
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                        shape = RoundedCornerShape(Radius.pill),
+                        colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                        shape = CircleShape,
                         modifier = Modifier.weight(1f),
                     ) { Text("Top up") }
                     TextButton(
@@ -594,7 +620,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                             }
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Withdraw", color = if (canWrite) baki.down else baki.muted) }
+                    ) { Text("Withdraw", color = if (canWrite) scheme.error else scheme.onSurfaceVariant) }
                 }
                 TextButton(
                     enabled = canWrite,
@@ -602,88 +628,83 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                         val value = target.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
                         scope.launch { repo.setReserveTarget(fund, value); status = if (value > 0) "Target saved" else "Using one-month default" }
                     },
-                ) { Text("Save target", color = if (canWrite) baki.primary else baki.muted, style = BakiType.captionStrong) }
-                if (status.isNotEmpty()) Text(status, color = baki.primary, style = BakiType.caption)
+                ) { Text("Save target", color = if (canWrite) scheme.primary else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
+                if (status.isNotEmpty()) Text(status, color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
                 if (txns.isNotEmpty()) {
-                    Text("Recent movements", color = baki.muted, style = BakiType.section)
-                    LedgerRule(alpha = 0.12f)
+                    Text("Recent movements", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
                     txns.forEach { tx ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(tx.date, color = baki.muted, style = BakiType.caption)
+                            Text(tx.date, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                             Text(
                                 (if (tx.amount > 0) "+" else "−") + "RM ${rm(kotlin.math.abs(tx.amount))}",
-                                color = if (tx.amount > 0) baki.up else baki.down, style = BakiType.captionNumeric,
+                                color = if (tx.amount > 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                             )
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = baki.primary, style = BakiType.labelStrong) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) } },
     )
 }
 
 /** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */
 @Composable
 private fun CashTruthCard(t: CashTruth, month: String, compact: Boolean = false) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.12f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Cash truth", color = baki.muted, style = BakiType.section)
+            Text("Cash truth", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.weight(1f))
-            Text("not a bank balance", color = baki.muted, style = BakiType.nano)
+            Text("not a bank balance", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Spacer(Modifier.height(Space.xs))
-        CashLine("Recorded net", t.recordedNet, baki.onSurface, baki)
-        CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) baki.up else baki.down, baki)
-        Text("cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}", color = baki.muted, style = BakiType.captionNumeric)
+        CashLine("Recorded net", t.recordedNet, scheme.onSurface, scheme)
+        CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) scheme.tertiary else scheme.error, scheme)
+        Text("cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
         if (t.unpaid > 0) {
             Text(
                 "RM ${rm(t.unpaid)} still unpaid" + (t.payoutAnchor?.let { " after $it" } ?: ""),
-                color = baki.warn, style = BakiType.caption,
+                color = scheme.secondary, style = MaterialTheme.typography.bodyMedium,
             )
         }
         if (!compact) {
-            if (t.prepaidBills > 0) Text("RM ${rm(t.prepaidBills)} paid ahead for bills", color = baki.muted, style = BakiType.caption)
+            if (t.prepaidBills > 0) Text("RM ${rm(t.prepaidBills)} paid ahead for bills", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             Text(
                 "Operating RM ${rm(t.operatingNet)} after estimated running costs.",
-                color = baki.muted, style = BakiType.nano,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
             )
         }
         Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.12f)
     }
 }
 
 @Composable
-private fun CashLine(label: String, cents: Long, color: Color, baki: BakiPalette) {
+private fun CashLine(label: String, cents: Long, color: Color, scheme: androidx.compose.material3.ColorScheme) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-        Text(label, color = baki.muted, style = BakiType.label)
+        Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.weight(1f))
-        Text("RM ${rm(cents)}", color = color, style = BakiType.bodyStrong)
+        Text("RM ${rm(cents)}", color = color, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
     }
 }
 
 @Composable
 private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, below: Int) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        LedgerRule(alpha = 0.12f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("WEEKLY REVIEW", color = baki.muted, style = BakiType.section)
+            Text("WEEKLY REVIEW", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.weight(1f))
-            Text("MON–SUN", color = baki.muted, style = BakiType.nano)
+            Text("MON–SUN", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
-        Text("${prettyDate(start)} – ${prettyDate(addDays(start, 6))}", color = baki.onSurface, style = BakiType.bodyStrong)
-        Text("${r.days} days · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net", color = baki.onSurface, style = BakiType.label)
-        Text("RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km", color = baki.muted, style = BakiType.captionNumeric)
-        if (r.bestDay.isNotEmpty()) Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = baki.muted, style = BakiType.caption)
+        Text("${prettyDate(start)} – ${prettyDate(addDays(start, 6))}", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+        Text("${r.days} days · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
+        Text("RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
+        if (r.bestDay.isNotEmpty()) Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Text(
             if (below > 0) "$below shifts below RM ${rm(target)}/hr" else "Every shift cleared RM ${rm(target)}/hr",
-            color = if (below > 0) baki.warn else baki.up, style = BakiType.caption,
+            color = if (below > 0) scheme.secondary else scheme.tertiary, style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(Space.xs))
-        LedgerRule(alpha = 0.12f)
     }
 }

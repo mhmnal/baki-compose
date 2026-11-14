@@ -6,7 +6,7 @@ import java.io.FileOutputStream
 actual object LocalStore {
     private val dir: File by lazy {
         val home = System.getProperty("user.home") ?: "."
-        File(home, ".local/share/baki").also { it.mkdirs() }
+        File(home, ".local/share/scheme").also { it.mkdirs() }
     }
 
     private fun file(): File = File(dir, "store.json")

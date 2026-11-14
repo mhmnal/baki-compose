@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,7 +32,7 @@ import kotlinx.datetime.LocalDate
 
 @Composable
 fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val info = remember(repo.store) { serviceInfo(repo.store) }
     val last = info.last
 
@@ -36,50 +40,49 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
         Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("LAST SERVICE", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+            Text("LAST SERVICE", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onSetTarget, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text("Set next", color = baki.primary, style = BakiType.captionStrong )
+                Text("Set next", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             }
         }
         if (last == null) {
-            Text("No service logged yet", color = baki.onSurface, style = BakiType.bodyStrong )
-            Text("Add a Maintenance entry with the odometer.", color = baki.muted, style = BakiType.caption )
+            Text("No service logged yet", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
+            Text("Add a Maintenance entry with the odometer.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
         } else {
-            Text(last.note.ifBlank { "Maintenance" }, color = baki.onSurface, style = BakiType.bodyStrong )
+            Text(last.note.ifBlank { "Maintenance" }, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
             Text(
                 prettyDate(last.date) +
                     (last.odo?.takeIf { it > 0 }?.let { " · $it km" } ?: " · odometer missing"),
-                color = if (last.odo != null) baki.muted else baki.warn,
-                style = BakiType.captionNumeric,
+                color = if (last.odo != null) scheme.onSurfaceVariant else scheme.secondary,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
             )
         }
 
         Spacer(Modifier.height(Space.m))
-        Text("NEXT SERVICE", color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+        Text("NEXT SERVICE", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
         if (info.targetKm == null && info.targetOn == null) {
-            Text("No target set — choose the km/date yourself.", color = baki.muted, style = BakiType.caption )
+            Text("No target set — choose the km/date yourself.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
         } else {
             Text(
                 listOfNotNull(
                     info.targetKm?.let { "$it km" },
                     info.targetOn?.let { prettyDate(it) },
                 ).joinToString(" · "),
-                color = baki.onSurface, style = BakiType.bodyStrong,
+                color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
             )
             val remaining = info.remainingKm
             if (remaining != null) {
                 Text(
                     if (remaining > 0) "$remaining km to go" else "overdue by ${-remaining} km",
-                    color = if (remaining > 0) baki.muted else baki.down,
-                    style = BakiType.caption,
+                    color = if (remaining > 0) scheme.onSurfaceVariant else scheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            if (info.overdue) Text("Target reached or date passed", color = baki.down, style = BakiType.caption )
+            if (info.overdue) Text("Target reached or date passed", color = scheme.error, style = MaterialTheme.typography.bodyMedium )
         }
-        Text("User-set target, not a guessed interval.", color = baki.muted, style = BakiType.nano)
+        Text("User-set target, not a guessed interval.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(Space.s))
-        LedgerRule(alpha = 0.14f)
     }
 }
 
@@ -90,7 +93,7 @@ fun ServiceTargetDialog(
     onDismiss: () -> Unit,
     onSave: (Int?, String?) -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var km by remember { mutableStateOf(initialKm?.toString() ?: "") }
     var date by remember { mutableStateOf(initialDate ?: "") }
     var error by remember { mutableStateOf<String?>(null) }
@@ -101,13 +104,13 @@ fun ServiceTargetDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = baki.container,
-        title = { Text("Next service", color = baki.onSurface, style = BakiType.title ) },
+        containerColor = scheme.surfaceContainerLow,
+        title = { Text("Next service", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge ) },
         text = {
             Column {
                 Text(
                     "Set the odometer and/or date you want to aim for. Baki never guesses a service interval.",
-                    color = baki.muted, style = BakiType.caption,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(Space.m))
                 OutlinedTextField(
@@ -130,12 +133,12 @@ fun ServiceTargetDialog(
                     modifier = Modifier.fillMaxWidth(),
                     colors = bakiFieldColorsPublic(),
                 )
-                error?.let { Text(it, color = baki.down, style = BakiType.caption ) }
+                error?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium ) }
                 if (initialKm != null || initialDate != null) {
                     TextButton(
                         onClick = { onSave(null, null) },
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                    ) { Text("Clear target", color = baki.down, style = BakiType.caption ) }
+                    ) { Text("Clear target", color = scheme.error, style = MaterialTheme.typography.bodyMedium ) }
                 }
             }
         },
@@ -149,8 +152,8 @@ fun ServiceTargetDialog(
                         onSave(cleanKm, cleanDate.ifBlank { null })
                     }
                 },
-            ) { Text("Save", color = baki.primary) }
+            ) { Text("Save", color = scheme.primary) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = baki.muted) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = scheme.onSurfaceVariant) } },
     )
 }

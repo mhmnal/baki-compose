@@ -17,7 +17,7 @@ actual object StoreCipher {
     private const val TAG_BITS = 128
 
     private val keyFile: File by lazy {
-        val dir = File(System.getProperty("user.home") ?: ".", ".local/share/baki").apply { mkdirs() }
+        val dir = File(System.getProperty("user.home") ?: ".", ".local/share/scheme").apply { mkdirs() }
         File(dir, ".key").also { f ->
             if (!f.exists()) {
                 val bytes = ByteArray(32).also { SecureRandom().nextBytes(it) }

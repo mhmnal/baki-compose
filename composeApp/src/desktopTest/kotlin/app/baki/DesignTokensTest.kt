@@ -22,7 +22,7 @@ class DesignTokensTest {
     }
 
     private fun offenders(pattern: Regex): List<String> = sourceDirs().flatMap { it.listFiles().orEmpty().toList() }
-        .filter { file -> file.name.endsWith(".kt") && file.name != "Design.kt" }
+        .filter { file -> file.name.endsWith(".kt") && file.name !in setOf("Design.kt", "Theme.kt") }
         .flatMap { file ->
             file.readLines().withIndex()
                 .filter { (_, line) -> pattern.containsMatchIn(line) }

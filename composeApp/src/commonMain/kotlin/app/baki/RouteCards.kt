@@ -1,5 +1,11 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,12 +31,12 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /** Distinct, readable line colours for a few shifts on the same day. */
-fun routeColorFor(baki: BakiPalette, index: Int): Color = when (index % 5) {
-    0 -> baki.primary
-    1 -> baki.up
-    2 -> baki.warn
-    3 -> baki.down
-    else -> baki.onSurface
+fun routeColorFor(scheme: androidx.compose.material3.ColorScheme, index: Int): Color = when (index % 5) {
+    0 -> scheme.primary
+    1 -> scheme.tertiary
+    2 -> scheme.secondary
+    3 -> scheme.error
+    else -> scheme.onSurface
 }
 
 /** Every path of [day]: finished shifts first, then the live shift when it is happening today. */
@@ -39,18 +45,18 @@ private suspend fun loadDayRoutes(
     day: String,
     live: LiveShift?,
     today: String,
-    baki: BakiPalette,
+    scheme: androidx.compose.material3.ColorScheme,
 ): List<MapRoute> {
     val out = ArrayList<MapRoute>(4)
     store.shifts.filter { it.date == day }.sortedBy { it.start }.forEach { shift ->
         val route = RouteStore.route(shift.id) ?: return@forEach
         if (route.points.size < 2) return@forEach
-        out += MapRoute(route, routeColorFor(baki, out.size), "Shift ${out.size + 1} · ${shift.start}")
+        out += MapRoute(route, routeColorFor(scheme, out.size), "Shift ${out.size + 1} · ${shift.start}")
     }
     if (live != null && day == today) {
         val route = RouteStore.route(live.id)
         if (route != null && route.points.size >= 2) {
-            out += MapRoute(route, baki.up, "Live now")
+            out += MapRoute(route, scheme.tertiary, "Live now")
         }
     }
     return out
@@ -62,17 +68,17 @@ private suspend fun loadDayRoutes(
  */
 @Composable
 fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifier = Modifier) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val today = todayIso()
     var routes by remember { mutableStateOf<List<MapRoute>>(emptyList()) }
     var expanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(store, day, live?.id) {
-        routes = loadDayRoutes(store, day, live, today, baki)
+        routes = loadDayRoutes(store, day, live, today, scheme)
         if (live != null && day == today) {
             while (true) {
                 delay(30_000)
-                routes = loadDayRoutes(store, day, live, today, baki)
+                routes = loadDayRoutes(store, day, live, today, scheme)
             }
         }
     }
@@ -85,8 +91,8 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.large))
-            .background(baki.container),
+            .clip(MaterialTheme.shapes.large)
+            .background(scheme.surfaceContainerLow),
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp),
@@ -96,7 +102,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
             Column {
                 Text(
                     if (liveHere) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
-                    color = baki.muted, style = BakiType.section,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
                     buildString {
@@ -104,14 +110,14 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
                         append(" · %.1f km".format(km))
                         if (liveHere) append(" · live")
                     },
-                    color = baki.muted, style = BakiType.captionNumeric,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
             }
             Text(
-                "Open", color = baki.primary, style = BakiType.labelStrong,
+                "Open", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier
                     .heightIn(min = Control.primary)
-                    .clip(RoundedCornerShape(Radius.pill))
+                    .clip(CircleShape)
                     .clickable { expanded = true }
                     .padding(horizontal = Space.m, vertical = 6.dp),
             )

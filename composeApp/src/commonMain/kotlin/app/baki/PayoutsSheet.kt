@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,7 +58,7 @@ fun PayoutsSheet(
     onAdd: (cents: Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var editing by remember { mutableStateOf<Int?>(null) }
     var adding by remember { mutableStateOf(false) }
     val total = payouts.sumOf { it.c }
@@ -65,8 +69,8 @@ fun PayoutsSheet(
             {
                 Button(
                     onClick = { adding = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-                    shape = RoundedCornerShape(Radius.pill),
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                    shape = CircleShape,
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                 ) { Text("Add payout", fontWeight = FontWeight.Bold) }
             }
@@ -74,15 +78,15 @@ fun PayoutsSheet(
             null
         },
     ) {
-        Text(title, color = baki.onSurface, style = BakiType.title)
+        Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
                 if (payouts.size == 1) "1 payout" else "${payouts.size} payouts",
-                color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f),
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
             )
-            Text("RM ${rm(total)}", color = baki.onSurface, style = BakiType.titleNumeric)
+            Text("RM ${rm(total)}", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
         }
-        if (editable) Text("tap to edit · swipe to delete", color = baki.muted, style = BakiType.caption)
+        if (editable) Text("tap to edit · swipe to delete", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.s))
 
         payouts.forEachIndexed { index, payout ->
@@ -94,13 +98,13 @@ fun PayoutsSheet(
                 backgroundContent = {
                     Row(
                         Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(Radius.large))
-                            .background(baki.down.copy(alpha = 0.22f))
+                            .clip(MaterialTheme.shapes.large)
+                            .background(scheme.error.copy(alpha = 0.22f))
                             .padding(horizontal = Space.ml),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        Text("Delete", color = baki.down, style = BakiType.labelStrong)
+                        Text("Delete", color = scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 },
                 onDismiss = { if (editable) onDelete(index) },
@@ -108,7 +112,7 @@ fun PayoutsSheet(
                 Column(Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth()
-                        .background(baki.container)
+                        .background(scheme.surfaceContainerLow)
                         .clickable(enabled = editable) { editing = index }
                         .heightIn(min = Control.primary)
                         .padding(vertical = 12.dp),
@@ -116,21 +120,20 @@ fun PayoutsSheet(
                 ) {
                     Text(
                         clockTime(payout.at),
-                        color = baki.muted,
-                        style = BakiType.captionNumeric,
+                        color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                     )
                     Spacer(Modifier.width(Space.m))
                     Text(
                         "RM ${rm(payout.c)}",
-                        color = baki.onSurface,
-                        style = BakiType.bodySmallNumeric,
+                        color = scheme.onSurface,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                         modifier = Modifier.weight(1f),
                     )
                     if (editable) {
-                        Text("Edit", color = baki.primary, style = BakiType.caption)
+                        Text("Edit", color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-                LedgerRule(alpha = 0.14f)
                 }
             }
         }
@@ -167,11 +170,11 @@ private fun PayoutAmountDialog(
     onConfirm: (Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var text by remember { mutableStateOf(if (initialCents > 0) "%.2f".format(initialCents / 100.0) else "") }
     val amount = text.toDoubleOrNull()?.let { cents(it) } ?: 0L
     BakiSheet(onDismiss = onDismiss) {
-        Text(title, color = baki.onSurface, style = BakiType.subtitle)
+        Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = text,
             onValueChange = { raw -> text = raw.filter { it.isDigit() || it == '.' } },
@@ -184,12 +187,12 @@ private fun PayoutAmountDialog(
         Button(
             enabled = amount > 0,
             onClick = { onConfirm(amount) },
-            colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
-            shape = RoundedCornerShape(Radius.pill),
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+            shape = CircleShape,
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) { Text("$confirm RM ${rm(amount)}", fontWeight = FontWeight.Bold) }
         TextButton(onClick = onDismiss) {
-            Text("Cancel", color = baki.muted, style = BakiType.label)
+            Text("Cancel", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
         }
     }
 }

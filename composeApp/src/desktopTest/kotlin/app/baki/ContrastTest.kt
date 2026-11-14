@@ -15,116 +15,37 @@ import kotlin.test.assertTrue
  * style opinion, so the fix is a palette value rather than a waver.
  */
 class ContrastTest {
-
     private fun channel(c: Float): Double {
         val v = c.toDouble()
         return if (v <= 0.03928) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
     }
-
     private fun luminance(c: Color): Double =
         0.2126 * channel(c.red) + 0.7152 * channel(c.green) + 0.0722 * channel(c.blue)
-
     private fun ratio(a: Color, b: Color): Double {
         val la = luminance(a); val lb = luminance(b)
         return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
 
-    private val packs = mapOf(
-        "sage light" to LightPalette,
-        "sage dark" to DarkPalette,
-        "night" to NightPalette,
-        "paper" to PaperPalette,
-        "paper night" to PaperNightPalette,
-        "mist light" to MistLight,
-        "mist dark" to MistDark,
-    )
-
     @Test
-    fun bodyTextIsReadable() {
+    fun materialSchemesKeepTextReadable() {
+        val schemes = listOf(
+            "light" to androidx.compose.material3.lightColorScheme(),
+            "dark" to androidx.compose.material3.darkColorScheme(),
+        )
         val failures = mutableListOf<String>()
-        packs.forEach { (name, p) ->
+        schemes.forEach { (name, s) ->
             listOf(
-                "onSurface/surface" to (p.onSurface to p.surface),
-                "onSurface/container" to (p.onSurface to p.container),
-                "muted/surface" to (p.muted to p.surface),
-                "muted/container" to (p.muted to p.container),
-                "up/surface" to (p.up to p.surface),
-                "down/surface" to (p.down to p.surface),
-                "warn/surface" to (p.warn to p.surface),
+                "onSurface/surface" to (s.onSurface to s.surface),
+                "onSurfaceVariant/surface" to (s.onSurfaceVariant to s.surface),
+                "onPrimary/primary" to (s.onPrimary to s.primary),
+                "onPrimaryContainer/primaryContainer" to (s.onPrimaryContainer to s.primaryContainer),
+                "onSecondaryContainer/secondaryContainer" to (s.onSecondaryContainer to s.secondaryContainer),
+                "onTertiaryContainer/tertiaryContainer" to (s.onTertiaryContainer to s.tertiaryContainer),
             ).forEach { (pair, colors) ->
                 val r = ratio(colors.first, colors.second)
                 if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
             }
         }
-        assertTrue(failures.isEmpty(), "contrast failures:\n" + failures.joinToString("\n"))
-    }
-
-    @Test
-    fun paperTextOnPaperSurfaces() {
-        // Paper is the shipping phone theme; links, values and raised-control ink have their own floor.
-        val failures = mutableListOf<String>()
-        listOf("paper" to PaperPalette, "paper night" to PaperNightPalette).forEach { (name, p) ->
-            listOf(
-                "primary/surface" to (p.primary to p.surface),
-                "primary/container" to (p.primary to p.container),
-                "primary/surfaceHigh" to (p.primary to p.surfaceHigh),
-                "onSurface/container" to (p.onSurface to p.container),
-                "onSurface/surfaceHigh" to (p.onSurface to p.surfaceHigh),
-                "muted/container" to (p.muted to p.container),
-                "up/container" to (p.up to p.container),
-                "down/container" to (p.down to p.container),
-                "warn/container" to (p.warn to p.container),
-            ).forEach { (pair, colors) ->
-                val r = ratio(colors.first, colors.second)
-                if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
-            }
-        }
-        assertTrue(failures.isEmpty(), "paper contrast failures:\n" + failures.joinToString("\n"))
-    }
-
-    @Test
-    fun canvasTextMeetsTheReadableFloors() {
-        // the neumorphic canvas is darker than the palette surface, so the derived colours must be
-        // checked against it, not against the palette
-        val failures = mutableListOf<String>()
-        packs.forEach { (name, p) ->
-            val n = neuOf(p)
-            listOf("ink/base" to (n.ink to n.base), "muted/base" to (n.muted to n.base))
-                .forEach { (pair, colors) ->
-                    val r = ratio(colors.first, colors.second)
-                    if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
-                }
-        }
-        assertTrue(failures.isEmpty(), "canvas contrast failures:\n" + failures.joinToString("\n"))
-    }
-
-    @Test
-    fun nonTextUiMeetsTheThreeToOneFloor() {
-        // WCAG 1.4.11: the accent ring, the danger colour and a focus indicator are UI components
-        val failures = mutableListOf<String>()
-        packs.forEach { (name, p) ->
-            listOf("accent/base" to (p.primary to p.surface), "danger/base" to (p.down to p.surface))
-                .forEach { (pair, colors) ->
-                    val r = ratio(colors.first, colors.second)
-                    if (r < 3.0) failures += "$name $pair = ${"%.2f".format(r)} (< 3.0)"
-                }
-        }
-        assertTrue(failures.isEmpty(), "non-text contrast failures:\n" + failures.joinToString("\n"))
-    }
-
-    @Test
-    fun filledControlsStayReadable() {
-        val failures = mutableListOf<String>()
-        packs.forEach { (name, p) ->
-            listOf(
-                "onPrimary/primary" to (p.onPrimary to p.primary),
-                "onPrimaryContainer/primaryContainer" to (p.onPrimaryContainer to p.primaryContainer),
-                "onAccent/accentStrong" to (p.onAccent to p.accentStrong),
-            ).forEach { (pair, colors) ->
-                val r = ratio(colors.first, colors.second)
-                if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
-            }
-        }
-        assertTrue(failures.isEmpty(), "filled-control contrast failures:\n" + failures.joinToString("\n"))
+        assertTrue(failures.isEmpty(), "material contrast failures:\n" + failures.joinToString("\n"))
     }
 }

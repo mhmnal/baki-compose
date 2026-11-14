@@ -45,8 +45,8 @@ class StatementReminderWorker(context: Context, params: WorkerParameters) : Coro
     }
 
     companion object {
-        const val CHANNEL = "baki-statements"
-        const val WORK = "baki-statement-reminder"
+        const val CHANNEL = "scheme-statements"
+        const val WORK = "scheme-statement-reminder"
     }
 }
 

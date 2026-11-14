@@ -6,8 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClientConfig(
     val serverUrl: String = defaultServerUrl,
-    /** Material You is the default; the theme falls back to the Material baseline. */
-    val matchWallpaper: Boolean = true,
     /**
      * Safety catch. While false the app never pushes a write, so a half-finished screen
      * cannot disturb the ledger the real app is using.
@@ -15,12 +13,6 @@ data class ClientConfig(
     val allowWrites: Boolean = false,
     /** "auto" | "light" | "dark" — the web app's Auto/Light/Dark selector. */
     val themeMode: String = "auto",
-    /** Legacy stored pack; MD3 resolves the active scheme dynamically. */
-    val palette: String = "dynamic",
-    /** One-time move from the old sage default to Paper Ledger; a later Sage choice sticks. */
-    val paperThemeMigrated: Boolean = true,
-    /** "auto" | "on" | "off" — liquid glass, resolved against the device tier. */
-    val glassMode: String = "auto",
     /** Opt-in: upload sealed traces so the desk can review them. Off by default. */
     val syncRoutes: Boolean = false,
     /** Shared passphrase for the sealed traces; blank disables route sync entirely. */

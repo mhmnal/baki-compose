@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 
@@ -63,11 +67,11 @@ private val BANDS = mapOf(
 )
 
 @Composable
-fun bandColor(band: String, baki: BakiPalette): Color = when (band) {
-    "quiet" -> baki.down
-    "slow", "steady" -> baki.warn
-    "good" -> baki.up
-    else -> baki.primary
+fun bandColor(band: String, scheme: androidx.compose.material3.ColorScheme): Color = when (band) {
+    "quiet" -> scheme.error
+    "slow", "steady" -> scheme.secondary
+    "good" -> scheme.tertiary
+    else -> scheme.primary
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -88,7 +92,7 @@ fun TodayScreen(
     onHeaderCollapsed: (Boolean) -> Unit = {},
     onOpenDayPage: (String) -> Unit = {},
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val listState = rememberLazyListState()
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -135,14 +139,14 @@ fun TodayScreen(
                 val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("RM", color = baki.muted,
-                            modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = BakiType.title )
-                        EasedMoney(t.net, baki.onSurface, heroMoneyStyle(t.net), prefix = "")
+                        Text("RM", color = scheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = Space.s, end = 6.dp), style = MaterialTheme.typography.titleLarge )
+                        EasedMoney(t.net, scheme.onSurface, heroMoneyStyle(t.net, MaterialTheme.typography), prefix = "")
                     }
                     if (compact) {
                         Text(
                             if (t.net >= 0) "Recorded net" else "RECORDED OUT",
-                            color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+                            color = scheme.onSurfaceVariant, letterSpacing = 1.5.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         )
                         if (operating.shiftCount > 0) {
                             Spacer(Modifier.height(Space.xs))
@@ -150,45 +154,42 @@ fun TodayScreen(
                                 Text(
                                     "Operating · RM ${rm(operating.net)}" +
                                         (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
-                                    color = if (operating.net >= 0) baki.onSurface else baki.down,
-                                    style = BakiType.labelNumeric,
+                                    color = if (operating.net >= 0) scheme.onSurface else scheme.error,
+                                    style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                                 )
-                                Text("after running costs", color = baki.muted, style = BakiType.nano)
+                                Text("after running costs", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     } else {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                             Text(
                                 if (t.net >= 0) "Recorded net" else "RECORDED OUT",
-                                color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
+                                color = scheme.onSurfaceVariant, letterSpacing = 1.5.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 modifier = Modifier.weight(1f),
                             )
                             if (operating.shiftCount > 0) {
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("Operating", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
+                                    Text("Operating", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
                                     Text(
                                         "RM ${rm(operating.net)}" +
                                             (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
-                                        color = if (operating.net >= 0) baki.onSurface else baki.down,
-                                        style = BakiType.labelNumeric,
+                                        color = if (operating.net >= 0) scheme.onSurface else scheme.error,
+                                        style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                                     )
-                                    Text("after running costs", color = baki.muted, style = BakiType.nano)
+                                    Text("after running costs", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
                     }
-                    if (baki.paper) {
-                        Spacer(Modifier.height(Space.s))
-                        LedgerRule(double = true)
-                    }
+                    
                 }
             }
         }
 
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                Chip("in RM ${rm(t.income)}", baki.up, Modifier.weight(1f))
-                Chip("out RM ${rm(t.expense)}", baki.down, Modifier.weight(1f))
+                Chip("in RM ${rm(t.income)}", scheme.tertiary, Modifier.weight(1f))
+                Chip("out RM ${rm(t.expense)}", scheme.error, Modifier.weight(1f))
             }
         }
 
@@ -198,45 +199,43 @@ fun TodayScreen(
                     val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                     val panel = Modifier.fillMaxWidth()
                         .then(
-                            if (baki.paper) Modifier.padding(vertical = Space.s)
-                            else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.container)
+                            Modifier.clip(MaterialTheme.shapes.medium).background(scheme.surfaceContainerLow)
                                 .padding(horizontal = Space.m, vertical = Space.s)
                         )
                     Column {
                     if (compact) {
                         Column(panel, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                            Text(if (day == today) "Food today" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Text(if (day == today) "Food today" else "FOOD", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                                 Text(
                                     "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                                    color = if (f.over) baki.down else baki.onSurface,
-                                    style = BakiType.labelNumeric,
+                                    color = if (f.over) scheme.error else scheme.onSurface,
+                                    style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                                 )
                                 Text(
                                     if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
-                                    color = if (f.over) baki.down else baki.up,
-                                    style = BakiType.caption,
+                                    color = if (f.over) scheme.error else scheme.tertiary,
+                                    style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
                         }
                     } else {
                         Row(panel, verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (day == today) "Food today" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Text(if (day == today) "Food today" else "FOOD", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                             Spacer(Modifier.weight(1f))
                             Text(
                                 "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                                color = if (f.over) baki.down else baki.onSurface,
-                                style = BakiType.labelNumeric,
+                                color = if (f.over) scheme.error else scheme.onSurface,
+                                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                             )
                             Spacer(Modifier.width(Space.s))
                             Text(
                                 if (f.over) "RM ${rm(-f.remaining)} over" else "RM ${rm(f.remaining)} left",
-                                color = if (f.over) baki.down else baki.up,
-                                style = BakiType.caption,
+                                color = if (f.over) scheme.error else scheme.tertiary,
+                                style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                     }
-                    if (baki.paper) LedgerRule(alpha = 0.16f)
                     }
                 }
             }
@@ -248,11 +247,12 @@ fun TodayScreen(
                 val visible = remember {
                     MutableTransitionState(false).apply { targetState = true }
                 }
+                val motion = MaterialTheme.motionScheme
                 AnimatedVisibility(
                     visibleState = visible,
-                    enter = fadeIn(BakiMotion.effects()) +
-                        scaleIn(initialScale = 0.97f, animationSpec = BakiMotion.spatial()) +
-                        slideInVertically(BakiMotion.spatialSlow()) { it / 12 },
+                    enter = fadeIn(motion.defaultEffectsSpec<Float>()) +
+                        scaleIn(initialScale = 0.97f, animationSpec = motion.defaultSpatialSpec<Float>()) +
+                        slideInVertically(motion.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()) { it / 12 },
                 ) {
                     LiveCard(repo, live, onPayout, onPayouts)
                 }
@@ -266,14 +266,14 @@ fun TodayScreen(
             item {
                 Row(verticalAlignment = Alignment.Top) {
                     Icon(
-                        BakiIcons.Shield, contentDescription = null, tint = baki.up,
+                        BakiIcons.Shield, contentDescription = null, tint = scheme.tertiary,
                         modifier = Modifier.padding(top = 1.dp).size(14.dp),
                     )
                     Spacer(Modifier.width(Space.s))
                     // weight so a wrapped line stays beside the icon instead of under it
                     Text(
                         "Cover paid until ${clockOf(paidUntil)}",
-                        color = baki.up, style = BakiType.caption, modifier = Modifier.weight(1f),
+                        color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -285,48 +285,40 @@ fun TodayScreen(
                 Column(
                     Modifier.fillMaxWidth()
                         .then(
-                            if (baki.paper) Modifier.padding(vertical = Space.m)
-                            else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container).padding(Space.l)
+                            Modifier.clip(MaterialTheme.shapes.large).background(scheme.surfaceContainerLow).padding(Space.l)
                         ),
                 ) {
-                    if (baki.paper) LedgerRule(alpha = 0.18f)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Shift net · after car cost", color = baki.muted, letterSpacing = 1.sp,
-                            style = BakiType.captionStrong, modifier = Modifier.weight(1f),
+                            "Shift net · after car cost", color = scheme.onSurfaceVariant, letterSpacing = 1.sp,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f),
                         )
-                        if (baki.paper) {
-                            Text(
-                                (BANDS[m.band] ?: "—").uppercase(),
-                                color = bandColor(m.band, baki),
-                                style = BakiType.captionStrong,
-                            )
-                        } else {
+                        
                             Box(
-                                Modifier.clip(RoundedCornerShape(Radius.pill))
-                                    .background(bandColor(m.band, baki).copy(alpha = 0.18f))
+                                Modifier.clip(CircleShape)
+                                    .background(bandColor(m.band, scheme).copy(alpha = 0.18f))
                                     .padding(horizontal = Space.m, vertical = 4.dp),
                             ) {
-                                Text(BANDS[m.band] ?: "—", color = bandColor(m.band, baki), style = BakiType.captionStrong)
+                                Text(BANDS[m.band] ?: "—", color = bandColor(m.band, scheme), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                             }
-                        }
+                        
                     }
                     Spacer(Modifier.height(Space.xs))
                     BoxWithConstraints {
                         val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                         if (compact) {
                             Column {
-                                Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric, maxLines = 1)
+                                Text("RM ${rm(m.net)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"), maxLines = 1)
                                 m.netHr?.let {
-                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong, maxLines = 1)
+                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, scheme), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), maxLines = 1)
                                 }
                             }
                         } else {
                             Row(verticalAlignment = Alignment.Bottom) {
-                                Text("RM ${rm(m.net)}", color = baki.onSurface, style = BakiType.headlineNumeric)
+                                Text("RM ${rm(m.net)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"))
                                 Spacer(Modifier.weight(1f))
                                 m.netHr?.let {
-                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, baki), style = BakiType.bodyStrong )
+                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, scheme), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
                                 }
                             }
                         }
@@ -335,20 +327,20 @@ fun TodayScreen(
                         "${"%.1f".format(shift.hours)}h · ${"%.0f".format(m.km)} km" +
                             (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
                             " · fuel + wear RM ${rm(m.running)}",
-                        color = baki.muted, style = BakiType.caption )
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
                     // what this shift had to beat
                     m.netHr?.let { rate ->
                         val delta = rate - cfg.targetRate
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 if (delta >= 0) "✓" else "✗",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.captionStrong )
+                                color = if (delta >= 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
                             Spacer(Modifier.width(Space.xs))
                             Text(
                                 "target RM ${rm(cfg.targetRate)}/hr · " +
                                     if (delta >= 0) "RM ${rm(delta)} above"
                                     else "RM ${rm(-delta)} short",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
+                                color = if (delta >= 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -360,10 +352,7 @@ fun TodayScreen(
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text("Start live shift") }
                     }
-                    if (baki.paper) {
-                        Spacer(Modifier.height(Space.m))
-                        LedgerRule(alpha = 0.18f)
-                    }
+                    
                 }
             }
         } else if (live == null && !repo.readOnly && day == today) {
@@ -381,7 +370,7 @@ fun TodayScreen(
         // what you keep buying, one tap away
         if (quick.isNotEmpty()) item {
             Column {
-                Text("QUICK ADD", color = baki.muted, style = BakiType.section)
+                Text("QUICK ADD", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(Space.s))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
@@ -430,13 +419,13 @@ fun TodayScreen(
             Row(Modifier.fillMaxWidth().padding(end = 68.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES" + if (dayClosed) " · CLOSED" else "",
-                    color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
+                    color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "day page →", color = baki.muted,
+                    "day page →", color = scheme.onSurfaceVariant,
                     modifier = Modifier.heightIn(min = Control.primary).clickable { onOpenDayPage(day) }
                         .semantics { role = Role.Button },
-                    style = BakiType.caption,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
@@ -449,7 +438,7 @@ fun TodayScreen(
                     title = "Shift ${sh.start.ifEmpty { sh.date }}",
                     sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
                     amount = "RM ${rm(m.net)}",
-                    tint = baki.up,
+                    tint = scheme.tertiary,
                     onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
                 )
             }
@@ -465,7 +454,7 @@ fun TodayScreen(
                         loggedTime(e.loggedAt)?.let { "logged $it" },
                     ).joinToString(" · "),
                     amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
-                    tint = if (e.type == "income") baki.up else baki.down,
+                    tint = if (e.type == "income") scheme.tertiary else scheme.error,
                     sharedKey = "entry-${e.id}",
                     onEdit = { onEditEntry(e) },
                     onDelete = { onDeleteEntry(e) },
@@ -479,24 +468,20 @@ fun TodayScreen(
             ) {
                 Box(
                     Modifier.size(52.dp).then(
-                        if (baki.paper) Modifier
-                        else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
+                        Modifier.clip(MaterialTheme.shapes.large).background(scheme.surfaceContainerLow)
                     ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(BakiIcons.Receipt, contentDescription = null, tint = baki.muted, modifier = Modifier.size(IconSize.bar))
+                    Icon(BakiIcons.Receipt, contentDescription = null, tint = scheme.onSurfaceVariant, modifier = Modifier.size(IconSize.bar))
                 }
                 Spacer(Modifier.height(Space.m))
-                Text("Nothing recorded yet", color = baki.onSurface, style = BakiType.bodyStrong)
+                Text("Nothing recorded yet", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(3.dp))
                 Text(
                     "Tap + to log a spending entry.",
-                    color = baki.muted, style = BakiType.caption,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 )
-                if (baki.paper) {
-                    Spacer(Modifier.height(Space.m))
-                    LedgerRule(alpha = 0.16f)
-                }
+                
             }
         }
     }
@@ -510,78 +495,59 @@ private fun QuickAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     onClick: () -> Unit,
 ) {
-    val baki = LocalBaki.current
-    if (baki.paper) {
-        Column(
-            Modifier.clickable { onClick() }.padding(horizontal = Space.s),
-        ) {
-            Row(
-                Modifier.heightIn(min = Control.secondary),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                if (icon != null) {
-                    Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
-                }
-                Text(label, color = baki.onSurface, style = BakiType.labelStrong)
-                amount?.let { Text(it, color = baki.primary, style = BakiType.captionNumeric) }
-            }
-            LedgerRule(alpha = 0.12f)
-        }
-    } else {
+    val scheme = MaterialTheme.colorScheme
+    
         Row(
             Modifier.heightIn(min = Control.secondary)
-                .clip(RoundedCornerShape(Radius.pill))
-                .background(baki.surfaceHigh)
+                .clip(CircleShape)
+                .background(scheme.surfaceContainerHigh)
                 .clickable { onClick() }
                 .padding(horizontal = Space.l),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             if (icon != null) {
-                Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                Icon(icon, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
             }
-            Text(label, color = baki.onSurface, style = BakiType.labelStrong)
-            amount?.let { Text(it, color = baki.primary, style = BakiType.captionNumeric) }
+            Text(label, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            amount?.let { Text(it, color = scheme.primary, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")) }
         }
-    }
+    
 }
 
 @Composable
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth()
                 .then(
-                    if (baki.paper) Modifier.padding(vertical = Space.s)
-                    else Modifier.clip(RoundedCornerShape(Radius.pill)).background(baki.container).padding(vertical = Space.s)
+                    Modifier.clip(CircleShape).background(scheme.surfaceContainerLow).padding(vertical = Space.s)
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = baki.onSurface, style = BakiType.body ) }
+            TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge ) }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(if (day == today) "Today" else prettyDate(day), color = baki.onSurface, style = BakiType.bodyStrong )
+                Text(if (day == today) "Today" else prettyDate(day), color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
                 Text(
                     if (day == today) prettyDate(day) else "${weekdayShort(day)} · ${prettyDate(day)}",
-                    color = baki.muted, style = BakiType.caption )
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
             }
             TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
-                Text("›", color = if (day < today) baki.onSurface else baki.muted.copy(alpha = 0.3f), style = BakiType.body )
+                Text("›", color = if (day < today) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.3f), style = MaterialTheme.typography.bodyLarge )
             }
         }
-        if (baki.paper) LedgerRule(alpha = 0.16f)
     }
 }
 
 @Composable
 fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
-        modifier.heightIn(min = Control.primary).clip(RoundedCornerShape(Radius.pill)).background(bg).tactileClickable { onClick() },
+        modifier.heightIn(min = Control.primary).clip(CircleShape).background(bg).tactileClickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Text(label, color = ink,
-            modifier = Modifier.padding(horizontal = Space.l, vertical = 11.dp), style = BakiType.labelStrong )
+            modifier = Modifier.padding(horizontal = Space.l, vertical = 11.dp), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
     }
 }
 
@@ -597,7 +563,7 @@ fun RowCardIcon(
     onEdit: () -> Unit = {},
     onDelete: (() -> Unit)? = null,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val gestureScope = rememberCoroutineScope()
     var acted by remember { mutableStateOf(false) }
     val sharedScope = LocalSharedTransition.current
@@ -634,15 +600,15 @@ fun RowCardIcon(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(Radius.large))
-                    .background(if (editing) baki.primaryContainer else baki.down.copy(alpha = 0.22f))
+                Modifier.fillMaxSize().clip(MaterialTheme.shapes.large)
+                    .background(if (editing) scheme.primaryContainer else scheme.error.copy(alpha = 0.22f))
                     .padding(horizontal = Space.ml),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = if (editing) Arrangement.Start else Arrangement.End,
             ) {
                 Text(
                     if (editing) "Edit" else "Delete",
-                    color = if (editing) baki.onPrimaryContainer else baki.down, style = BakiType.labelStrong )
+                    color = if (editing) scheme.onPrimaryContainer else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             }
         },
     ) {
@@ -654,29 +620,26 @@ fun RowCardIcon(
         Row(
             Modifier.fillMaxWidth().then(sharedMod)
                 .then(
-                    if (baki.paper) Modifier.background(baki.surface)
-                    else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
+                    Modifier.clip(MaterialTheme.shapes.large).background(scheme.surfaceContainerLow)
                 )
                 .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
                 .semantics { customActions = a11yActions }
-                .padding(vertical = Space.m, horizontal = if (baki.paper) 0.dp else Space.l),
+                .padding(vertical = Space.m, horizontal = Space.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 Modifier.size(34.dp).then(
-                    if (baki.paper) Modifier
-                    else Modifier.clip(RoundedCornerShape(Radius.input)).background(baki.surfaceHigh)
+                    Modifier.clip(MaterialTheme.shapes.medium).background(scheme.surfaceContainerHigh)
                 ),
                 contentAlignment = Alignment.Center,
-            ) { Icon(icon, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline)) }
+            ) { Icon(icon, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline)) }
             Spacer(Modifier.width(Space.m))
             Column(Modifier.weight(1f)) {
-                Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
-                if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+                Text(title, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                if (sub.isNotEmpty()) Text(sub, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
-            Text(amount, color = tint, style = BakiType.subtitleNumeric)
+            Text(amount, color = tint, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
         }
-        if (baki.paper) LedgerRule(Modifier.padding(start = 46.dp), alpha = 0.16f)
     }
     }
 }

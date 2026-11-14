@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -19,18 +21,17 @@ import androidx.compose.ui.unit.sp
 /** Month heat map: green when the day kept money, coral when it cost you. */
 @Composable
 fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val cells = monthGrid(month)
     val today = todayIso()
     val bestDay = monthDays(store, month).maxByOrNull { it.second.net }?.first
 
     Column(Modifier.semantics { contentDescription = "Calendar heatmap of daily net" }) {
-        Text("CALENDAR", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
+        Text("CALENDAR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         Spacer(Modifier.height(Space.s))
-        if (baki.paper) { LedgerRule(alpha = 0.14f); Spacer(Modifier.height(Space.s)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach {
-                Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
+                Text(it, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium )
             }
         }
         Spacer(Modifier.height(if (compact) Space.xxs else Space.xs))
@@ -40,7 +41,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
                     Box(
                         Modifier.weight(1f).then(if (compact) Modifier.height(30.dp) else Modifier.aspectRatio(1f)),
                     ) {
-                        if (iso != null) DayCell(iso, store, today, baki, bestDay)
+                        if (iso != null) DayCell(iso, store, today, scheme, bestDay)
                     }
                 }
                 repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
@@ -51,7 +52,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
 }
 
 @Composable
-private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette, bestDay: String?) {
+private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.compose.material3.ColorScheme, bestDay: String?) {
     val t = dayTotals(store, iso)
     val future = iso > today
     val magnitude = when {
@@ -61,11 +62,11 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette,
         else -> 1
     }
     val positive = t.net >= 0
-    val base = if (positive) baki.primary else baki.down
+    val base = if (positive) scheme.primary else scheme.error
     val fill = when {
-        iso == today -> baki.primaryContainer
-        iso == bestDay -> baki.warn.copy(alpha = 0.22f)
-        magnitude == 0 -> baki.surfaceHigh
+        iso == today -> scheme.primaryContainer
+        iso == bestDay -> scheme.secondary.copy(alpha = 0.22f)
+        magnitude == 0 -> scheme.surfaceContainerHigh
         magnitude == 1 -> base.copy(alpha = 0.22f)
         magnitude == 2 -> base.copy(alpha = 0.45f)
         else -> base.copy(alpha = 0.75f)
@@ -74,18 +75,18 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette,
 
     Box(
         Modifier.fillMaxSize()
-            .clip(RoundedCornerShape(Radius.small))
+            .clip(MaterialTheme.shapes.small)
             .background(fill),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             iso.takeLast(2),
             color = when {
-                future -> baki.muted.copy(alpha = 0.4f)
-                isToday -> baki.onPrimaryContainer
-                positive && magnitude >= 2 -> baki.onPrimary
-                else -> baki.onSurface
+                future -> scheme.onSurfaceVariant.copy(alpha = 0.4f)
+                isToday -> scheme.onPrimaryContainer
+                positive && magnitude >= 2 -> scheme.onPrimary
+                else -> scheme.onSurface
             },
-            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = MaterialTheme.typography.bodyMedium )
     }
 }

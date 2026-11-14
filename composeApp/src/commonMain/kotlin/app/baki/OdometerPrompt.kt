@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,30 +39,30 @@ fun OdometerPromptDialog(
     onSave: (Int) -> Unit,
     onSkip: () -> Unit,
 ) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     var text by remember { mutableStateOf("") }
     val parsed = validOdometer(text, lastOdo)
     val valid = parsed != null
 
     AlertDialog(
         onDismissRequest = onSkip,
-        containerColor = baki.container,
-        title = { Text("Add odometer?", color = baki.onSurface, style = BakiType.title ) },
+        containerColor = scheme.surfaceContainerLow,
+        title = { Text("Add odometer?", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge ) },
         text = {
             Column {
                 Text(
                     "$label · RM ${rm(cents)} is already saved.",
-                    color = baki.onSurface, style = BakiType.bodyStrong,
+                    color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Spacer(Modifier.height(Space.s))
                 Text(
                     "Add the dashboard reading so real km/L and maintenance history stay accurate. " +
                         "Skip and we’ll ask again at the next fill.",
-                    color = baki.muted, style = BakiType.caption,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 )
                 if (lastOdo != null) {
                     Spacer(Modifier.height(Space.s))
-                    Text("Last known reading: ${lastOdo} km", color = baki.muted, style = BakiType.captionNumeric )
+                    Text("Last known reading: ${lastOdo} km", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum") )
                 }
                 Spacer(Modifier.height(Space.m))
                 OutlinedTextField(
@@ -75,7 +79,7 @@ fun OdometerPromptDialog(
                             Text(
                                 if (lastOdo != null) "Must be higher than ${lastOdo} km"
                                 else "Enter a positive reading",
-                                color = baki.down, style = BakiType.caption,
+                                color = scheme.error, style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                     },
@@ -84,11 +88,11 @@ fun OdometerPromptDialog(
         },
         confirmButton = {
             TextButton(onClick = { parsed?.let(onSave) }, enabled = valid) {
-                Text("Save reading", color = if (valid) baki.primary else baki.muted)
+                Text("Save reading", color = if (valid) scheme.primary else scheme.onSurfaceVariant)
             }
         },
         dismissButton = {
-            TextButton(onClick = onSkip) { Text("Skip", color = baki.muted) }
+            TextButton(onClick = onSkip) { Text("Skip", color = scheme.onSurfaceVariant) }
         },
     )
 }

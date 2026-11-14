@@ -79,7 +79,7 @@ class LiveShiftService : Service() {
     private fun action(action: String): PendingIntent {
         val i = Intent(this, MainActivity::class.java).apply {
             this.action = action
-            putExtra("baki.action", action)
+            putExtra("scheme.action", action)
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         return PendingIntent.getActivity(

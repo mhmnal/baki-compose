@@ -20,14 +20,4 @@ class PrivacyTest {
         }
     }
 
-    @Test
-    fun meaningfulTypeIsAtLeastFourteenSp() {
-        assertTrue(BakiType.body.fontSize >= 14.sp)
-        assertTrue(BakiType.bodyStrong.fontSize >= 14.sp)
-        assertTrue(BakiType.label.fontSize >= 14.sp)
-        assertTrue(BakiType.labelStrong.fontSize >= 14.sp)
-        assertTrue(BakiType.caption.fontSize >= 14.sp)
-        assertTrue(BakiType.captionStrong.fontSize >= 14.sp)
-        assertTrue(BakiType.bodySmall.fontSize >= 14.sp)
-    }
 }

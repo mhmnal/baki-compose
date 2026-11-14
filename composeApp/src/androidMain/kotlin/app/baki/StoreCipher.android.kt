@@ -15,7 +15,7 @@ import javax.crypto.spec.GCMParameterSpec
  */
 actual object StoreCipher {
 
-    private const val ALIAS = "baki.store.v1"
+    private const val ALIAS = "scheme.store.v1"
     private const val TRANSFORM = "AES/GCM/NoPadding"
     private const val TAG_BITS = 128
 

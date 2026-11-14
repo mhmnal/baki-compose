@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,31 +25,31 @@ import kotlinx.coroutines.launch
 /** Read-only view of the last imported Grab statement. */
 @Composable
 fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
     Column(
         Modifier.fillMaxWidth().padding(vertical = Space.m),
     ) {
-        Text("LAST STATEMENT · ${st.weekStart}", color = baki.muted, style = BakiType.captionStrong )
+        Text("LAST STATEMENT · ${st.weekStart}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
         Spacer(Modifier.height(Space.s))
-        Text("RM ${rm(st.income)} gross", color = baki.onSurface, style = BakiType.title )
+        Text("RM ${rm(st.income)} gross", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
         Text(
             "${st.insuranceCount} insurance charge(s) · RM ${rm(st.deductions)} deducted",
-            color = baki.muted, style = BakiType.caption )
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
         if (st.rangeText.isNotEmpty()) {
-            Text(st.rangeText, color = baki.muted, style = BakiType.caption )
+            Text(st.rangeText, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
         }
-        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = baki.muted, style = BakiType.caption)
+        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         val latestMark = store.statementMarks[st.weekStart]
         Text(
             if (latestMark?.reconciled == true) "reconciled ${latestMark.updated.take(16).replace('T', ' ')}"
             else "not reconciled",
-            color = if (latestMark?.reconciled == true) baki.up else baki.warn,
-            style = BakiType.caption,
+            color = if (latestMark?.reconciled == true) scheme.tertiary else scheme.secondary,
+            style = MaterialTheme.typography.bodyMedium,
         )
         if (onViewHistory != null && store.statements.size > 1) {
             TextButton(onClick = onViewHistory, contentPadding = PaddingValues(0.dp)) {
-                Text("View all ${store.statements.size} weeks", color = baki.primary, style = BakiType.captionStrong )
+                Text("View all ${store.statements.size} weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             }
         }
     }
@@ -56,20 +58,20 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
 /** All imported weekly statements, newest first; week-level reconciliation, no day stamps. */
 @Composable
 fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val store = repo.store
     val scope = rememberCoroutineScope()
     val rows = store.statements.values.sortedByDescending { it.weekStart }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(Radius.dialog),
-        title = { Text("Statement history", color = baki.onSurface, style = BakiType.title) },
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("Statement history", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
         text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
         Text(
             "${rows.size} imported week${if (rows.size == 1) "" else "s"} · income and insurance reconciliation",
-            color = baki.muted, style = BakiType.caption,
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         rows.forEachIndexed { index, st ->
             val check = statementCheck(store, st)
@@ -80,29 +82,29 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         st.rangeText.ifBlank { "Week of ${prettyDate(st.weekStart)}" },
-                        color = baki.onSurface, style = BakiType.labelStrong,
+                        color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.weight(1f),
                     )
-                    Text("RM ${rm(st.income)}", color = baki.onSurface, style = BakiType.titleNumeric )
+                    Text("RM ${rm(st.income)}", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum") )
                 }
                 Spacer(Modifier.height(Space.xs))
                 Text(
                     "deductions RM ${rm(st.deductions)} · weekly RM ${rm(st.weekly)}",
-                    color = baki.muted, style = BakiType.captionNumeric,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
                 Text(
                     "insurance: app ${check.appInsurance} vs statement ${st.insuranceCount}" +
                         if (check.insuranceMatches) " ✓" else " — check the cover rule",
-                    color = if (check.insuranceMatches) baki.up else baki.down,
-                    style = BakiType.caption,
+                    color = if (check.insuranceMatches) scheme.tertiary else scheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 if (check.loggedShifts == 0) {
-                    Text("no shifts logged for this week", color = baki.muted, style = BakiType.caption)
+                    Text("no shifts logged for this week", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     Text(
                         "logged ${check.loggedShifts} shifts · RM ${rm(check.loggedGross / 100.0)} · gap RM ${rm(gap)}",
-                        color = if (kotlin.math.abs(gap) < 1.0) baki.up else baki.warn,
-                        style = BakiType.captionNumeric,
+                        color = if (kotlin.math.abs(gap) < 1.0) scheme.tertiary else scheme.secondary,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                     )
                 }
                 val mark = store.statementMarks[st.weekStart]
@@ -113,15 +115,15 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                         check.loggedShifts == 0 -> "NOT LOGGED · import has no matching shifts yet"
                         else -> "DIFFERENCE · review gross and insurance in the margin"
                     },
-                    color = if (matches) baki.up else baki.warn,
-                    style = BakiType.captionStrong,
+                    color = if (matches) scheme.tertiary else scheme.secondary,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (mark?.reconciled == true) "reconciled ${mark.updated.take(16).replace('T', ' ')}"
                         else "not reconciled",
-                        color = if (mark?.reconciled == true) baki.up else baki.muted,
-                        style = BakiType.caption,
+                        color = if (mark?.reconciled == true) scheme.tertiary else scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(
@@ -130,28 +132,27 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                     ) {
                         Text(
                             if (mark?.reconciled != true) "Mark reconciled" else "Reopen",
-                            color = if (mark?.reconciled != true) baki.primary else baki.muted,
-                            style = BakiType.captionStrong,
+                            color = if (mark?.reconciled != true) scheme.primary else scheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         )
                     }
                 }
                 Text(
                     "imported ${st.importedAt.take(16).replace('T', ' ')}",
-                    color = baki.muted, style = BakiType.nano,
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
                 )
             }
-            if (index != rows.lastIndex) LedgerRule(alpha = 0.16f)
         }
         }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = baki.primary, style = BakiType.labelStrong) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) } },
     )
 }
 
 /** Add or remove spending categories; a category still in use can't be deleted. */
 @Composable
 fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
-    val baki = LocalBaki.current
+    val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     var adding by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
@@ -165,11 +166,11 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Spending categories", color = baki.onSurface, style = BakiType.bodyStrong )
-                Text("${cats.size} categories · tap a name to rename, × to remove", color = baki.muted, style = BakiType.caption )
+                Text("Spending categories", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
+                Text("${cats.size} categories · tap a name to rename, × to remove", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
             }
             TextButton(enabled = editable, onClick = { adding = true }) {
-                Text("Add", color = if (editable) baki.primary else baki.muted, fontWeight = FontWeight.Bold)
+                Text("Add", color = if (editable) scheme.primary else scheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(Modifier.height(Space.s))
@@ -179,23 +180,23 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                 Modifier.fillMaxWidth().padding(vertical = Space.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
                 Text(
-                    c.name, color = baki.onSurface,
+                    c.name, color = scheme.onSurface,
                     modifier = Modifier.weight(1f).heightIn(min = Control.primary)
                         .clickable(enabled = editable) { renaming = c; renameDraft = c.name }
                         .semantics { if (editable) role = Role.Button },
-                    style = BakiType.label,
+                    style = MaterialTheme.typography.labelLarge,
                 )
-                Text(if (used > 0) "$used" else "", color = baki.muted, style = BakiType.caption )
+                Text(if (used > 0) "$used" else "", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
                 Spacer(Modifier.width(Space.s))
                 Text(
                     "×",
-                    color = if (used > 0 || !editable) baki.muted.copy(alpha = 0.35f) else baki.down,
+                    color = if (used > 0 || !editable) scheme.onSurfaceVariant.copy(alpha = 0.35f) else scheme.error,
                     modifier = Modifier
                         .heightIn(min = Control.primary)
-                        .clip(RoundedCornerShape(Radius.pill))
+                        .clip(CircleShape)
                         .clickable(enabled = used == 0 && editable) {
                             scope.launch { repo.removeCategory(c.id) }
                         }
@@ -203,9 +204,8 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                             contentDescription = "Remove ${c.name}"
                             if (used == 0 && editable) role = Role.Button
                         }
-                        .padding(horizontal = Space.m), style = BakiType.bodyStrong )
+                        .padding(horizontal = Space.m), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
             }
-            if (index != cats.lastIndex) LedgerRule(alpha = 0.14f)
         }
     }
 
@@ -213,7 +213,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         AlertDialog(
             onDismissRequest = { renaming = null },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            title = { Text("Rename category", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+            title = { Text("Rename category", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = renameDraft, onValueChange = { renameDraft = it },
@@ -239,7 +239,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         AlertDialog(
             onDismissRequest = { adding = false },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            title = { Text("New category", color = baki.onSurface, fontWeight = FontWeight.Bold) },
+            title = { Text("New category", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = draft, onValueChange = { draft = it },
@@ -255,9 +255,9 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
                         draft = ""
                         adding = false
                     },
-                ) { Text("Add", color = baki.primary, fontWeight = FontWeight.Bold) }
+                ) { Text("Add", color = scheme.primary, fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel", color = baki.muted) } },
+            dismissButton = { TextButton(onClick = { adding = false }) { Text("Cancel", color = scheme.onSurfaceVariant) } },
         )
     }
 }

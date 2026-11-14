@@ -256,3 +256,57 @@ No financial feature was removed.
 - Compile: Android + desktop.
 - 225 tests, 0 failures.
 - Signed and installed 0.41.0, code 128.
+
+## Unified M3 Expressive architecture (0.42.0)
+
+### P0 — token purge
+- Deleted `BakiPalette`, `LocalBaki`, all legacy palette packs and the theme-pack config.
+- Deleted `BakiType`, all font assets and the custom font installer. Every screen now uses
+  `MaterialTheme.typography` roles, including tabular numeric styles.
+- Deleted `BakiMotion`; all custom animation now reads `MaterialTheme.motionScheme`.
+- Deleted `Radius`; all shapes use `MaterialTheme.shapes`.
+- Deleted `baki.paper` branches and `LedgerRule`; no constant-false UI branches remain.
+- Deleted the separate desktop shell, Neumorphism, glass, paper texture and DeviceTier code.
+  Desktop now renders the same adaptive Compose UI as phones/tablets.
+- Removed the backdrop/glass dependency and all custom font resources.
+
+### P1 — system chrome
+- Phone: `ShortNavigationBar` with five Expressive items.
+- Tablet/desktop: stateful `WideNavigationRail` with collapse/expand; the content offset tracks
+  the measured rail width and the 960dp reading width is centred.
+- A FAB in the rail header provides the primary add action on wide screens.
+- `ModalBottomSheet` remains the only sheet implementation.
+
+### P2 — expressive controls
+- Transaction type is a connected `ButtonGroup` (Spending / Income).
+- Appearance is a `ButtonGroup` (Auto / Light / Dark).
+- Chart range and More tabs remain Expressive ButtonGroups.
+- Add action is a `FloatingActionButtonMenu` driven by a morphing
+  `ToggleFloatingActionButton`.
+
+### P3 — state and motion
+- Sync and server discovery use the morphing `LoadingIndicator`.
+- All custom animation uses MotionScheme specs.
+- MaterialShapes Cookie9 focal badges appear on Live Shift and the Statement streak.
+- EasedMoney uses the theme’s spatial spring.
+- Hero figures are bold and tabular.
+
+### P4 — screen polish
+- Live Shift is a 24dp `surfaceContainerHigh` card with expressive tonal actions.
+- Summary chart cards use 24dp containers, tonal tracks and primary/error bars.
+- FABMenu hides during a live shift so Pause/End remain reachable.
+- Charts do not override `surfaceContainerHighest`, keeping tracks visible.
+- Spend, Shifts, Today, Summary and More were rendered in light/dark, phone/desktop.
+- The desktop preview is now the unified app rather than a separate shell.
+
+### Verification
+- Android + desktop compile clean.
+- 194 tests, 0 failures.
+- No `BakiPalette`, `BakiType`, `BakiMotion`, `Radius`, `LocalBaki`, `LedgerRule` or
+  constant-paper branches remain.
+- Signed 0.42.0, code 129.
+
+### Deliberate omissions
+- `FlexibleTopAppBar` is not present in the pinned Material3 artifact; a standard TopAppBar remains.
+- `FloatingToolbar` is not forced because no multi-select/contextual-action flow exists.
+- `SplitButton` is not duplicated because FABMenu already owns the quick-add action.

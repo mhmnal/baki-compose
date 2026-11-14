@@ -27,7 +27,7 @@ class PaperViewportTest {
     fun renderViewportSweep() = runBlocking {
         val today = todayIso()
         // Seed one large total so the adaptive hero and long rows are exercised, then remove it.
-        val seedRepo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light", palette = "paper"))
+        val seedRepo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"))
         runCatching { seedRepo.addShift(today, "15:41", hours = 5.0, km = 182.0, grossCents = 1_234_500, note = "viewport test") }
         val seeded = seedRepo.store.shifts.firstOrNull { it.note == "viewport test" }
         val root = File("build/preview/viewports")
@@ -38,7 +38,7 @@ class PaperViewportTest {
                     for ((index, tab) in listOf(0 to "overview", 1 to "spending", 2 to "shifts", 3 to "summary", 4 to "more")) {
                         PhonePreview.active = true
                         PhonePreview.initialTab = index
-                        val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = mode, palette = "paper"))
+                        val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = mode))
                         render(
                             File(dir, "${v.name}-$tab.png"),
                             width = v.widthDp * 2,

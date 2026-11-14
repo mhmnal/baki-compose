@@ -46,7 +46,7 @@ actual suspend fun discoverBakiServer(): DiscoveredServer? = withContext(Dispatc
         if (parts == null || parts.size != 4) continue
         val base = "${parts[0]}.${parts[1]}.${parts[2]}"
         val own = local.hostAddress
-        val payload = "baki?".toByteArray()
+        val payload = "scheme?".toByteArray()
         val socket = runCatching { DatagramSocket() }.getOrNull() ?: continue
         try {
             socket.soTimeout = 120
@@ -73,7 +73,7 @@ actual suspend fun discoverBakiServer(): DiscoveredServer? = withContext(Dispatc
                 }
                 val text = String(packet.data, packet.offset, packet.length)
                 val obj = runCatching { JSONObject(text) }.getOrNull() ?: continue
-                if (obj.optString("app") != "baki") continue
+                if (obj.optString("app") != "scheme") continue
                 val port = obj.optInt("plainPort", obj.optInt("port", 8787))
                 if (port <= 0) continue
                 val host = packet.address.hostAddress ?: continue

@@ -891,12 +891,6 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         sync()
     }
 
-    fun setGlassMode(mode: String) {
-        config = config.copy(glassMode = mode)
-        saveConfig(config)
-        PlatformEffects.tapFeedback()
-    }
-
     /** Learn the GPS/odometer ratio from a shift where both are known. */
     suspend fun setGpsCorrection(factor: Double) = mutex.withLock {
         if (blocked()) return@withLock
@@ -1027,21 +1021,6 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (enabled && secret.isNotBlank()) scope.launch { runCatching { pushRoutes() } }
     }
 
-    fun setPalette(pack: String) {
-        config = config.copy(palette = pack, paperThemeMigrated = true)
-        saveConfig(config)
-    }
-
-    /** Move existing sage-default installs to Paper Ledger once, without breaking a later choice. */
-    fun ensurePaperTheme() {
-        if (config.paperThemeMigrated) return
-        config = config.copy(
-            palette = if (config.palette == "sage") "paper" else config.palette,
-            paperThemeMigrated = true,
-        )
-        saveConfig(config)
-    }
-
     fun setStatementReminder(on: Boolean) {
         config = config.copy(statementReminder = on)
         saveConfig(config)
@@ -1078,12 +1057,6 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     fun setThemeMode(mode: String) {
         config = config.copy(themeMode = mode)
-        saveConfig(config)
-        PlatformEffects.tapFeedback()
-    }
-
-    fun setMatchWallpaper(on: Boolean) {
-        config = config.copy(matchWallpaper = on)
         saveConfig(config)
         PlatformEffects.tapFeedback()
     }
