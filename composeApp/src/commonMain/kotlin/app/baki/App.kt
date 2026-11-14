@@ -261,20 +261,27 @@ private fun AppContent(repo: BakiRepo) {
 
     Box(Modifier.fillMaxSize()) {
     Box(Modifier.fillMaxSize().background(scheme.surface)) {}
+    // The system status bar is transparent under edge-to-edge. Paint its inset with the
+    // same surface as the app bar so the two never split into different bands.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
+            .align(Alignment.TopCenter)
+            .background(scheme.surface),
+    )
     Scaffold(
         containerColor = Color.Transparent,
         snackbarHost = {
             BakiSnackbarHost(snackbar, Modifier.padding(horizontal = Space.m).padding(bottom = snackbarBottom))
         },
     ) { pad ->
-        val headerScroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
         Column(
             Modifier.padding(pad).fillMaxSize()
                 .padding(start = contentStart)
-                .widthIn(max = 960.dp)
-                .nestedScroll(headerScroll.nestedScrollConnection),
+                .widthIn(max = 960.dp),
         ) {
-            Header(repo, headerScroll)
+            Header(repo)
             val motionScheme = MaterialTheme.motionScheme
             AnimatedContent(
                 targetState = tab,
@@ -699,7 +706,7 @@ private fun AppContent(repo: BakiRepo) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun Header(repo: BakiRepo, scrollBehavior: TopAppBarScrollBehavior) {
+fun Header(repo: BakiRepo) {
     val status = repo.status
     val ink = when (status) {
         "synced" -> MaterialTheme.colorScheme.tertiary
@@ -707,17 +714,8 @@ fun Header(repo: BakiRepo, scrollBehavior: TopAppBarScrollBehavior) {
         "cached" -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.primary
     }
-    MediumTopAppBar(
-        title = {
-            Column {
-                Text("Baki", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "what your shift really pays",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
+    TopAppBar(
+        title = { Text("Baki", style = MaterialTheme.typography.titleLarge) },
         actions = {
             IconButton(
                 onClick = { repo.setDiscreet(!repo.config.discreet) },
@@ -754,7 +752,6 @@ fun Header(repo: BakiRepo, scrollBehavior: TopAppBarScrollBehavior) {
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
         ),
-        scrollBehavior = scrollBehavior,
         windowInsets = WindowInsets(0, 0, 0, 0),
     )
 }

@@ -351,13 +351,17 @@ private fun MonthInkChart(store: Store, month: String) {
                     .coerceAtLeast(if (day.active) 3.dp.toPx() else 0f)
                 val left = i * step + (step - barW) / 2f
                 val top = if (value >= 0) zeroY - h else zeroY
-                // A consistent tonal track gives every bar a clear baseline, even on empty days.
-                drawRoundRect(
-                    color = if (i == selected) scheme.primaryContainer else scheme.surfaceContainerHighest,
-                    topLeft = Offset(left, 4.dp.toPx()),
-                    size = Size(barW, size.height - 8.dp.toPx()),
-                    cornerRadius = CornerRadius(barW / 2f, barW / 2f),
-                )
+                // No permanent track: the card surface stays transparent behind the bars.
+                // Only the chosen day gets a soft backdrop, so selection is unmistakable.
+                if (i == selected) {
+                    val backdropInset = step * 0.10f
+                    drawRoundRect(
+                        color = scheme.primaryContainer.copy(alpha = 0.34f),
+                        topLeft = Offset(left - backdropInset, 4.dp.toPx()),
+                        size = Size(barW + backdropInset * 2, size.height - 8.dp.toPx()),
+                        cornerRadius = CornerRadius(barW / 2f, barW / 2f),
+                    )
+                }
                 if (day.active) {
                     val color = if (value < 0) scheme.error else scheme.primary
                     drawRoundRect(

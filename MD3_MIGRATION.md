@@ -327,3 +327,10 @@ No financial feature was removed.
 - Gate 4: added structured chart/map semantics, tab role/selected state, explicit navigation labels, system-respecting reduced-motion toggle, 360dp/1.3x auto-fitting hero text, and full semantic contrast coverage.
 - Final checks: 194 tests, Android debug, desktop tests and R8 release compile all pass.
 - Known verification limits: varied wallpaper-seed contrast and true 120fps were not reproducible in this device session; see Gate 4 report.
+
+## 0.43.1 UX refinement
+
+- Collapsed the main header to a single-line TopAppBar; removed the tagline and scroll-height split.
+- Painted the transparent status-bar inset with the same surface as the app bar.
+- Removed persistent MonthInk bar tracks; the chart surface stays clean and only the selected day gets a soft primary-container backdrop.
+- Kept the official M3 Expressive ShortNavigationBar instead of a custom floating pill nav.
