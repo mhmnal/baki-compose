@@ -106,12 +106,12 @@ fun SummaryScreen(
                 )
             }
         }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = 24.dp) { MonthInkChart(store = store, month = month) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
         item {
             Md3Card(
                 container = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = MaterialTheme.shapes.extraLarge,
-                padding = 24.dp,
+                padding = Space.ml,
             ) { WeekSection(store = store, today = todayIso()) }
         }
         if (cats.isNotEmpty()) item {

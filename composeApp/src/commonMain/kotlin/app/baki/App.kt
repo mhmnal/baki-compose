@@ -448,7 +448,7 @@ private fun AppContent(repo: BakiRepo) {
         FloatingActionButtonMenu(
             expanded = addMenuOpen,
             modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = barHeight + barGap + 16.dp),
+                .padding(end = 16.dp, bottom = barHeight + barGap + 8.dp),
             button = {
                 ToggleFloatingActionButton(
                     checked = addMenuOpen,

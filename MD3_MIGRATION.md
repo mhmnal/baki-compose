@@ -334,3 +334,11 @@ No financial feature was removed.
 - Painted the transparent status-bar inset with the same surface as the app bar.
 - Removed persistent MonthInk bar tracks; the chart surface stays clean and only the selected day gets a soft primary-container backdrop.
 - Kept the official M3 Expressive ShortNavigationBar instead of a custom floating pill nav.
+
+## 0.43.2 spacing pass
+
+- Single-line compact header with a matching status-bar surface.
+- FAB gap over the short navigation bar reduced from 16dp to 8dp.
+- Summary card padding normalized from 24dp to the shared 20dp step.
+- MonthInk tracks removed; selected bars now receive a soft primary-container backdrop.
+- Bottom navigation remains the official M3E ShortNavigationBar.
