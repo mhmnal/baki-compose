@@ -932,12 +932,6 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val net = be.earned - be.costs
     val netCents = (net * 100).toLong()
     val accent = if (onBreak) scheme.secondary else scheme.primary
-    val statusShape = rememberMorphShape(
-        from = MaterialShapes.Cookie9Sided,
-        to = MaterialShapes.Circle,
-        atEnd = onBreak,
-        label = "liveStatusShape",
-    )
 
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.s),
@@ -946,17 +940,12 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     ) {
         Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.size(30.dp)
-                        .clip(statusShape)
-                        .background(
-                            if (onBreak) MaterialTheme.colorScheme.tertiaryContainer
-                            else MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(accent))
-                }
+                LiveTrace(
+                    active = !onBreak,
+                    color = accent,
+                    reducedMotion = repo.config.reducedMotion,
+                    modifier = Modifier.width(52.dp).height(18.dp),
+                )
                 Spacer(Modifier.width(Space.s))
                 Column(Modifier.weight(1f)) {
                     Text(

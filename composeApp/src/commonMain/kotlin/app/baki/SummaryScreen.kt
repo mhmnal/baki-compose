@@ -207,7 +207,7 @@ private fun StatementCover(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
-            if (streak > 0) {
+            if (streak > 1) {
                 Box(
                     modifier = Modifier
                         .size(44.dp)

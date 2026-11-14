@@ -421,12 +421,20 @@ fun TodayScreen(
                     "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES" + if (dayClosed) " · CLOSED" else "",
                     color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
                 Spacer(Modifier.weight(1f))
-                Text(
-                    "day page →", color = scheme.onSurfaceVariant,
-                    modifier = Modifier.heightIn(min = Control.primary).clickable { onOpenDayPage(day) }
-                        .semantics { role = Role.Button },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = Control.primary)
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable { onOpenDayPage(day) }
+                        .semantics { role = Role.Button }
+                        .padding(horizontal = Space.s),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "day page →", color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         }
 

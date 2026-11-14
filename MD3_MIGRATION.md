@@ -342,3 +342,9 @@ No financial feature was removed.
 - Summary card padding normalized from 24dp to the shared 20dp step.
 - MonthInk tracks removed; selected bars now receive a soft primary-container backdrop.
 - Bottom navigation remains the official M3E ShortNavigationBar.
+
+## 0.43.3 live trace
+
+- Restored the earlier live-shift route trace: moving dashed line and travelling head dot, frozen when paused or when reduced motion is enabled.
+- Hid the target-streak badge for a one-day streak; it now appears only from two consecutive days.
+- Centered the Today “day page” action inside its 48dp target so it aligns with the entry-count label.
