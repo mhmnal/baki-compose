@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.graphics.shapes.rectangle
+
+import androidx.compose.material3.toPath
+
 import androidx.compose.ui.text.style.TextOverflow
 
 
@@ -196,5 +200,67 @@ fun ConnectedChoiceGroup(
                 )
             }
         }
+    }
+}
+
+private val ChipSoftRect = androidx.graphics.shapes.RoundedPolygon.rectangle(
+    width = 1f,
+    height = 1f,
+    rounding = androidx.graphics.shapes.CornerRounding(radius = 0.18f),
+)
+private val ChipPill = androidx.graphics.shapes.RoundedPolygon.rectangle(
+    width = 1f,
+    height = 1f,
+    rounding = androidx.graphics.shapes.CornerRounding(radius = 0.5f),
+)
+
+/** Spring shape morph from a soft-cornered chip/badge to a pill. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun morphChipShape(selected: Boolean): androidx.compose.ui.graphics.Shape =
+    rememberMorphShape(ChipSoftRect, ChipPill, selected, "chipShape")
+
+/** Morph between two normalized polygons using the expressive fast-spatial spring. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun rememberMorphShape(
+    from: androidx.graphics.shapes.RoundedPolygon,
+    to: androidx.graphics.shapes.RoundedPolygon,
+    atEnd: Boolean,
+    label: String,
+): androidx.compose.ui.graphics.Shape {
+    val progress by animateFloatAsState(
+        targetValue = if (atEnd) 1f else 0f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = label,
+    )
+    val morph = remember(from, to) {
+        androidx.graphics.shapes.Morph(from.normalized(), to.normalized())
+    }
+    return remember(morph, progress) { MorphShape(morph, progress) }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+private class MorphShape(
+    private val morph: androidx.graphics.shapes.Morph,
+    private val progress: Float,
+) : androidx.compose.ui.graphics.Shape {
+    override fun createOutline(
+        size: androidx.compose.ui.geometry.Size,
+        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        density: androidx.compose.ui.unit.Density,
+    ): androidx.compose.ui.graphics.Outline {
+        val path = androidx.compose.ui.graphics.Path()
+        morph.toPath(progress.coerceIn(0f, 1f), path)
+        val matrix = androidx.compose.ui.graphics.Matrix().apply { scale(size.width, size.height) }
+        path.transform(matrix)
+        val bounds = path.getBounds()
+        path.translate(
+            androidx.compose.ui.geometry.Offset(
+                size.width / 2f - bounds.center.x,
+                size.height / 2f - bounds.center.y,
+            ),
+        )
+        return androidx.compose.ui.graphics.Outline.Generic(path)
     }
 }

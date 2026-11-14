@@ -1,5 +1,8 @@
 package app.baki
 
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,6 +10,11 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +48,7 @@ import kotlinx.coroutines.launch
  * A single day: chronological entries with a running margin, shifts, receipt
  * attachments and one note. The page lives above the normal tab shell.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayPage(
     repo: BakiRepo,
@@ -88,26 +97,43 @@ fun DayPage(
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { onDay(addDays(day, -1)) }) {
-                    Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
-                }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (day == todayIso()) "Today" else "Day page", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                    Text(prettyDate(day), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                }
-                TextButton(onClick = { onDay(addDays(day, 1)) }) {
-                    Text("›", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
-                }
-                TextButton(onClick = onClose) {
-                    Text("Close", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                }
-            }
+        Column(
+            Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+        ) {
+            MediumTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            if (day == todayIso()) "Today" else "Day page",
+                            color = scheme.onSurface,
+                            style = MaterialTheme.typography.titleLargeEmphasized,
+                        )
+                        Text(prettyDate(day), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onDay(addDays(day, -1)) }) {
+                        Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onDay(addDays(day, 1)) }) {
+                        Text("›", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
+                    }
+                    TextButton(onClick = onClose) {
+                        Text("Close", color = scheme.primary, style = MaterialTheme.typography.labelLargeEmphasized)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets(0, 0, 0, 0),
+            )
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
                 verticalArrangement = Arrangement.spacedBy(Space.s),
@@ -269,6 +295,9 @@ private fun DayEntryRow(
     val scheme = MaterialTheme.colorScheme
     val bitmap = remember(entry.receipt) { entry.receipt?.takeIf { it.isNotBlank() }?.let(::decodeReceiptImage) }
     var menu by remember { mutableStateOf(false) }
+    val receiptPress = remember { MutableInteractionSource() }
+    val receiptPressed by receiptPress.collectIsPressedAsState()
+    val receiptShape = morphChipShape(receiptPressed)
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
         shape = MaterialTheme.shapes.large,
@@ -289,7 +318,7 @@ private fun DayEntryRow(
                     if (bitmap != null) {
                         Spacer(Modifier.width(Space.xs))
                         Surface(
-                            shape = MaterialTheme.shapes.small,
+                            shape = receiptShape,
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier.padding(2.dp),
                         ) {
@@ -297,7 +326,12 @@ private fun DayEntryRow(
                                 bitmap = bitmap, contentDescription = "Receipt attached",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.padding(2.dp).size(22.dp)
-                                    .clip(MaterialTheme.shapes.extraSmall).clickable { onPreview() },
+                                    .clip(MaterialTheme.shapes.extraSmall)
+                                    .clickable(
+                                        interactionSource = receiptPress,
+                                        indication = LocalIndication.current,
+                                        onClick = onPreview,
+                                    ),
                             )
                         }
                     }

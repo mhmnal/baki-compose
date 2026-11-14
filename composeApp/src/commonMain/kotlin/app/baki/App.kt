@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+
 import androidx.compose.ui.layout.onSizeChanged
 
 import androidx.compose.foundation.shape.CircleShape
@@ -265,12 +267,14 @@ private fun AppContent(repo: BakiRepo) {
             BakiSnackbarHost(snackbar, Modifier.padding(horizontal = Space.m).padding(bottom = snackbarBottom))
         },
     ) { pad ->
+        val headerScroll = TopAppBarDefaults.enterAlwaysScrollBehavior()
         Column(
             Modifier.padding(pad).fillMaxSize()
                 .padding(start = contentStart)
-                .widthIn(max = 960.dp),
+                .widthIn(max = 960.dp)
+                .nestedScroll(headerScroll.nestedScrollConnection),
         ) {
-            Header(repo)
+            Header(repo, headerScroll)
             val motionScheme = MaterialTheme.motionScheme
             AnimatedContent(
                 targetState = tab,
@@ -680,7 +684,7 @@ private fun AppContent(repo: BakiRepo) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun Header(repo: BakiRepo) {
+fun Header(repo: BakiRepo, scrollBehavior: TopAppBarScrollBehavior) {
     val status = repo.status
     val ink = when (status) {
         "synced" -> MaterialTheme.colorScheme.tertiary
@@ -688,7 +692,7 @@ fun Header(repo: BakiRepo) {
         "cached" -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.primary
     }
-    TopAppBar(
+    MediumTopAppBar(
         title = {
             Column {
                 Text("Baki", style = MaterialTheme.typography.titleLarge)
@@ -732,6 +736,7 @@ fun Header(repo: BakiRepo) {
             containerColor = MaterialTheme.colorScheme.surface,
             titleContentColor = MaterialTheme.colorScheme.onSurface,
         ),
+        scrollBehavior = scrollBehavior,
         windowInsets = WindowInsets(0, 0, 0, 0),
     )
 }
@@ -912,6 +917,12 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val net = be.earned - be.costs
     val netCents = (net * 100).toLong()
     val accent = if (onBreak) scheme.secondary else scheme.primary
+    val statusShape = rememberMorphShape(
+        from = MaterialShapes.Cookie9Sided,
+        to = MaterialShapes.Circle,
+        atEnd = onBreak,
+        label = "liveStatusShape",
+    )
 
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = Space.s),
@@ -922,7 +933,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier.size(30.dp)
-                        .clip(MaterialShapes.Cookie9Sided.toShape())
+                        .clip(statusShape)
                         .background(
                             if (onBreak) MaterialTheme.colorScheme.tertiaryContainer
                             else MaterialTheme.colorScheme.secondaryContainer,
@@ -1180,6 +1191,7 @@ private fun SpendingScreen(
                     val chips = listOf("all" to "All") +
                         cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
                     chips.forEach { (id, label) ->
+                        val chipShape = morphChipShape(catFilter == id)
                         FilterChip(
                             selected = catFilter == id,
                             onClick = { catFilter = id },
@@ -1187,7 +1199,7 @@ private fun SpendingScreen(
                             leadingIcon = if (id != "all") {
                                 { Icon(categoryIcon(id), contentDescription = null, modifier = Modifier.size(IconSize.inline)) }
                             } else null,
-                            shape = MaterialTheme.shapes.small,
+                            shape = chipShape,
                             border = null,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -1398,8 +1410,9 @@ private fun BillEditorDialog(
                 ) {
                     categories.forEach { c ->
                         val on = c.id == category
+                        val chipShape = morphChipShape(on)
                         Box(
-                            Modifier.clip(CircleShape)
+                            Modifier.clip(chipShape)
                                 .background(if (on) scheme.primaryContainer else scheme.surfaceContainerLow)
                                 .clickable { category = c.id }
                                 .padding(horizontal = Space.m, vertical = Space.xs),
@@ -2322,9 +2335,9 @@ private fun EntryDialog(
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     cats.forEach { c ->
                         val on = c.id == cat
-                        
+                        val chipShape = morphChipShape(on)
                             Box(
-                                Modifier.clip(CircleShape)
+                                Modifier.clip(chipShape)
                                     .background(if (on) scheme.primaryContainer else scheme.surfaceContainerHigh)
                                     .clickable { cat = c.id }
                                     .padding(horizontal = Space.m, vertical = 8.dp),

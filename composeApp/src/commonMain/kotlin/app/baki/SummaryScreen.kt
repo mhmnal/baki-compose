@@ -524,11 +524,15 @@ private fun FundRow(
             )
         }
         Spacer(Modifier.height(Space.xs))
-        Text(
-            "target RM ${rm(target)}" +
-                (if (configuredTarget > 0.0) "" else " · one-month default"),
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "target RM ${rm(target)}" +
+                    (if (configuredTarget > 0.0) "" else " · one-month default"),
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(1f),
+            )
+            ReserveBadge(progress.toFloat())
+        }
         Text(
             "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
                 if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
@@ -692,5 +696,28 @@ private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, bel
             color = if (below > 0) scheme.secondary else scheme.tertiary, style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(Space.xs))
+    }
+}
+
+
+@Composable
+private fun ReserveBadge(progress: Float) {
+    val full = progress >= 0.999f
+    val scheme = MaterialTheme.colorScheme
+    val shape = morphChipShape(full)
+    Box(
+        modifier = Modifier
+            .padding(start = Space.xs)
+            .heightIn(min = 22.dp)
+            .clip(shape)
+            .background(if (full) scheme.tertiaryContainer else scheme.surfaceContainerHighest)
+            .padding(horizontal = Space.s, vertical = 2.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            if (full) "full" else "${(progress * 100).toInt()}%",
+            color = if (full) scheme.onTertiaryContainer else scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }
