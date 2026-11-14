@@ -140,12 +140,14 @@ private sealed interface PayoutsTarget {
     data class Stored(val shiftId: String) : PayoutsTarget
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AppContent(repo: BakiRepo) {
     // read the palette *inside* the theme provider, or every colour falls back to dark
     val baki = LocalBaki.current
     var tab by remember { mutableStateOf(PhonePreview.initialTab) }
-    var adding by remember { mutableStateOf(0) }   // 0 none, 1 chooser, 2 entry, 3 shift, 4 payout
+    var adding by remember { mutableStateOf(0) }   // 0 none, 2 entry, 3 shift, 4 payout
+    var addMenuOpen by remember { mutableStateOf(false) }
     var dayPage by remember { mutableStateOf<String?>(null) }
     var day by remember { mutableStateOf(todayIso()) }
     var month by remember { mutableStateOf(todayIso().take(7)) }
@@ -265,14 +267,14 @@ private fun AppContent(repo: BakiRepo) {
                 .widthIn(max = 960.dp),
         ) {
             Header(repo)
-            // MD3 emphasized easing: weighty spatial movement, critically damped fade.
-            val emphasized = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
+            val motionScheme = MaterialTheme.motionScheme
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
-                    (fadeIn(androidx.compose.animation.core.tween(220, easing = emphasized)) +
-                        slideInVertically(androidx.compose.animation.core.tween(360, easing = emphasized)) { it / 12 })
-                        .togetherWith(fadeOut(androidx.compose.animation.core.tween(160, easing = emphasized)))
+                    val spatial = motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
+                    val effects = motionScheme.defaultEffectsSpec<Float>()
+                    (fadeIn(effects) + slideInVertically(spatial) { it / 12 })
+                        .togetherWith(fadeOut(effects))
                 },
                 modifier = Modifier.fillMaxSize(),
                 label = "tab",
@@ -363,7 +365,7 @@ private fun AppContent(repo: BakiRepo) {
             Spacer(Modifier.weight(1f))
             if (tab == 0 && !repo.readOnly) {
                 FloatingActionButton(
-                    onClick = { adding = 1 },
+                    onClick = { editingEntry = null; entryType = "expense"; presetCat = null; adding = 2 },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ) { Text("+") }
@@ -394,36 +396,55 @@ private fun AppContent(repo: BakiRepo) {
         }
     }
 
-    // MD3 primary action.
+    // M3 Expressive primary action menu.
     if (!wide && tab == 0 && !repo.readOnly && dayPage == null) {
-        androidx.compose.animation.AnimatedContent(
-            targetState = headerCollapsed,
+        FloatingActionButtonMenu(
+            expanded = addMenuOpen,
             modifier = Modifier.align(Alignment.BottomEnd)
                 .padding(end = Space.l, bottom = barHeight + barGap + Space.l),
-            transitionSpec = {
-                (fadeIn(androidx.compose.animation.core.tween(180)) +
-                    scaleIn(initialScale = 0.88f, animationSpec = androidx.compose.animation.core.tween(240, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))))
-                    .togetherWith(fadeOut(androidx.compose.animation.core.tween(120)))
-            },
-            label = "fabMorph",
-        ) { collapsed ->
-            if (collapsed) {
+            button = {
                 FloatingActionButton(
-                    onClick = { adding = 1 },
+                    onClick = { addMenuOpen = !addMenuOpen },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.semantics { contentDescription = "Add entry" },
+                    modifier = Modifier.semantics { contentDescription = if (addMenuOpen) "Close quick actions" else "Open quick actions" },
                 ) { Text("+", style = MaterialTheme.typography.headlineSmall) }
-            } else {
-                ExtendedFloatingActionButton(
-                    onClick = { adding = 1 },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.semantics { contentDescription = "Add entry" },
-                    icon = { Text("+", style = MaterialTheme.typography.titleLarge) },
-                    text = { Text("Add entry") },
-                )
-            }
+            },
+        ) {
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    addMenuOpen = false
+                    editingEntry = null
+                    entryType = "expense"
+                    presetCat = null
+                    adding = 2
+                },
+                text = { Text("Add spending") },
+                icon = { Icon(BakiIcons.Receipt, contentDescription = null) },
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    addMenuOpen = false
+                    editingEntry = null
+                    entryType = "income"
+                    presetCat = null
+                    adding = 2
+                },
+                text = { Text("Add income") },
+                icon = { Icon(BakiIcons.Wallet, contentDescription = null) },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            )
+            FloatingActionButtonMenuItem(
+                onClick = {
+                    addMenuOpen = false
+                    editingShift = null
+                    adding = 3
+                },
+                text = { Text("Log shift") },
+                icon = { Icon(BakiIcons.Car, contentDescription = null) },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            )
         }
     }
 
@@ -520,12 +541,6 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     when (adding) {
-        1 -> AddChoiceDialog(
-            onDismiss = { adding = 0 },
-            onShift = { editingShift = null; adding = 3 },
-            onExpense = { editingEntry = null; entryType = "expense"; adding = 2 },
-            onIncome = { editingEntry = null; entryType = "income"; adding = 2 },
-        )
         2 -> EntryDialog(
             existing = editingEntry,
             initialType = entryType,
@@ -620,7 +635,7 @@ private fun AppContent(repo: BakiRepo) {
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun Header(repo: BakiRepo) {
     val status = repo.status
@@ -649,12 +664,26 @@ fun Header(repo: BakiRepo) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                status.replaceFirstChar { it.titlecase() },
-                color = ink,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(end = Space.l),
-            )
+            if (status == "syncing") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(end = Space.l),
+                ) {
+                    LoadingIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = ink,
+                    )
+                    Spacer(Modifier.width(Space.xs))
+                    Text("Syncing", color = ink, style = MaterialTheme.typography.labelSmall)
+                }
+            } else {
+                Text(
+                    status.replaceFirstChar { it.titlecase() },
+                    color = ink,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(end = Space.l),
+                )
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -832,6 +861,7 @@ private fun bakiFieldColors(): TextFieldColors {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: () -> Unit = {}) {
     val baki = LocalBaki.current
@@ -862,7 +892,17 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     ) {
         Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(accent))
+                Box(
+                    Modifier.size(30.dp)
+                        .clip(MaterialShapes.Cookie9Sided.toShape())
+                        .background(
+                            if (onBreak) MaterialTheme.colorScheme.tertiaryContainer
+                            else MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(accent))
+                }
                 Spacer(Modifier.width(Space.s))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -883,7 +923,10 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
             Text(
                 "RM ${rm(netCents)}",
                 color = if (net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = FontWeight.Bold,
+                ),
             )
             Spacer(Modifier.height(Space.s))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -1387,23 +1430,24 @@ private fun BillEditorDialog(
 
 private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Shift"), APP("App") }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
-    PrimaryTabRow(
-        selectedTabIndex = MoreTab.entries.indexOf(selected),
-        containerColor = Color.Transparent,
-        divider = {},
+    ButtonGroup(
+        overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         MoreTab.entries.forEach { tab ->
-            Tab(
-                selected = tab == selected,
-                onClick = { onSelect(tab) },
-                text = { Text(tab.label) },
+            toggleableItem(
+                checked = tab == selected,
+                label = tab.label,
+                onCheckedChange = { if (it) onSelect(tab) },
+                weight = 1f,
             )
         }
     }
 }
-
 @Composable
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollapsed: (Boolean) -> Unit = {}) {
     val baki = LocalBaki.current
@@ -2179,39 +2223,6 @@ private fun SwitchRow(
                 uncheckedBorderColor = baki.muted,
             ),
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AddChoiceDialog(
-    onDismiss: () -> Unit,
-    onShift: () -> Unit,
-    onExpense: () -> Unit,
-    onIncome: () -> Unit,
-) {
-    val baki = LocalBaki.current
-    BakiSheet(onDismiss = onDismiss) {
-            Text("Add", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.headlineSmall)
-            ChoiceTile("Log shift", "payout + km + hours → your real rate", baki.primaryContainer, baki.onPrimaryContainer, onShift)
-            ChoiceTile("Add spending", "petrol, toll, food, service", MaterialTheme.colorScheme.surfaceContainerHigh, baki.onSurface, onExpense)
-            ChoiceTile("Add income", "tips, cash, bonus", MaterialTheme.colorScheme.surfaceContainerHigh, baki.onSurface, onIncome)
-        }
-}
-
-@Composable
-private fun ChoiceTile(label: String, sub: String, bg: Color, ink: Color, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(Radius.large),
-        color = bg,
-        contentColor = ink,
-        onClick = onClick,
-    ) {
-        Column(Modifier.padding(Space.l)) {
-            Text(label, color = ink, style = MaterialTheme.typography.titleMedium)
-            Text(sub, color = ink.copy(alpha = 0.78f), style = MaterialTheme.typography.bodyMedium)
-        }
     }
 }
 

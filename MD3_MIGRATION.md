@@ -214,3 +214,45 @@ No financial feature was removed.
 - Deleted the dead glass bottom-bar code and the animated dashed LiveTrace file.
 - The Add chooser uses tonal surfaces; its primary choice is primaryContainer, not a stark white tile.
 - 225 tests pass; signed 0.40.6, code 127.
+
+## Material 3 Expressive upgrade (0.41.0)
+
+### Verified APIs and versions
+
+- Compose plugin: `org.jetbrains.compose` **1.12.2**
+- Material 3 artifact: **`org.jetbrains.compose.material3:material3:1.12.0-alpha03`**
+- Previous resolved artifact `1.9.0` contains `MotionScheme` and Expressive tokens but **not** the
+  public ButtonGroup/SplitButton/FABMenu/FloatingToolbar/LoadingIndicator composables.
+- `1.12.0-alpha03` ships `ExperimentalMaterial3ExpressiveApi`, `MotionScheme.expressive()`,
+  `ButtonGroup`, `ButtonGroupDefaults`, `SplitButtonLayout`, `FloatingActionButtonMenu`,
+  `LoadingIndicator`, `ContainedLoadingIndicator` and all `MaterialShapes`.
+- Its Compose dependencies are 1.12.0-beta01; the project’s 1.12.2 Compose artifacts supersede them.
+
+### Five Expressive pillars applied
+
+1. **Real components**
+   - Month-in-ink 7D/30D range: `ButtonGroup` with toggleable items and overflow indicator.
+   - More Money/Shift/App: full-width `ButtonGroup`.
+   - Primary add action: `FloatingActionButtonMenu` with tonal spending/income/shift items.
+   - Sync state: morphing `LoadingIndicator`.
+2. **Spring physics**
+   - `MaterialTheme(..., motionScheme = MotionScheme.expressive())`.
+   - Screen transitions read `defaultSpatialSpec` / `defaultEffectsSpec` from the active scheme.
+   - Expressive ButtonGroup/FABMenu components own their width/shape springs.
+3. **Shape tension**
+   - Live Shift status badge uses `MaterialShapes.Cookie9Sided.toShape()` with secondary/tertiary
+     container roles.
+   - Rounded 16/24/28 containers remain for hierarchy; the cookie badge is the focal exception.
+4. **Editorial typography**
+   - Display figures now install at bold weight; money remains tabular sans.
+   - Monthly Statement, Today net and Live Shift net are the three editorial hero moments.
+5. **Multi-role colour**
+   - Statement cover primaryContainer; week secondaryContainer; reserves tertiaryContainer.
+   - FABMenu items use primary/secondary/tertiary container roles.
+   - Live badge uses secondaryContainer when active and tertiaryContainer when paused.
+
+### Verification
+
+- Compile: Android + desktop.
+- 225 tests, 0 failures.
+- Signed and installed 0.41.0, code 128.

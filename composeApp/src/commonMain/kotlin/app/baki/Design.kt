@@ -156,7 +156,7 @@ object BakiType {
         if (textFamily === text && displayFamily === displayFace && readoutFamily === readoutFace) return
         textFamily = text; displayFamily = displayFace; readoutFamily = readoutFace
 
-        val displayWeight = FontWeight.Normal
+        val displayWeight = FontWeight.Bold
         val titleWeight = FontWeight.SemiBold
         display = display.copy(fontFamily = displayFace, fontWeight = displayWeight)
         displaySmall = displaySmall.copy(fontFamily = displayFace, fontWeight = displayWeight)

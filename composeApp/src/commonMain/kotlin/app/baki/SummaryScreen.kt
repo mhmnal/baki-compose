@@ -12,12 +12,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -216,6 +217,7 @@ private fun StatementCover(
 
 private data class InkDay(val iso: String, val net: Long, val active: Boolean)
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MonthInkChart(store: Store, month: String) {
     val scheme = MaterialTheme.colorScheme
@@ -244,15 +246,23 @@ private fun MonthInkChart(store: Store, month: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-                val chipColors = FilterChipDefaults.filterChipColors(
-                    containerColor = scheme.surfaceContainerLow,
-                    labelColor = scheme.onSurfaceVariant,
-                    selectedContainerColor = scheme.primaryContainer,
-                    selectedLabelColor = scheme.onPrimaryContainer,
+            ButtonGroup(
+                overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+                modifier = Modifier.width(144.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                toggleableItem(
+                    checked = range == 7,
+                    label = "7D",
+                    onCheckedChange = { range = 7 },
+                    weight = 1f,
                 )
-                FilterChip(selected = range == 7, onClick = { range = 7 }, label = { Text("7D") }, border = null, colors = chipColors)
-                FilterChip(selected = range == 30, onClick = { range = 30 }, label = { Text("30D") }, border = null, colors = chipColors)
+                toggleableItem(
+                    checked = range == 30,
+                    label = "30D",
+                    onCheckedChange = { range = 30 },
+                    weight = 1f,
+                )
             }
         }
         Spacer(Modifier.height(Space.xs))
