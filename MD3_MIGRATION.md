@@ -320,3 +320,10 @@ No financial feature was removed.
   of crashing the app process.
 - Verified on-device: the signed app launches to Today instead of the crash dialog.
 - Desktop/phone unified UI, 194 tests, Material3 1.12.0-alpha03 pinned.
+
+## 0.43.0 final gates
+
+- Gate 3: verified spring-driven shape morphs for categories, live/paused status, reserve badges and receipt press; upgraded shared and Day Page headers to scroll-aware MediumTopAppBars.
+- Gate 4: added structured chart/map semantics, tab role/selected state, explicit navigation labels, system-respecting reduced-motion toggle, 360dp/1.3x auto-fitting hero text, and full semantic contrast coverage.
+- Final checks: 194 tests, Android debug, desktop tests and R8 release compile all pass.
+- Known verification limits: varied wallpaper-seed contrast and true 120fps were not reproducible in this device session; see Gate 4 report.
