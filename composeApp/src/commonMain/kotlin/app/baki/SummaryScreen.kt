@@ -186,7 +186,7 @@ fun SummaryScreen(
                 Spacer(Modifier.height(Space.m))
                 FundRow("Wear & tear", funds.wear, baki)
                 Spacer(Modifier.height(Space.s))
-                Text("lifetime reserve · this month + accrual, − real spending", color = baki.muted, style = BakiType.caption)
+                Text("rolling reserve · this month + accrual, − real spending", color = baki.muted, style = BakiType.caption)
                 Spacer(Modifier.height(Space.s))
                 LedgerRule(alpha = 0.16f)
             }
@@ -320,19 +320,17 @@ private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
                 color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong,
             )
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}",
-                color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f),
-            )
-            Text(
-                if (fund.monthNet < 0) "shortfall RM ${rm(-fund.monthNet)}"
-                else if (fund.monthNet > 0) "added RM ${rm(fund.monthNet)}"
-                else "no change",
-                color = if (fund.monthNet < 0) baki.down else baki.muted,
-                style = BakiType.captionNumeric,
-            )
-        }
+        Text(
+            "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}",
+            color = baki.muted, style = BakiType.caption,
+        )
+        Text(
+            if (fund.monthNet < 0) "shortfall RM ${rm(-fund.monthNet)}"
+            else if (fund.monthNet > 0) "added to reserve RM ${rm(fund.monthNet)}"
+            else "no change this month",
+            color = if (fund.monthNet < 0) baki.down else baki.muted,
+            style = BakiType.captionNumeric,
+        )
     }
 }
 

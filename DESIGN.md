@@ -1188,3 +1188,9 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Signed with the existing key, versionCode 112.
 - 210 tests. Latest synced snapshot: 12 shifts, 83 entries, 22:15.
 - ADB install not completed: `192.168.1.19:37079` refused authentication.
+
+## 0.37.8 fund layout
+
+- Monthly contribution, withdrawal and shortfall are separate lines, so the 360dp row cannot crowd.
+- Rolling reserve label clarified.
+- 210 tests; signed next.

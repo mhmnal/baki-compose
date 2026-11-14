@@ -139,3 +139,7 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Rolling fuel/wear reserves; 210 tests. Signed versionCode 112.
 - Not installed: wireless debugging port refused authentication; needs fresh pairing.
+
+### 0.37.8
+
+- Rolling fund rows split for narrow layouts; 210 tests.
