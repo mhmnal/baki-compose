@@ -39,7 +39,13 @@ object Calibration {
 
     private fun load(): CalibrationFile {
         cache?.let { return it }
-        val raw = LocalStore.readText(FILE)
+        val raw = try {
+            LocalStore.readText(FILE)
+        } catch (e: Exception) {
+            runCatching { LocalStore.quarantine(FILE) }
+            StoreHealth.loadError = "Odometer calibration could not be opened (${e.message ?: "decrypt failed"})."
+            null
+        }
         val file = raw?.let {
             runCatching { json.decodeFromString<CalibrationFile>(it) }.getOrNull()
         } ?: CalibrationFile()

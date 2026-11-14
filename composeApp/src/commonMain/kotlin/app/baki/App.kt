@@ -225,7 +225,15 @@ private fun AppContent(repo: BakiRepo) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 600.dp
-        val wideRailState = if (wide) rememberWideNavigationRailState() else null
+        val wideRailState = if (wide) {
+            rememberWideNavigationRailState(
+                initialValue = if (maxWidth >= 840.dp) {
+                    WideNavigationRailValue.Expanded
+                } else {
+                    WideNavigationRailValue.Collapsed
+                },
+            )
+        } else null
         var railWidthPx by remember { mutableIntStateOf(0) }
         val railStart = if (wide && railWidthPx > 0) {
             with(LocalDensity.current) { railWidthPx.toDp() }
@@ -356,9 +364,6 @@ private fun AppContent(repo: BakiRepo) {
                     IconButton(onClick = { scope.launch { wideRailState.toggle() } }) {
                         Text(if (expanded) "‹" else "›", style = MaterialTheme.typography.titleLarge)
                     }
-                    if (expanded) {
-                        Text("Baki", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                    }
                     if (tab == 0 && !repo.readOnly && repo.live == null) {
                         Spacer(Modifier.height(Space.s))
                         FloatingActionButton(
@@ -417,23 +422,34 @@ private fun AppContent(repo: BakiRepo) {
         FloatingActionButtonMenu(
             expanded = addMenuOpen,
             modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = Space.l, bottom = barHeight + barGap + Space.l),
+                .padding(end = 16.dp, bottom = barHeight + barGap + 16.dp),
             button = {
                 ToggleFloatingActionButton(
                     checked = addMenuOpen,
                     onCheckedChange = { addMenuOpen = it },
-                    modifier = Modifier.semantics { contentDescription = if (addMenuOpen) "Close quick actions" else "Open quick actions" },
+                    modifier = Modifier
+                        .size(56.dp)
+                        .semantics { contentDescription = if (addMenuOpen) "Close quick actions" else "Open quick actions" },
+                    contentAlignment = Alignment.Center,
+                    containerColor = ToggleFloatingActionButtonDefaults.containerColor(
+                        initialColor = MaterialTheme.colorScheme.primaryContainer,
+                        finalColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     val rotation by animateFloatAsState(
                         targetValue = if (addMenuOpen) 45f else 0f,
                         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
                         label = "addMenuRotation",
                     )
-                    Text(
-                        "+",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.rotate(rotation),
-                    )
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            "+",
+                            color = if (addMenuOpen) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.rotate(rotation),
+                        )
+                    }
                 }
             },
         ) {
@@ -447,7 +463,6 @@ private fun AppContent(repo: BakiRepo) {
                 },
                 text = { Text("Add spending", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Receipt, contentDescription = null) },
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
             )
             FloatingActionButtonMenuItem(
                 onClick = {
@@ -459,7 +474,6 @@ private fun AppContent(repo: BakiRepo) {
                 },
                 text = { Text("Add income", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Wallet, contentDescription = null) },
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             )
             FloatingActionButtonMenuItem(
                 onClick = {
@@ -469,7 +483,6 @@ private fun AppContent(repo: BakiRepo) {
                 },
                 text = { Text("Log shift", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Car, contentDescription = null) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
             )
         }
     }

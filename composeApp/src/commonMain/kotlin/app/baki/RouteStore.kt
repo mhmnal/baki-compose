@@ -27,7 +27,13 @@ object RouteStore {
 
     private fun loadUnlocked(): RouteFile {
         cache?.let { return it }
-        val raw = LocalStore.readText(FILE)
+        val raw = try {
+            LocalStore.readText(FILE)
+        } catch (e: Exception) {
+            runCatching { LocalStore.quarantine(FILE) }
+            StoreHealth.loadError = "Route history could not be opened (${e.message ?: "decrypt failed"})."
+            null
+        }
         val loaded = if (raw.isNullOrBlank()) {
             RouteFile()
         } else {
