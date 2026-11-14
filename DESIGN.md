@@ -1179,3 +1179,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Summary labels them FUNDS · ROLLING and shows monthly + accrual, − spending and shortfall.
 - Desktop uses the same model, including wear spending.
 - 210 tests, including future-month boundary coverage.
+
+## 0.37.7 release
+
+- Fuel/wear funds are rolling provisions, as-of the selected month.
+- Monthly contribution/withdrawal and shortfall shown under each rolling balance.
+- Desktop funds block uses the same model.
+- Signed with the existing key, versionCode 112.
+- 210 tests. Latest synced snapshot: 12 shifts, 83 entries, 22:15.
+- ADB install not completed: `192.168.1.19:37079` refused authentication.

@@ -134,3 +134,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Rolling fuel/wear provision across months; monthly contribution/withdrawal shown underneath.
 - Latest server snapshot: 12 shifts, 82 entries, 22:09 update.
 - 210 tests; release to sign next.
+
+### 0.37.7 signed
+
+- Rolling fuel/wear reserves; 210 tests. Signed versionCode 112.
+- Not installed: wireless debugging port refused authentication; needs fresh pairing.
