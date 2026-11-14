@@ -445,7 +445,7 @@ private fun AppContent(repo: BakiRepo) {
                     presetCat = null
                     adding = 2
                 },
-                text = { Text("Add spending") },
+                text = { Text("Add spending", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Receipt, contentDescription = null) },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
             )
@@ -457,7 +457,7 @@ private fun AppContent(repo: BakiRepo) {
                     presetCat = null
                     adding = 2
                 },
-                text = { Text("Add income") },
+                text = { Text("Add income", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Wallet, contentDescription = null) },
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             )
@@ -467,7 +467,7 @@ private fun AppContent(repo: BakiRepo) {
                     editingShift = null
                     adding = 3
                 },
-                text = { Text("Log shift") },
+                text = { Text("Log shift", style = MaterialTheme.typography.labelLargeEmphasized) },
                 icon = { Icon(BakiIcons.Car, contentDescription = null) },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
             )
@@ -853,7 +853,7 @@ private fun SectionTitle(text: String, trailing: String = "") {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 text.lowercase().replaceFirstChar { it.titlecase() }, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmallEmphasized,
                 modifier = Modifier.semantics { heading() },
             )
             if (trailing.isNotEmpty()) Text(trailing, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
@@ -938,10 +938,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
             Text(
                 "RM ${rm(netCents)}",
                 color = if (net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontFeatureSettings = "tnum",
-                    fontWeight = FontWeight.Bold,
-                ),
+                style = MaterialTheme.typography.headlineLargeEmphasized.copy(fontFeatureSettings = "tnum"),
             )
             Spacer(Modifier.height(Space.s))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -998,12 +995,12 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 FilledTonalButton(
                     onClick = onPayout,
                     modifier = Modifier.weight(1f),
-                ) { Text("+ Payout") }
+                ) { Text("+ Payout", style = MaterialTheme.typography.labelLargeEmphasized) }
                 Button(
                     enabled = !repo.readOnly,
                     onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
                     modifier = Modifier.weight(1f),
-                ) { Text(if (onBreak) "Resume" else "Pause") }
+                ) { Text(if (onBreak) "Resume" else "Pause", style = MaterialTheme.typography.labelLargeEmphasized) }
                 Button(
                     enabled = !repo.readOnly,
                     onClick = { scope.launch { repo.endLive() } },
@@ -1012,7 +1009,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     ),
-                ) { Text("End") }
+                ) { Text("End", style = MaterialTheme.typography.labelLargeEmphasized) }
             }
         }
     }
@@ -1307,7 +1304,7 @@ private fun ShiftsScreen(
                 FilledTonalButton(
                     onClick = onAddShift,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                ) { Text("Add shift") }
+                ) { Text("Add shift", style = MaterialTheme.typography.labelLargeEmphasized) }
                 Spacer(Modifier.height(Space.l))
             }
         }
@@ -1446,20 +1443,12 @@ private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Shift"), 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
-    ButtonGroup(
-        overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+    ConnectedChoiceGroup(
+        options = MoreTab.entries.map { it.label },
+        selected = selected.label,
+        onSelect = { label -> MoreTab.entries.firstOrNull { it.label == label }?.let(onSelect) },
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        MoreTab.entries.forEach { tab ->
-            toggleableItem(
-                checked = tab == selected,
-                label = tab.label,
-                onCheckedChange = { if (it) onSelect(tab) },
-                weight = 1f,
-            )
-        }
-    }
+    )
 }
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1857,7 +1846,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     }
                 }
             }
-            FilledTonalButton(onClick = { pickStatement() }) { Text("Import statement PDFs") }
+            FilledTonalButton(onClick = { pickStatement() }) { Text("Import statement PDFs", style = MaterialTheme.typography.labelLargeEmphasized) }
             Spacer(Modifier.height(Space.xs))
             val weeks = repo.store.statements.size
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1960,20 +1949,22 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.l))
         SectionTitle("APPEARANCE")
         Spacer(Modifier.height(Space.s))
-        ButtonGroup(
-            overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+        ConnectedChoiceGroup(
+            options = listOf("Auto", "Light", "Dark"),
+            selected = when (repo.config.themeMode) {
+                "light" -> "Light"
+                "dark" -> "Dark"
+                else -> "Auto"
+            },
+            onSelect = { choice ->
+                repo.setThemeMode(when (choice) {
+                    "Light" -> "light"
+                    "Dark" -> "dark"
+                    else -> "auto"
+                })
+            },
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            listOf("auto" to "Auto", "light" to "Light", "dark" to "Dark").forEach { (value, label) ->
-                toggleableItem(
-                    checked = repo.config.themeMode == value,
-                    label = label,
-                    onCheckedChange = { if (it) repo.setThemeMode(value) },
-                    weight = 1f,
-                )
-            }
-        }
+        )
         Spacer(Modifier.height(Space.s))
         Text(
             "Dynamic colour follows your wallpaper on Android 12+.",
@@ -2295,30 +2286,19 @@ private fun EntryDialog(
                 if (existing == null) "Add" else "Edit",
                 color = scheme.onSurface,
                 modifier = headerMod, style = MaterialTheme.typography.titleLarge )
-                ButtonGroup(
-                    overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+                ConnectedChoiceGroup(
+                    options = listOf("Spending", "Income"),
+                    selected = if (type == "expense") "Spending" else "Income",
+                    onSelect = { choice ->
+                        type = if (choice == "Spending") "expense" else "income"
+                        cat = if (type == "expense") {
+                            settings.cats.catsOut.firstOrNull()?.id ?: "other"
+                        } else {
+                            settings.cats.catsIn.firstOrNull()?.id ?: "otherin"
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    toggleableItem(
-                        checked = type == "expense",
-                        label = "Spending",
-                        onCheckedChange = {
-                            type = "expense"
-                            cat = settings.cats.catsOut.firstOrNull()?.id ?: "other"
-                        },
-                        weight = 1f,
-                    )
-                    toggleableItem(
-                        checked = type == "income",
-                        label = "Income",
-                        onCheckedChange = {
-                            type = "income"
-                            cat = settings.cats.catsIn.firstOrNull()?.id ?: "otherin"
-                        },
-                        weight = 1f,
-                    )
-                }
+                )
                 OutlinedTextField(
                     value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
                     label = { Text("Amount (RM)") }, singleLine = true,

@@ -1,5 +1,14 @@
 package app.baki
 
+import androidx.compose.ui.text.style.TextOverflow
+
+
+import androidx.compose.foundation.layout.Arrangement
+
+import androidx.compose.foundation.layout.Row
+
+import androidx.compose.foundation.layout.PaddingValues
+
 import androidx.compose.material3.Typography
 
 import androidx.compose.material3.MaterialTheme
@@ -84,9 +93,9 @@ object Veil {
 fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {
     val value = kotlin.math.abs(cents)
     return when {
-        value >= 100_000_00L -> typography.headlineMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold)
-        value >= 10_000_00L -> typography.displaySmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold)
-        else -> typography.displayLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold)
+        value >= 100_000_00L -> typography.headlineMediumEmphasized.copy(fontFeatureSettings = "tnum")
+        value >= 10_000_00L -> typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum")
+        else -> typography.displayLargeEmphasized.copy(fontFeatureSettings = "tnum")
     }
 }
 
@@ -133,3 +142,59 @@ fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifie
     }
 }
 
+
+/**
+ * Official M3 Expressive connected button group primitive.
+ *
+ * 2dp inner spacing, fully rounded outer edges, square inner edges, and shape-morphing on the
+ * selected item. Use only for single-select choices that used to be segmented controls.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ConnectedChoiceGroup(
+    options: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val colors = androidx.compose.material3.ToggleButtonDefaults.toggleButtonColors(
+        containerColor = scheme.surfaceContainerHigh,
+        contentColor = scheme.onSurfaceVariant,
+        checkedContainerColor = scheme.primary,
+        checkedContentColor = scheme.onPrimary,
+    )
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        options.forEachIndexed { index, label ->
+            val checked = selected == label
+            androidx.compose.material3.ToggleButton(
+                checked = checked,
+                onCheckedChange = { onSelect(label) },
+                shapes = when {
+                    options.size == 1 -> androidx.compose.material3.ButtonGroupDefaults.connectedMiddleButtonShapes()
+                    index == 0 -> androidx.compose.material3.ButtonGroupDefaults.connectedLeadingButtonShapes()
+                    index == options.lastIndex -> androidx.compose.material3.ButtonGroupDefaults.connectedTrailingButtonShapes()
+                    else -> androidx.compose.material3.ButtonGroupDefaults.connectedMiddleButtonShapes()
+                },
+                colors = colors,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = Control.primary)
+                    .semantics { role = androidx.compose.ui.semantics.Role.RadioButton },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Space.s, vertical = Space.xs),
+            ) {
+                Text(
+                    label,
+                    style = if (checked) MaterialTheme.typography.labelLargeEmphasized
+                    else MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}

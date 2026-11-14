@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonGroup
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -225,7 +223,7 @@ private fun StatementCover(
             }
         }
         Spacer(Modifier.height(Space.xs))
-        EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+        EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
         Text(
             if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
             color = if (delta >= 0) scheme.onSurface else scheme.error,
@@ -277,25 +275,13 @@ private fun MonthInkChart(store: Store, month: String) {
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            ButtonGroup(
-                overflowIndicator = { state -> ButtonGroupDefaults.OverflowIndicator(state) },
+            Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+            ConnectedChoiceGroup(
+                options = listOf("7D", "30D"),
+                selected = if (range == 7) "7D" else "30D",
+                onSelect = { range = if (it == "7D") 7 else 30 },
                 modifier = Modifier.width(144.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                toggleableItem(
-                    checked = range == 7,
-                    label = "7D",
-                    onCheckedChange = { range = 7 },
-                    weight = 1f,
-                )
-                toggleableItem(
-                    checked = range == 30,
-                    label = "30D",
-                    onCheckedChange = { range = 30 },
-                    weight = 1f,
-                )
-            }
+            )
         }
         Spacer(Modifier.height(Space.xs))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -407,7 +393,7 @@ private fun WeekSection(store: Store, today: String) {
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("This week", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text("This week", color = scheme.onSurface, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
             Text("RM ${rm(thisWeek.net)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
         Text(

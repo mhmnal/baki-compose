@@ -350,7 +350,7 @@ fun TodayScreen(
                         FilledTonalButton(
                             onClick = { repo.startLive() },
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Start live shift") }
+                        ) { Text("Start live shift", style = MaterialTheme.typography.labelLargeEmphasized) }
                     }
                     
                 }
@@ -360,7 +360,7 @@ fun TodayScreen(
                 FilledTonalButton(
                     onClick = { repo.startLive() },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
-                ) { Text("Start a live shift") }
+                ) { Text("Start a live shift", style = MaterialTheme.typography.labelLargeEmphasized) }
             }
         }
 
