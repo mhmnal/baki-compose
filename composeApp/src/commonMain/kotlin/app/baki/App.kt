@@ -2192,21 +2192,25 @@ private fun AddChoiceDialog(
 ) {
     val baki = LocalBaki.current
     BakiSheet(onDismiss = onDismiss) {
-            Text("Add", color = baki.onSurface, style = BakiType.title )
-            ChoiceTile("Log shift", "payout + km + hours → your real rate", baki.accentStrong, baki.onAccent, onShift)
-            ChoiceTile("Add spending", "petrol, toll, food, service", baki.surfaceHigh, baki.onSurface, onExpense)
-            ChoiceTile("Add income", "tips, cash, bonus", baki.surfaceHigh, baki.up, onIncome)
+            Text("Add", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.headlineSmall)
+            ChoiceTile("Log shift", "payout + km + hours → your real rate", baki.primaryContainer, baki.onPrimaryContainer, onShift)
+            ChoiceTile("Add spending", "petrol, toll, food, service", MaterialTheme.colorScheme.surfaceContainerHigh, baki.onSurface, onExpense)
+            ChoiceTile("Add income", "tips, cash, bonus", MaterialTheme.colorScheme.surfaceContainerHigh, baki.onSurface, onIncome)
         }
 }
 
 @Composable
 private fun ChoiceTile(label: String, sub: String, bg: Color, ink: Color, onClick: () -> Unit) {
-    Box(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.large)).background(bg).clickable { onClick() }.padding(Space.l),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Radius.large),
+        color = bg,
+        contentColor = ink,
+        onClick = onClick,
     ) {
-        Column {
-            Text(label, color = ink, style = BakiType.bodyStrong )
-            Text(sub, color = ink.copy(alpha = 0.75f), style = BakiType.caption )
+        Column(Modifier.padding(Space.l)) {
+            Text(label, color = ink, style = MaterialTheme.typography.titleMedium)
+            Text(sub, color = ink.copy(alpha = 0.78f), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

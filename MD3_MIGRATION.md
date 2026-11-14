@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.5 / code 126 — signed and installed**
+Version: **0.40.6 / code 127 — signed and installed**
 
 ## Design direction
 
@@ -212,4 +212,5 @@ No financial feature was removed.
   standard drag handle, standard scrim, tonal container. The app-level 18dp background blur was
   removed entirely.
 - Deleted the dead glass bottom-bar code and the animated dashed LiveTrace file.
-- 225 tests pass; signed 0.40.5, code 126.
+- The Add chooser uses tonal surfaces; its primary choice is primaryContainer, not a stark white tile.
+- 225 tests pass; signed 0.40.6, code 127.
