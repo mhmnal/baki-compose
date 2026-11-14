@@ -1258,3 +1258,10 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Reserve top-ups/withdrawals are signed virtual transactions with recent history.
 - Settings, moves and reserve transactions are preserved server-side.
 - 223 tests; signed next.
+
+## 0.38.4 Phase 3 release
+
+- Envelopes: base + opt-in carry + per-month moves, with read-only guards.
+- Reserves: explicit targets, virtual top-ups/withdrawals and movement history in a paper dialog.
+- Server preserves settings, moves and transactions; old remote snapshots cannot erase local Phase 3 settings.
+- 224 tests; signed versionCode 119 installed.

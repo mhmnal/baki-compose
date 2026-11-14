@@ -180,3 +180,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Envelope carry/moves and reserve targets/top-ups implemented; 223 tests.
 - Signed next.
+
+### 0.38.4 Phase 3 signed
+
+- Envelope carry/moves and reserve targets/top-ups installed; 224 tests.
+- Next: Phase 4 export/print.
