@@ -143,3 +143,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 ### 0.37.8
 
 - Rolling fund rows split for narrow layouts; 210 tests.
+
+### 0.37.8 signed
+
+- Rolling fuel/wear reserves; 210 tests; installed on signed package.
+- Latest: fuel −RM115.45, wear −RM345.76.

@@ -1194,3 +1194,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Monthly contribution, withdrawal and shortfall are separate lines, so the 360dp row cannot crowd.
 - Rolling reserve label clarified.
 - 210 tests; signed next.
+
+## 0.37.8 release
+
+- Rolling fuel/wear reserves carried across months, as-of selected month.
+- Monthly contribution/withdrawal and shortfall on separate lines for narrow screens.
+- Desktop uses the same rolling model.
+- 210 tests. Signed versionCode 113; installed on the phone after pairing.
+- Latest snapshot: 83 entries, 12 shifts, updated 22:15.
