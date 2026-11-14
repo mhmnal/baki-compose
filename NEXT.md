@@ -159,3 +159,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Day page, running margins, day notes and receipt attachments.
 - 216 tests; server restarted with receipt/day-note preservation.
 - Next: Phase 2, daily close/seal and statement reconciliation.
+
+### 0.38.0 Phase 1 signed
+
+- Day page, running margin, day notes, receipt attachments and server preservation.
+- 216 tests; installed.
+- Phase 2 not started: daily close/seal + statement reconciliation.

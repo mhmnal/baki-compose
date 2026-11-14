@@ -1222,3 +1222,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Receipt picker: Android photo picker; desktop file picker. Receipt thumbnail, preview, replace and remove.
 - Server preserves receipts/day notes while remaining backward-compatible with older clients.
 - 216 tests; 360dp and 1.3x checked.
+
+## 0.38.0 Phase 1 release
+
+- Day page with running balance margin, shifts, page note and receipt controls.
+- Receipts stored as compressed base64 (<=180k chars) on entries and preserved by the tracker server.
+- Day notes stored as last-writer-wins `DayNote` map; schema is optional for old stores.
+- Spending rows show an entries-running balance margin.
+- 216 tests; signed versionCode 115, installed on the phone.
+- 360dp and 1.3x day-page checks passed.
