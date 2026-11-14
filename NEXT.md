@@ -128,3 +128,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 - Full-width glass header with stronger shared refraction; versionCode 111.
 - 207 tests; signed collapse/expand verified.
 - Pending: frame-time profile for the heavier blur/lens.
+
+### Rolling funds
+
+- Rolling fuel/wear provision across months; monthly contribution/withdrawal shown underneath.
+- Latest server snapshot: 12 shifts, 82 entries, 22:09 update.
+- 210 tests; release to sign next.

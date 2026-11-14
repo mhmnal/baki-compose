@@ -1170,3 +1170,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Header tint reduced to 0.22; legibility comes from diffusion/refraction.
 - Signed with existing key, versionCode 111; installed over 0.37.5 with data retained.
 - 207 tests; collapse and expand verified on the signed package.
+
+## Rolling funds
+
+- Fuel and wear are now lifetime/rolling provisions, carried across months.
+- `Fund` exposes lifetime accrued/spent, balance, and selected-month contribution/withdrawal.
+- The rolling balance stops at the selected month; future months cannot leak into a past view.
+- Summary labels them FUNDS · ROLLING and shows monthly + accrual, − spending and shortfall.
+- Desktop uses the same model, including wear spending.
+- 210 tests, including future-month boundary coverage.

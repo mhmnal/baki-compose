@@ -927,32 +927,27 @@ private fun BillsBlock(store: Store, month: String, neu: Neu) {
 
 @Composable
 private fun FundsBlock(store: Store, month: String, neu: Neu) {
-    val cfg = store.settings.profit
-    val shifts = store.shifts.filter { it.date.startsWith(month) }
-    val km = shifts.sumOf { it.km }
-    val fuelAccrued = (km / cfg.kmPerLitre * cfg.fuelPrice * 100).toLong()
-    val fuelSpent = store.entries.filter { it.date.startsWith(month) && isFuelCat(it.cat) }.sumOf { it.amount }
-    val wearAccrued = (km * cfg.wearPerKm * 100).toLong()
-    Text("FUNDS", color = neu.muted, style = BakiType.section)
+    val funds = fundStats(store, month)
+    Text("FUNDS · ROLLING", color = neu.muted, style = BakiType.section)
     Spacer(Modifier.height(Space.s))
-    listOf(Triple("Fuel", fuelAccrued, fuelSpent), Triple("Wear", wearAccrued, 0L)).forEach { (label, accrued, spent) ->
+    listOf("Fuel" to funds.fuel, "Wear" to funds.wear).forEach { (label, fund) ->
         Row(Modifier.fillMaxWidth().padding(vertical = Space.xxs)) {
             Text(label, color = neu.ink, style = BakiType.label)
             Spacer(Modifier.weight(1f))
-            val delta = accrued - spent
             Text(
-                "RM ${rm(delta)}",
-                color = if (delta >= 0) neu.accent else neu.danger,
+                "RM ${rm(fund.balance)}",
+                color = if (fund.balance >= 0) neu.accent else neu.danger,
                 style = BakiType.subtitleNumeric,
             )
         }
-        val delta = accrued - spent
-        Text("accrued RM ${rm(accrued)} · spent RM ${rm(spent)}", color = neu.muted, style = BakiType.captionNumeric)
-        if (delta < 0) Text("shortfall", color = neu.danger, style = BakiType.caption)
+        Text(
+            "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
+                if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
+            color = neu.muted, style = BakiType.captionNumeric,
+        )
         Spacer(Modifier.height(Space.xs))
     }
 }
-
 // ------------------------------------------------------------------ tables
 
 @Composable

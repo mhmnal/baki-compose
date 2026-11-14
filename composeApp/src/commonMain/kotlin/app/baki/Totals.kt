@@ -94,26 +94,55 @@ fun rm(ringgit: Double): String = rm(Math.round(ringgit * 100).toLong())
 /** Ringgit (Double) to integer cents, for the hero numbers. */
 fun cents(ringgit: Double): Long = Math.round(ringgit * 100)
 
-/** Fuel and wear funds: accrued from kilometres driven, drained by real spending. */
-data class Fund(val accrued: Double, val spent: Double) { val balance: Double get() = accrued - spent }
+/**
+ * A rolling provision, not a monthly envelope.
+ *
+ * [accrued] and [spent] are lifetime totals: a big service in November does not reset the reserve
+ * to zero on 1 December. [monthAccrued] and [monthSpent] show only the selected calendar month's
+ * contribution and withdrawal, so the UI can explain why the reserve moved.
+ */
+data class Fund(
+    val accrued: Double,
+    val spent: Double,
+    val monthAccrued: Double = accrued,
+    val monthSpent: Double = spent,
+) {
+    val balance: Double get() = accrued - spent
+    val monthNet: Double get() = monthAccrued - monthSpent
+}
 
 data class Funds(val fuel: Fund, val wear: Fund)
 
 fun fundStats(store: Store, month: String? = null): Funds {
     val cfg = store.settings.profit
-    val shifts = store.shifts.filter { month == null || it.date.startsWith(month) }
     var fuelAcc = 0.0
     var wearAcc = 0.0
-    for (s in shifts) {
+    var monthFuelAcc = 0.0
+    var monthWearAcc = 0.0
+    // The reserve is as-of the selected month: browsing October must not pull in November.
+    fun throughSelected(date: String) = month == null || date.take(7) <= month
+    for (s in store.shifts) {
+        if (!throughSelected(s.date)) continue
         val m = shiftMetrics(s, cfg)
         fuelAcc += m.fuel
         wearAcc += m.wear
+        if (month == null || s.date.startsWith(month)) {
+            monthFuelAcc += m.fuel
+            monthWearAcc += m.wear
+        }
     }
-    val expenses = store.entries.filter { it.type != "income" && (month == null || it.date.startsWith(month)) }
+    val expenses = store.entries.filter { it.type != "income" && throughSelected(it.date) }
     val fuelSpent = expenses.filter { isFuelCat(it.cat) }.sumOf { it.amount } / 100.0
     val wearSpent = expenses.filter { it.cat == "maintenance" || it.cat == "carwash" || it.cat == "roadtax" }
         .sumOf { it.amount } / 100.0
-    return Funds(Fund(fuelAcc, fuelSpent), Fund(wearAcc, wearSpent))
+    val monthExpenses = expenses.filter { month == null || it.date.startsWith(month) }
+    val monthFuelSpent = monthExpenses.filter { isFuelCat(it.cat) }.sumOf { it.amount } / 100.0
+    val monthWearSpent = monthExpenses.filter { it.cat == "maintenance" || it.cat == "carwash" || it.cat == "roadtax" }
+        .sumOf { it.amount } / 100.0
+    return Funds(
+        Fund(fuelAcc, fuelSpent, monthFuelAcc, monthFuelSpent),
+        Fund(wearAcc, wearSpent, monthWearAcc, monthWearSpent),
+    )
 }
 
 /** Expense totals per category, biggest first. */

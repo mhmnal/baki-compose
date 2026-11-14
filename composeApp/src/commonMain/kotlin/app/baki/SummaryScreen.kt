@@ -180,13 +180,13 @@ fun SummaryScreen(
         item {
             Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
                 LedgerRule(alpha = 0.16f)
-                Text("FUNDS", color = baki.muted, style = BakiType.section)
+                Text("FUNDS · ROLLING", color = baki.muted, style = BakiType.section)
                 Spacer(Modifier.height(Space.s))
                 FundRow("Fuel", funds.fuel, baki)
-                Spacer(Modifier.height(Space.s))
+                Spacer(Modifier.height(Space.m))
                 FundRow("Wear & tear", funds.wear, baki)
                 Spacer(Modifier.height(Space.s))
-                Text("accrued from km · drained by real spending", color = baki.muted, style = BakiType.caption)
+                Text("lifetime reserve · this month + accrual, − real spending", color = baki.muted, style = BakiType.caption)
                 Spacer(Modifier.height(Space.s))
                 LedgerRule(alpha = 0.16f)
             }
@@ -312,13 +312,27 @@ private fun StatTile(label: String, value: String, sub: String, tint: Color, mod
 
 @Composable
 private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label )
-        Text(
-            "RM ${rm(fund.balance)}",
-            color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong )
-        Spacer(Modifier.width(Space.s))
-        Text("acc ${rm(fund.accrued)} · spent ${rm(fund.spent)}", color = baki.muted, style = BakiType.caption )
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
+            Text(
+                "RM ${rm(fund.balance)}",
+                color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong,
+            )
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}",
+                color = baki.muted, style = BakiType.caption, modifier = Modifier.weight(1f),
+            )
+            Text(
+                if (fund.monthNet < 0) "shortfall RM ${rm(-fund.monthNet)}"
+                else if (fund.monthNet > 0) "added RM ${rm(fund.monthNet)}"
+                else "no change",
+                color = if (fund.monthNet < 0) baki.down else baki.muted,
+                style = BakiType.captionNumeric,
+            )
+        }
     }
 }
 
