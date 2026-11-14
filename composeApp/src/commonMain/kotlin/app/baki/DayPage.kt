@@ -3,6 +3,7 @@ package app.baki
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -280,7 +281,8 @@ private fun DayEntryRow(
     ) {
         Column(Modifier.padding(horizontal = Space.m)) {
         Row(
-            Modifier.fillMaxWidth().heightIn(min = Control.primary).clickable { onEdit() }
+            Modifier.fillMaxWidth().heightIn(min = Control.primary)
+                .combinedClickable(onClick = onEdit, onLongClick = { menu = true })
                 .semantics { contentDescription = "${entry.note.ifEmpty { categoryLabel(store, entry.cat) }}, ${if (entry.type == "income") "income" else "expense"} RM ${rm(entry.amount)}" },
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -291,11 +293,18 @@ private fun DayEntryRow(
                     Text(entry.note.ifEmpty { categoryLabel(store, entry.cat) }, color = baki.onSurface, style = BakiType.bodyStrong)
                     if (bitmap != null) {
                         Spacer(Modifier.width(Space.xs))
-                        Image(
-                            bitmap = bitmap, contentDescription = "Receipt attached",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(24.dp).clip(RoundedCornerShape(Radius.small)).clickable { onPreview() },
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(Radius.small),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.padding(2.dp),
+                        ) {
+                            Image(
+                                bitmap = bitmap, contentDescription = "Receipt attached",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.padding(2.dp).size(22.dp)
+                                    .clip(RoundedCornerShape(Radius.tiny)).clickable { onPreview() },
+                            )
+                        }
                     }
                 }
                 Text(

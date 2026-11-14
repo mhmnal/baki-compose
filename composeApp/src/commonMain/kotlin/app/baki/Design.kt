@@ -238,22 +238,9 @@ fun bakiFontFamilies(): Triple<FontFamily, FontFamily, FontFamily> {
     return remember { Triple(FontFamily(text), display, readout) }
 }
 
-/** A paper rule. Double rules mark the hero total; single rules separate sections. */
+/** Retained as a zero-height compatibility shim for older layouts; MD3 separates by tone. */
 @Composable
-fun LedgerRule(
-    modifier: Modifier = Modifier,
-    double: Boolean = false,
-    alpha: Float = 0.32f,
-) {
-    val baki = LocalBaki.current
-    Column(modifier.fillMaxWidth()) {
-        Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = alpha)))
-        if (double) {
-            Spacer(Modifier.height(2.dp))
-            Spacer(Modifier.fillMaxWidth().height(1.dp).background(baki.onSurface.copy(alpha = alpha * 0.70f)))
-        }
-    }
-}
+fun LedgerRule(modifier: Modifier = Modifier, double: Boolean = false, alpha: Float = 0.32f) = Unit
 
 /** Press feedback for the few surfaces that are not Material buttons. */
 @Composable

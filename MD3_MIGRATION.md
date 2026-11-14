@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.39.0 / code 120**
+Version: **0.40.0 / code 121 — signed and installed**
 
 ## Design direction
 
@@ -16,8 +16,10 @@ The design system is now:
 - **MD3 shape scale**: 4dp extra-small, 8dp small, 12dp medium, 16dp large, 28dp extra-large.
 - **Material type roles**: display/headline/title/body/label, with an expressive serif display face
   reserved for monetary hero figures and Inter for reading and controls.
-- **Standard MD3 components**: TopAppBar, NavigationBar, NavigationRail, FAB, Cards, PrimaryTabRow,
-  SegmentedButtons, OutlinedTextFields, tonal buttons, dialogs and bottom sheets.
+- **Standard MD3 components**: TopAppBar, NavigationBar, NavigationRail, morphing FAB, Cards,
+  PrimaryTabRow, SegmentedButtons, filled search, FilterChips, tonal buttons, dialogs and bottom sheets.
+- **Expressive containers**: primaryContainer statement cover, secondaryContainer week card,
+  tertiaryContainer reserve card, surfaceContainerHigh chart and cash cards.
 
 ## Features removed or simplified
 
@@ -126,6 +128,25 @@ No financial feature was removed.
 - Reserve target, top-up, withdrawal and history remain.
 - Read-only guards remain visible and actionable.
 
+
+## Expressive pass (0.40.0)
+
+- Removed the remaining divider/rule shim; all separation now comes from tonal surfaces.
+- Statement cover now uses `primaryContainer` / `onPrimaryContainer`.
+- Week summary uses `secondaryContainer`; reserves use `tertiaryContainer`; chart/cash use
+  `surfaceContainerHigh`.
+- Month-in-ink selectors are MD3 FilterChips; 7D now ends at today instead of showing future days.
+- Extended Add entry FAB morphs into a compact FAB as the page scrolls.
+- Spending search is a filled `TextField` on `surfaceContainerHighest`; category filters are
+  FilterChips with state-layer ripple.
+- Day entry rows support long-press actions and a receipt thumbnail badge.
+- Screen transitions use the emphasized cubic-bezier `(0.2, 0, 0, 1.0)` with short critically
+  damped fades.
+- All hardcoded palette hex was removed from common source. Legacy palette names now alias Material
+  baseline roles for persisted-config compatibility; the active scheme is dynamic/baseline MD3.
+- Verbose bills/statement/vehicle helper copy was shortened.
+- Live-start and add-shift actions are tonal rather than high-contrast dark pills.
+
 ## Data integrity
 
 - No schema changes were introduced by this migration.
@@ -140,8 +161,9 @@ No financial feature was removed.
 - Dynamic light/dark previews rendered.
 - Phone: 360dp at 1.3× font scale checked; nav labels are single-line.
 - Tablet: 800dp logical width checked with NavigationRail and 960dp content cap.
-- Signed debug build launched without fatal errors.
-- Release build signed with the existing certificate.
+- Signed 0.40.0 release installed and launched without fatal errors.
+- Expanded and collapsed FAB states verified on-device.
+- Release signed with the existing certificate.
 
 ## Known residuals
 

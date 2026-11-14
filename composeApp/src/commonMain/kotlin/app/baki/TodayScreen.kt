@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -354,10 +355,10 @@ fun TodayScreen(
                     }
                     if (day == today && live == null && !repo.readOnly) {
                         Spacer(Modifier.height(Space.m))
-                        PillButton(
-                            "Live", baki.surfaceHigh, baki.onSurface,
-                            Modifier.fillMaxWidth(), { repo.startLive() },
-                        )
+                        FilledTonalButton(
+                            onClick = { repo.startLive() },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Start live shift") }
                     }
                     if (baki.paper) {
                         Spacer(Modifier.height(Space.m))
@@ -367,10 +368,10 @@ fun TodayScreen(
             }
         } else if (live == null && !repo.readOnly && day == today) {
             item {
-                PillButton(
-                    "Start a live shift", baki.primary, baki.onPrimary,
-                    Modifier.fillMaxWidth().height(48.dp), { repo.startLive() },
-                )
+                FilledTonalButton(
+                    onClick = { repo.startLive() },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) { Text("Start a live shift") }
             }
         }
 

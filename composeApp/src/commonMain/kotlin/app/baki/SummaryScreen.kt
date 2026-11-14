@@ -15,8 +15,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,7 +86,10 @@ fun SummaryScreen(
         contentPadding = PaddingValues(top = 0.dp, bottom = 132.dp),
     ) {
         item {
-            Md3Card {
+            Md3Card(
+                container = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
                 StatementCover(
                     month = month, t = t, days = days, best = best, worst = worst,
                     cost = cost, prevNet = prevNet, streak = streak,
@@ -92,14 +97,24 @@ fun SummaryScreen(
                 )
             }
         }
-        item { Md3Card { MonthInkChart(store = store, month = month) } }
-        item { Md3Card { WeekSection(store = store, today = todayIso()) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh) { MonthInkChart(store = store, month = month) } }
+        item {
+            Md3Card(
+                container = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ) { WeekSection(store = store, today = todayIso()) }
+        }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }
         item { Md3Card { CalendarHeat(store, month, compact = true) } }
-        item { Md3Card { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) } }
-        item { Md3Card { CashTruthCard(cash, month, compact = true) } }
+        item {
+            Md3Card(
+                container = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            ) { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) }
+        }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh) { CashTruthCard(cash, month, compact = true) } }
         item { Md3Card { HoursHeatmap(store) } }
         if (cats.isEmpty()) item {
             EmptyState("Nothing this month", "Expenses you log will appear here.")
@@ -111,14 +126,29 @@ fun SummaryScreen(
 }
 
 @Composable
-private fun Md3Card(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+private fun Md3Card(
+    container: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    val base = LocalBaki.current
+    val local = base.copy(
+        onSurface = contentColor,
+        muted = contentColor.copy(alpha = 0.72f),
+        primary = if (container == MaterialTheme.colorScheme.primaryContainer) contentColor else MaterialTheme.colorScheme.primary,
+        surface = container,
+        container = container,
+        surfaceHigh = container,
+    )
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = container, contentColor = contentColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(Modifier.padding(Space.l), content = content)
+        CompositionLocalProvider(LocalBaki provides local) {
+            Column(Modifier.padding(Space.l), content = content)
+        }
     }
 }
 
@@ -181,15 +211,17 @@ private data class InkDay(val iso: String, val net: Long, val active: Boolean)
 @Composable
 private fun MonthInkChart(store: Store, month: String) {
     val baki = LocalBaki.current
-    var range by remember(month) { mutableStateOf(30) }
+    var range by remember(month) { mutableStateOf(7) }
     val allDays = remember(store, month) {
         monthGrid(month).filterNotNull().map { iso ->
             val t = dayTotals(store, iso)
             InkDay(iso, t.net, t.entryCount > 0 || t.shiftCount > 0)
         }
     }
-    val shown = if (range == 7) allDays.takeLast(7) else allDays
-    val active = allDays.filter { it.active }
+    val today = todayIso()
+    val visibleDays = if (month == today.take(7)) allDays.filter { it.iso <= today } else allDays
+    val shown = if (range == 7) visibleDays.takeLast(7) else visibleDays
+    val active = visibleDays.filter { it.active }
     val best = active.maxByOrNull { it.net }
     val worst = active.minByOrNull { it.net }
     val cfg = store.settings.profit
@@ -204,8 +236,10 @@ private fun MonthInkChart(store: Store, month: String) {
         LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Month in ink", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
-            ChartTab("7D", range == 7) { range = 7 }
-            ChartTab("30D", range == 30) { range = 30 }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+                FilterChip(selected = range == 7, onClick = { range = 7 }, label = { Text("7D") })
+                FilterChip(selected = range == 30, onClick = { range = 30 }, label = { Text("30D") })
+            }
         }
         Spacer(Modifier.height(Space.s))
         Canvas(
@@ -250,20 +284,6 @@ private fun MonthInkChart(store: Store, month: String) {
         }
         Spacer(Modifier.height(Space.xs))
         LedgerRule(alpha = 0.16f)
-    }
-}
-
-@Composable
-private fun ChartTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    val baki = LocalBaki.current
-    Column(
-        Modifier.width(34.dp).height(Control.primary).clickable { onClick() }
-            .semantics { this.selected = selected; role = Role.Tab },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(label, color = if (selected) baki.primary else baki.muted, style = BakiType.captionStrong)
-        if (selected) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
     }
 }
 

@@ -270,16 +270,14 @@ private fun AppContent(repo: BakiRepo) {
                 .widthIn(max = 960.dp),
         ) {
             Header(repo)
-            // expressive motion: the emphasised curve, content rises slightly as it fades in
-            val expressive = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+            // MD3 emphasized easing: weighty spatial movement, critically damped fade.
+            val emphasized = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
             AnimatedContent(
                 targetState = tab,
                 transitionSpec = {
-                    // spatial for movement, effects for opacity — the M3 rule that keeps
-                    // a spring from overshooting alpha
-                    (fadeIn(BakiMotion.effects()) +
-                        slideInVertically(BakiMotion.spatial()) { it / 60 })
-                        .togetherWith(fadeOut(BakiMotion.effectsFast()))
+                    (fadeIn(androidx.compose.animation.core.tween(220, easing = emphasized)) +
+                        slideInVertically(androidx.compose.animation.core.tween(360, easing = emphasized)) { it / 12 })
+                        .togetherWith(fadeOut(androidx.compose.animation.core.tween(160, easing = emphasized)))
                 },
                 modifier = Modifier.fillMaxSize(),
                 label = "tab",
@@ -403,14 +401,35 @@ private fun AppContent(repo: BakiRepo) {
 
     // MD3 primary action.
     if (!wide && tab == 0 && !repo.readOnly && dayPage == null) {
-        FloatingActionButton(
-            onClick = { adding = 1 },
+        androidx.compose.animation.AnimatedContent(
+            targetState = headerCollapsed,
             modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = Space.l, bottom = barHeight + barGap + Space.l)
-                .semantics { contentDescription = "Add entry" },
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ) { Text("+", style = MaterialTheme.typography.headlineSmall) }
+                .padding(end = Space.l, bottom = barHeight + barGap + Space.l),
+            transitionSpec = {
+                (fadeIn(androidx.compose.animation.core.tween(180)) +
+                    scaleIn(initialScale = 0.88f, animationSpec = androidx.compose.animation.core.tween(240, easing = CubicBezierEasing(0.2f, 0f, 0f, 1f))))
+                    .togetherWith(fadeOut(androidx.compose.animation.core.tween(120)))
+            },
+            label = "fabMorph",
+        ) { collapsed ->
+            if (collapsed) {
+                FloatingActionButton(
+                    onClick = { adding = 1 },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.semantics { contentDescription = "Add entry" },
+                ) { Text("+", style = MaterialTheme.typography.headlineSmall) }
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { adding = 1 },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.semantics { contentDescription = "Add entry" },
+                    icon = { Text("+", style = MaterialTheme.typography.titleLarge) },
+                    text = { Text("Add entry") },
+                )
+            }
+        }
     }
 
     dayPage?.let { pageDate ->
@@ -1184,14 +1203,19 @@ private fun SpendingScreen(
                     color = baki.muted, style = BakiType.captionNumeric,
                 )
                 Spacer(Modifier.height(Space.m))
-                OutlinedTextField(
+                TextField(
                     value = query, onValueChange = { query = it },
                     placeholder = { Text("Search note, category, amount") },
                     leadingIcon = { Text("⌕", style = MaterialTheme.typography.titleMedium) },
                     singleLine = true,
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = bakiFieldColors(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
                 )
                 Spacer(Modifier.height(Space.s))
                 FlowRow(
@@ -1202,27 +1226,15 @@ private fun SpendingScreen(
                     val chips = listOf("all" to "All") +
                         cats.filter { it.id in usedCats || it.id == catFilter }.map { it.id to it.name }
                     chips.forEach { (id, label) ->
-                        val on = catFilter == id
-                        Column(
-                            Modifier.width(IntrinsicSize.Max)
-                                .clickable { catFilter = id }
-                                .heightIn(min = Control.primary)
-                                .semantics { this.selected = catFilter == id; role = Role.Tab }
-                                .padding(horizontal = Space.s),
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Row(
-                                Modifier.heightIn(min = Control.primary),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                if (id != "all") {
-                                    Icon(categoryIcon(id), contentDescription = null, tint = if (on) baki.primary else baki.muted, modifier = Modifier.size(IconSize.inline))
-                                    Spacer(Modifier.width(Space.s))
-                                }
-                                Text(label, color = if (on) baki.primary else baki.muted, style = BakiType.caption.copy(fontWeight = FontWeight.SemiBold))
-                            }
-                            if (on) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
-                        }
+                        FilterChip(
+                            selected = catFilter == id,
+                            onClick = { catFilter = id },
+                            label = { Text(label) },
+                            leadingIcon = if (id != "all") {
+                                { Icon(categoryIcon(id), contentDescription = null, modifier = Modifier.size(IconSize.inline)) }
+                            } else null,
+                            modifier = Modifier.heightIn(min = Control.primary),
+                        )
                     }
                 }
                 Spacer(Modifier.height(Space.m))
@@ -1660,7 +1672,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             if (repo.store.bills.isEmpty()) {
                 Text("No bills loaded yet", color = baki.onSurface, style = BakiType.bodyStrong)
                 Text(
-                    "Bills sync from the server. If they stay empty, tap Sync now above.",
+                    "Bills sync from the server. Tap Sync above if they stay empty.",
                     color = baki.muted, style = BakiType.caption,
                 )
             } else {
@@ -1681,7 +1693,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 }
             }
             Text(
-                "Pay a month before it ends and it counts as covered; if it is already covered, cover the next one.",
+                "Cover before month end; covered months roll to the next.",
                 color = baki.muted, style = BakiType.caption,
             )
             Spacer(Modifier.height(Space.m))
@@ -1868,7 +1880,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Import the Wednesday PDF", color = baki.onSurface, style = BakiType.bodyStrong)
             Text(
-                "Grab's weekly statement is the income side of your books. Import it once a week; the desk shows how it compares with what you logged.",
+                "Import the Wednesday PDF to reconcile income and insurance.",
                 color = baki.muted, style = BakiType.caption,
             )
             Spacer(Modifier.height(Space.m))
@@ -2008,7 +2020,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
         Spacer(Modifier.height(Space.s))
         Text(
-            "Dynamic colour follows your wallpaper on Android 12+. Light and dark fall back to the Material baseline.",
+            "Dynamic colour follows your wallpaper on Android 12+.",
             color = baki.muted, style = BakiType.caption,
         )
         }
