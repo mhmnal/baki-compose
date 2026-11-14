@@ -610,6 +610,38 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             pushWithTombs(emptyList())
         }
 
+    /** Persist a compressed receipt JPEG (base64) on an entry; blank means remove it. */
+    suspend fun setEntryReceipt(id: String, receipt: String): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        if (receipt.length > 180_000) return@withLock false
+        val entry = store.entries.firstOrNull { it.id == id } ?: return@withLock false
+        if (entry.receipt == receipt) return@withLock true
+        val stamp = nowIso()
+        store = store.copy(
+            entries = store.entries.map {
+                if (it.id == id) it.copy(receipt = receipt, updated = stamp) else it
+            },
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
+    /** Write the note shown on a day page. */
+    suspend fun setDayNote(date: String, text: String): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val clean = text.trim().take(500)
+        val stamp = nowIso()
+        store = store.copy(
+            dayNotes = store.dayNotes + (date to DayNote(clean, stamp)),
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     /** Attach an odometer to an already-saved entry without changing its amount or date. */
     suspend fun setEntryOdometer(id: String, odo: Int): Boolean = mutex.withLock {
         if (blocked()) return@withLock false

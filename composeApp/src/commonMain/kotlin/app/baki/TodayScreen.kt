@@ -85,6 +85,7 @@ fun TodayScreen(
     onSeeAll: () -> Unit,
     onAdd: () -> Unit,
     onHeaderCollapsed: (Boolean) -> Unit = {},
+    onOpenDayPage: (String) -> Unit = {},
 ) {
     val baki = LocalBaki.current
     val listState = rememberLazyListState()
@@ -431,8 +432,8 @@ fun TodayScreen(
                     color = baki.muted, letterSpacing = 1.sp, style = BakiType.captionStrong )
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "see all →", color = baki.muted,
-                    modifier = Modifier.heightIn(min = Control.primary).clickable { onSeeAll() }
+                    "day page →", color = baki.muted,
+                    modifier = Modifier.heightIn(min = Control.primary).clickable { onOpenDayPage(day) }
                         .semantics { role = Role.Button },
                     style = BakiType.caption,
                 )

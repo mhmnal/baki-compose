@@ -17,7 +17,11 @@ fun mergeStores(
     for (e in a.entries + b.entries) {
         if (e.id in deadIds) continue
         val cur = entries[e.id]
-        if (cur == null || e.updated >= cur.updated) entries[e.id] = e
+        if (cur == null || e.updated >= cur.updated) {
+            // Older clients do not know about receipts. Do not erase one when the rest of an
+            // entry is edited there; an explicit empty string means the receipt was removed.
+            entries[e.id] = if (e.receipt == null && cur?.receipt != null) e.copy(receipt = cur.receipt) else e
+        }
     }
     val shifts = LinkedHashMap<String, Shift>()
     for (s in a.shifts + b.shifts) {
@@ -34,6 +38,12 @@ fun mergeStores(
     for (c in a.settings.cats.catsIn + b.settings.cats.catsIn) if (c.id !in deadCategories) catsIn[c.id] = c
     val catsOut = LinkedHashMap<String, Cat>()
     for (c in a.settings.cats.catsOut + b.settings.cats.catsOut) if (c.id !in deadCategories) catsOut[c.id] = c
+
+    val dayNotes = LinkedHashMap<String, DayNote>()
+    for ((date, note) in a.dayNotes + b.dayNotes) {
+        val cur = dayNotes[date]
+        if (cur == null || note.updated >= cur.updated) dayNotes[date] = note
+    }
 
     return Store(
         v = 1,
@@ -58,6 +68,7 @@ fun mergeStores(
         billPayments = (a.billPayments + b.billPayments)
             .groupBy { it.billId to it.period }
             .map { (_, list) -> list.maxByOrNull { it.updated }!! },
+        dayNotes = dayNotes,
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),

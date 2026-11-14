@@ -153,3 +153,9 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Full Summary statement redesign; 210 tests; installed.
 - Assumptions: target line is target rate × monthly hours / active days; reserve target is one month of actual/accrued cost.
+
+### Phase 1 complete
+
+- Day page, running margins, day notes and receipt attachments.
+- 216 tests; server restarted with receipt/day-note preservation.
+- Next: Phase 2, daily close/seal and statement reconciliation.

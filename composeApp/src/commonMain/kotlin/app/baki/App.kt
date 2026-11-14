@@ -144,6 +144,7 @@ private fun AppContent(repo: BakiRepo) {
     val baki = LocalBaki.current
     var tab by remember { mutableStateOf(PhonePreview.initialTab) }
     var adding by remember { mutableStateOf(0) }   // 0 none, 1 chooser, 2 entry, 3 shift, 4 payout
+    var dayPage by remember { mutableStateOf<String?>(null) }
     var day by remember { mutableStateOf(todayIso()) }
     var month by remember { mutableStateOf(todayIso().take(7)) }
     var todayTick by remember { mutableStateOf(todayIso()) }
@@ -225,8 +226,9 @@ private fun AppContent(repo: BakiRepo) {
         if (pendingAction != null) BakiIntents.pending = null
     }
 
-    PlatformBackHandler(enabled = adding != 0 || tab != 0) {
+    PlatformBackHandler(enabled = adding != 0 || dayPage != null || tab != 0) {
         if (adding != 0) { adding = 0; editingEntry = null; editingShift = null; presetCat = null }
+        else if (dayPage != null) dayPage = null
         else if (tab != 0) tab = 0
     }
 
@@ -307,6 +309,7 @@ private fun AppContent(repo: BakiRepo) {
                     },
                     onSeeAll = { tab = 1 },
                     onHeaderCollapsed = { headerCollapsed = it },
+                    onOpenDayPage = { dayPage = it },
                 )
                 1 -> SpendingScreen(
                     repo = repo,
@@ -364,8 +367,8 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // ---- glass: the bar and the + float over a blurred copy of the content ----
-    // hidden while a sheet is open: the sheet is modal
-    if (!sheetOpen) {
+    // hidden while a sheet or day page is open: those are modal pages
+    if (!sheetOpen && dayPage == null) {
     GlassSurface(
         backdrop = glassBackdrop,
         shape = RoundedCornerShape(Radius.glass),
@@ -380,7 +383,7 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // the floating +: a glass action above the bar, opening the full add sheet
-    if (tab == 0 && !repo.readOnly) {
+    if (tab == 0 && !repo.readOnly && dayPage == null) {
         GlassSurface(
             backdrop = glassBackdrop,
             shape = RoundedCornerShape(Radius.glass),
@@ -397,6 +400,19 @@ private fun AppContent(repo: BakiRepo) {
                 contentAlignment = Alignment.Center,
             ) { Text("+", color = baki.primary, style = BakiType.headline) }
         }
+    }
+
+    dayPage?.let { pageDate ->
+        DayPage(
+            repo = repo,
+            day = pageDate,
+            onDay = { dayPage = it },
+            onClose = { dayPage = null },
+            onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
+            onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
+            onAddEntry = { day = pageDate; editingEntry = null; adding = 2 },
+            onEditShift = { editingShift = it; adding = 3 },
+        )
     }
 
     // ---- level 2: the sheets sit above everything, on a scrim over the blurred app ----
@@ -855,6 +871,7 @@ fun RowCard(
     icon: ImageVector? = null,
     onLongPress: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    running: String? = null,
 ) {
     val baki = LocalBaki.current
     val ink = if (amountTint == Color.Unspecified) baki.onSurface else amountTint
@@ -927,7 +944,10 @@ fun RowCard(
                 Text(title, color = baki.onSurface, style = BakiType.bodyStrong)
                 if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
             }
-            Text(amount, color = ink, style = BakiType.subtitleNumeric)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(amount, color = ink, style = BakiType.subtitleNumeric)
+                if (running != null) Text(running, color = baki.muted, style = BakiType.nano)
+            }
         }
         if (baki.paper) LedgerRule(Modifier.padding(start = if (icon != null) 44.dp else 0.dp), alpha = 0.16f)
     }
@@ -1200,6 +1220,15 @@ private fun SpendingScreen(
     }
 
     val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
+    val runningById = remember(entries) {
+        var balance = 0L
+        entries.sortedWith(
+            compareBy<Entry> { it.date }.thenBy { it.loggedAt.ifBlank { it.updated } },
+        ).associate { e ->
+            balance += if (e.type == "income") e.amount else -e.amount
+            e.id to balance
+        }
+    }
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
@@ -1313,6 +1342,7 @@ private fun SpendingScreen(
                     icon = categoryIcon(e.cat),
                     onLongPress = { onEditEntry(e) },
                     onDelete = { onDeleteEntry(e) },
+                    running = runningById[e.id]?.let { "bal RM ${rm(it)}" },
                 )
             }
             if (entries.isEmpty()) item {

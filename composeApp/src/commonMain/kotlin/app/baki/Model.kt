@@ -21,7 +21,16 @@ data class Entry(
     /** immutable creation time; blank on rows imported before this field existed */
     val loggedAt: String = "",
     val odo: Int? = null,
+    /** Small JPEG as base64; receipts stay in the synced store so both devices see them. */
+    val receipt: String? = null,
     val sample: Boolean? = null,
+)
+
+/** A page note is keyed by ISO date; `updated` makes sync last-writer-wins. */
+@Serializable
+data class DayNote(
+    val text: String = "",
+    val updated: String = "",
 )
 
 @Serializable
@@ -162,6 +171,8 @@ data class Store(
     /** recurring commitments; payments link to ordinary expense entries */
     val bills: List<Bill> = emptyList(),
     val billPayments: List<BillPayment> = emptyList(),
+    /** Notes written on a day page; absent from older stores. */
+    val dayNotes: Map<String, DayNote> = emptyMap(),
 )
 
 val BakiJson = Json {

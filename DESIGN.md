@@ -1211,3 +1211,14 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Funds show one-month-target reserve meters plus monthly accrual/withdrawal/shortfall.
 - Summary/Today vertical rhythm reduced to 8dp; section rules tightened.
 - 210 tests; signed versionCode 114 and installed on the phone.
+
+## Phase 1: Day page and receipts
+
+- Tap `day page →` on Today to open a dated paper page.
+- Entries list in chronological order with a per-row running balance margin.
+- Spending rows also carry a running balance margin.
+- Day notes are stored as `Store.dayNotes` with last-writer-wins merge.
+- Receipts are compressed JPEGs (base64, <=180k chars) on `Entry.receipt`, synced by the tracker server.
+- Receipt picker: Android photo picker; desktop file picker. Receipt thumbnail, preview, replace and remove.
+- Server preserves receipts/day notes while remaining backward-compatible with older clients.
+- 216 tests; 360dp and 1.3x checked.
