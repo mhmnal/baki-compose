@@ -1240,3 +1240,11 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Matched/difference status combines gross gap and insurance count.
 - Write actions are disabled visibly in read-only mode.
 - 220 tests; signed next.
+
+## 0.38.2 Phase 2 release
+
+- Daily close/reopen seal implemented; close is review-only, edits remain allowed.
+- Statement reconciliation marks are separate from imports and can be reopened.
+- Server preserves both maps. 220 tests.
+- Signed versionCode 117, installed. Day-close and statement mark/reopen tested on-device.
+- 360dp day-page close row checked.
