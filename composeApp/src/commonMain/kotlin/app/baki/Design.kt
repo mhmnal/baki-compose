@@ -67,6 +67,8 @@ object Radius {
     val input = 12.dp
     val card = 12.dp
     val large = 16.dp
+    /** Expressive chart/data container. */
+    val chart = 24.dp
     val dialog = 28.dp
     val sheet = 28.dp
 }

@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.3 / code 124 — signed and installed**
+Version: **0.40.4 / code 125 — signed and installed**
 
 ## Design direction
 
@@ -149,8 +149,11 @@ No financial feature was removed.
 - All hardcoded palette hex was removed from common source. Legacy palette names now alias Material
   baseline roles for persisted-config compatibility; the active scheme is dynamic/baseline MD3.
 - All custom `BorderStroke` card outlines were removed. Cards use single 16dp tonal surfaces.
-- Both charts were rebuilt: rounded bars with primary/tertiary/error roles, a solid target line,
-  selected-bar state and tap detail. Weekly empty days are dots at the baseline, not floating rules.
+- Both charts were rebuilt inside explicit `surfaceContainerHigh` cards with **24dp** corners and
+  24dp content padding. Bars sit in tonal tracks; active positive bars are `primary`, weekly
+  non-today bars use `primaryContainer`, and negatives use `error`. The target is a solid line.
+- Chart range selector and category chips have no outline: they are filled tonal FilterChips.
+- Spend/Shift rows use roomier 20dp vertical card padding, 16dp single surfaces and 12dp gaps.
 - Verbose bills/statement/vehicle helper copy was shortened.
 - Live-start and add-shift actions are tonal rather than high-contrast dark pills.
 
@@ -196,4 +199,4 @@ No financial feature was removed.
 - NavigationBar keeps explicit 80dp geometry, standard active indicator, tonal container and
   one-line labels. NavigationRail/FAB remain adaptive.
 - Shortened explanatory copy and removed dead layout hacks.
-- 225 tests pass; signed 0.40.3, code 124.
+- 225 tests pass; signed 0.40.4, code 125.

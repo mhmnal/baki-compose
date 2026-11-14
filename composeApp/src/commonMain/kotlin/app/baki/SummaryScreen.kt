@@ -17,6 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -101,11 +102,12 @@ fun SummaryScreen(
                 )
             }
         }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh) { MonthInkChart(store = store, month = month) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(Radius.chart), padding = 24.dp) { MonthInkChart(store = store, month = month) } }
         item {
             Md3Card(
-                container = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                container = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(Radius.chart),
+                padding = 24.dp,
             ) { WeekSection(store = store, today = todayIso()) }
         }
         if (cats.isNotEmpty()) item {
@@ -133,6 +135,8 @@ fun SummaryScreen(
 private fun Md3Card(
     container: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.large,
+    padding: androidx.compose.ui.unit.Dp = Space.l,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val base = LocalBaki.current
@@ -146,12 +150,12 @@ private fun Md3Card(
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = container, contentColor = contentColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         CompositionLocalProvider(LocalBaki provides local) {
-            Column(Modifier.padding(Space.l), content = content)
+            Column(Modifier.padding(padding), content = content)
         }
     }
 }
@@ -241,8 +245,14 @@ private fun MonthInkChart(store: Store, month: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-                FilterChip(selected = range == 7, onClick = { range = 7 }, label = { Text("7D") })
-                FilterChip(selected = range == 30, onClick = { range = 30 }, label = { Text("30D") })
+                val chipColors = FilterChipDefaults.filterChipColors(
+                    containerColor = scheme.surfaceContainerLow,
+                    labelColor = scheme.onSurfaceVariant,
+                    selectedContainerColor = scheme.primaryContainer,
+                    selectedLabelColor = scheme.onPrimaryContainer,
+                )
+                FilterChip(selected = range == 7, onClick = { range = 7 }, label = { Text("7D") }, border = null, colors = chipColors)
+                FilterChip(selected = range == 30, onClick = { range = 30 }, label = { Text("30D") }, border = null, colors = chipColors)
             }
         }
         Spacer(Modifier.height(Space.xs))
@@ -285,27 +295,23 @@ private fun MonthInkChart(store: Store, month: String) {
             shown.forEachIndexed { i, day ->
                 val value = day.net / 100.0
                 val h = (abs(value) / maxAbs * usable).toFloat()
-                    .coerceAtLeast(if (day.active) 3.dp.toPx() else 1.dp.toPx())
+                    .coerceAtLeast(if (day.active) 3.dp.toPx() else 0f)
                 val left = i * step + (step - barW) / 2f
                 val top = if (value >= 0) zeroY - h else zeroY
-                val color = when {
-                    !day.active -> scheme.outlineVariant.copy(alpha = 0.38f)
-                    value < 0 -> scheme.error
-                    else -> scheme.primary
-                }
+                // A consistent tonal track gives every bar a clear baseline, even on empty days.
                 drawRoundRect(
-                    color = if (i == selected) scheme.onSurface else color,
-                    topLeft = Offset(left, top),
-                    size = Size(barW, h),
+                    color = if (i == selected) scheme.primaryContainer else scheme.surfaceContainerHighest,
+                    topLeft = Offset(left, 4.dp.toPx()),
+                    size = Size(barW, size.height - 8.dp.toPx()),
                     cornerRadius = CornerRadius(barW / 2f, barW / 2f),
                 )
-                if (i == selected) {
+                if (day.active) {
+                    val color = if (value < 0) scheme.error else scheme.primary
                     drawRoundRect(
-                        color = scheme.onSurface,
+                        color = color,
                         topLeft = Offset(left, top),
                         size = Size(barW, h),
                         cornerRadius = CornerRadius(barW / 2f, barW / 2f),
-                        style = Stroke(width = 1.5.dp.toPx()),
                     )
                 }
             }
@@ -359,13 +365,13 @@ private fun WeekSection(store: Store, today: String) {
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("This week", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Text("RM ${rm(thisWeek.net)}", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleMedium)
+            Text("This week", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text("RM ${rm(thisWeek.net)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
         Text(
             "${if (thisWeek.net - lastWeek.net >= 0) "+" else "−"}RM ${rm(abs(thisWeek.net - lastWeek.net))} vs last week · " +
                 if (hours > 0) "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr" else "no hours yet",
-            color = scheme.onSecondaryContainer.copy(alpha = 0.78f),
+            color = scheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
         Spacer(Modifier.height(Space.m))
@@ -381,38 +387,39 @@ private fun WeekSection(store: Store, today: String) {
                     else -> scheme.onSecondaryContainer.copy(alpha = 0.18f)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.BottomCenter) {
-                        if (active) {
-                            Box(
-                                Modifier.fillMaxWidth(0.58f)
-                                    .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.05f, 1f))
-                                    .clip(RoundedCornerShape(topStart = Radius.small, topEnd = Radius.small, bottomStart = Radius.tiny, bottomEnd = Radius.tiny))
-                                    .background(color),
-                            )
-                        } else {
-                            Box(
-                                Modifier.size(4.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(scheme.onSecondaryContainer.copy(alpha = 0.20f)),
-                            )
+                    Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = Alignment.BottomCenter) {
+                        Box(
+                            Modifier.width(12.dp).fillMaxHeight()
+                                .clip(RoundedCornerShape(50))
+                                .background(scheme.surfaceContainerHighest),
+                        ) {
+                            if (active) {
+                                Box(
+                                    Modifier.align(Alignment.BottomCenter)
+                                        .fillMaxWidth()
+                                        .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.08f, 1f))
+                                        .clip(RoundedCornerShape(50))
+                                        .background(color),
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         weekdayShort(iso).take(1),
-                        color = if (iso == today) scheme.primary else scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                        color = if (iso == today) scheme.primary else scheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelSmall,
                     )
                     Text(
                         iso.takeLast(2),
-                        color = if (iso == today) scheme.primary else scheme.onSecondaryContainer.copy(alpha = 0.55f),
+                        color = if (iso == today) scheme.primary else scheme.onSurfaceVariant.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }
         }
         Spacer(Modifier.height(Space.s))
-        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.bodySmall)
+        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
     }
 }
 @Composable

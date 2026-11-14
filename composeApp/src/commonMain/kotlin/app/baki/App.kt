@@ -870,12 +870,12 @@ fun RowCard(
         if (onLongPress != null) add(CustomAccessibilityAction("Edit") { onLongPress(); true })
         if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
     }
-    Column(Modifier.fillMaxWidth().padding(bottom = Space.s)) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth()
                 .then(
                     if (baki.paper) Modifier.background(baki.surface)
-                    else Modifier.clip(RoundedCornerShape(Radius.large)).background(baki.container)
+                    else Modifier.clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceContainerLow)
                 )
                 .then(
                     if (onLongPress != null) Modifier.pointerInput(title) {
@@ -883,7 +883,7 @@ fun RowCard(
                     } else Modifier
                 )
                 .semantics { customActions = a11yActions }
-                .padding(vertical = Space.m, horizontal = if (baki.paper) 0.dp else Space.l),
+                .padding(vertical = Space.l, horizontal = if (baki.paper) 0.dp else Space.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (icon != null) {
@@ -1188,8 +1188,8 @@ private fun SpendingScreen(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
-        verticalArrangement = Arrangement.spacedBy(0.dp),
-        contentPadding = PaddingValues(bottom = 132.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 148.dp),
     ) {
         item {
             Column {
@@ -1236,6 +1236,14 @@ private fun SpendingScreen(
                             leadingIcon = if (id != "all") {
                                 { Icon(categoryIcon(id), contentDescription = null, modifier = Modifier.size(IconSize.inline)) }
                             } else null,
+                            shape = MaterialTheme.shapes.small,
+                            border = null,
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                             modifier = Modifier.heightIn(min = Control.primary),
                         )
                     }
@@ -1346,8 +1354,8 @@ private fun ShiftsScreen(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
-        verticalArrangement = Arrangement.spacedBy(0.dp),
-        contentPadding = PaddingValues(bottom = 132.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 148.dp),
     ) {
         item {
             Column {
@@ -1591,10 +1599,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     onClick = { repo.setServer(url) },
                     colors = ButtonDefaults.buttonColors(containerColor = baki.primary, contentColor = baki.onPrimary),
                 ) { Text("Save & sync") }
-                OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
-                    onClick = { scope.launch { repo.sync() } },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                ) { Text("Sync now") }
+                FilledTonalButton(onClick = { scope.launch { repo.sync() } }) { Text("Sync now") }
             }
             TextButton(
                 onClick = {
@@ -1720,16 +1725,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                         )
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-                            OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
+                            FilledTonalButton(
                                 onClick = { scope.launch { repo.payBill(bill.id, period) } },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                            ) { Text("Mark paid", style = BakiType.label) }
-                            OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
+                            ) { Text("Mark paid") }
+                            TextButton(
                                 onClick = { linkTarget = bill to period },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
-                            ) { Text("Link", style = BakiType.label) }
+                            ) { Text("Link") }
                         }
                     }
                 }
@@ -1752,10 +1755,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 if (paid) {
                     Text("${bill.name} covered", color = baki.up, style = BakiType.caption)
                 } else {
-                    OutlinedButton( shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.pill),
+                    FilledTonalButton(
                         onClick = { scope.launch { repo.payBill(bill.id, Bills.periodOf(bill, current)) } },
                         enabled = net >= bill.amount,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = baki.onSurface),
                     ) { Text("Pay ${bill.name} · RM ${rm(bill.amount / 100.0)}") }
                 }
             }
