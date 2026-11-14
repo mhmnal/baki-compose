@@ -1,6 +1,7 @@
 package app.baki
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -34,14 +35,41 @@ class ContrastTest {
         )
         val failures = mutableListOf<String>()
         schemes.forEach { (name, s) ->
-            listOf(
-                "onSurface/surface" to (s.onSurface to s.surface),
-                "onSurfaceVariant/surface" to (s.onSurfaceVariant to s.surface),
-                "onPrimary/primary" to (s.onPrimary to s.primary),
-                "onPrimaryContainer/primaryContainer" to (s.onPrimaryContainer to s.primaryContainer),
-                "onSecondaryContainer/secondaryContainer" to (s.onSecondaryContainer to s.secondaryContainer),
-                "onTertiaryContainer/tertiaryContainer" to (s.onTertiaryContainer to s.tertiaryContainer),
-            ).forEach { (pair, colors) ->
+            val surfaces = listOf(
+                "surface" to s.surface,
+                "surfaceContainerLow" to s.surfaceContainerLow,
+                "surfaceContainer" to s.surfaceContainer,
+                "surfaceContainerHigh" to s.surfaceContainerHigh,
+                "surfaceContainerHighest" to s.surfaceContainerHighest,
+            )
+            val pairs = buildList {
+                surfaces.forEach { (surfaceName, surface) ->
+                    add("onSurface/$surfaceName" to (s.onSurface to surface))
+                    add("onSurfaceVariant/$surfaceName" to (s.onSurfaceVariant to surface))
+                }
+                add("onPrimary/primary" to (s.onPrimary to s.primary))
+                add("onSecondary/secondary" to (s.onSecondary to s.secondary))
+                add("onTertiary/tertiary" to (s.onTertiary to s.tertiary))
+                add("onError/error" to (s.onError to s.error))
+                add("onPrimaryContainer/primaryContainer" to (s.onPrimaryContainer to s.primaryContainer))
+                add("onSecondaryContainer/secondaryContainer" to (s.onSecondaryContainer to s.secondaryContainer))
+                add("onTertiaryContainer/tertiaryContainer" to (s.onTertiaryContainer to s.tertiaryContainer))
+                add("onErrorContainer/errorContainer" to (s.onErrorContainer to s.errorContainer))
+                add("inverseOnSurface/inverseSurface" to (s.inverseOnSurface to s.inverseSurface))
+                // Md3Card uses 72% content colour for secondary text; verify the blended result.
+                listOf(
+                    "primaryContainer" to (s.onPrimaryContainer to s.primaryContainer),
+                    "secondaryContainer" to (s.onSecondaryContainer to s.secondaryContainer),
+                    "tertiaryContainer" to (s.onTertiaryContainer to s.tertiaryContainer),
+                    "surfaceContainerHigh" to (s.onSurface to s.surfaceContainerHigh),
+                ).forEach { (containerName, pair) ->
+                    add(
+                        "cardAlpha72/$containerName" to
+                            (pair.first.copy(alpha = 0.72f).compositeOver(pair.second) to pair.second),
+                    )
+                }
+            }
+            pairs.forEach { (pair, colors) ->
                 val r = ratio(colors.first, colors.second)
                 if (r < 4.5) failures += "$name $pair = ${"%.2f".format(r)} (< 4.5)"
             }

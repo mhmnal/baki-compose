@@ -1061,6 +1061,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.tapFeedback()
     }
 
+    fun setReducedMotion(on: Boolean) {
+        config = config.copy(reducedMotion = on)
+        saveConfig(config)
+        PlatformEffects.tapFeedback()
+    }
+
     fun setServer(url: String) {
         val clean = url.trim()
         if (clean.isEmpty()) return

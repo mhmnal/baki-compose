@@ -31,6 +31,7 @@ private val Md3Shapes = Shapes(
 @Composable
 fun BakiTheme(
     mode: String = "auto",
+    reducedMotion: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val dark = when (mode) {
@@ -46,7 +47,7 @@ fun BakiTheme(
         colorScheme = scheme,
         typography = Typography(),
         shapes = Md3Shapes,
-        motionScheme = MotionScheme.expressive(),
+        motionScheme = if (reducedMotion) MotionScheme.standard() else MotionScheme.expressive(),
         content = content,
     )
 }

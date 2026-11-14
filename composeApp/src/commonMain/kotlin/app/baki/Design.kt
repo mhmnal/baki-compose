@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selectableGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -169,7 +170,7 @@ fun ConnectedChoiceGroup(
         checkedContentColor = scheme.onPrimary,
     )
     Row(
-        modifier = modifier,
+        modifier = modifier.semantics { selectableGroup() },
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         options.forEachIndexed { index, label ->

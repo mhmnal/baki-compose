@@ -46,6 +46,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -272,6 +274,19 @@ private fun MonthInkChart(store: Store, month: String) {
     val targetPerDay = if (active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
+    val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
+        buildString {
+            append("Daily net chart for ${monthLabel(month)}, ${range} day view. ")
+            if (targetPerDay > 0.01) append("Target RM ${rm(targetPerDay)} per day. ")
+            append("Data points: ")
+            append(shown.joinToString("; ") { day ->
+                "${day.iso.takeLast(5)} ${if (day.active) "net RM ${rm(day.net)}" else "no entries"}"
+            })
+            best?.let { append(". Best ${it.iso.takeLast(5)} RM ${rm(it.net)}") }
+            worst?.let { append(". Lowest ${it.iso.takeLast(5)} RM ${rm(it.net)}") }
+            append(". Activate to select the next day.")
+        }
+    }
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -307,7 +322,17 @@ private fun MonthInkChart(store: Store, month: String) {
                         }
                     }
                 }
-                .semantics { contentDescription = "Daily net chart for $month. Tap a bar for details." },
+                .semantics {
+                    contentDescription = chartSummary
+                    selectedDay?.let {
+                        stateDescription = "${it.iso.takeLast(5)}: " +
+                            if (it.active) "net RM ${rm(it.net)}" else "no entries"
+                    }
+                    onClick(label = "Select next day") {
+                        selected = if (shown.isEmpty()) null else ((selected ?: -1) + 1) % shown.size
+                        true
+                    }
+                },
         ) {
             val zeroY = size.height * 0.64f
             val usable = size.height * 0.50f

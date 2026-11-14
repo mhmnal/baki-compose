@@ -115,12 +115,18 @@ fun DayPage(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { onDay(addDays(day, -1)) }) {
+                    IconButton(
+                        onClick = { onDay(addDays(day, -1)) },
+                        modifier = Modifier.semantics { contentDescription = "Previous day" },
+                    ) {
                         Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onDay(addDays(day, 1)) }) {
+                    IconButton(
+                        onClick = { onDay(addDays(day, 1)) },
+                        modifier = Modifier.semantics { contentDescription = "Next day" },
+                    ) {
                         Text("›", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
                     }
                     TextButton(onClick = onClose) {

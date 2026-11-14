@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextMeasurer
@@ -75,11 +77,25 @@ fun RouteMap(
     val attributionStyle = MaterialTheme.typography.labelSmall.copy(color = scheme.onSurfaceVariant)
     val endpointStyle = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontWeight = FontWeight.Bold)
     val allPoints = remember(routes) { routes.flatMap { it.route.points } }
+    val mapSummary = remember(routes) {
+        if (routes.isEmpty()) "Route map. No routes recorded."
+        else buildString {
+            append("Route map with ${routes.size} route${if (routes.size == 1) "" else "s"}. ")
+            append(
+                routes.joinToString("; ") { mapRoute ->
+                    val km = routeMetres(mapRoute.route.points) / 1000.0
+                    "${mapRoute.label}: ${"%.1f".format(km)} kilometres"
+                },
+            )
+            append(". Starts are marked A and ends B.")
+        }
+    }
 
     BoxWithConstraints(
         modifier
             .clip(MaterialTheme.shapes.large)
-            .background(scheme.surfaceContainerHigh),
+            .background(scheme.surfaceContainerHigh)
+            .semantics { contentDescription = mapSummary },
     ) {
         val sizePx = with(LocalDensity.current) {
             Size(maxWidth.toPx(), maxHeight.toPx())

@@ -21,6 +21,7 @@ class PaperViewportTest {
         Viewport("390", 390, 844),
         Viewport("412", 412, 915),
         Viewport("390-type", 390, 844, fontScale = 1.3f),
+        Viewport("360-type", 360, 800, fontScale = 1.3f),
     )
 
     @Test

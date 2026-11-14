@@ -187,7 +187,12 @@ fun Sparkline(
     fill: Color,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Canvas(modifier.semantics { contentDescription = "Seven day net trend" }) {
+    val summary = remember(values) {
+        if (values.size < 2) "Trend chart with insufficient data."
+        else "Trend chart with ${values.size} points. Lowest ${"%.2f".format(values.min())}, " +
+            "highest ${"%.2f".format(values.max())}, latest ${"%.2f".format(values.last())}."
+    }
+    Canvas(modifier.semantics { contentDescription = summary }) {
         if (values.size < 2) return@Canvas
         
         val min = values.min()
@@ -226,7 +231,11 @@ fun Sparkline(
 /** Compact progress ring, used by budget envelopes. */
 @Composable
 fun ProgressRing(progress: Float, color: Color, track: Color, size: Dp = 30.dp, stroke: Dp = 3.dp) {
-    Canvas(Modifier.size(size)) {
+    Canvas(
+        Modifier.size(size).semantics {
+            contentDescription = "${(progress.coerceIn(0f, 1f) * 100).toInt()} percent"
+        },
+    ) {
         val sw = stroke.toPx()
         val inset = sw / 2
         val arcSize = Size(this.size.width - sw, this.size.height - sw)

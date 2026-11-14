@@ -6,7 +6,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -118,6 +121,11 @@ fun EasedMoney(
         style = style,
         maxLines = 1,
         softWrap = false,
+        autoSize = TextAutoSize.StepBased(
+            minFontSize = 18.sp,
+            maxFontSize = if (style.fontSize.isSpecified) style.fontSize else 57.sp,
+            stepSize = 1.sp,
+        ),
         modifier = modifier,
     )
 }

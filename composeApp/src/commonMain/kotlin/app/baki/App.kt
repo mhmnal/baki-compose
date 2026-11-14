@@ -112,7 +112,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         PlatformEffects.setStatementReminder(repo.config.statementReminder)
     }
     BakiPrivacy.discreet = repo.config.discreet
-    BakiTheme(mode = repo.config.themeMode) {
+    BakiTheme(mode = repo.config.themeMode, reducedMotion = repo.config.reducedMotion) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         SharedTransitionLayout {
             androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
@@ -365,7 +365,12 @@ private fun AppContent(repo: BakiRepo) {
                     Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    IconButton(onClick = { scope.launch { wideRailState.toggle() } }) {
+                    IconButton(
+                        onClick = { scope.launch { wideRailState.toggle() } },
+                        modifier = Modifier.semantics {
+                            contentDescription = if (expanded) "Collapse navigation" else "Expand navigation"
+                        },
+                    ) {
                         Text(if (expanded) "‹" else "›", style = MaterialTheme.typography.titleLarge)
                     }
                     if (tab == 0 && !repo.readOnly && repo.live == null) {
@@ -379,7 +384,9 @@ private fun AppContent(repo: BakiRepo) {
                             },
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(56.dp),
+                            modifier = Modifier
+                                .size(56.dp)
+                                .semantics { contentDescription = "Add spending" },
                         ) { Text("+", style = MaterialTheme.typography.headlineSmall) }
                     }
                 }
@@ -394,6 +401,10 @@ private fun AppContent(repo: BakiRepo) {
                     icon = { Icon(icons[i], contentDescription = null) },
                     label = { Text(label) },
                     railExpanded = expanded,
+                    modifier = Modifier.semantics {
+                        role = Role.Tab
+                        selected = tab == i
+                    },
                 )
             }
         }
@@ -415,6 +426,10 @@ private fun AppContent(repo: BakiRepo) {
                     icon = { Icon(icons[i], contentDescription = null) },
                     label = {
                         Text(label, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+                    },
+                    modifier = Modifier.semantics {
+                        role = Role.Tab
+                        selected = tab == i
                     },
                 )
             }
@@ -704,7 +719,10 @@ fun Header(repo: BakiRepo, scrollBehavior: TopAppBarScrollBehavior) {
             }
         },
         actions = {
-            IconButton(onClick = { repo.setDiscreet(!repo.config.discreet) }) {
+            IconButton(
+                onClick = { repo.setDiscreet(!repo.config.discreet) },
+                modifier = Modifier.semantics { contentDescription = "Toggle discreet mode" },
+            ) {
                 Text(
                     if (repo.config.discreet) "◉" else "◎",
                     style = MaterialTheme.typography.titleMedium,
@@ -1994,6 +2012,20 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.s))
         Text(
             "Dynamic colour follows your wallpaper on Android 12+.",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("MOTION")
+        Spacer(Modifier.height(Space.s))
+        SwitchRow(
+            title = "Reduce motion",
+            sub = if (repo.config.reducedMotion) "on — standard springs, less overshoot"
+            else "off — expressive springs and shape changes",
+            checked = repo.config.reducedMotion,
+            onChange = { repo.setReducedMotion(it) },
+        )
+        Text(
+            "Android also applies the system animation scale.",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         }
