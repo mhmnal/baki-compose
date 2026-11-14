@@ -15,7 +15,8 @@ kotlin {
             dependencies {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
-                implementation(compose.material3)
+                // M3 Expressive: ButtonGroup/SplitButton/FABMenu/LoadingIndicator/MaterialShapes
+                implementation("org.jetbrains.compose.material3:material3:1.12.0-alpha03")
                 implementation(compose.ui)
                 implementation(compose.components.resources)
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
@@ -56,8 +57,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 127
-        versionName = "0.40.6"
+        versionCode = 128
+        versionName = "0.41.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
