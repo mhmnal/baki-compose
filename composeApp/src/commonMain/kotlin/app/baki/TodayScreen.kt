@@ -127,7 +127,6 @@ fun TodayScreen(
         // leave room for the floating bar and the + so nothing ends up underneath them
         contentPadding = PaddingValues(top = 6.dp, bottom = 132.dp),
     ) {
-        item { Header(repo, embedded = true) }
         item { DayPill(day, today, onDay) }
 
         item {
@@ -141,14 +140,14 @@ fun TodayScreen(
                     }
                     if (compact) {
                         Text(
-                            if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
+                            if (t.net >= 0) "Recorded net" else "RECORDED OUT",
                             color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
                         )
                         if (operating.shiftCount > 0) {
                             Spacer(Modifier.height(Space.xs))
                             Column {
                                 Text(
-                                    "OPERATING · RM ${rm(operating.net)}" +
+                                    "Operating · RM ${rm(operating.net)}" +
                                         (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
                                     color = if (operating.net >= 0) baki.onSurface else baki.down,
                                     style = BakiType.labelNumeric,
@@ -159,13 +158,13 @@ fun TodayScreen(
                     } else {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                             Text(
-                                if (t.net >= 0) "RECORDED NET" else "RECORDED OUT",
+                                if (t.net >= 0) "Recorded net" else "RECORDED OUT",
                                 color = baki.muted, letterSpacing = 1.5.sp, style = BakiType.captionStrong,
                                 modifier = Modifier.weight(1f),
                             )
                             if (operating.shiftCount > 0) {
                                 Column(horizontalAlignment = Alignment.End) {
-                                    Text("OPERATING", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
+                                    Text("Operating", color = baki.muted, letterSpacing = 1.2.sp, style = BakiType.captionStrong )
                                     Text(
                                         "RM ${rm(operating.net)}" +
                                             (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
@@ -205,7 +204,7 @@ fun TodayScreen(
                     Column {
                     if (compact) {
                         Column(panel, verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                            Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Text(if (day == today) "Food today" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
                             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                                 Text(
                                     "RM ${rm(f.spent)} / ${rm(f.cap)}",
@@ -221,7 +220,7 @@ fun TodayScreen(
                         }
                     } else {
                         Row(panel, verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (day == today) "FOOD TODAY" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
+                            Text(if (day == today) "Food today" else "FOOD", color = baki.muted, style = BakiType.captionStrong)
                             Spacer(Modifier.weight(1f))
                             Text(
                                 "RM ${rm(f.spent)} / ${rm(f.cap)}",
@@ -292,7 +291,7 @@ fun TodayScreen(
                     if (baki.paper) LedgerRule(alpha = 0.18f)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "SHIFT NET · AFTER CAR COST", color = baki.muted, letterSpacing = 1.sp,
+                            "Shift net · after car cost", color = baki.muted, letterSpacing = 1.sp,
                             style = BakiType.captionStrong, modifier = Modifier.weight(1f),
                         )
                         if (baki.paper) {
@@ -458,7 +457,7 @@ fun TodayScreen(
             Box(Modifier.animateItem()) {
                 RowCardIcon(
                     icon = categoryIcon(e.cat),
-                    title = e.note.ifEmpty { e.cat },
+                    title = e.note.ifEmpty { categoryLabel(store, e.cat) },
                     sub = listOfNotNull(
                         e.cat,
                         e.odo?.takeIf { it > 0 }?.let { "$it km" },

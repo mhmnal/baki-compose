@@ -163,11 +163,9 @@ class DarkModeTest {
     }
 
     @Test
-    fun deskThemeIgnoresTheStoredColourPack() {
+    fun deskThemeUsesMaterialBaseline() {
         val theme = source("commonMain/kotlin/app/baki/Theme.kt")
-        assertTrue(
-            theme.contains("if (Caps.isDesktop) paletteFor(\"sage\", dark)"),
-            "the desk must resolve light/dark from the mode, not from a stored colour pack",
-        )
+        assertTrue(theme.contains("lightColorScheme()") && theme.contains("darkColorScheme()"))
+        assertTrue(theme.contains("paletteOf(scheme, dark)"))
     }
 }

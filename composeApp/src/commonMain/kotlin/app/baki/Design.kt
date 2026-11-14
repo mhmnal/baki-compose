@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -56,19 +59,17 @@ object Space {
 }
 
 object Radius {
-    /** Ledger controls: buttons, chips, segmented controls. */
-    val pill = 4.dp
-    /** The liquid-glass nav and + only. */
-    val glass = 50.dp
-    val tiny = 0.dp
-    val small = 2.dp
-    val bar = 2.dp
-    val input = 2.dp
-    /** A paper panel is nearly square. */
-    val card = 2.dp
-    /** Dialog / large component corner, slightly softer than a card. */
-    val dialog = 6.dp
-    val sheet = 12.dp
+    /** MD3 shape scale: XS 4, S 8, M 12, L 16, XL 28. */
+    val pill = 20.dp
+    val glass = 28.dp
+    val tiny = 4.dp
+    val small = 8.dp
+    val bar = 8.dp
+    val input = 12.dp
+    val card = 12.dp
+    val large = 16.dp
+    val dialog = 28.dp
+    val sheet = 28.dp
 }
 
 /** Overlay opacities, named by intent so they stop being magic numbers. */
@@ -118,7 +119,7 @@ object BakiType {
     /** M3 labelSmall */
     var caption = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.15.sp)
     /** all-caps section header */
-    var section = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.44.sp)
+    var section = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)
     var micro = TextStyle(fontSize = 12.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
     /** small print that still needs to shout: 14 sp, bold, no tracking */
     var captionStrong = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold)
@@ -159,8 +160,8 @@ object BakiType {
         val titleWeight = if (paper) FontWeight.Normal else FontWeight.SemiBold
         display = display.copy(fontFamily = displayFace, fontWeight = displayWeight)
         displaySmall = displaySmall.copy(fontFamily = displayFace, fontWeight = displayWeight)
-        headline = headline.copy(fontFamily = displayFace, fontWeight = displayWeight)
-        title = title.copy(fontFamily = displayFace, fontWeight = titleWeight)
+        headline = headline.copy(fontFamily = text, fontWeight = titleWeight)
+        title = title.copy(fontFamily = text, fontWeight = titleWeight)
 
         subtitle = subtitle.copy(fontFamily = text)
         body = body.copy(fontFamily = text)
@@ -299,5 +300,27 @@ fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifie
             Spacer(Modifier.height(Space.m))
             LedgerRule(alpha = 0.16f)
         }
+    }
+}
+
+/** A full-width paper action: 48dp target, ink label, a rule beneath; no filled card. */
+@Composable
+fun LedgerAction(
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val baki = LocalBaki.current
+    Column(
+        modifier.fillMaxWidth().clickable(enabled = enabled) { onClick() }
+            .semantics { role = androidx.compose.ui.semantics.Role.Button },
+    ) {
+        Text(
+            label, color = if (enabled) baki.primary else baki.muted,
+            style = BakiType.labelStrong, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().heightIn(min = Control.primary).padding(vertical = Space.m),
+        )
+        LedgerRule(alpha = 0.18f)
     }
 }

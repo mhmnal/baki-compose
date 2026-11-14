@@ -7,6 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -26,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -82,8 +88,7 @@ fun DayPage(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(baki.surface)) {
-        PaperGrain(Modifier.fillMaxSize())
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xs),
@@ -103,7 +108,7 @@ fun DayPage(
                     Text("Close", color = baki.primary, style = BakiType.labelStrong)
                 }
             }
-            LedgerRule(alpha = 0.18f)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
                 verticalArrangement = Arrangement.spacedBy(Space.s),
@@ -157,6 +162,7 @@ fun DayPage(
                         item(key = "entry-${entry.id}") {
                             DayEntryRow(
                                 entry = entry,
+                                store = store,
                                 runningCents = running,
                                 onEdit = { onEditEntry(entry) },
                                 onDelete = { onDeleteEntry(entry) },
@@ -229,7 +235,7 @@ fun DayPage(
         if (confirmClose) {
             AlertDialog(
                 onDismissRequest = { confirmClose = false },
-                containerColor = baki.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 shape = RoundedCornerShape(Radius.dialog),
                 title = { Text("Close this day?", color = baki.onSurface, style = BakiType.title) },
                 text = {
@@ -256,6 +262,7 @@ fun DayPage(
 @Composable
 private fun DayEntryRow(
     entry: Entry,
+    store: Store,
     runningCents: Long,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -265,18 +272,34 @@ private fun DayEntryRow(
 ) {
     val baki = LocalBaki.current
     val bitmap = remember(entry.receipt) { entry.receipt?.takeIf { it.isNotBlank() }?.let(::decodeReceiptImage) }
-    Column(Modifier.fillMaxWidth()) {
+    var menu by remember { mutableStateOf(false) }
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(Modifier.padding(horizontal = Space.m)) {
         Row(
             Modifier.fillMaxWidth().heightIn(min = Control.primary).clickable { onEdit() }
-                .semantics { contentDescription = "${entry.note.ifEmpty { entry.cat }}, ${if (entry.type == "income") "income" else "expense"} RM ${rm(entry.amount)}" },
+                .semantics { contentDescription = "${entry.note.ifEmpty { categoryLabel(store, entry.cat) }}, ${if (entry.type == "income") "income" else "expense"} RM ${rm(entry.amount)}" },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(categoryIcon(entry.cat), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
             Spacer(Modifier.width(Space.s))
             Column(Modifier.weight(1f)) {
-                Text(entry.note.ifEmpty { entry.cat }, color = baki.onSurface, style = BakiType.bodyStrong)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(entry.note.ifEmpty { categoryLabel(store, entry.cat) }, color = baki.onSurface, style = BakiType.bodyStrong)
+                    if (bitmap != null) {
+                        Spacer(Modifier.width(Space.xs))
+                        Image(
+                            bitmap = bitmap, contentDescription = "Receipt attached",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(24.dp).clip(RoundedCornerShape(Radius.small)).clickable { onPreview() },
+                        )
+                    }
+                }
                 Text(
-                    listOfNotNull(entry.cat, loggedTime(entry.loggedAt)?.let { "logged $it" }).joinToString(" · "),
+                    listOfNotNull(categoryLabel(store, entry.cat), loggedTime(entry.loggedAt)?.let { "logged $it" }).joinToString(" · "),
                     color = baki.muted, style = BakiType.caption,
                 )
             }
@@ -285,37 +308,51 @@ private fun DayEntryRow(
                     (if (entry.type == "income") "+" else "−") + rm(entry.amount),
                     color = if (entry.type == "income") baki.up else baki.down, style = BakiType.labelNumeric,
                 )
-                Text("bal RM ${rm(runningCents)}", color = baki.muted, style = BakiType.nano)
+                Text("entry bal RM ${rm(runningCents)}", color = baki.muted, style = BakiType.nano)
             }
-        }
-        if (bitmap != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    bitmap = bitmap, contentDescription = "Receipt for ${entry.note.ifEmpty { entry.cat }}",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.height(64.dp).width(92.dp).clip(RoundedCornerShape(Radius.small))
-                        .background(baki.surfaceHigh).clickable { onPreview() },
+            Box {
+                Text(
+                    "⋮", color = baki.muted, style = BakiType.bodyStrong,
+                    modifier = Modifier.size(48.dp).clickable { menu = true }
+                        .semantics { contentDescription = "Entry actions" },
+                    textAlign = TextAlign.Center,
                 )
-                Spacer(Modifier.width(Space.s))
-                TextButton(onClick = onAttach) { Text("Replace", color = baki.primary, style = BakiType.caption) }
-                TextButton(onClick = onRemoveReceipt) { Text("Remove", color = baki.down, style = BakiType.caption) }
-            }
-        } else {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onAttach) { Text("Attach receipt", color = baki.muted, style = BakiType.caption) }
-                Spacer(Modifier.weight(1f))
-                TextButton(onClick = onDelete) { Text("Delete", color = baki.down, style = BakiType.caption) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if (bitmap == null) "Attach receipt" else "Replace receipt", color = baki.onSurface) },
+                        onClick = { menu = false; onAttach() },
+                    )
+                    if (bitmap != null) {
+                        DropdownMenuItem(
+                            text = { Text("View receipt", color = baki.onSurface) },
+                            onClick = { menu = false; onPreview() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Remove receipt", color = baki.down) },
+                            onClick = { menu = false; onRemoveReceipt() },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Delete entry", color = baki.down) },
+                        onClick = { menu = false; onDelete() },
+                    )
+                }
             }
         }
-        LedgerRule(alpha = 0.12f)
+        }
     }
 }
 
 @Composable
 private fun DayShiftRow(shift: Shift, net: Double, km: Double, onEdit: () -> Unit) {
     val baki = LocalBaki.current
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = Space.xs),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = Control.primary).clickable { onEdit() },
+        Modifier.fillMaxWidth().heightIn(min = Control.primary).clickable { onEdit() }.padding(horizontal = Space.m),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(BakiIcons.Car, contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
@@ -326,7 +363,7 @@ private fun DayShiftRow(shift: Shift, net: Double, km: Double, onEdit: () -> Uni
         }
         Text("RM ${rm(net)}", color = if (net < 0) baki.down else baki.up, style = BakiType.labelNumeric)
     }
-    LedgerRule(alpha = 0.12f)
+    }
 }
 
 @Composable

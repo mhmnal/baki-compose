@@ -86,6 +86,11 @@ fun rmRaw(cents: Long): String {
 
 fun rmRaw(ringgit: Double): String = rmRaw(Math.round(ringgit * 100).toLong())
 
+/** Human label for a category id, falling back to the stored id only when unknown. */
+fun categoryLabel(store: Store, id: String): String =
+    (store.settings.cats.catsOut + store.settings.cats.catsIn)
+        .firstOrNull { it.id == id }?.name ?: id
+
 /** RM formatting without locale surprises; masked when discreet mode is on. */
 fun rm(cents: Long): String = if (BakiPrivacy.discreet) "••••" else rmRaw(cents)
 

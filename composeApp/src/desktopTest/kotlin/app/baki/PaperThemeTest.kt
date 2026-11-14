@@ -14,14 +14,25 @@ class PaperThemeTest {
     }
 
     @Test
-    fun newInstallsStartOnPaper() {
-        assertEquals("paper", ClientConfig().palette)
+    fun newInstallsUseDynamicMaterial() {
+        assertEquals("dynamic", ClientConfig().palette)
+        assertTrue(ClientConfig().matchWallpaper)
     }
 
     @Test
-    fun glassKeepsItsOwnGeometry() {
-        assertEquals(50, Radius.glass.value.toInt())
+    fun md3ShapeHierarchyIsOrdered() {
+        assertEquals(28, Radius.glass.value.toInt())
         assertTrue(Radius.glass > Radius.card)
+        assertTrue(Radius.card > Radius.small)
+    }
+
+    @Test
+    fun md3ShapeScaleMatchesMaterial() {
+        assertEquals(4, Radius.tiny.value.toInt())
+        assertEquals(8, Radius.small.value.toInt())
+        assertEquals(12, Radius.card.value.toInt())
+        assertEquals(16, Radius.large.value.toInt())
+        assertEquals(28, Radius.sheet.value.toInt())
     }
 
     @Test

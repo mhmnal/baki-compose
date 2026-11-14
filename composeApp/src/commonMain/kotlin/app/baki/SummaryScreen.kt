@@ -11,9 +11,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,7 +65,6 @@ fun SummaryScreen(
     }
     val t = remember(store, month) { monthTotals(store, month) }
     val cash = remember(store, month) { cashTruth(store, month) }
-    val weekReview = remember(store) { latestWeekWithData(store, todayIso()) }
     val days = remember(store, month) { monthDays(store, month) }
     val best = days.maxByOrNull { it.second.net }
     val worst = days.minByOrNull { it.second.net }
@@ -81,34 +83,42 @@ fun SummaryScreen(
         verticalArrangement = Arrangement.spacedBy(Space.s),
         contentPadding = PaddingValues(top = 0.dp, bottom = 132.dp),
     ) {
-        item { Header(repo, embedded = true) }
         item {
-            StatementCover(
-                month = month, t = t, days = days, best = best, worst = worst,
-                cost = cost, prevNet = prevNet, streak = streak,
-                onMonth = onMonth,
-            )
-        }
-        item { MonthInkChart(store = store, month = month) }
-        item { WeekSection(store = store, today = todayIso()) }
-        if (cats.isNotEmpty()) item {
-            WhereItWent(cats = cats, total = t.expense)
-        }
-        item { CalendarHeat(store, month, compact = true) }
-        item { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) }
-        item { CashTruthCard(cash, month, compact = true) }
-        weekReview?.let { (start, review) ->
-            item {
-                WeeklyReviewCard(start, review, store.settings.profit.targetRate, shiftsBelowTarget(store, start, store.settings.profit.targetRate).size)
+            Md3Card {
+                StatementCover(
+                    month = month, t = t, days = days, best = best, worst = worst,
+                    cost = cost, prevNet = prevNet, streak = streak,
+                    onMonth = onMonth,
+                )
             }
         }
-        item { HoursHeatmap(store) }
+        item { Md3Card { MonthInkChart(store = store, month = month) } }
+        item { Md3Card { WeekSection(store = store, today = todayIso()) } }
+        if (cats.isNotEmpty()) item {
+            Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
+        }
+        item { Md3Card { CalendarHeat(store, month, compact = true) } }
+        item { Md3Card { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) } }
+        item { Md3Card { CashTruthCard(cash, month, compact = true) } }
+        item { Md3Card { HoursHeatmap(store) } }
         if (cats.isEmpty()) item {
             EmptyState("Nothing this month", "Expenses you log will appear here.")
         }
     }
     managingFund?.let { fund ->
         ReserveSheet(repo = repo, fund = fund, onDismiss = { managingFund = null })
+    }
+}
+
+@Composable
+private fun Md3Card(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(Modifier.padding(Space.l), content = content)
     }
 }
 
@@ -141,7 +151,7 @@ private fun StatementCover(
                 Text("›", color = baki.onSurface, style = BakiType.body)
             }
         }
-        Text("MONTHLY STATEMENT", color = baki.muted, style = BakiType.section)
+        Text("Monthly statement", color = baki.muted, style = BakiType.section)
         Spacer(Modifier.height(Space.xs))
         EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
         Text(
@@ -193,7 +203,7 @@ private fun MonthInkChart(store: Store, month: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("MONTH IN INK", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("Month in ink", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
             ChartTab("7D", range == 7) { range = 7 }
             ChartTab("30D", range == 30) { range = 30 }
         }
@@ -273,7 +283,7 @@ private fun WeekSection(store: Store, today: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("THIS WEEK", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("This week", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
             Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, style = BakiType.labelNumeric)
         }
         Text(
@@ -307,13 +317,13 @@ private fun WeekSection(store: Store, today: String) {
 }
 
 @Composable
-private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long) {
+private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Store) {
     val baki = LocalBaki.current
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         LedgerRule(alpha = 0.16f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("WHERE IT WENT", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
-            Text("SHARE", color = baki.muted, style = BakiType.nano)
+            Text("Where it went", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("Share", color = baki.muted, style = BakiType.nano)
         }
         Spacer(Modifier.height(Space.s))
         cats.forEachIndexed { index, (cat, cents) ->
@@ -321,7 +331,7 @@ private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Icon(categoryIcon(cat), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
-                Text(cat, color = baki.onSurface, style = BakiType.label, modifier = Modifier.weight(1f))
+                Text(categoryLabel(store, cat), color = baki.onSurface, style = BakiType.label, modifier = Modifier.weight(1f))
                 Text("RM ${rm(cents)}", color = baki.onSurface, style = BakiType.labelStrong)
                 Spacer(Modifier.width(Space.s))
                 Text("${(share * 100).toInt()}%", color = baki.muted, style = BakiType.captionNumeric, modifier = Modifier.width(34.dp), textAlign = TextAlign.End)
@@ -413,7 +423,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = baki.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = RoundedCornerShape(Radius.dialog),
         title = { Text("$fundName reserve", color = baki.onSurface, style = BakiType.title) },
         text = {
@@ -479,7 +489,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                 ) { Text("Save target", color = if (canWrite) baki.primary else baki.muted, style = BakiType.captionStrong) }
                 if (status.isNotEmpty()) Text(status, color = baki.primary, style = BakiType.caption)
                 if (txns.isNotEmpty()) {
-                    Text("RECENT MOVEMENTS", color = baki.muted, style = BakiType.section)
+                    Text("Recent movements", color = baki.muted, style = BakiType.section)
                     LedgerRule(alpha = 0.12f)
                     txns.forEach { tx ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -504,7 +514,7 @@ private fun CashTruthCard(t: CashTruth, month: String, compact: Boolean = false)
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         LedgerRule(alpha = 0.12f)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("CASH TRUTH", color = baki.muted, style = BakiType.section)
+            Text("Cash truth", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.weight(1f))
             Text("not a bank balance", color = baki.muted, style = BakiType.nano)
         }

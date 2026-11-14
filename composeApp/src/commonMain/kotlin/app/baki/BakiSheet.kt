@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +47,7 @@ fun BakiSheet(
     LaunchedEffect(Unit) { visible = true }
 
     // corners square off as the sheet is dragged down, like a sheet being pulled away
-    val maxCorner = if (baki.paper) 4f else 28f
+    val maxCorner = 28f
     val corner by animateDpAsState(
         targetValue = (maxCorner * (1f - (dragOffset / dragPx).coerceIn(0f, 1f))).dp,
         animationSpec = BakiMotion.effects(),
@@ -80,9 +81,9 @@ fun BakiSheet(
             exit = slideOutVertically(BakiMotion.effectsSlow()) { it } + fadeOut(BakiMotion.effectsSlow()),
         ) {
             Surface(
-                color = if (baki.paper) baki.surface else baki.container,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
                 shape = RoundedCornerShape(topStart = corner, topEnd = corner),
-                shadowElevation = if (baki.paper) 0.dp else 24.dp,
+                shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     // never taller than the screen, or the last control ends up unreachable
@@ -120,7 +121,6 @@ fun BakiSheet(
                                 .background(baki.muted.copy(alpha = 0.5f)),
                         )
                     }
-                    if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.ml), alpha = 0.16f)
                     Column(
                         Modifier
                             .fillMaxWidth()
@@ -135,8 +135,7 @@ fun BakiSheet(
                     }
                     // pinned: a long list can never push the primary action off-screen
                     if (footer != null) {
-                        if (baki.paper) LedgerRule(Modifier.padding(horizontal = Space.ml), alpha = 0.16f)
-                        Box(Modifier.fillMaxWidth().padding(horizontal = Space.ml).padding(bottom = 26.dp, top = 6.dp)) {
+                            Box(Modifier.fillMaxWidth().padding(horizontal = Space.ml).padding(bottom = 26.dp, top = 6.dp)) {
                             footer()
                         }
                     } else {

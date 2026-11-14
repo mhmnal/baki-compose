@@ -62,13 +62,24 @@ val LightPalette = BakiPalette(
     up = Color(0xFF0F6B4F), down = Color(0xFFA63C26), warn = Color(0xFF7A5A00),
 )
 
-/** Material 3 component shapes for paper: controls and dialogs are nearly square. */
-private val PaperShapes = Shapes(
+/** Official MD3 shape hierarchy. */
+private val Md3Shapes = Shapes(
     extraSmall = RoundedCornerShape(Radius.tiny),
     small = RoundedCornerShape(Radius.small),
     medium = RoundedCornerShape(Radius.card),
-    large = RoundedCornerShape(Radius.dialog),
+    large = RoundedCornerShape(Radius.large),
     extraLarge = RoundedCornerShape(Radius.sheet),
+)
+
+private fun paletteOf(s: androidx.compose.material3.ColorScheme, dark: Boolean) = BakiPalette(
+    dark = dark, paper = false,
+    primary = s.primary, onPrimary = s.onPrimary,
+    primaryContainer = s.primaryContainer, onPrimaryContainer = s.onPrimaryContainer,
+    accentStrong = s.primary, onAccent = s.onPrimary,
+    surface = s.surface, container = s.surfaceContainerLow,
+    surfaceHigh = s.surfaceContainerHigh,
+    onSurface = s.onSurface, muted = s.onSurfaceVariant,
+    up = s.tertiary, down = s.error, warn = s.secondary,
 )
 
 /** Material components now speak the same type system as the hand-built screens. */
@@ -196,17 +207,16 @@ fun BakiTheme(
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    // The desk is palette-independent (Obsidian Slate / Soft UI 2.0 are fixed per mode), so a stored
-    // colour pack like "paper" must not keep it light when the user chose Dark.
-    val fallback = if (Caps.isDesktop) paletteFor("sage", dark) else paletteFor(pack, dark)
-    // Offscreen phone previews run on the desk JVM but must see the actual phone pack.
-    val resolved = if (Caps.isDesktop && PhonePreview.active) paletteFor(pack, dark) else fallback
-    val palette = if (matchWallpaper) remember(dark) { dynamicPalette(dark) ?: resolved } else resolved
+    // Material You first: use the wallpaper scheme wherever Monet is available. The static
+    // Material baseline is the fallback, not the old bespoke packs.
+    val dynamic = if (!Caps.isDesktop || PhonePreview.active) remember(dark) { dynamicPalette(dark) } else null
+    val scheme = dynamic?.let { schemeOf(it) } ?: if (dark) darkColorScheme() else lightColorScheme()
+    val palette = remember(scheme, dark) { paletteOf(scheme, dark) }
     CompositionLocalProvider(LocalBaki provides palette) {
         MaterialTheme(
-            colorScheme = schemeOf(palette),
+            colorScheme = scheme,
             typography = if (!Caps.isDesktop || PhonePreview.active) bakiTypography() else Typography(),
-            shapes = if (!Caps.isDesktop || PhonePreview.active) PaperShapes else Shapes(),
+            shapes = if (!Caps.isDesktop || PhonePreview.active) Md3Shapes else Shapes(),
             content = content,
         )
     }

@@ -3,7 +3,9 @@ package app.baki
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,8 +60,13 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
     val store = repo.store
     val scope = rememberCoroutineScope()
     val rows = store.statements.values.sortedByDescending { it.weekStart }
-    BakiSheet(onDismiss = onDismiss) {
-        Text("Statement history", color = baki.onSurface, style = BakiType.title )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(Radius.dialog),
+        title = { Text("Statement history", color = baki.onSurface, style = BakiType.title) },
+        text = {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
         Text(
             "${rows.size} imported week${if (rows.size == 1) "" else "s"} · income and insurance reconciliation",
             color = baki.muted, style = BakiType.caption,
@@ -135,7 +142,10 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
             }
             if (index != rows.lastIndex) LedgerRule(alpha = 0.16f)
         }
-    }
+        }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = baki.primary, style = BakiType.labelStrong) } },
+    )
 }
 
 /** Add or remove spending categories; a category still in use can't be deleted. */
@@ -202,7 +212,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
     renaming?.let { cat ->
         AlertDialog(
             onDismissRequest = { renaming = null },
-            containerColor = baki.container,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = { Text("Rename category", color = baki.onSurface, fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
@@ -228,7 +238,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
     if (adding) {
         AlertDialog(
             onDismissRequest = { adding = false },
-            containerColor = baki.container,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = { Text("New category", color = baki.onSurface, fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
