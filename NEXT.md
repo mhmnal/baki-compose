@@ -148,3 +148,8 @@ Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without th
 
 - Rolling fuel/wear reserves; 210 tests; installed on signed package.
 - Latest: fuel −RM115.45, wear −RM345.76.
+
+### 0.37.9 signed
+
+- Full Summary statement redesign; 210 tests; installed.
+- Assumptions: target line is target rate × monthly hours / active days; reserve target is one month of actual/accrued cost.

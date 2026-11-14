@@ -121,7 +121,7 @@ fun TodayScreen(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
-        verticalArrangement = Arrangement.spacedBy(Space.m),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
         // leave room for the floating bar and the + so nothing ends up underneath them
         contentPadding = PaddingValues(top = 6.dp, bottom = 132.dp),
     ) {

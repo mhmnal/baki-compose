@@ -1,30 +1,41 @@
 package app.baki
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 
-/** Month at a glance: totals, best/worst day, where the money went, funds. */
+/** Month at a glance: statement cover, month-in-ink, week strip, spend, calendar, reserves. */
 @Composable
 fun SummaryScreen(
     repo: BakiRepo,
@@ -39,7 +50,6 @@ fun SummaryScreen(
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
             .collect { (index, offset) -> onHeaderCollapsed(index > 0 || offset > 56) }
     }
-    // aggregations are memoised per store+month: recomposition no longer re-scans everything
     val t = remember(store, month) { monthTotals(store, month) }
     val cash = remember(store, month) { cashTruth(store, month) }
     val weekReview = remember(store) { latestWeekWithData(store, todayIso()) }
@@ -48,251 +58,40 @@ fun SummaryScreen(
     val worst = days.minByOrNull { it.second.net }
     val funds = remember(store, month) { fundStats(store, month) }
     val cats = remember(store, month) { expensesByCategory(store, month) }
-    val maxCat = cats.maxOfOrNull { it.second } ?: 1L
-    val avgDay = if (days.isEmpty()) 0L else t.expense / days.size
-    val dayLabel = if (days.size == 1) "1 day" else "${days.size} days"
+    val cost = remember(store, month) { monthCost(store, month) }
+    val prevMonth = addDays("$month-01", -1).take(7)
+    val prevNet = remember(store, prevMonth) { monthTotals(store, prevMonth).net }
+    val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
+    val streak = remember(store) { targetStreak(store, todayIso()) }
 
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
-        verticalArrangement = Arrangement.spacedBy(Space.m),
+        verticalArrangement = Arrangement.spacedBy(Space.s),
         contentPadding = PaddingValues(top = 0.dp, bottom = 132.dp),
     ) {
         item { Header(repo, embedded = true) }
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
-                    Text("‹", color = baki.onSurface, style = BakiType.body )
-                }
-                Text(
-                    monthLabel(month), color = baki.onSurface,
-                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f), style = BakiType.bodyStrong )
-                TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
-                    Text("›", color = baki.onSurface, style = BakiType.body )
-                }
-            }
+            StatementCover(
+                month = month, t = t, days = days, best = best, worst = worst,
+                cost = cost, prevNet = prevNet, streak = streak,
+                onMonth = onMonth,
+            )
         }
-
-        item {
-            Column {
-                Text("THIS MONTH", color = baki.muted, style = BakiType.section)
-                EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
-                Text(
-                    "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)} · avg RM ${rm(avgDay)}/day",
-                    color = baki.muted, style = BakiType.label )
-                val streak = remember(store) { targetStreak(store, todayIso()) }
-                if (streak >= 2) {
-                    Text(
-                        "$streak days in a row above target",
-                        color = baki.up, style = BakiType.caption,
-                    )
-                }
-            }
+        item { MonthInkChart(store = store, month = month) }
+        item { WeekSection(store = store, today = todayIso()) }
+        if (cats.isNotEmpty()) item {
+            WhereItWent(cats = cats, total = t.expense)
         }
-
-        item {
-            val thisWeek = weekTotals(store, weekStartOf(todayIso()))
-            val lastWeek = weekTotals(store, addDays(weekStartOf(todayIso()), -7))
-            val delta = thisWeek.net - lastWeek.net
-            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-                LedgerRule(alpha = 0.16f)
-                Text("THIS WEEK", color = baki.muted, style = BakiType.section)
-                Spacer(Modifier.height(Space.s))
-                BoxWithConstraints {
-                    val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
-                    if (compact) {
-                        Column {
-                            EasedMoney(thisWeek.net, baki.onSurface, BakiType.title)
-                            Text(
-                                "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
-                            )
-                        }
-                    } else {
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            EasedMoney(thisWeek.net, baki.onSurface, BakiType.title)
-                            Spacer(Modifier.width(Space.s))
-                            Text(
-                                "${if (delta >= 0) "+" else "−"}RM ${rm(if (delta >= 0) delta else -delta)} vs last week",
-                                color = if (delta >= 0) baki.up else baki.down, style = BakiType.caption,
-                            )
-                        }
-                    }
-                }
-                Text(
-                    "${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries · last week RM ${rm(lastWeek.net)}",
-                    color = baki.muted, style = BakiType.caption )
-                // is the week clearing the rate you set? measured on shift earnings, not on net
-                // after spending — otherwise a fuel week would look like a slow week
-                run {
-                    val start = remember(store) { weekStartOf(todayIso()) }
-                    val weekShifts = remember(store, start) { store.shifts.filter { it.date >= start && it.date <= todayIso() } }
-                    val weekHours = weekShifts.sumOf { it.hours }
-                    val cfg = store.settings.profit
-                    val weekShiftNet = weekShifts.sumOf {
-                        shiftMetrics(it, cfg, overheadPerHour(store, it.date.take(7))).net
-                    }
-                    val target = cfg.targetRate
-                    if (weekHours > 0) {
-                        val actual = weekShiftNet / weekHours
-                        val hit = actual >= target
-                        Text(
-                            (if (hit) "✓ " else "✗ ") +
-                                "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr",
-                            color = if (hit) baki.up else baki.down, style = BakiType.caption )
-                        // the shape of the week, not just its total
-                        val last7 = remember(store, todayIso()) {
-                            (6 downTo 0).map { dayTotals(store, addDays(todayIso(), -it)).net / 100.0 }
-                        }
-                        Spacer(Modifier.height(Space.s))
-                        Sparkline(
-                            values = last7,
-                            modifier = Modifier.fillMaxWidth().height(34.dp),
-                            line = baki.primary,
-                            fill = baki.primary,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(Space.s))
-                LedgerRule(alpha = 0.16f)
-            }
-        }
-
-        item { CashTruthCard(cash, month) }
-
+        item { CalendarHeat(store, month, compact = true) }
+        item { FundsSection(funds) }
+        item { CashTruthCard(cash, month, compact = true) }
         weekReview?.let { (start, review) ->
             item {
                 WeeklyReviewCard(start, review, store.settings.profit.targetRate, shiftsBelowTarget(store, start, store.settings.profit.targetRate).size)
             }
         }
-
-        item {
-            if (days.size > 1) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                    StatTile("best day", best?.let { "RM ${rm(it.second.net)}" } ?: "—", best?.first?.let { prettyDate(it) } ?: "", baki.up, Modifier.weight(1f))
-                    StatTile("worst day", worst?.let { "RM ${rm(it.second.net)}" } ?: "—", worst?.first?.let { prettyDate(it) } ?: "", baki.down, Modifier.weight(1f))
-                }
-            } else if (best != null) {
-                StatTile("only day", "RM ${rm(best.second.net)}", prettyDate(best.first), baki.up, Modifier.fillMaxWidth())
-            }
-        }
-
-        item {
-            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-                LedgerRule(alpha = 0.16f)
-                Text("FUNDS · ROLLING", color = baki.muted, style = BakiType.section)
-                Spacer(Modifier.height(Space.s))
-                FundRow("Fuel", funds.fuel, baki)
-                Spacer(Modifier.height(Space.m))
-                FundRow("Wear & tear", funds.wear, baki)
-                Spacer(Modifier.height(Space.s))
-                Text("rolling reserve · this month + accrual, − real spending", color = baki.muted, style = BakiType.caption)
-                Spacer(Modifier.height(Space.s))
-                LedgerRule(alpha = 0.16f)
-            }
-        }
-
-        item {
-            Text("WHERE IT WENT", color = baki.muted, style = BakiType.captionStrong )
-        }
-        items(cats) { (cat, cents) ->
-            Column {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(cat, color = baki.onSurface, style = BakiType.label )
-                    Text("RM ${rm(cents)}", color = baki.onSurface, style = BakiType.labelStrong )
-                }
-                Spacer(Modifier.height(Space.xs))
-                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.surfaceHigh)) {
-                    Box(
-                        Modifier.fillMaxWidth((cents.toFloat() / maxCat).coerceIn(0.02f, 1f))
-                            .height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(baki.primary),
-                    )
-                }
-            }
-        }
-        item {
-            val cost = remember(store, month) { monthCost(store, month) }
-            val series = remember(store, month) { monthCostSeries(store, month, 4) }
-            val peak = series.maxOfOrNull { it.perKm }?.coerceAtLeast(0.01) ?: 0.01
-            Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-                LedgerRule(alpha = 0.16f)
-                Text("COST PER KM", color = baki.muted, style = BakiType.section)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text("RM ${rm(cost.perKm)}", color = baki.onSurface, style = BakiType.headline )
-                    Spacer(Modifier.width(Space.s))
-                    Text("${"%.0f".format(cost.km)} km", color = baki.muted, style = BakiType.label )
-                }
-                Text(
-                    if (cost.km > 0.01)
-                        "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
-                    else "No distance recorded this month.",
-                    color = baki.muted, style = BakiType.caption )
-                Spacer(Modifier.height(Space.m))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    series.forEach { m ->
-                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                Modifier.fillMaxWidth().height(38.dp),
-                                contentAlignment = Alignment.BottomCenter,
-                            ) {
-                                Box(
-                                    Modifier.fillMaxWidth()
-                                        .fillMaxHeight(if (m.km > 0.01) (m.perKm / peak).toFloat().coerceIn(0.06f, 1f) else 0.04f)
-                                        .clip(RoundedCornerShape(Radius.tiny))
-                                        .background(if (m.month == month) baki.primary else baki.primary.copy(alpha = 0.35f)),
-                                )
-                            }
-                            Text(m.month.takeLast(2), color = baki.muted, style = BakiType.caption )
-                            Text(
-                                if (m.km > 0.01) rm(m.perKm) else "–",
-                                color = if (m.month == month) baki.onSurface else baki.muted, fontWeight = if (m.month == month) FontWeight.Bold else FontWeight.Normal, style = BakiType.caption )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(Space.s))
-                LedgerRule(alpha = 0.16f)
-            }
-        }
-        item { HoursHeatmap(store); Spacer(Modifier.height(Space.m)) }
-        // the week, in sentences: numbers are cold, a sentence is memorable
-        latestWeekWithData(store, todayIso())?.let { (start, r) ->
-            item {
-                Column(
-                    Modifier.fillMaxWidth().padding(vertical = Space.m),
-                ) {
-                    LedgerRule(alpha = 0.16f)
-                    Text(
-                        (if (start == weekStartOf(todayIso())) "THIS WEEK" else "LAST WEEK") +
-                            " · ${prettyDate(start)} – ${prettyDate(addDays(start, 6))}",
-                        color = baki.muted, style = BakiType.section,
-                    )
-                    Spacer(Modifier.height(Space.s))
-                    Text(
-                        "You drove ${"%.1f".format(r.hours)} h over ${r.days} day(s) and kept " +
-                            "RM ${rm(r.net)} — RM ${rm(r.perHour)}/h.",
-                        color = baki.onSurface, style = BakiType.body,
-                    )
-                    if (r.fuelPerKm > 0.0) {
-                        Text(
-                            "Fuel took RM ${rm(r.fuelPerKm)} of every km.",
-                            color = baki.muted, style = BakiType.caption,
-                        )
-                    }
-                    if (r.bestNet > 0) {
-                        Text(
-                            "Best day: ${prettyDate(r.bestDay)} at RM ${rm(r.bestNet)}.",
-                            color = baki.up, style = BakiType.caption,
-                        )
-                    }
-                    Spacer(Modifier.height(Space.s))
-                    LedgerRule(alpha = 0.16f)
-                }
-                Spacer(Modifier.height(Space.m))
-            }
-        }
-
-        item { TrendBars(store, month); Spacer(Modifier.height(Space.m)) }
-        item { CalendarHeat(store, month); Spacer(Modifier.height(Space.xs)) }
+        item { HoursHeatmap(store) }
         if (cats.isEmpty()) item {
             EmptyState("Nothing this month", "Expenses you log will appear here.")
         }
@@ -300,81 +99,305 @@ fun SummaryScreen(
 }
 
 @Composable
-private fun StatTile(label: String, value: String, sub: String, tint: Color, modifier: Modifier = Modifier) {
+private fun StatementCover(
+    month: String,
+    t: Totals,
+    days: List<Pair<String, Totals>>,
+    best: Pair<String, Totals>?,
+    worst: Pair<String, Totals>?,
+    cost: MonthCost,
+    prevNet: Long,
+    streak: Int,
+    onMonth: (String) -> Unit,
+) {
     val baki = LocalBaki.current
-    Column(modifier.padding(vertical = Space.m)) {
-        LedgerRule(alpha = 0.14f)
-        Text(label, color = baki.muted, style = BakiType.caption)
-        Text(value, color = tint, style = BakiType.title)
-        if (sub.isNotEmpty()) Text(sub, color = baki.muted, style = BakiType.caption)
+    val delta = t.net - prevNet
+    val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
+
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
+                Text("‹", color = baki.onSurface, style = BakiType.body)
+            }
+            Text(
+                monthLabel(month), color = baki.onSurface,
+                textAlign = TextAlign.Center, modifier = Modifier.weight(1f), style = BakiType.bodyStrong,
+            )
+            TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
+                Text("›", color = baki.onSurface, style = BakiType.body)
+            }
+        }
+        Text("MONTHLY STATEMENT", color = baki.muted, style = BakiType.section)
+        Spacer(Modifier.height(Space.xs))
+        EasedMoney(t.net, baki.onSurface, BakiType.displaySmallNumeric)
+        Text(
+            if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
+            color = if (delta >= 0) baki.up else baki.down,
+            style = BakiType.caption,
+        )
+        Text(
+            "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
+            color = baki.muted, style = BakiType.label,
+        )
+        if (streak >= 2) {
+            Text("$streak days in a row above target", color = baki.up, style = BakiType.caption)
+        }
+        Text(
+            if (cost.km > 0.01) "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
+            else "No distance recorded this month.",
+            color = baki.muted, style = BakiType.caption,
+        )
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.16f)
+    }
+}
+
+private data class InkDay(val iso: String, val net: Long, val active: Boolean)
+
+@Composable
+private fun MonthInkChart(store: Store, month: String) {
+    val baki = LocalBaki.current
+    var range by remember(month) { mutableStateOf(30) }
+    val allDays = remember(store, month) {
+        monthGrid(month).filterNotNull().map { iso ->
+            val t = dayTotals(store, iso)
+            InkDay(iso, t.net, t.entryCount > 0 || t.shiftCount > 0)
+        }
+    }
+    val shown = if (range == 7) allDays.takeLast(7) else allDays
+    val active = allDays.filter { it.active }
+    val best = active.maxByOrNull { it.net }
+    val worst = active.minByOrNull { it.net }
+    val cfg = store.settings.profit
+    val hours = remember(store, month) {
+        store.shifts.filter { it.date.startsWith(month) }.sumOf { it.hours }
+    }
+    val targetPerDay = if (active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
+    val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
+    val pad = Space.l
+
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.16f)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("MONTH IN INK", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            ChartTab("7D", range == 7) { range = 7 }
+            ChartTab("30D", range == 30) { range = 30 }
+        }
+        Spacer(Modifier.height(Space.s))
+        Canvas(
+            Modifier.fillMaxWidth().height(118.dp)
+                .semantics { contentDescription = "Daily net chart for $month" },
+        ) {
+            val zeroY = size.height * 0.60f
+            val usable = size.height * 0.48f
+            val targetY = (zeroY - (targetPerDay / maxAbs * usable).toFloat()).coerceIn(4.dp.toPx(), size.height - 4.dp.toPx())
+            drawLine(baki.muted.copy(alpha = 0.30f), Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
+            if (targetPerDay > 0.01) {
+                drawLine(
+                    baki.warn.copy(alpha = 0.65f),
+                    Offset(0f, targetY), Offset(size.width, targetY), 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 5f)),
+                )
+            }
+            val step = size.width / shown.size.coerceAtLeast(1)
+            val barW = (step * 0.52f).coerceAtLeast(2f)
+            shown.forEachIndexed { i, day ->
+                val value = day.net / 100.0
+                val h = (abs(value) / maxAbs * usable).toFloat().coerceAtLeast(if (day.active) 2.dp.toPx() else 1.dp.toPx())
+                val left = i * step + (step - barW) / 2f
+                val top = if (value >= 0) zeroY - h else zeroY
+                val color = when {
+                    day == best -> baki.warn
+                    value < 0 -> baki.down
+                    else -> baki.primary
+                }
+                drawRect(color.copy(alpha = if (day.active) 0.90f else 0.22f), Offset(left, top), Size(barW, h))
+            }
+        }
+        Spacer(Modifier.height(Space.xs))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = baki.muted, style = BakiType.caption)
+            Text("target RM ${rm(targetPerDay)}/day", color = baki.muted, style = BakiType.caption)
+            Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = baki.muted, style = BakiType.caption)
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            best?.let { Text("+RM ${rm(it.net)} · ${it.iso.takeLast(5)}", color = baki.up, style = BakiType.caption, modifier = Modifier.weight(1f)) }
+            worst?.let { Text("${rm(it.net)} · ${it.iso.takeLast(5)}", color = baki.down, style = BakiType.caption) }
+        }
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.16f)
+    }
+}
+
+@Composable
+private fun ChartTab(label: String, selected: Boolean, onClick: () -> Unit) {
+    val baki = LocalBaki.current
+    Column(
+        Modifier.width(34.dp).height(Control.primary).clickable { onClick() }
+            .semantics { this.selected = selected; role = Role.Tab },
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(label, color = if (selected) baki.primary else baki.muted, style = BakiType.captionStrong)
+        if (selected) Box(Modifier.fillMaxWidth().height(2.dp).background(baki.primary))
+    }
+}
+
+@Composable
+private fun WeekSection(store: Store, today: String) {
+    val baki = LocalBaki.current
+    val start = remember(today) { weekStartOf(today) }
+    val dates = remember(start) { (0..6).map { addDays(start, it) } }
+    val values = remember(store, start) { dates.map { dayTotals(store, it) } }
+    val thisWeek = remember(store, start) { weekTotals(store, start) }
+    val lastWeek = remember(store, start) { weekTotals(store, addDays(start, -7)) }
+    val hours = remember(store, start) { store.shifts.filter { it.date in dates }.sumOf { it.hours } }
+    val actual = if (hours > 0) thisWeek.net / 100.0 / hours else 0.0
+    val target = store.settings.profit.targetRate
+    val peak = maxOf(1L, values.maxOfOrNull { abs(it.net) } ?: 1L)
+
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.16f)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("THIS WEEK", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("RM ${rm(thisWeek.net)}", color = baki.onSurface, style = BakiType.labelNumeric)
+        }
+        Text(
+            "${if (thisWeek.net - lastWeek.net >= 0) "+" else "−"}RM ${rm(abs(thisWeek.net - lastWeek.net))} vs last week · " +
+                if (hours > 0) "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr" else "no hours yet",
+            color = if (hours > 0 && actual >= target) baki.up else baki.down,
+            style = BakiType.caption,
+        )
+        Spacer(Modifier.height(Space.s))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+            dates.forEachIndexed { i, iso ->
+                val v = values[i].net
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.fillMaxWidth().height(38.dp), contentAlignment = Alignment.BottomCenter) {
+                        Box(
+                            Modifier.fillMaxWidth(0.55f)
+                                .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.04f, 1f))
+                                .background(if (v < 0) baki.down.copy(alpha = 0.72f) else if (iso == today) baki.primary else baki.primary.copy(alpha = 0.55f)),
+                        )
+                    }
+                    Text(weekdayShort(iso).take(1), color = baki.muted, style = BakiType.caption)
+                    Text(iso.takeLast(2), color = if (iso == today) baki.primary else baki.muted, style = BakiType.nano)
+                }
+            }
+        }
+        Spacer(Modifier.height(Space.xs))
+        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = baki.muted, style = BakiType.caption)
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.16f)
+    }
+}
+
+@Composable
+private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long) {
+    val baki = LocalBaki.current
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.16f)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("WHERE IT WENT", color = baki.muted, style = BakiType.section, modifier = Modifier.weight(1f))
+            Text("SHARE", color = baki.muted, style = BakiType.nano)
+        }
+        Spacer(Modifier.height(Space.s))
+        cats.forEachIndexed { index, (cat, cents) ->
+            val share = if (total > 0) cents.toDouble() / total else 0.0
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(categoryIcon(cat), contentDescription = null, tint = baki.primary, modifier = Modifier.size(IconSize.inline))
+                Spacer(Modifier.width(Space.s))
+                Text(cat, color = baki.onSurface, style = BakiType.label, modifier = Modifier.weight(1f))
+                Text("RM ${rm(cents)}", color = baki.onSurface, style = BakiType.labelStrong)
+                Spacer(Modifier.width(Space.s))
+                Text("${(share * 100).toInt()}%", color = baki.muted, style = BakiType.captionNumeric, modifier = Modifier.width(34.dp), textAlign = TextAlign.End)
+            }
+            Spacer(Modifier.height(Space.xs))
+            Box(Modifier.fillMaxWidth().height(3.dp).background(baki.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth(share.toFloat().coerceIn(0.01f, 1f)).fillMaxHeight().background(baki.primary))
+            }
+            if (index != cats.lastIndex) {
+                Spacer(Modifier.height(Space.s))
+                LedgerRule(alpha = 0.10f)
+            }
+        }
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.16f)
+    }
+}
+
+@Composable
+private fun FundsSection(funds: Funds) {
+    val baki = LocalBaki.current
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.16f)
+        Text("FUNDS · ROLLING", color = baki.muted, style = BakiType.section)
+        Spacer(Modifier.height(Space.s))
+        FundRow("Fuel", funds.fuel, baki)
+        Spacer(Modifier.height(Space.s))
+        FundRow("Wear & tear", funds.wear, baki)
+        Spacer(Modifier.height(Space.xs))
+        Text("rolling reserve · one-month target", color = baki.muted, style = BakiType.caption)
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.16f)
     }
 }
 
 @Composable
 private fun FundRow(label: String, fund: Fund, baki: BakiPalette) {
+    val target = maxOf(fund.monthSpent, fund.monthAccrued, 1.0)
+    val progress = (fund.balance.coerceAtLeast(0.0) / target).coerceIn(0.0, 1.0)
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = baki.onSurface, modifier = Modifier.weight(1f), style = BakiType.label)
-            Text(
-                "RM ${rm(fund.balance)}",
-                color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong,
+            Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) baki.up else baki.down, style = BakiType.labelStrong)
+        }
+        Spacer(Modifier.height(Space.xs))
+        Box(Modifier.fillMaxWidth().height(4.dp).background(baki.surfaceHigh)) {
+            Box(
+                Modifier.fillMaxWidth(progress.toFloat()).fillMaxHeight()
+                    .background(if (fund.balance >= 0) baki.up else baki.down),
             )
         }
+        Spacer(Modifier.height(Space.xs))
         Text(
-            "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}",
-            color = baki.muted, style = BakiType.caption,
-        )
-        Text(
-            if (fund.monthNet < 0) "shortfall RM ${rm(-fund.monthNet)}"
-            else if (fund.monthNet > 0) "added to reserve RM ${rm(fund.monthNet)}"
-            else "no change this month",
-            color = if (fund.monthNet < 0) baki.down else baki.muted,
-            style = BakiType.captionNumeric,
+            "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
+                if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
+            color = if (fund.monthNet < 0) baki.down else baki.muted, style = BakiType.caption,
         )
     }
 }
 
-
 /** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */
 @Composable
-private fun CashTruthCard(t: CashTruth, month: String) {
+private fun CashTruthCard(t: CashTruth, month: String, compact: Boolean = false) {
     val baki = LocalBaki.current
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-        LedgerRule(alpha = 0.16f)
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.12f)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("CASH TRUTH", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.weight(1f))
-            Text("not a bank balance", color = baki.muted, style = BakiType.nano )
+            Text("not a bank balance", color = baki.muted, style = BakiType.nano)
         }
-        Spacer(Modifier.height(Space.s))
+        Spacer(Modifier.height(Space.xs))
         CashLine("Recorded net", t.recordedNet, baki.onSurface, baki)
         CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) baki.up else baki.down, baki)
-        Text(
-            "cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}",
-            color = baki.muted, style = BakiType.captionNumeric,
-        )
+        Text("cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}", color = baki.muted, style = BakiType.captionNumeric)
         if (t.unpaid > 0) {
-            Spacer(Modifier.height(Space.xs))
             Text(
-                "RM ${rm(t.unpaid)} still unpaid" +
-                    (t.payoutAnchor?.let { " after the statement through $it" } ?: " — no statement anchor"),
+                "RM ${rm(t.unpaid)} still unpaid" + (t.payoutAnchor?.let { " after $it" } ?: ""),
                 color = baki.warn, style = BakiType.caption,
             )
         }
-        if (t.prepaidBills > 0) {
+        if (!compact) {
+            if (t.prepaidBills > 0) Text("RM ${rm(t.prepaidBills)} paid ahead for bills", color = baki.muted, style = BakiType.caption)
             Text(
-                "RM ${rm(t.prepaidBills)} paid ahead for future bills",
-                color = baki.muted, style = BakiType.caption,
+                "Operating RM ${rm(t.operatingNet)} after estimated running costs.",
+                color = baki.muted, style = BakiType.nano,
             )
         }
-        Spacer(Modifier.height(Space.s))
-        Text(
-            "Operating RM ${rm(t.operatingNet)} after estimated running costs. " +
-                "Cash counts payouts only when the latest statement or a payout breakdown settles them.",
-            color = baki.muted, style = BakiType.nano,
-        )
-        Spacer(Modifier.height(Space.s))
-        LedgerRule(alpha = 0.16f)
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.12f)
     }
 }
 
@@ -383,45 +406,29 @@ private fun CashLine(label: String, cents: Long, color: Color, baki: BakiPalette
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
         Text(label, color = baki.muted, style = BakiType.label)
         Spacer(Modifier.weight(1f))
-        Text("RM ${rm(cents)}", color = color, style = BakiType.bodyStrong )
+        Text("RM ${rm(cents)}", color = color, style = BakiType.bodyStrong)
     }
 }
-
 
 @Composable
 private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, below: Int) {
     val baki = LocalBaki.current
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-        LedgerRule(alpha = 0.16f)
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+        LedgerRule(alpha = 0.12f)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("WEEKLY REVIEW", color = baki.muted, style = BakiType.section)
             Spacer(Modifier.weight(1f))
-            Text("MON–SUN", color = baki.muted, style = BakiType.nano )
+            Text("MON–SUN", color = baki.muted, style = BakiType.nano)
         }
+        Text("${prettyDate(start)} – ${prettyDate(addDays(start, 6))}", color = baki.onSurface, style = BakiType.bodyStrong)
+        Text("${r.days} days · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net", color = baki.onSurface, style = BakiType.label)
+        Text("RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km", color = baki.muted, style = BakiType.captionNumeric)
+        if (r.bestDay.isNotEmpty()) Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = baki.muted, style = BakiType.caption)
         Text(
-            "${prettyDate(start)} – ${prettyDate(addDays(start, 6))}",
-            color = baki.onSurface, style = BakiType.bodyStrong,
+            if (below > 0) "$below shifts below RM ${rm(target)}/hr" else "Every shift cleared RM ${rm(target)}/hr",
+            color = if (below > 0) baki.warn else baki.up, style = BakiType.caption,
         )
-        Text(
-            "${r.days} ${if (r.days == 1) "day" else "days"} · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net",
-            color = baki.onSurface, style = BakiType.label,
-        )
-        Text(
-            "RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km",
-            color = baki.muted, style = BakiType.captionNumeric,
-        )
-        if (r.bestDay.isNotEmpty()) {
-            Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = baki.muted, style = BakiType.caption )
-        }
-        if (below > 0) {
-            Text(
-                "$below ${if (below == 1) "shift" else "shifts"} below RM ${rm(target)}/hr",
-                color = baki.warn, style = BakiType.caption,
-            )
-        } else {
-            Text("Every shift cleared RM ${rm(target)}/hr", color = baki.up, style = BakiType.caption)
-        }
-        Spacer(Modifier.height(Space.s))
-        LedgerRule(alpha = 0.16f)
+        Spacer(Modifier.height(Space.xs))
+        LedgerRule(alpha = 0.12f)
     }
 }

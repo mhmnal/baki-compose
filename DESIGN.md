@@ -1202,3 +1202,12 @@ This closes the former "transfer gap" by scope, not by missing code.
 - Desktop uses the same rolling model.
 - 210 tests. Signed versionCode 113; installed on the phone after pairing.
 - Latest snapshot: 83 entries, 12 shifts, updated 22:15.
+
+## 0.37.9 Summary statement
+
+- Seven-part Summary: statement cover, month-in-ink chart, week strip, ranked spend, compact calendar, reserve meters, demoted cash truth.
+- Month chart has 7D/30D tabs, zero line, target-per-active-day line and best/worst margins.
+- Calendar uses compact 30dp cells, future fade and a best-day border.
+- Funds show one-month-target reserve meters plus monthly accrual/withdrawal/shortfall.
+- Summary/Today vertical rhythm reduced to 8dp; section rules tightened.
+- 210 tests; signed versionCode 114 and installed on the phone.

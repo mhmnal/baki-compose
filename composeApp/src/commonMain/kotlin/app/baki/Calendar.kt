@@ -18,10 +18,11 @@ import androidx.compose.ui.unit.sp
 
 /** Month heat map: green when the day kept money, coral when it cost you. */
 @Composable
-fun CalendarHeat(store: Store, month: String) {
+fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     val baki = LocalBaki.current
     val cells = monthGrid(month)
     val today = todayIso()
+    val bestDay = monthDays(store, month).maxByOrNull { it.second.net }?.first
 
     Column(Modifier.semantics { contentDescription = "Calendar heatmap of daily net" }) {
         Text("CALENDAR", color = baki.muted, style = if (baki.paper) BakiType.section else BakiType.captionStrong)
@@ -32,23 +33,25 @@ fun CalendarHeat(store: Store, month: String) {
                 Text(it, color = baki.muted, modifier = Modifier.weight(1f), style = BakiType.caption )
             }
         }
-        Spacer(Modifier.height(Space.xs))
+        Spacer(Modifier.height(if (compact) Space.xxs else Space.xs))
         cells.chunked(7).forEach { week ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                 week.forEach { iso ->
-                    Box(Modifier.weight(1f).aspectRatio(1f)) {
-                        if (iso != null) DayCell(iso, store, today, baki)
+                    Box(
+                        Modifier.weight(1f).then(if (compact) Modifier.height(30.dp) else Modifier.aspectRatio(1f)),
+                    ) {
+                        if (iso != null) DayCell(iso, store, today, baki, bestDay)
                     }
                 }
                 repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
             }
-            Spacer(Modifier.height(Space.xs))
+            Spacer(Modifier.height(if (compact) Space.xxs else Space.xs))
         }
     }
 }
 
 @Composable
-private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette) {
+private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette, bestDay: String?) {
     val t = dayTotals(store, iso)
     val future = iso > today
     val magnitude = when {
@@ -71,7 +74,13 @@ private fun DayCell(iso: String, store: Store, today: String, baki: BakiPalette)
         Modifier.fillMaxSize()
             .then(if (baki.paper) Modifier else Modifier.clip(RoundedCornerShape(Radius.small)))
             .background(fill)
-            .then(if (isToday) Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.tiny)) else Modifier),
+            .then(
+                when {
+                    isToday -> Modifier.border(1.5.dp, baki.onSurface, RoundedCornerShape(Radius.tiny))
+                    iso == bestDay -> Modifier.border(1.dp, baki.warn, RoundedCornerShape(Radius.tiny))
+                    else -> Modifier
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
