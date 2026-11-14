@@ -56,8 +56,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 119
-        versionName = "0.38.4"
+        versionCode = 120
+        versionName = "0.39.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
