@@ -495,3 +495,10 @@ No financial feature was removed.
 - Settings dialogs now use the burst header language.
 - Switch rows carry the motif; hours heatmap cells are shaped.
 - 203 tests, 0 failures.
+
+## 0.43.23 hero typeface
+
+- Bundled Barlow Condensed Bold (SIL OFL) for the Today amount only.
+- Condensed skeleton, tabular figures, tight tracking; RM and body remain plain Roboto.
+- Font is a Compose resource; no runtime download.
+- 203 tests, 0 failures.

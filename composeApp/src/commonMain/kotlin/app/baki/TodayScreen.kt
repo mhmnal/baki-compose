@@ -140,6 +140,7 @@ fun TodayScreen(
             BoxWithConstraints {
                 val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
                 val heroInk = scheme.onPrimaryContainer
+                val heroFont = bakiDisplayFontFamily()
                 Surface(
                     shape = MaterialTheme.shapes.extraLarge,
                     color = scheme.primaryContainer,
@@ -189,7 +190,11 @@ fun TodayScreen(
                                 EasedMoney(
                                     t.net,
                                     heroInk,
-                                    heroMoneyStyle(t.net, MaterialTheme.typography),
+                                    heroMoneyStyle(t.net, MaterialTheme.typography).copy(
+                                        fontFamily = heroFont,
+                                        fontFeatureSettings = "tnum",
+                                        letterSpacing = (-0.8).sp,
+                                    ),
                                     prefix = "",
                                 )
                             }

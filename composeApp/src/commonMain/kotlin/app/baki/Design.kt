@@ -52,10 +52,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.Res
+import baki_compose.composeapp.generated.resources.barlow_condensed_bold
 import org.jetbrains.compose.resources.Font
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -403,3 +405,9 @@ fun BakiDialogHeader(
         }
     }
 }
+
+/** Brand display face used only for the Today hero amount. Barlow Condensed has tabular figures. */
+@Composable
+fun bakiDisplayFontFamily(): FontFamily = FontFamily(
+    Font(Res.font.barlow_condensed_bold, weight = FontWeight.Bold),
+)
