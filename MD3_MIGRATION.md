@@ -610,3 +610,13 @@ No financial feature was removed.
 - Removed IN/OUT facts and the DAMAGE REPORT title; operating is one caption.
 - 200% font scale stacks the mosaic cleanly.
 - 205 tests, 0 failures.
+
+## 0.43.39 aligned Today grid
+
+- Hero, Food and day cards now share a 206dp grid with 8dp gutters and 28dp corners.
+- Food is a real card again with ring + remaining + cover footer.
+- Day card is one tappable card containing previous + selected days.
+- Removed BEATEN, RM, IN/OUT and the separate cover row.
+- Hero numerals get a 1.48 vertical stretch.
+- Shift card defaults to a compact summary and expands for details.
+- 205 tests, 0 failures.
