@@ -541,3 +541,10 @@ No financial feature was removed.
 - Added Colour source Wallpaper / Baki; Wallpaper remains default where dynamic colour is available.
 - Android below 12 and desktop automatically use the fixed Baki palette.
 - Added fixed-palette contrast test; 204 tests, 0 failures.
+
+## 0.43.30 outlined icons
+
+- Replaced filled Material Round glyphs with Material Icons Outlined.
+- Kept Baki's custom toll barrier and all category mappings.
+- Removed unused Settings/Mic/ArrowRight/Trend vectors.
+- 204 tests, 0 failures.
