@@ -16,7 +16,7 @@ private var instanceChannel: java.nio.channels.FileChannel? = null
 
 /** Two instances overlap and produce hard window edges over each other; only one may run. */
 private fun acquireSingleInstance(): Boolean {
-    val dir = java.io.File(System.getProperty("user.home"), ".local/share/scheme")
+    val dir = java.io.File(System.getProperty("user.home"), ".local/share/baki")
     dir.mkdirs()
     val channel = java.nio.channels.FileChannel.open(
         java.io.File(dir, "instance.lock").toPath(),

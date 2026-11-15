@@ -136,7 +136,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val changed = merged != store
             if (changed) {
                 store = merged
-                saveLocal(store)
+                // A server merge is not a local edit; marking it dirty creates a push/SSE loop.
+                saveLocal(store, markDirty = false)
             }
             // upload only when we hold something the server did not get last time
             if (config.allowWrites && pendingPush) pushAll()
@@ -292,7 +293,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLocal(store)                       // never lose a tap, even offline
         try {
             pushWithAllTombs()
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
             status = "synced"
         } catch (e: Exception) {
@@ -320,7 +321,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLocal(store)
         try {
             pushWithAllTombs()
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
             status = "synced"
         } catch (e: Exception) {
@@ -355,7 +356,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLocal(store)
         try {
             pushWithAllTombs()
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
             status = "synced"
         } catch (e: Exception) {
@@ -580,7 +581,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         try {
             pushWithAllTombs()
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
             status = "synced"
             // route is finalized above; try immediately rather than waiting for the next tick
@@ -812,7 +813,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Full-store push used by the retry loop. */
     private suspend fun pushAll() {
         pushWithAllTombs()
-        saveLocal(store)
+        saveLocal(store, markDirty = false)
         pendingPush = false
         status = "synced"
         lastError = null
@@ -822,7 +823,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
             pushWithAllTombs(ids)
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             status = "synced"
             pendingPush = false
             lastPushAt = nowMillis()
@@ -844,7 +845,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(settings = store.settings.copy(cats = store.settings.cats.copy(catsOut = store.settings.cats.catsOut + cat)))
         saveLocal(store)
         runCatching { pushWithAllTombs() }.onSuccess {
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
         }
     }
@@ -874,7 +875,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(settings = store.settings.copy(cats = cats.copy(catsOut = cats.catsOut.filter { it.id != id })))
         saveLocal(store)
         runCatching { pushWithAllTombs() }.onSuccess {
-            saveLocal(store)
+            saveLocal(store, markDirty = false)
             pendingPush = false
         }
     }

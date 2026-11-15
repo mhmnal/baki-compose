@@ -66,16 +66,16 @@ fun loadLocal(): Store {
     }
 }
 
-fun saveLocal(store: Store) {
+fun saveLocal(store: Store, markDirty: Boolean = true) {
     runCatching {
         LocalStore.write(BakiJson.encodeToString(Store.serializer(), store))
     }.onSuccess {
         StoreHealth.saveError = null
-        StoreWrite.onLocalSave?.invoke()   // durable outbox bit
-        PlatformEffects.dataChanged()      // keep the home-screen widget in step
+        if (markDirty) StoreWrite.onLocalSave?.invoke()   // durable outbox bit
+        PlatformEffects.dataChanged()                     // keep the home-screen widget in step
     }.onFailure {
         // The data still exists in memory: mark the outbox so sync can push it even if disk failed.
         StoreHealth.saveError = "Local save failed: ${it.message}"
-        StoreWrite.onLocalSave?.invoke()
+        if (markDirty) StoreWrite.onLocalSave?.invoke()
     }
 }

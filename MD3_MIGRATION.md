@@ -527,3 +527,10 @@ No financial feature was removed.
 - Removed dead Chip, DayHeader, PillButton and tactileClickable code.
 - Removed the unused Source Serif license resource.
 - 203 tests, 0 failures.
+
+## 0.43.28 sync loop
+
+- Server merges no longer mark the durable outbox dirty.
+- Post-push saves no longer trigger another upload.
+- Removed dead UI/helpers and the unused Source Serif license.
+- 203 tests, 0 failures.
