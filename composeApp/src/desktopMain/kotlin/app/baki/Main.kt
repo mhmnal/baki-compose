@@ -36,22 +36,23 @@ fun main() {
         return
     }
     application {
-    val savedW = prefs.getInt("w", 1440)
-    val savedH = prefs.getInt("h", 920)
-    val savedX = prefs.getInt("x", Int.MIN_VALUE)
-    val savedY = prefs.getInt("y", Int.MIN_VALUE)
+    // A previous 1440×920 default is larger than a 1440×900 desktop and clips the right edge.
+    // Clamp remembered size and position to the usable screen before creating the window.
+    val screen = java.awt.Toolkit.getDefaultToolkit().screenSize
+    val savedW = prefs.getInt("w", 1280).coerceIn(1080, (screen.width - 80).coerceAtLeast(1080))
+    val savedH = prefs.getInt("h", 820).coerceIn(700, (screen.height - 100).coerceAtLeast(700))
+    // XWayland can report a larger virtual screen than the visible desktop. Centering is the
+    // only reliable way to keep the frame on-screen across Wayland, X11 and HiDPI scaling.
+
     val state = rememberWindowState(
         size = DpSize(savedW.dp, savedH.dp),
-        position = if (savedX == Int.MIN_VALUE) WindowPosition.Aligned(androidx.compose.ui.Alignment.Center)
-        else WindowPosition.Absolute(savedX.dp, savedY.dp),
+        position = WindowPosition.Absolute(80.dp, 40.dp),
     )
 
     Window(
         onCloseRequest = {
             prefs.putInt("w", state.size.width.value.toInt())
             prefs.putInt("h", state.size.height.value.toInt())
-            prefs.putInt("x", state.position.x.value.toInt())
-            prefs.putInt("y", state.position.y.value.toInt())
             exitApplication()
         },
         title = "Baki — shift logbook",
