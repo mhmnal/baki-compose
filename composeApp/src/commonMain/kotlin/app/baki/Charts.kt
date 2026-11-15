@@ -1,5 +1,11 @@
 package app.baki
 
+import androidx.compose.material3.toShape
+
+import androidx.compose.material3.MaterialShapes
+
+import androidx.compose.foundation.layout.Box
+
 import androidx.compose.foundation.shape.CircleShape
 
 import androidx.compose.material3.MaterialTheme
@@ -129,6 +135,7 @@ fun TrendBars(store: Store, month: String) {
 }
 
 /** Which hours actually pay: rows are weekdays, columns are 4-hour blocks. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HoursHeatmap(store: Store) {
     val scheme = MaterialTheme.colorScheme
@@ -138,7 +145,10 @@ fun HoursHeatmap(store: Store) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column(Modifier.semantics { contentDescription = "Best earning hours heatmap" }) {
-        Text("BEST HOURS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Box(Modifier.size(14.dp).clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+            Text("BEST HOURS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Spacer(Modifier.width(Space.l))

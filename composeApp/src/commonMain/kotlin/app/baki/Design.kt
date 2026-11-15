@@ -19,6 +19,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -138,10 +140,18 @@ fun Modifier.tactileClickable(
  * The one empty state: a short line, optionally a hint. Same voice everywhere, no trailing "."
  * on the title, a real sentence in the hint.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     Column(modifier.fillMaxWidth().padding(vertical = Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier
+                .size(42.dp)
+                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                .background(scheme.primaryContainer),
+        )
+        Spacer(Modifier.height(Space.m))
         Text(title, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
         if (hint != null) {
             Spacer(Modifier.height(Space.xs))

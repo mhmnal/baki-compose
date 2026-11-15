@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialShapes
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.toShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -128,12 +129,23 @@ fun SummaryScreen(
         item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh) { CashTruthCard(cash, month, compact = true) } }
         item { Md3Card { HoursHeatmap(store) } }
         if (cats.isEmpty()) item {
-            EmptyState("Nothing this month", "Expenses you log will appear here.")
+            EmptyState("A quiet month.", "Your spending stories will show up here.")
         }
     }
     managingFund?.let { fund ->
         ReserveSheet(repo = repo, fund = fund, onDismiss = { managingFund = null })
     }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SectionMark(tint: Color, size: androidx.compose.ui.unit.Dp = 16.dp) {
+    Box(
+        Modifier
+            .size(size)
+            .clip(MaterialShapes.SoftBurst.toShape())
+            .background(tint),
+    )
 }
 
 @Composable
@@ -462,6 +474,7 @@ private fun MonthInkChart(store: Store, month: String) {
         }
     }
 }
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun WeekSection(store: Store, today: String) {
     val scheme = MaterialTheme.colorScheme
@@ -478,6 +491,8 @@ private fun WeekSection(store: Store, today: String) {
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionMark(scheme.primary)
+            Spacer(Modifier.width(Space.s))
             Text("This week", color = scheme.onSurface, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
             Text("RM ${rm(thisWeek.net)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
         }
@@ -540,11 +555,14 @@ private fun WeekSection(store: Store, today: String) {
         )
     }
 }
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Store) {
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionMark(scheme.primary, 14.dp)
+            Spacer(Modifier.width(Space.s))
             Text("Where it went", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             Text("Share", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
@@ -560,9 +578,12 @@ private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Stor
                 Text("${(share * 100).toInt()}%", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"), modifier = Modifier.width(34.dp), textAlign = TextAlign.End)
             }
             Spacer(Modifier.height(Space.xs))
-            Box(Modifier.fillMaxWidth().height(3.dp).background(scheme.surfaceContainerHigh)) {
-                Box(Modifier.fillMaxWidth(share.toFloat().coerceIn(0.01f, 1f)).fillMaxHeight().background(scheme.primary))
-            }
+            LinearWavyProgressIndicator(
+                progress = { share.toFloat().coerceIn(0.01f, 1f) },
+                modifier = Modifier.fillMaxWidth().height(8.dp),
+                color = scheme.primary,
+                trackColor = scheme.surfaceContainerHigh,
+            )
             if (index != cats.lastIndex) {
                 Spacer(Modifier.height(Space.s))
             }
@@ -575,7 +596,11 @@ private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Stor
 private fun FundsSection(repo: BakiRepo, funds: Funds, onManage: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Text("FUNDS · ROLLING", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionMark(scheme.onTertiaryContainer, 14.dp)
+            Spacer(Modifier.width(Space.s))
+            Text("FUNDS · ROLLING", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleSmall)
+        }
         Spacer(Modifier.height(Space.s))
         FundRow("Fuel", "fuel", funds.fuel, repo.store.settings.reserveTargets["fuel"] ?: 0.0, scheme) { onManage("fuel") }
         Spacer(Modifier.height(Space.s))
@@ -586,6 +611,7 @@ private fun FundsSection(repo: BakiRepo, funds: Funds, onManage: (String) -> Uni
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FundRow(
     label: String,
@@ -607,12 +633,12 @@ private fun FundRow(
             }
         }
         Spacer(Modifier.height(Space.xs))
-        Box(Modifier.fillMaxWidth().height(4.dp).background(scheme.surfaceContainerHigh)) {
-            Box(
-                Modifier.fillMaxWidth(progress.toFloat()).fillMaxHeight()
-                    .background(if (fund.balance >= 0) scheme.onSurface else scheme.error),
-            )
-        }
+        LinearWavyProgressIndicator(
+            progress = { progress.toFloat() },
+            modifier = Modifier.fillMaxWidth().height(8.dp),
+            color = if (fund.balance >= 0) scheme.onSurface else scheme.error,
+            trackColor = scheme.surfaceContainerHigh,
+        )
         Spacer(Modifier.height(Space.xs))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -729,11 +755,14 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
 }
 
 /** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CashTruthCard(t: CashTruth, month: String, compact: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionMark(scheme.primary, 14.dp)
+            Spacer(Modifier.width(Space.s))
             Text("Cash truth", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.weight(1f))
             Text("not a bank balance", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)

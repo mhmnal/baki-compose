@@ -36,8 +36,8 @@ fun BakiSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)) },
         tonalElevation = 0.dp,
     ) {
         Column(Modifier.fillMaxWidth()) {

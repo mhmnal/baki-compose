@@ -932,17 +932,25 @@ fun RowCard(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SectionTitle(text: String, trailing: String = "") {
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth()) {
-        
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                text.lowercase().replaceFirstChar { it.titlecase() }, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleSmallEmphasized,
-                modifier = Modifier.semantics { heading() },
-            )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Box(
+                    Modifier
+                        .size(13.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primary),
+                )
+                Text(
+                    text.lowercase().replaceFirstChar { it.titlecase() }, color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
             if (trailing.isNotEmpty()) Text(trailing, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
     }
@@ -2393,7 +2401,12 @@ private fun SwitchRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalLayoutApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 @Composable
 private fun EntryDialog(
     existing: Entry?,
@@ -2432,10 +2445,36 @@ private fun EntryDialog(
     } else Modifier
 
     BakiSheet(onDismiss = onDismiss) {
-            Text(
-                if (existing == null) "Add" else "Edit",
-                color = scheme.onSurface,
-                modifier = headerMod, style = MaterialTheme.typography.titleLarge )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(46.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.tertiaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (type == "income") "+" else "−",
+                        color = scheme.onTertiaryContainer,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+                Spacer(Modifier.width(Space.m))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (existing == null) "LOG MONEY" else "EDIT MONEY",
+                        color = scheme.onSurface,
+                        modifier = headerMod,
+                        letterSpacing = 1.sp,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        if (type == "income") "money in. nice." else "money out. it happens.",
+                        color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
                 ConnectedChoiceGroup(
                     options = listOf("Spending", "Income"),
                     selected = if (type == "expense") "Spending" else "Income",
@@ -2449,24 +2488,70 @@ private fun EntryDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
-                    value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Amount (RM)") }, singleLine = true,
-                    textStyle = androidx.compose.material3.LocalTextStyle.current,
+                TextField(
+                    value = amount,
+                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    leadingIcon = {
+                        Text(
+                            "RM",
+                            color = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            "0.00",
+                            color = scheme.onSecondaryContainer.copy(alpha = 0.30f),
+                            style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
+                        )
+                    },
+                    label = { Text("HOW MUCH?") },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = scheme.secondaryContainer,
+                        unfocusedContainerColor = scheme.secondaryContainer,
+                        focusedTextColor = scheme.onSecondaryContainer,
+                        unfocusedTextColor = scheme.onSecondaryContainer,
+                        focusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                        unfocusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                        cursorColor = scheme.onSecondaryContainer,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
                 )
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s),
+                ) {
                     cats.forEach { c ->
                         val on = c.id == cat
                         val chipShape = morphChipShape(on)
-                            Box(
-                                Modifier.clip(chipShape)
-                                    .background(if (on) scheme.primaryContainer else scheme.surfaceContainerHigh)
-                                    .clickable { cat = c.id }
-                                    .padding(horizontal = Space.m, vertical = 8.dp),
-                            ) { Text(c.name, color = if (on) scheme.onPrimaryContainer else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) ) }
-                        
+                        Row(
+                            Modifier
+                                .heightIn(min = Control.primary)
+                                .clip(chipShape)
+                                .background(if (on) scheme.primaryContainer else scheme.surfaceContainerHigh)
+                                .clickable { cat = c.id }
+                                .padding(horizontal = Space.m, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                        ) {
+                            Icon(
+                                categoryIcon(c.id),
+                                contentDescription = null,
+                                tint = if (on) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                                modifier = Modifier.size(IconSize.inline),
+                            )
+                            Text(
+                                c.name,
+                                color = if (on) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            )
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -2516,7 +2601,7 @@ private fun EntryDialog(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
             ) {
                 Text(
-                    if (existing == null) "Add RM ${rm(cents)}" else "Save changes", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
+                    if (existing == null) "Log it · RM ${rm(cents)}" else "Save it", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
             }
         }
 }
@@ -2543,15 +2628,24 @@ private fun PairFields(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FormSection(label: String) {
     val scheme = MaterialTheme.colorScheme
     Spacer(Modifier.height(Space.s))
-    Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+        Box(
+            Modifier
+                .size(14.dp)
+                .clip(MaterialShapes.SoftBurst.toShape())
+                .background(scheme.primary),
+        )
+        Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+    }
     Spacer(Modifier.height(Space.s))
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ShiftDialog(
     store: Store,
@@ -2595,7 +2689,27 @@ private fun ShiftDialog(
     }
 
     BakiSheet(onDismiss = onDismiss) {
-            Text(if (existing == null) "Log a shift" else "Edit shift", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(46.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.tertiaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(BakiIcons.Car, contentDescription = null, tint = scheme.onTertiaryContainer, modifier = Modifier.size(IconSize.bar))
+                }
+                Spacer(Modifier.width(Space.m))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (existing == null) "LOG A SHIFT" else "EDIT SHIFT",
+                        color = scheme.onSurface,
+                        letterSpacing = 1.sp,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text("count the real cost.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
                 FormSection("WHEN")
                 OutlinedTextField(
                     value = date,
@@ -2672,24 +2786,40 @@ private fun ShiftDialog(
                     }
                 }
                 Spacer(Modifier.height(Space.s))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Cover", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text("RM ${rm(preview.grabFee)}", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Estimated net", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                    Text("RM ${rm(preview.net)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
-                }
-                preview.netHr?.let { rate ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Net rate", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        Text("RM ${rm(rate)}/hr", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
-                    }
-                }
-                preview.grossPerKm?.let { perKm ->
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Gross per km", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                        Text("RM ${rm(perKm)}/km", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = scheme.secondaryContainer,
+                    contentColor = scheme.onSecondaryContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Box {
+                        ExpressiveBurst(
+                            color = scheme.tertiaryContainer.copy(alpha = 0.55f),
+                            modifier = Modifier.align(Alignment.TopEnd).size(130.dp).offset(x = 42.dp, y = (-40).dp),
+                        )
+                        Column(Modifier.padding(Space.m)) {
+                            Text(
+                                "ESTIMATED TAKE",
+                                color = scheme.onSecondaryContainer.copy(alpha = 0.76f),
+                                letterSpacing = 1.2.sp,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                "RM ${rm(preview.net)}",
+                                color = scheme.onSecondaryContainer,
+                                style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
+                            )
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Cover RM ${rm(preview.grabFee)}", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.bodyMedium)
+                                Spacer(Modifier.weight(1f))
+                                preview.netHr?.let { rate ->
+                                    Text("RM ${rm(rate)}/hr", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                                }
+                            }
+                            preview.grossPerKm?.let { perKm ->
+                                Text("RM ${rm(perKm)}/km gross", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                     }
                 }
                 val rate = preview.netHr

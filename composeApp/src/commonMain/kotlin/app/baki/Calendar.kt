@@ -1,5 +1,11 @@
 package app.baki
 
+import androidx.compose.material3.toShape
+
+import androidx.compose.material3.MaterialShapes
+
+import androidx.compose.foundation.layout.Box
+
 import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.background
@@ -19,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /** Month heat map: green when the day kept money, coral when it cost you. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
@@ -27,7 +34,10 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     val bestDay = monthDays(store, month).maxByOrNull { it.second.net }?.first
 
     Column(Modifier.semantics { contentDescription = "Calendar heatmap of daily net" }) {
-        Text("CALENDAR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Box(Modifier.size(14.dp).clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+            Text("CALENDAR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf("M", "T", "W", "T", "F", "S", "S").forEach {

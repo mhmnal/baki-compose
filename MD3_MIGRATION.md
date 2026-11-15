@@ -418,3 +418,28 @@ No financial feature was removed.
 - Fixed singular/plural copy in shifts, payouts, purchases and week totals.
 - Regenerated the full golden set, including the seeded live-shift state.
 - 203 tests, 0 failures.
+
+## 0.43.13 sheets and stats
+
+- Entry sheet: soft-burst header, huge amount stage, icon category chips and “Log it” action.
+- Shift sheet: soft-burst header and a colour-blocked “ESTIMATED TAKE” preview card.
+- Stats: star markers on week/spending/funds/cash sections; wavy category and reserve meters.
+- Empty Stats copy is now “A quiet month.”
+- 203 tests, 0 failures.
+
+## 0.43.14 global expressive pass
+
+- Entry sheet amount stage now shows RM and a 0.00 placeholder before typing.
+- Form section labels use the burst marker.
+- Empty states have a burst mark.
+- Bottom sheets use a larger 36dp top shape and tinted drag handle.
+- 203 tests, 0 failures.
+
+## 0.43.15 section sweep
+
+- Every More/settings section heading now carries the burst marker.
+- Calendar and Best Hours get the motif too.
+- Empty states and form section labels carry the mark.
+- The major sheets now use the expressive 36dp top shape and tinted handle.
+- Primary screens, sheets, charts, empty states and section headings share one visual language.
+- 203 tests, 0 failures.
