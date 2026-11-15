@@ -631,7 +631,23 @@ private fun AppContent(repo: BakiRepo) {
                 }
             },
         )
-        5 -> BudgetSheet(repo, onDismiss = { adding = 0; editingBudgets = false })
+        5 -> BudgetSheet(
+            repo = repo,
+            onDismiss = { adding = 0; editingBudgets = false },
+            onSave = { cap, limits, carry ->
+                // App-level scope: the sheet may disappear while these writes are still in flight.
+                scope.launch {
+                    try {
+                        repo.setDailyFoodCap(cap)
+                        repo.setBudgets(limits)
+                        repo.setEnvelopeCarry(carry)
+                    } finally {
+                        adding = 0
+                        editingBudgets = false
+                    }
+                }
+            },
+        )
         4 -> AddPayoutDialog(
             onDismiss = { adding = 0 },
             onAdd = { cents -> repo.addPayout(cents); adding = 0 },
@@ -3023,7 +3039,11 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
 
 
 @Composable
-private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
+private fun BudgetSheet(
+    repo: BakiRepo,
+    onDismiss: () -> Unit,
+    onSave: (Long?, Map<String, Double>, Boolean) -> Unit,
+) {
     val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val cats = remember(repo.store) { repo.store.settings.cats.catsOut }.filter { it.id != "grabfee" }
@@ -3037,27 +3057,25 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
     }
     var carry by remember { mutableStateOf(repo.store.settings.envelopeCarry) }
     var moveOpen by remember { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
     val canWrite = !repo.readOnly
 
     BakiSheet(
         onDismiss = onDismiss,
         footer = {
             Button(
-                enabled = canWrite,
+                enabled = canWrite && !saving,
                 onClick = {
+                    if (saving) return@Button
                     val limits = draft.mapNotNull { (k, v) -> v.toDoubleOrNull()?.takeIf { it > 0 }?.let { k to it } }.toMap()
                     val cap = foodCap.toDoubleOrNull()?.takeIf { it > 0 }?.let { (it * 100).toLong() }
-                    scope.launch {
-                        repo.setDailyFoodCap(cap)
-                        repo.setBudgets(limits)
-                        repo.setEnvelopeCarry(carry)
-                    }
-                    onDismiss()
+                    saving = true
+                    onSave(cap, limits, carry)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 shape = CircleShape,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-            ) { Text("Save limits", fontWeight = FontWeight.Bold) }
+            ) { Text(if (saving) "Saving…" else "Save limits", fontWeight = FontWeight.Bold) }
         },
     ) {
         BakiDialogHeader("Monthly envelopes", "give every ringgit a job", "▦")
@@ -3072,7 +3090,7 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             Switch(checked = carry, onCheckedChange = { carry = it })
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Daily food cap", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
+            Text("Daily food fund", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             OutlinedTextField(
                 value = foodCap,
                 onValueChange = { v -> foodCap = v.filter { it.isDigit() || it == '.' } },
@@ -3083,7 +3101,12 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 colors = bakiFieldColors(),
             )
         }
-        Text("Optional daily guardrail for the Food category; clear it for none.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            "This is the Food fund shown on Today. The Food row below is a separate monthly envelope; " +
+                "setting one does not set the other.",
+            color = scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
         Spacer(Modifier.height(Space.s))
         cats.forEachIndexed { index, c ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = Space.s)) {
@@ -3167,8 +3190,13 @@ private fun EnvelopeMoveDialog(
             TextButton(
                 enabled = from.isNotBlank() && to.isNotBlank() && from != to && value > 0.0,
                 onClick = {
-                    scope.launch { repo.moveEnvelope(month, from, to, value) }
-                    onDismiss()
+                    scope.launch {
+                        try {
+                            repo.moveEnvelope(month, from, to, value)
+                        } finally {
+                            onDismiss()
+                        }
+                    }
                 },
             ) { Text("Move", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
         },

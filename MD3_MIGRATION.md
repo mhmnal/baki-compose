@@ -502,3 +502,15 @@ No financial feature was removed.
 - Condensed skeleton, tabular figures, tight tracking; RM and body remain plain Roboto.
 - Font is a Compose resource; no runtime download.
 - 203 tests, 0 failures.
+
+## 0.43.24 budget save race
+
+- Fixed monthly-limits save being cancelled when the sheet dismissed.
+- BudgetSheet and EnvelopeMoveDialog now dismiss only after their writes complete.
+- Clarified that the Daily food fund (Today) is separate from the monthly Food envelope.
+- 203 tests, 0 failures.
+
+## 0.43.25 app-scope limits
+
+- Limit writes now run in the app scope, not the sheet scope, so dismissing the sheet cannot cancel them.
+- 203 tests, 0 failures.
