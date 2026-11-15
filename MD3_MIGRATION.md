@@ -548,3 +548,10 @@ No financial feature was removed.
 - Kept Baki's custom toll barrier and all category mappings.
 - Removed unused Settings/Mic/ArrowRight/Trend vectors.
 - 204 tests, 0 failures.
+
+## 0.43.31 burst launcher icon
+
+- Replaced the old sage check launcher with a fig/gold ten-lobe burst.
+- Added a cut-out centre and check, matching the in-app soft-burst motif.
+- Updated adaptive foreground, monochrome layer, legacy PNGs and desktop icon.
+- 204 tests, 0 failures.
