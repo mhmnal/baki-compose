@@ -452,3 +452,17 @@ No financial feature was removed.
 - First-run and map-empty cards now carry the motif and playful copy.
 - Tab change gets a slight scale in/out.
 - 203 tests, 0 failures.
+
+## 0.43.17 navigation
+
+- Replaced the stock compact bar with a floating Baki dock: shaped active burst, bold labels, spring scale.
+- Replaced the stock wide rail with a floating shaped panel, same active burst, animated width and labelled collapse toggle.
+- Preserved tab semantics, 48dp targets and the FAB-to-nav geometry contract.
+- 203 tests, 0 failures.
+
+## 0.43.18 navigation finish
+
+- Removed the duplicate Baki wordmark from the wide rail; the logo + collapse control remain.
+- Compact floating dock and wide rail share the same burst selection language.
+- Navigation geometry contracts remain green.
+- 203 tests, 0 failures.

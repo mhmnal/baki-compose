@@ -228,15 +228,7 @@ private fun AppContent(repo: BakiRepo) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 600.dp
-        val wideRailState = if (wide) {
-            rememberWideNavigationRailState(
-                initialValue = if (maxWidth >= 840.dp) {
-                    WideNavigationRailValue.Expanded
-                } else {
-                    WideNavigationRailValue.Collapsed
-                },
-            )
-        } else null
+        var wideRailExpanded by remember { mutableStateOf(maxWidth >= 840.dp) }
         var railWidthPx by remember { mutableIntStateOf(0) }
         var navHeightPx by remember { mutableIntStateOf(0) }
         val railStart = if (wide && railWidthPx > 0) {
@@ -367,94 +359,36 @@ private fun AppContent(repo: BakiRepo) {
     }
     }
 
-    // Adaptive navigation: rail on tablets, bar on phones.
-    if (wide && !sheetOpen && wideRailState != null) {
-        val expanded = wideRailState.currentValue == WideNavigationRailValue.Expanded
-        WideNavigationRail(
-            state = wideRailState,
-            modifier = Modifier.align(Alignment.CenterStart).fillMaxHeight()
-                .onSizeChanged { railWidthPx = it.width },
-            header = {
-                Column(
-                    Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    IconButton(
-                        onClick = { scope.launch { wideRailState.toggle() } },
-                        modifier = Modifier.semantics {
-                            contentDescription = if (expanded) "Collapse navigation" else "Expand navigation"
-                        },
-                    ) {
-                        Text(if (expanded) "‹" else "›", style = MaterialTheme.typography.titleLarge)
-                    }
-                    if (tab == 0 && !repo.readOnly && repo.live == null) {
-                        Spacer(Modifier.height(Space.s))
-                        FloatingActionButton(
-                            onClick = {
-                                editingEntry = null
-                                entryType = "expense"
-                                presetCat = null
-                                adding = 2
-                            },
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .semantics { contentDescription = "Add spending" },
-                        ) { Text("+", style = MaterialTheme.typography.headlineSmall) }
-                    }
-                }
-            },
-        ) {
-            val labels = listOf("Today", "Spending", "Shifts", "Summary", "More")
-            val icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More)
-            labels.forEachIndexed { i, label ->
-                WideNavigationRailItem(
-                    selected = tab == i,
-                    onClick = { PlatformEffects.haptic(Haptic.Tick); tab = i },
-                    icon = { Icon(icons[i], contentDescription = null) },
-                    label = { Text(label) },
-                    railExpanded = expanded,
-                    modifier = Modifier
-                        .testTag("rail-$label")
-                        .semantics {
-                            role = Role.Tab
-                            selected = tab == i
-                        },
-                )
-            }
-        }
+    // Adaptive navigation: floating rail on tablets, custom dock on phones.
+    if (wide && !sheetOpen) {
+        BakiWideNavigation(
+            labels = listOf("Today", "Spending", "Shifts", "Summary", "More"),
+            icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More),
+            selected = tab,
+            expanded = wideRailExpanded,
+            onToggle = { wideRailExpanded = !wideRailExpanded },
+            onSelect = { i -> PlatformEffects.haptic(Haptic.Tick); tab = i },
+            showAdd = tab == 0 && !repo.readOnly && repo.live == null,
+            onAdd = { editingEntry = null; entryType = "expense"; presetCat = null; adding = 2 },
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .onSizeChanged { railWidthPx = it.width }
+                .testTag("wide-navigation"),
+        )
     }
 
-    // Expressive short navigation bar on compact screens.
+    // Baki floating dock on compact screens.
     if (!wide && !sheetOpen) {
-        ShortNavigationBar(
+        BakiBottomNavigation(
+            labels = listOf("Today", "Spend", "Shifts", "Stats", "More"),
+            icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More),
+            selected = tab,
+            onSelect = { i -> PlatformEffects.haptic(Haptic.Tick); tab = i },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .onSizeChanged { navHeightPx = it.height }
                 .testTag("bottom-navigation"),
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        ) {
-            val labels = listOf("Today", "Spend", "Shifts", "Stats", "More")
-            val icons = listOf(BakiIcons.Today, BakiIcons.Receipt, BakiIcons.Car, BakiIcons.Insights, BakiIcons.More)
-            labels.forEachIndexed { i, label ->
-                ShortNavigationBarItem(
-                    selected = tab == i,
-                    onClick = { PlatformEffects.haptic(Haptic.Tick); tab = i },
-                    icon = { Icon(icons[i], contentDescription = null) },
-                    label = {
-                        Text(label, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
-                    },
-                    modifier = Modifier
-                        .testTag("nav-$label")
-                        .semantics {
-                            role = Role.Tab
-                            selected = tab == i
-                        },
-                )
-            }
-        }
+        )
     }
 
     // M3 Expressive primary action menu.
