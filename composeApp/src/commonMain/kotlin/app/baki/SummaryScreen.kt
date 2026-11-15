@@ -236,7 +236,7 @@ private fun StatementCover(
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge,
         )
         if (streak >= 2) {
-            Text("$streak days in a row above target", color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium)
+            Text("$streak days in a row above target", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
         Text(
             if (cost.km > 0.01) "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
@@ -539,17 +539,17 @@ private fun FundRow(
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-            Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Text("RM ${rm(fund.balance)}", color = if (fund.balance >= 0) scheme.onSurface else scheme.error, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             Spacer(Modifier.width(Space.xs))
             TextButton(onClick = onManage, contentPadding = PaddingValues(horizontal = Space.xs)) {
-                Text("Manage", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text("Manage", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
         Spacer(Modifier.height(Space.xs))
         Box(Modifier.fillMaxWidth().height(4.dp).background(scheme.surfaceContainerHigh)) {
             Box(
                 Modifier.fillMaxWidth(progress.toFloat()).fillMaxHeight()
-                    .background(if (fund.balance >= 0) scheme.tertiary else scheme.error),
+                    .background(if (fund.balance >= 0) scheme.onSurface else scheme.error),
             )
         }
         Spacer(Modifier.height(Space.xs))
@@ -739,13 +739,13 @@ private fun ReserveBadge(progress: Float) {
             .padding(start = Space.xs)
             .heightIn(min = 22.dp)
             .clip(shape)
-            .background(if (full) scheme.tertiaryContainer else scheme.surfaceContainerHighest)
+            .background(if (full) scheme.onSurface else scheme.onSurface.copy(alpha = 0.10f))
             .padding(horizontal = Space.s, vertical = 2.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             if (full) "full" else "${(progress * 100).toInt()}%",
-            color = if (full) scheme.onTertiaryContainer else scheme.onSurfaceVariant,
+            color = if (full) scheme.tertiaryContainer else scheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelSmall,
         )
     }

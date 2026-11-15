@@ -2305,6 +2305,7 @@ private fun EntryDialog(
     var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
     var note by remember { mutableStateOf(existing?.note ?: "") }
     var date by remember { mutableStateOf(existing?.date ?: day) }
+    val dateValid = remember(date) { isValidIsoDate(date) }
     var odo by remember { mutableStateOf(existing?.odo?.toString() ?: "") }
     // Grab insurance is derived from the shift timeline; manual entry would double-charge it.
     val cats = (if (type == "income") settings.cats.catsIn else settings.cats.catsOut)
@@ -2389,8 +2390,12 @@ private fun EntryDialog(
                     )
                 }
                 OutlinedTextField(
-                    value = date, onValueChange = { date = it },
+                    value = date, onValueChange = { date = it.filter { c -> c.isDigit() || c == '-' }.take(10) },
                     label = { Text("Date (YYYY-MM-DD)") }, singleLine = true,
+                    isError = date.isNotEmpty() && !dateValid,
+                    supportingText = if (date.isNotEmpty() && !dateValid) {
+                        { Text("Use a real date in YYYY-MM-DD format", color = scheme.error) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
                 )
             if (existing != null) {
@@ -2399,7 +2404,7 @@ private fun EntryDialog(
                 }
             }
             Button(
-                enabled = cents > 0,
+                enabled = cents > 0 && dateValid,
                 onClick = { onSave(type, cents, cat, note, date, odo.toIntOrNull()) },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 shape = CircleShape,
@@ -2465,6 +2470,8 @@ private fun ShiftDialog(
     var odoB by remember { mutableStateOf(existing?.odoEnd?.let { "%.0f".format(it) } ?: "") }
     val odoStart = odoA.toDoubleOrNull()
     val odoEnd = odoB.toDoubleOrNull()
+    val dateValid = remember(date) { isValidIsoDate(date) }
+    val startValid = remember(start) { isValidClock(start) }
 
     val grossCents = ((gross.toDoubleOrNull() ?: 0.0) * 100).toLong()
     val hoursValue = hours.toDoubleOrNull() ?: 0.0
@@ -2485,11 +2492,29 @@ private fun ShiftDialog(
     BakiSheet(onDismiss = onDismiss) {
             Text(if (existing == null) "Log a shift" else "Edit shift", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
                 FormSection("WHEN")
-                OutlinedTextField(value = date, onValueChange = { date = it }, label = { Text("Date (YYYY-MM-DD)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors())
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it.filter { c -> c.isDigit() || c == '-' }.take(10) },
+                    label = { Text("Date (YYYY-MM-DD)") },
+                    singleLine = true,
+                    isError = date.isNotEmpty() && !dateValid,
+                    supportingText = if (date.isNotEmpty() && !dateValid) {
+                        { Text("Use a real date in YYYY-MM-DD format", color = scheme.error) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                )
                 PairFields(
-                    first = { m -> OutlinedTextField(value = start, onValueChange = { start = it }, label = { Text("Start HH:MM") },
-                        singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                    first = { m -> OutlinedTextField(
+                        value = start,
+                        onValueChange = { start = it.filter { c -> c.isDigit() || c == ':' }.take(5) },
+                        label = { Text("Start HH:MM") },
+                        singleLine = true,
+                        isError = start.isNotEmpty() && !startValid,
+                        supportingText = if (start.isNotEmpty() && !startValid) {
+                            { Text("Use 00:00–23:59", color = scheme.error) }
+                        } else null,
+                        modifier = m, colors = bakiFieldColors(),
+                    ) },
                     second = { m -> OutlinedTextField(value = hours, onValueChange = { hours = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("Hours") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
                 )
@@ -2585,7 +2610,7 @@ private fun ShiftDialog(
                 }
             }
             Button(
-                enabled = grossCents > 0 && hoursValue > 0,
+                enabled = grossCents > 0 && hoursValue > 0 && dateValid && startValid,
                 onClick = { onSave(date, start, hoursValue, kmValue, grossCents, ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(), kmlValue, odoStart, odoEnd, reimbursed) },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 shape = CircleShape,

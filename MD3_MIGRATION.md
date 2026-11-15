@@ -352,3 +352,10 @@ No financial feature was removed.
 ## 0.43.4 dynamic colour
 
 - The Monet scheme was cached by light/dark alone, so wallpaper palette changes while the app remained alive were ignored. Added a WallpaperManager colour listener and wallpaper-change receiver to recompute the Material scheme in place.
+
+## 0.43.5 contrast and validation
+
+- Tinted cards now use their content colour for streak/positive/reserve text instead of unsafe outer-scheme accents.
+- Entry and shift dates must parse as real ISO dates; shift starts must be valid 24-hour HH:MM.
+- Save is gated on validation, with inline errors, and the repository rejects invalid dates defensively.
+- 196 tests, including validation coverage.

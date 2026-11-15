@@ -278,6 +278,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         type: String, amountCents: Long, cat: String, note: String, date: String, odo: Int? = null,
     ): String? = mutex.withLock {
         if (blocked()) return@withLock null
+        if (!isValidIsoDate(date)) return@withLock null
         // Grab insurance is derived from the shift timeline. A manual duplicate would double the fee.
         if (isDerivedCategory(cat)) return@withLock null
         val stamp = nowIso()
@@ -305,6 +306,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
      */
     suspend fun addMany(entries: List<QuickEntry>, date: String): List<String> = mutex.withLock {
         if (blocked() || entries.isEmpty()) return@withLock emptyList()
+        if (!isValidIsoDate(date)) return@withLock emptyList()
         val stamp = nowIso()
         val made = entries.map { q ->
             Entry(
@@ -338,6 +340,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         reimbursedTolls: Boolean = false,
     ) = mutex.withLock {
         if (blocked()) return@withLock
+        if (!isValidIsoDate(date) || !isValidClock(start)) return@withLock
         val charge = draftCoverCharge(store, date, start)
         val shift = Shift(
             id = newId("s"), date = date, start = start, hours = hours, km = km,
@@ -598,6 +601,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     ) =
         mutex.withLock {
             if (blocked()) return@withLock
+            if (!isValidIsoDate(date)) return@withLock
             val edited = entry.copy(
                 type = type, amount = amountCents, cat = cat, note = note, date = date,
                 odo = odo ?: entry.odo, updated = nowIso(),
@@ -693,6 +697,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         odoStart: Double? = null, odoEnd: Double? = null, reimbursedTolls: Boolean = false,
     ) = mutex.withLock {
         if (blocked()) return@withLock
+        if (!isValidIsoDate(date) || !isValidClock(start)) return@withLock
         // the driver replaced the tracked km with the car's own figure: learn from it
         var learned: Double? = null
         if (km > 0.0 && shift.km > 0.0 && abs(km - shift.km) / shift.km > 0.02) {
