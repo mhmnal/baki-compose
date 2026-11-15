@@ -27,6 +27,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -657,6 +659,7 @@ private fun FundRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
@@ -670,88 +673,152 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
     val txns = remember(repo.store.reserveTxns, fund) {
         repo.store.reserveTxns.filter { it.fund == fund }.sortedByDescending { it.updated }.take(6)
     }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.extraLarge,
-        title = { Text("$fundName reserve", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                Text("A virtual reserve. No bank transfer happens.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Target RM", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-                    OutlinedTextField(
-                        value = target,
-                        onValueChange = { target = it.filter { c -> c.isDigit() || c == '.' } },
-                        placeholder = { Text("auto", color = scheme.onSurfaceVariant) }, singleLine = true,
-                        modifier = Modifier.width(120.dp), colors = bakiFieldColorsPublic(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    )
-                }
-                Text("Leave blank for the one-month default.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Amount RM") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    Button(
-                        enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
-                        onClick = {
-                            val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                            scope.launch {
-                                val ok = repo.addReserveTxn(fund, cents)
-                                status = if (ok) "Added RM ${rm(cents)} to reserve" else "Could not add"
-                                amount = ""
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
-                        shape = CircleShape,
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Top up") }
-                    TextButton(
-                        enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
-                        onClick = {
-                            val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                            scope.launch {
-                                val ok = repo.addReserveTxn(fund, -cents)
-                                status = if (ok) "Withdrew RM ${rm(cents)} from reserve" else "Could not withdraw"
-                                amount = ""
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text("Withdraw", color = if (canWrite) scheme.error else scheme.onSurfaceVariant) }
-                }
-                TextButton(
-                    enabled = canWrite,
-                    onClick = {
-                        val value = target.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
-                        scope.launch { repo.setReserveTarget(fund, value); status = if (value > 0) "Target saved" else "Using one-month default" }
-                    },
-                ) { Text("Save target", color = if (canWrite) scheme.primary else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
-                if (status.isNotEmpty()) Text(status, color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
-                if (txns.isNotEmpty()) {
-                    Text("Recent movements", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
-                    txns.forEach { tx ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(tx.date, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                (if (tx.amount > 0) "+" else "−") + "RM ${rm(kotlin.math.abs(tx.amount))}",
-                                color = if (tx.amount > 0) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-                            )
-                        }
-                    }
-                }
+
+    BakiSheet(
+        onDismiss = onDismiss,
+        footer = {
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Done", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) } },
-    )
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(46.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("◎", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.width(Space.m))
+            Column {
+                Text(
+                    "${fundName.uppercase()} RESERVE",
+                    color = scheme.onSurface,
+                    letterSpacing = 1.sp,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
+                Text("virtual money. real peace of mind.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        Text("A virtual reserve. No bank transfer happens.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        if (!canWrite) {
+            Text("Read-only · enable writes in More → Allow writes", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Target RM", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+            OutlinedTextField(
+                value = target,
+                onValueChange = { target = it.filter { c -> c.isDigit() || c == '.' } },
+                placeholder = { Text("auto", color = scheme.onSurfaceVariant) },
+                singleLine = true,
+                modifier = Modifier.width(120.dp),
+                colors = bakiFieldColorsPublic(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+        }
+        Text("Leave blank for the one-month default.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        TextField(
+            value = amount,
+            onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+            leadingIcon = {
+                Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+            },
+            placeholder = {
+                Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.headlineMediumEmphasized.copy(fontFeatureSettings = "tnum"))
+            },
+            label = { Text("MOVE MONEY") },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.headlineMediumEmphasized.copy(fontFeatureSettings = "tnum"),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = scheme.secondaryContainer,
+                unfocusedContainerColor = scheme.secondaryContainer,
+                focusedTextColor = scheme.onSecondaryContainer,
+                unfocusedTextColor = scheme.onSecondaryContainer,
+                focusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                unfocusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                cursorColor = scheme.onSecondaryContainer,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Button(
+                enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                onClick = {
+                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    scope.launch {
+                        val ok = repo.addReserveTxn(fund, cents)
+                        status = if (ok) "Added RM ${rm(cents)} to reserve" else "Could not add"
+                        amount = ""
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                shape = CircleShape,
+                modifier = Modifier.weight(1f),
+            ) { Text("Top up") }
+            TextButton(
+                enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                onClick = {
+                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    scope.launch {
+                        val ok = repo.addReserveTxn(fund, -cents)
+                        status = if (ok) "Withdrew RM ${rm(cents)} from reserve" else "Could not withdraw"
+                        amount = ""
+                    }
+                },
+                modifier = Modifier.weight(1f),
+            ) { Text("Withdraw", color = if (canWrite) scheme.error else scheme.onSurfaceVariant) }
+        }
+        TextButton(
+            enabled = canWrite,
+            onClick = {
+                val value = target.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
+                scope.launch {
+                    repo.setReserveTarget(fund, value)
+                    status = if (value > 0) "Target saved" else "Using one-month default"
+                }
+            },
+        ) {
+            Text(
+                "Save target",
+                color = if (canWrite) scheme.primary else scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
+        }
+        if (status.isNotEmpty()) Text(status, color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
+        if (txns.isNotEmpty()) {
+            Text("RECENT MOVEMENTS", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            txns.forEach { tx ->
+                Row(
+                    Modifier.fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(scheme.surfaceContainerLow)
+                        .padding(horizontal = Space.m, vertical = Space.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .background(if (tx.amount > 0) scheme.tertiaryContainer else scheme.errorContainer),
+                    )
+                    Spacer(Modifier.width(Space.s))
+                    Text(tx.date, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Text(
+                        (if (tx.amount > 0) "+" else "−") + "RM ${rm(kotlin.math.abs(tx.amount))}",
+                        color = if (tx.amount > 0) scheme.tertiary else scheme.error,
+                        style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+        }
+    }
 }
 
 /** The four-number reconciliation. Cash is a flow through Baki, not a bank balance. */

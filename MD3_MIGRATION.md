@@ -466,3 +466,10 @@ No financial feature was removed.
 - Compact floating dock and wide rail share the same burst selection language.
 - Navigation geometry contracts remain green.
 - 203 tests, 0 failures.
+
+## 0.43.19 last dialog shells
+
+- Odometer prompt is now a Baki sheet: burst header, giant dashboard-km field, “Save reading”.
+- Reserves sheet is now a Baki sheet: burst header, large move-money field, wavy reserve bars, shaped movement rows.
+- Remaining conventional shells are settings dialogs; non-settings flows now share the language.
+- 203 tests, 0 failures.
