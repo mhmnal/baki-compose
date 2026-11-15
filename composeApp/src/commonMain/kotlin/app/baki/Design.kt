@@ -265,3 +265,20 @@ private class MorphShape(
         return androidx.compose.ui.graphics.Outline.Generic(path)
     }
 }
+
+
+/** Shared nested scheme for content placed on a tinted card. Kept testable so card contrast cannot regress. */
+internal fun md3CardScheme(
+    base: androidx.compose.material3.ColorScheme,
+    container: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
+): androidx.compose.material3.ColorScheme = base.copy(
+    onSurface = contentColor,
+    onSurfaceVariant = contentColor.copy(alpha = 0.72f),
+    surface = container,
+    surfaceContainer = container,
+    surfaceContainerLow = container,
+    surfaceContainerHigh = container,
+    primary = if (container == base.primaryContainer) contentColor else base.primary,
+    onPrimary = if (container == base.primaryContainer) container else base.onPrimary,
+)

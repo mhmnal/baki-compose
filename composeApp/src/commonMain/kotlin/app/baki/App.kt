@@ -282,6 +282,9 @@ private fun AppContent(repo: BakiRepo) {
                 .widthIn(max = 960.dp),
         ) {
             Header(repo)
+            if (repo.store.entries.isEmpty() && repo.store.shifts.isEmpty() && repo.status == "offline") {
+                FirstRunCard(onOpenMore = { tab = 4 })
+            }
             val motionScheme = MaterialTheme.motionScheme
             AnimatedContent(
                 targetState = tab,
@@ -702,6 +705,31 @@ private fun AppContent(repo: BakiRepo) {
     }
 
 
+}
+
+@Composable
+private fun FirstRunCard(onOpenMore: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        color = scheme.primaryContainer,
+        contentColor = scheme.onPrimaryContainer,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth().padding(bottom = Space.s),
+    ) {
+        Column(Modifier.padding(Space.ml)) {
+            Text("Connect your server", style = MaterialTheme.typography.titleMediumEmphasized)
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "Baki is empty and offline. Set the server in More → App, then enable writes.",
+                color = scheme.onPrimaryContainer.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(Space.s))
+            FilledTonalButton(onClick = onOpenMore) {
+                Text("Open setup", style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -2171,7 +2199,15 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             Button(
-                onClick = { PlatformEffects.exportFile("scheme-backup-${todayStamp()}.json", "application/json", backupJson(repo.store)) },
+                onClick = {
+                    scope.launch {
+                        PlatformEffects.exportFile(
+                            "scheme-backup-${todayStamp()}.json",
+                            "application/json",
+                            backupBundleJson(repo),
+                        )
+                    }
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
                 shape = CircleShape, modifier = Modifier.weight(1f),
             ) { Text("Backup (JSON)", style = MaterialTheme.typography.labelLarge ) }
@@ -2181,6 +2217,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 shape = CircleShape, modifier = Modifier.weight(1f),
             ) { Text("Export (CSV)", style = MaterialTheme.typography.labelLarge ) }
         }
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "Backup includes the ledger, device settings, calibration and local routes. " +
+                "It contains private server and route-key data; store it securely.",
+            color = scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
         Spacer(Modifier.height(Space.s))
         Button(
             onClick = {

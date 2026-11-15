@@ -111,6 +111,11 @@ object RouteStore {
         file.routes.values.filter { it.date == date }
     }
 
+    /** Every locally recorded path, for a portable backup. */
+    suspend fun allRoutes(): List<ShiftRoute> = mutex.withLock {
+        loadUnlocked().routes.values.sortedBy { it.date }
+    }
+
     /** Every stored path from [fromDate] onwards, for export. */
     suspend fun routesSince(fromDate: String): List<ShiftRoute> = mutex.withLock {
         loadUnlocked().routes.values.filter { it.date >= fromDate }.sortedBy { it.date }

@@ -878,13 +878,26 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Merge a backup file into what is already here (never destructive). */
     suspend fun importJson(text: String): Int = mutex.withLock {
         if (blocked()) return@withLock 0
-        val incoming = runCatching { BakiJson.decodeFromString(Store.serializer(), text) }.getOrElse {
+        val bundle = runCatching {
+            BakiJson.decodeFromString(BakiBackupBundle.serializer(), text)
+        }.getOrNull()
+        val incoming = bundle?.store ?: runCatching {
+            BakiJson.decodeFromString(Store.serializer(), text)
+        }.getOrElse {
             lastError = "That file isn't a Baki backup"
             return@withLock 0
         }
         val before = store.entries.size + store.shifts.size
         store = mergeStores(store, incoming)
         saveLocal(store)
+        bundle?.config?.let { saved ->
+            // A restore must never silently turn writes on. The user re-enables explicitly.
+            config = saved.copy(allowWrites = false, pendingPush = true)
+            saveConfig(config)
+            client = TrackerClient(config.serverUrl)
+        }
+        bundle?.calibration?.let { runCatching { Calibration.restore(it) } }
+        bundle?.routes?.forEach { runCatching { RouteStore.put(it) } }
         pushWithTombs(emptyList())
         (store.entries.size + store.shifts.size) - before
     }

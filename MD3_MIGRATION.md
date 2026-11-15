@@ -359,3 +359,12 @@ No financial feature was removed.
 - Entry and shift dates must parse as real ISO dates; shift starts must be valid 24-hour HH:MM.
 - Save is gated on validation, with inline errors, and the repository rejects invalid dates defensively.
 - 196 tests, including validation coverage.
+
+## 0.43.6 portability and empty states
+
+- JSON backup now carries the ledger, device config, calibration and local routes in a versioned bundle; legacy store-only backups still import.
+- Restores force writes off and merge non-destructively.
+- MonthInk draws low positive values as dots instead of dash-like pills, and shows “No activity in this range” when empty.
+- Empty offline installs get a first-run server/write setup card.
+- Added card-scheme contrast regression coverage, backup round-trip coverage, and render-size/blank-image guards.
+- 198 tests, 0 failures.

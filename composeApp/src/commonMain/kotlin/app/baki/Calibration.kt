@@ -58,6 +58,12 @@ object Calibration {
         LocalStore.writeText(FILE, json.encodeToString(CalibrationFile.serializer(), file))
     }
 
+    /** Snapshot for a portable backup. */
+    suspend fun snapshot(): CalibrationFile = mutex.withLock { load() }
+
+    /** Restore a backup snapshot; it is a local learning aid, never server data. */
+    suspend fun restore(file: CalibrationFile) = mutex.withLock { write(file) }
+
     /** Called when a shift ends: remember what the tracker measured before any correction. */
     suspend fun rememberRaw(shiftId: String, rawKm: Double) = mutex.withLock {
         if (shiftId.isBlank() || rawKm < MIN_RAW_KM) return@withLock

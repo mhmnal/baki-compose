@@ -143,16 +143,10 @@ private fun Md3Card(
     padding: androidx.compose.ui.unit.Dp = Space.l,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
-    val base = MaterialTheme.colorScheme
-    val cardScheme = base.copy(
-        onSurface = contentColor,
-        onSurfaceVariant = contentColor.copy(alpha = 0.72f),
-        surface = container,
-        surfaceContainer = container,
-        surfaceContainerLow = container,
-        surfaceContainerHigh = container,
-        primary = if (container == base.primaryContainer) contentColor else base.primary,
-        onPrimary = if (container == base.primaryContainer) container else base.onPrimary,
+    val cardScheme = md3CardScheme(
+        base = MaterialTheme.colorScheme,
+        container = container,
+        contentColor = contentColor,
     )
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -274,6 +268,7 @@ private fun MonthInkChart(store: Store, month: String) {
     val targetPerDay = if (active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
+    val anyActive = shown.any { it.active }
     val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
         buildString {
             append("Daily net chart for ${monthLabel(month)}, ${range} day view. ")
@@ -311,6 +306,7 @@ private fun MonthInkChart(store: Store, month: String) {
             Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Spacer(Modifier.height(Space.s))
+        Box(Modifier.fillMaxWidth()) {
         Canvas(
             Modifier.fillMaxWidth().height(142.dp)
                 .pointerInput(shown) {
@@ -364,14 +360,32 @@ private fun MonthInkChart(store: Store, month: String) {
                 }
                 if (day.active) {
                     val color = if (value < 0) scheme.error else scheme.primary
-                    drawRoundRect(
-                        color = color,
-                        topLeft = Offset(left, top),
-                        size = Size(barW, h),
-                        cornerRadius = CornerRadius(barW / 2f, barW / 2f),
-                    )
+                    if (h < 8.dp.toPx()) {
+                        // A low value becomes a dot, not a horizontal pill that reads as a dash.
+                        drawCircle(
+                            color = color,
+                            radius = 3.dp.toPx(),
+                            center = Offset(left + barW / 2f, if (value >= 0) zeroY - 3.dp.toPx() else zeroY + 3.dp.toPx()),
+                        )
+                    } else {
+                        drawRoundRect(
+                            color = color,
+                            topLeft = Offset(left, top),
+                            size = Size(barW, h),
+                            cornerRadius = CornerRadius(barW / 2f, barW / 2f),
+                        )
+                    }
                 }
             }
+        }
+        if (!anyActive) {
+            Text(
+                "No activity in this range",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
         }
         Spacer(Modifier.height(Space.s))
         selectedDay?.let { day ->

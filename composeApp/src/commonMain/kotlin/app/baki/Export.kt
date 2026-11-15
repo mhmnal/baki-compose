@@ -5,6 +5,29 @@ fun backupJson(store: Store): String =
     kotlinx.serialization.json.Json { prettyPrint = true; encodeDefaults = true }
         .encodeToString(Store.serializer(), store)
 
+@kotlinx.serialization.Serializable
+data class BakiBackupBundle(
+    val format: String = "baki-backup-v2",
+    val exportedAt: String = nowIso(),
+    val store: Store,
+    val config: ClientConfig? = null,
+    val calibration: CalibrationFile? = null,
+    val routes: List<ShiftRoute> = emptyList(),
+)
+
+/** Portable backup: ledger, device settings, calibration and local routes. */
+suspend fun backupBundleJson(repo: BakiRepo): String {
+    val bundle = BakiBackupBundle(
+        exportedAt = nowIso(),
+        store = repo.store,
+        config = repo.config,
+        calibration = Calibration.snapshot(),
+        routes = RouteStore.allRoutes(),
+    )
+    return kotlinx.serialization.json.Json { prettyPrint = true; encodeDefaults = true }
+        .encodeToString(BakiBackupBundle.serializer(), bundle)
+}
+
 /** Entries and shifts as CSV, for spreadsheets. */
 fun exportCsv(store: Store): String {
     val sb = StringBuilder()
