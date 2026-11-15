@@ -443,3 +443,12 @@ No financial feature was removed.
 - The major sheets now use the expressive 36dp top shape and tinted handle.
 - Primary screens, sheets, charts, empty states and section headings share one visual language.
 - 203 tests, 0 failures.
+
+## 0.43.16 ledger and payouts
+
+- Ledger row icons now use the burst motif and carry the entry tint; shift rows get a shaped marker.
+- Today’s selected day uses a tonal pill with a burst dot.
+- Payouts sheet has a shaped header, coin rows and a giant amount field; quick payout dialog matches.
+- First-run and map-empty cards now carry the motif and playful copy.
+- Tab change gets a slight scale in/out.
+- 203 tests, 0 failures.

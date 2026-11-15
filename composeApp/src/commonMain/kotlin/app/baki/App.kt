@@ -31,6 +31,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -295,8 +296,8 @@ private fun AppContent(repo: BakiRepo) {
                 transitionSpec = {
                     val spatial = motionScheme.defaultSpatialSpec<androidx.compose.ui.unit.IntOffset>()
                     val effects = motionScheme.defaultEffectsSpec<Float>()
-                    (fadeIn(effects) + slideInVertically(spatial) { it / 12 })
-                        .togetherWith(fadeOut(effects))
+                    (fadeIn(effects) + scaleIn(initialScale = 0.985f) + slideInVertically(spatial) { it / 12 })
+                        .togetherWith(fadeOut(effects) + scaleOut(targetScale = 1.01f))
                 },
                 modifier = Modifier.fillMaxSize(),
                 label = "tab",
@@ -709,26 +710,39 @@ private fun AppContent(repo: BakiRepo) {
 
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun FirstRunCard(onOpenMore: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         color = scheme.primaryContainer,
         contentColor = scheme.onPrimaryContainer,
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.extraLarge,
         modifier = Modifier.fillMaxWidth().padding(bottom = Space.s),
     ) {
-        Column(Modifier.padding(Space.ml)) {
-            Text("Connect your server", style = MaterialTheme.typography.titleMediumEmphasized)
-            Spacer(Modifier.height(Space.xs))
-            Text(
-                "Baki is empty and offline. Set the server in More → App, then enable writes.",
-                color = scheme.onPrimaryContainer.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Spacer(Modifier.height(Space.s))
-            FilledTonalButton(onClick = onOpenMore) {
-                Text("Open setup", style = MaterialTheme.typography.labelLargeEmphasized)
+        Row(Modifier.padding(Space.ml), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.onPrimaryContainer.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("↗", color = scheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            }
+            Spacer(Modifier.width(Space.m))
+            Column(Modifier.weight(1f)) {
+                Text("Let's get connected", style = MaterialTheme.typography.titleMediumEmphasized)
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    "Baki is empty and offline. Point it at the server in More → App, then enable writes.",
+                    color = scheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(Space.s))
+                FilledTonalButton(onClick = onOpenMore) {
+                    Text("Open setup", style = MaterialTheme.typography.labelLargeEmphasized)
+                }
             }
         }
     }
@@ -840,6 +854,7 @@ fun Chip(text: String, tint: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 fun RowCard(
     title: String,
     sub: String,
@@ -912,11 +927,21 @@ fun RowCard(
         ) {
             if (icon != null) {
                 Box(
-                    Modifier.size(32.dp).then(
-                        Modifier.clip(MaterialTheme.shapes.small).background(scheme.surfaceContainerHigh)
-                    ),
+                    Modifier
+                        .size(34.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primaryContainer.copy(alpha = 0.75f)),
                     contentAlignment = Alignment.Center,
-                ) { Icon(icon, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline)) }
+                ) { Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
+                Spacer(Modifier.width(Space.m))
+            } else {
+                Box(
+                    Modifier
+                        .size(30.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(ink.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) { Box(Modifier.size(7.dp).clip(CircleShape).background(ink)) }
                 Spacer(Modifier.width(Space.m))
             }
             Column(Modifier.weight(1f)) {
@@ -2921,19 +2946,49 @@ private fun ProfitField(label: String, state: androidx.compose.runtime.MutableSt
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     var amount by remember { mutableStateOf("") }
     val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
     BakiSheet(onDismiss = onDismiss) {
-            Text("Add a payout", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
-            OutlinedTextField(
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.tertiaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("+", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                }
+                Spacer(Modifier.width(Space.m))
+                Column {
+                    Text("PAYOUT", color = scheme.onSurface, letterSpacing = 1.sp, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                    Text("log the cash.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            TextField(
                 value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                label = { Text("Amount (RM)") }, singleLine = true,
+                leadingIcon = { Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
+                placeholder = { Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum")) },
+                label = { Text("HOW MUCH?") }, singleLine = true,
+                textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = scheme.secondaryContainer,
+                    unfocusedContainerColor = scheme.secondaryContainer,
+                    focusedTextColor = scheme.onSecondaryContainer,
+                    unfocusedTextColor = scheme.onSecondaryContainer,
+                    focusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                    unfocusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                    cursorColor = scheme.onSecondaryContainer,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
             )
             Button(
                 enabled = cents > 0, onClick = { onAdd(cents) },

@@ -583,7 +583,11 @@ fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifi
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    ExperimentalSharedTransitionApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 @Composable
 fun RowCardIcon(
     icon: ImageVector,
@@ -660,11 +664,12 @@ fun RowCardIcon(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
-                Modifier.size(34.dp).then(
-                    Modifier.clip(MaterialTheme.shapes.medium).background(scheme.surfaceContainerHigh)
-                ),
+                Modifier
+                    .size(36.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(tint.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
-            ) { Icon(icon, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline)) }
+            ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(IconSize.inline)) }
             Spacer(Modifier.width(Space.m))
             Column(Modifier.weight(1f)) {
                 Text(title, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))

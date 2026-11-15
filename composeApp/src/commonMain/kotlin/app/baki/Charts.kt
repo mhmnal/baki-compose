@@ -40,6 +40,7 @@ import kotlin.math.abs
 
 
 /** The last seven days ending at [endDay]: a bar per day, green when money stayed. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun WeekStrip(store: Store, endDay: String) {
     val scheme = MaterialTheme.colorScheme
@@ -58,13 +59,24 @@ fun WeekStrip(store: Store, endDay: String) {
                 Column(
                     Modifier.weight(1f)
                         .then(
-                            Modifier.clip(MaterialTheme.shapes.medium).background(scheme.surfaceContainerLow).padding(vertical = Space.s)
+                            Modifier.clip(if (d == today) MaterialTheme.shapes.large else MaterialTheme.shapes.medium)
+                                .background(if (d == today) scheme.primaryContainer else scheme.surfaceContainerLow)
+                                .padding(vertical = Space.s)
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    if (d == today) {
+                        Box(
+                            Modifier
+                                .size(7.dp)
+                                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                                .background(scheme.onPrimaryContainer),
+                        )
+                        Spacer(Modifier.height(3.dp))
+                    }
                     Text(
                         d.takeLast(2),
-                        color = if (d == today) scheme.primary else scheme.onSurfaceVariant,
+                        color = if (d == today) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
                         fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
                         style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
@@ -83,7 +95,8 @@ fun WeekStrip(store: Store, endDay: String) {
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         if (t.entryCount == 0 && t.shiftCount == 0) "–" else if (BakiPrivacy.discreet) "••" else (t.net / 100).toInt().toString(),
-                        color = scheme.onSurfaceVariant, style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
+                        color = if (d == today) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                        style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
                     )
                 }

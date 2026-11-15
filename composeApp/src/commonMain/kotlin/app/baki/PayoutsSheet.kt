@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.material3.toShape
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
@@ -48,6 +54,7 @@ import kotlinx.datetime.toLocalDateTime
  * Payouts are identified by index: `Payout` carries only (cents, timestamp) so it has no stable id
  * to address; the list order is the identity.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PayoutsSheet(
     title: String,
@@ -78,7 +85,22 @@ fun PayoutsSheet(
             null
         },
     ) {
-        Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("+", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            }
+            Spacer(Modifier.width(Space.m))
+            Column {
+                Text("PAYOUTS", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+            }
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Text(
                 if (payouts.size == 1) "1 payout" else "${payouts.size} payouts",
@@ -112,12 +134,24 @@ fun PayoutsSheet(
                 Column(Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                        .clip(MaterialTheme.shapes.large)
                         .background(scheme.surfaceContainerLow)
                         .clickable(enabled = editable) { editing = index }
                         .heightIn(min = Control.primary)
-                        .padding(vertical = 12.dp),
+                        .padding(horizontal = Space.m, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box(
+                        Modifier
+                            .size(28.dp)
+                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .background(scheme.tertiaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("•", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.labelLarge)
+                    }
+                    Spacer(Modifier.width(Space.m))
                     Text(
                         clockTime(payout.at),
                         color = scheme.onSurfaceVariant,
@@ -127,7 +161,7 @@ fun PayoutsSheet(
                     Text(
                         "RM ${rm(payout.c)}",
                         color = scheme.onSurface,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                        style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                         modifier = Modifier.weight(1f),
                     )
                     if (editable) {
@@ -162,6 +196,7 @@ fun PayoutsSheet(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PayoutAmountDialog(
     title: String,
@@ -174,15 +209,48 @@ private fun PayoutAmountDialog(
     var text by remember { mutableStateOf(if (initialCents > 0) "%.2f".format(initialCents / 100.0) else "") }
     val amount = text.toDoubleOrNull()?.let { cents(it) } ?: 0L
     BakiSheet(onDismiss = onDismiss) {
-        Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.tertiaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("+", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            }
+            Spacer(Modifier.width(Space.m))
+            Column {
+                Text(title.uppercase(), color = scheme.onSurface, letterSpacing = 1.sp, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text("log the cash.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+        TextField(
             value = text,
             onValueChange = { raw -> text = raw.filter { it.isDigit() || it == '.' } },
-            label = { Text("Amount (RM)") },
+            leadingIcon = {
+                Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            },
+            placeholder = {
+                Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
+            },
+            label = { Text("HOW MUCH?") },
             singleLine = true,
+            textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.fillMaxWidth(),
-            colors = bakiFieldColorsPublic(),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = scheme.secondaryContainer,
+                unfocusedContainerColor = scheme.secondaryContainer,
+                focusedTextColor = scheme.onSecondaryContainer,
+                unfocusedTextColor = scheme.onSecondaryContainer,
+                focusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                unfocusedLabelColor = scheme.onSecondaryContainer.copy(alpha = 0.72f),
+                cursorColor = scheme.onSecondaryContainer,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+            ),
         )
         Button(
             enabled = amount > 0,

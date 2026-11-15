@@ -13,6 +13,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.toShape
+import androidx.compose.material3.MaterialShapes
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -68,6 +75,7 @@ private suspend fun loadDayRoutes(
  * The day's movement, on Today. Refreshes every 30 s while a shift is running so the path grows as
  * you drive; otherwise it loads once. Read-only, like every map in the app.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
@@ -91,18 +99,31 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
         if (!hasActivity) return
         Surface(
             color = scheme.surfaceContainerLow,
-            shape = MaterialTheme.shapes.large,
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier.fillMaxWidth().padding(vertical = Space.s),
         ) {
-            Column(Modifier.padding(Space.ml)) {
-                Text(
-                    if (live != null && day == today) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall,
-                )
-                Text(
-                    "No movement recorded. Keep location on during a live shift to draw the map.",
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-                )
+            Row(Modifier.padding(Space.ml), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.tertiaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("·", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.headlineMedium)
+                }
+                Spacer(Modifier.width(Space.m))
+                Column {
+                    Text(
+                        if (live != null && day == today) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
+                        color = scheme.onSurfaceVariant, letterSpacing = 1.sp,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        "No breadcrumbs yet. Keep location on during a live shift and the map draws itself.",
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         }
         return
