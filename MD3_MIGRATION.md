@@ -488,3 +488,10 @@ No financial feature was removed.
 - FAB menu action icons sit in burst bubbles.
 - Calendar heat cells are circles; today is a soft burst.
 - Final 203 tests, 0 failures.
+
+## 0.43.22 complete chrome
+
+- Custom quick-action popover with shaped items and icons.
+- Settings dialogs now use the burst header language.
+- Switch rows carry the motif; hours heatmap cells are shaped.
+- 203 tests, 0 failures.

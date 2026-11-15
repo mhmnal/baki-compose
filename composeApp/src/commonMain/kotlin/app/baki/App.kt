@@ -393,15 +393,47 @@ private fun AppContent(repo: BakiRepo) {
 
     // M3 Expressive primary action menu.
     if (!wide && tab == 0 && !repo.readOnly && repo.live == null) {
-        FloatingActionButtonMenu(
-            expanded = addMenuOpen,
+        Box(
             modifier = Modifier.align(Alignment.BottomEnd).testTag("quick-actions")
                 .padding(
                     end = 16.dp,
-                    // FloatingActionButtonMenu itself reserves 16dp below the visible button.
-                    bottom = (measuredNavHeight - 8.dp).coerceAtLeast(0.dp),
+                    // No internal menu inset now: place the visible FAB itself 8dp above the dock.
+                    bottom = measuredNavHeight + 8.dp,
                 ),
-            button = {
+            contentAlignment = Alignment.BottomEnd,
+        ) {
+            Column(horizontalAlignment = Alignment.End) {
+                AnimatedVisibility(
+                    visible = addMenuOpen,
+                    enter = fadeIn() + scaleIn(initialScale = 0.82f) + slideInVertically { it / 5 },
+                    exit = fadeOut() + scaleOut(targetScale = 0.88f),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(Space.s),
+                        modifier = Modifier.padding(bottom = Space.s),
+                    ) {
+                        QuickMenuItem("Add spending", BakiIcons.Receipt) {
+                            addMenuOpen = false
+                            editingEntry = null
+                            entryType = "expense"
+                            presetCat = null
+                            adding = 2
+                        }
+                        QuickMenuItem("Add income", BakiIcons.Wallet) {
+                            addMenuOpen = false
+                            editingEntry = null
+                            entryType = "income"
+                            presetCat = null
+                            adding = 2
+                        }
+                        QuickMenuItem("Log shift", BakiIcons.Car) {
+                            addMenuOpen = false
+                            editingShift = null
+                            adding = 3
+                        }
+                    }
+                }
                 ToggleFloatingActionButton(
                     checked = addMenuOpen,
                     onCheckedChange = { addMenuOpen = it },
@@ -429,54 +461,7 @@ private fun AppContent(repo: BakiRepo) {
                         )
                     }
                 }
-            },
-        ) {
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    addMenuOpen = false
-                    editingEntry = null
-                    entryType = "expense"
-                    presetCat = null
-                    adding = 2
-                },
-                text = { Text("Add spending", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = {
-                    Box(
-                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(BakiIcons.Receipt, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
-                },
-            )
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    addMenuOpen = false
-                    editingEntry = null
-                    entryType = "income"
-                    presetCat = null
-                    adding = 2
-                },
-                text = { Text("Add income", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = {
-                    Box(
-                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(BakiIcons.Wallet, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
-                },
-            )
-            FloatingActionButtonMenuItem(
-                onClick = {
-                    addMenuOpen = false
-                    editingShift = null
-                    adding = 3
-                },
-                text = { Text("Log shift", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = {
-                    Box(
-                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(BakiIcons.Car, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
-                },
-            )
+            }
         }
     }
 
@@ -761,6 +746,37 @@ fun Header(repo: BakiRepo) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        shape = CircleShape,
+        color = scheme.secondaryContainer,
+        contentColor = scheme.onSecondaryContainer,
+        shadowElevation = 4.dp,
+    ) {
+        Row(
+            Modifier
+                .clickable(onClick = onClick)
+                .padding(start = Space.s, end = Space.l, top = Space.xs, bottom = Space.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            Box(
+                Modifier
+                    .size(32.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(IconSize.inline))
+            }
+            Text(label, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLargeEmphasized)
         }
     }
 }
@@ -1480,7 +1496,7 @@ private fun BillEditorDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.extraLarge,
-        title = { Text(if (existing == null) "New bill" else "Edit bill", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
+        title = { BakiDialogHeader(if (existing == null) "New bill" else "Edit bill", "recurring money", "▣") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 OutlinedTextField(
@@ -1846,7 +1862,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 AlertDialog(
                     onDismissRequest = { historyOpen = false },
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    title = { Text("Bill payments", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+                    title = { BakiDialogHeader("Bill payments", "settle the month", "✓") },
                     text = {
                         Column(
                             Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
@@ -1882,7 +1898,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 AlertDialog(
                     onDismissRequest = { unlinkTarget = null },
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    title = { Text("Unlink ${bill.name} · $period", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+                    title = { BakiDialogHeader("Unlink ${bill.name} · $period", "keep the ledger honest", "−") },
                     text = {
                         Text(
                             "Only the covered mark is removed. The RM ${rm((link?.amount ?: bill.amount) / 100.0)} expense stays in your ledger.",
@@ -1922,7 +1938,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 AlertDialog(
                     onDismissRequest = { linkTarget = null },
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    title = { Text("Link ${bill.name} · $period", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+                    title = { BakiDialogHeader("Link ${bill.name} · $period", "attach a payment", "+") },
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                             if (candidates.isEmpty()) {
@@ -2360,7 +2376,15 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            title = { Text("Reset this device?", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+            title = {
+                BakiDialogHeader(
+                    "Reset this device?",
+                    "local data only",
+                    "!",
+                    background = scheme.errorContainer,
+                    ink = scheme.onErrorContainer,
+                )
+            },
             text = { Text("The local copy is forgotten and pulled again from the server. The server is not touched.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge ) },
             confirmButton = {
                 TextButton(onClick = {
@@ -2384,6 +2408,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SwitchRow(
     title: String,
@@ -2397,9 +2422,18 @@ private fun SwitchRow(
         Modifier.fillMaxWidth().padding(vertical = Space.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
-            Text(sub, color = if (warn) scheme.secondary else scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(10.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(if (warn) scheme.secondary else scheme.primary),
+            )
+            Spacer(Modifier.width(Space.s))
+            Column {
+                Text(title, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
+                Text(sub, color = if (warn) scheme.secondary else scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
+            }
         }
         Switch(
             checked = checked,
@@ -2884,7 +2918,7 @@ private fun ProfitDialog(profit: Profit, onDismiss: () -> Unit, onSave: (Profit)
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.extraLarge,
-        title = { Text("Vehicle costs & target", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
+        title = { BakiDialogHeader("Vehicle costs & target", "the car's real numbers", "◎") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 ProfitField("Fuel price RM/L", fuel, scheme)
@@ -3026,7 +3060,7 @@ private fun BudgetSheet(repo: BakiRepo, onDismiss: () -> Unit) {
             ) { Text("Save limits", fontWeight = FontWeight.Bold) }
         },
     ) {
-        Text("Monthly envelopes", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge)
+        BakiDialogHeader("Monthly envelopes", "give every ringgit a job", "▦")
         if (!canWrite) Text("Read-only · enable writes in More → Allow writes", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
         Text("Leave a field blank for no envelope. Base allocation applies every month.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.s))
@@ -3096,7 +3130,7 @@ private fun EnvelopeMoveDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.extraLarge,
-        title = { Text("Move envelope money", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
+        title = { BakiDialogHeader("Move envelope money", "virtual buckets", "↔") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 Text("From", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)

@@ -105,7 +105,7 @@ fun ServiceTargetDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = scheme.surfaceContainerLow,
-        title = { Text("Next service", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge ) },
+        title = { BakiDialogHeader("Next service", "when the car needs attention", "⌁") },
         text = {
             Column {
                 Text(

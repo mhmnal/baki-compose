@@ -184,6 +184,7 @@ fun HoursHeatmap(store: Store) {
                     val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
                     Box(
                         Modifier.weight(1f).height(16.dp)
+                            .clip(if (has) MaterialTheme.shapes.small else MaterialTheme.shapes.extraSmall)
                             .background(if (has) scheme.primary.copy(alpha = 0.15f + fraction * 0.85f) else scheme.surfaceContainerHigh),
                     )
                 }

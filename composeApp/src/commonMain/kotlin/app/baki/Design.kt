@@ -367,3 +367,39 @@ fun ExpressiveBurst(
             .background(color),
     )
 }
+
+/** Consistent expressive heading for the remaining dialog shells. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun BakiDialogHeader(
+    title: String,
+    subtitle: String? = null,
+    symbol: String = "✦",
+    background: Color = MaterialTheme.colorScheme.tertiaryContainer,
+    ink: Color = MaterialTheme.colorScheme.onTertiaryContainer,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        Box(
+            Modifier
+                .size(40.dp)
+                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                .background(background),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(symbol, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+        }
+        Column {
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            )
+            if (subtitle != null) {
+                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}

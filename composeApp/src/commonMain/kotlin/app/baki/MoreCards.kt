@@ -66,7 +66,7 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.extraLarge,
-        title = { Text("Statement history", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge) },
+        title = { BakiDialogHeader("Statement history", "the paper trail", "▤") },
         text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
         Text(
@@ -213,7 +213,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         AlertDialog(
             onDismissRequest = { renaming = null },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            title = { Text("Rename category", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+            title = { BakiDialogHeader("Rename category", "keep the label personal", "A") },
             text = {
                 OutlinedTextField(
                     value = renameDraft, onValueChange = { renameDraft = it },
@@ -239,7 +239,7 @@ fun CategoriesCard(repo: BakiRepo, editable: Boolean = true) {
         AlertDialog(
             onDismissRequest = { adding = false },
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            title = { Text("New category", color = scheme.onSurface, fontWeight = FontWeight.Bold) },
+            title = { BakiDialogHeader("New category", "make it yours", "+") },
             text = {
                 OutlinedTextField(
                     value = draft, onValueChange = { draft = it },
