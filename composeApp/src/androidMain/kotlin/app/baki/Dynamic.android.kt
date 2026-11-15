@@ -23,6 +23,8 @@ import androidx.core.content.ContextCompat
  * Monet scheme, recomputed when the wallpaper palette changes. Remembering only by `dark` meant
  * a wallpaper change while Baki was alive left the old scheme on screen indefinitely.
  */
+actual fun supportsDynamicColor(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
 @Composable
 actual fun rememberDynamicColorScheme(dark: Boolean): ColorScheme? {
     val ctx = AppCtx.ctx ?: return null

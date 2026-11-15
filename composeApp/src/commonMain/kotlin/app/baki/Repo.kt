@@ -1084,6 +1084,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.tapFeedback()
     }
 
+    fun setColorSource(source: String) {
+        val clean = if (source == "baki") "baki" else "wallpaper"
+        config = config.copy(colorSource = clean)
+        saveConfig(config)
+        PlatformEffects.tapFeedback()
+    }
+
     fun setReducedMotion(on: Boolean) {
         config = config.copy(reducedMotion = on)
         saveConfig(config)

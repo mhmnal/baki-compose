@@ -115,7 +115,11 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         PlatformEffects.setStatementReminder(repo.config.statementReminder)
     }
     BakiPrivacy.discreet = repo.config.discreet
-    BakiTheme(mode = repo.config.themeMode, reducedMotion = repo.config.reducedMotion) {
+    BakiTheme(
+        mode = repo.config.themeMode,
+        colorSource = repo.config.colorSource,
+        reducedMotion = repo.config.reducedMotion,
+    ) {
         // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
         SharedTransitionLayout {
             androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
@@ -2102,10 +2106,29 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Space.s))
-        Text(
-            "Dynamic colour follows your wallpaper on Android 12+.",
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-        )
+        if (supportsDynamicColor()) {
+            Text(
+                "Colour source",
+                color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
+            Spacer(Modifier.height(Space.xs))
+            ConnectedChoiceGroup(
+                options = listOf("Wallpaper", "Baki"),
+                selected = if (repo.config.colorSource == "baki") "Baki" else "Wallpaper",
+                onSelect = { repo.setColorSource(if (it == "Baki") "baki" else "wallpaper") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                if (repo.config.colorSource == "baki") "Baki's fixed Fig & Marigold colours."
+                else "Wallpaper uses Material You. Baki is the fixed fallback.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            Text(
+                "Baki fixed colours are in use — dynamic colour isn't available on this device.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         Spacer(Modifier.height(Space.l))
         SectionTitle("MOTION")
         Spacer(Modifier.height(Space.s))

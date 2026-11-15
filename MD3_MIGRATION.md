@@ -534,3 +534,10 @@ No financial feature was removed.
 - Post-push saves no longer trigger another upload.
 - Removed dead UI/helpers and the unused Source Serif license.
 - 203 tests, 0 failures.
+
+## 0.43.29 fixed themes
+
+- Added Fig Milk (light) and Midnight Fig (dark) fixed schemes.
+- Added Colour source Wallpaper / Baki; Wallpaper remains default where dynamic colour is available.
+- Android below 12 and desktop automatically use the fixed Baki palette.
+- Added fixed-palette contrast test; 204 tests, 0 failures.

@@ -15,6 +15,8 @@ data class ClientConfig(
     val allowWrites: Boolean = false,
     /** "auto" | "light" | "dark" — the web app's Auto/Light/Dark selector. */
     val themeMode: String = "auto",
+    /** "wallpaper" | "baki" — Material You or Baki's fixed Fig palette. */
+    val colorSource: String = "wallpaper",
     /** Opt-in: upload sealed traces so the desk can review them. Off by default. */
     val syncRoutes: Boolean = false,
     /** Shared passphrase for the sealed traces; blank disables route sync entirely. */
