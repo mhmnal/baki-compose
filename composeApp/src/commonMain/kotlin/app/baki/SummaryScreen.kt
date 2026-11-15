@@ -46,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -210,7 +211,11 @@ private fun StatementCover(
             Text(
                 monthLabel(month), color = scheme.onSurface,
                 textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = if (LocalDensity.current.fontScale >= 1.6f) 2 else 1,
+                overflow = TextOverflow.Ellipsis,
+                style = if (LocalDensity.current.fontScale >= 1.6f)
+                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                else MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
             ShapeNavButton(
                 label = "›",
@@ -317,34 +322,69 @@ private fun MonthInkChart(store: Store, month: String) {
         }
     }
 
+    val largeText = LocalDensity.current.fontScale >= 1.6f
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .padding(end = Space.s)
-                    .size(18.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
-                    .background(scheme.primary),
-            )
-            Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+        if (largeText) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .padding(end = Space.s)
+                        .size(18.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primary),
+                )
+                Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(Space.xs))
             ConnectedChoiceGroup(
                 options = listOf("7D", "30D"),
                 selected = if (range == 7) "7D" else "30D",
                 onSelect = { range = if (it == "7D") 7 else 30 },
-                modifier = Modifier.width(144.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
-        }
-        Spacer(Modifier.height(Space.xs))
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
-                Text(
-                    "Target RM ${rm(targetPerDay)}/day",
-                    color = scheme.onTertiaryContainer,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .padding(end = Space.s)
+                        .size(18.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primary),
+                )
+                Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+                ConnectedChoiceGroup(
+                    options = listOf("7D", "30D"),
+                    selected = if (range == 7) "7D" else "30D",
+                    onSelect = { range = if (it == "7D") 7 else 30 },
+                    modifier = Modifier.width(144.dp),
                 )
             }
-            Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(Modifier.height(Space.xs))
+        if (largeText) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
+                    Text(
+                        "Target RM ${rm(targetPerDay)}/day",
+                        color = scheme.onTertiaryContainer,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                    )
+                }
+                Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
+                    Text(
+                        "Target RM ${rm(targetPerDay)}/day",
+                        color = scheme.onTertiaryContainer,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                    )
+                }
+                Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
         }
         Spacer(Modifier.height(Space.s))
         Box(Modifier.fillMaxWidth()) {

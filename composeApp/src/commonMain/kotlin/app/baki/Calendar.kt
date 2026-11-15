@@ -35,7 +35,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     val today = todayIso()
     val bestDay = monthDays(store, month).maxByOrNull { it.second.net }?.first
 
-    Column(Modifier.semantics { contentDescription = "Calendar heatmap of daily net" }) {
+    Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             Box(Modifier.size(14.dp).clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
             Text("CALENDAR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
@@ -86,10 +86,19 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
     }
     val isToday = iso == today
 
+    val description = buildString {
+        append(prettyDate(iso))
+        when {
+            future -> append(", future day")
+            t.entryCount == 0 && t.shiftCount == 0 -> append(", no entries")
+            else -> append(", net RM ${rm(t.net)}")
+        }
+    }
     Box(
         Modifier.fillMaxSize()
             .clip(if (isToday) MaterialShapes.SoftBurst.toShape() else CircleShape)
-            .background(fill),
+            .background(fill)
+            .semantics(mergeDescendants = true) { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -155,7 +155,7 @@ fun HoursHeatmap(store: Store) {
     val peak = blocks.maxOf { it.rate }.coerceAtLeast(1.0)
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
-    Column(Modifier.semantics { contentDescription = "Best earning hours heatmap" }) {
+    Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             Box(Modifier.size(14.dp).clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
             Text("BEST HOURS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
@@ -168,6 +168,7 @@ fun HoursHeatmap(store: Store) {
             }
         }
         Spacer(Modifier.height(3.dp))
+        val dayNames = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
         for (d in 0..6) {
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 1.dp),
@@ -180,10 +181,18 @@ fun HoursHeatmap(store: Store) {
                     val rate = cell?.rate ?: 0.0
                     val has = (cell?.hours ?: 0.0) >= 0.25
                     val fraction = if (has) (rate / peak).coerceIn(0.08, 1.0).toFloat() else 0f
+                    val start = "%02d:00".format(b * 4)
+                    val end = "%02d:00".format((b + 1) * 4)
+                    val blockDescription = if (has) {
+                        "${dayNames[d]} $start–$end, RM ${"%.0f".format(rate)} per hour"
+                    } else {
+                        "${dayNames[d]} $start–$end, no driving"
+                    }
                     Box(
                         Modifier.weight(1f).height(16.dp)
                             .clip(if (has) MaterialTheme.shapes.small else MaterialTheme.shapes.extraSmall)
-                            .background(if (has) scheme.primary.copy(alpha = 0.15f + fraction * 0.85f) else scheme.surfaceContainerHigh),
+                            .background(if (has) scheme.primary.copy(alpha = 0.15f + fraction * 0.85f) else scheme.surfaceContainerHigh)
+                            .semantics { contentDescription = blockDescription },
                     )
                 }
             }

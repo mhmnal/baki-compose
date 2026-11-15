@@ -40,13 +40,17 @@ class GoldenScreensTest {
         System.setProperty("baki.testToday", today)
         System.setProperty("baki.testNowMillis", "1763200800000")
         val storeFile = File(LocalStore.path())
+        val storeBackup = File(storeFile.parentFile, "store.json.bak")
         val liveFile = File(storeFile.parentFile, "live.json")
         val storeBytes = storeFile.takeIf { it.exists() }?.readBytes()
+        val storeBackupBytes = storeBackup.takeIf { it.exists() }?.readBytes()
         val liveBytes = liveFile.takeIf { it.exists() }?.readBytes()
         var repo: BakiRepo? = null
         try {
             // Deterministic, synthetic ledger. Never use the user's store for a baseline.
             liveFile.delete()
+            storeFile.delete()
+            storeBackup.delete()
             LocalStore.write(BakiJson.encodeToString(Store.serializer(), Store()))
             val fixture = BakiRepo(
                 ClientConfig(
@@ -87,6 +91,11 @@ class GoldenScreensTest {
                     }
                 },
                 Shot("summary-360-light", 360, 800, dark = false) {
+                    BakiTheme(mode = "light") {
+                        SummaryScreen(repo = fixture, store = store, month = month, onMonth = {})
+                    }
+                },
+                Shot("summary-360-font-200", 360, 1000, fontScale = 2f, dark = false) {
                     BakiTheme(mode = "light") {
                         SummaryScreen(repo = fixture, store = store, month = month, onMonth = {})
                     }
@@ -149,6 +158,7 @@ class GoldenScreensTest {
         } finally {
             repo = null
             if (storeBytes != null) storeFile.writeBytes(storeBytes) else storeFile.delete()
+            if (storeBackupBytes != null) storeBackup.writeBytes(storeBackupBytes) else storeBackup.delete()
             if (liveBytes != null) liveFile.writeBytes(liveBytes) else liveFile.delete()
             if (originalToday == null) System.clearProperty("baki.testToday") else System.setProperty("baki.testToday", originalToday)
             if (originalNow == null) System.clearProperty("baki.testNowMillis") else System.setProperty("baki.testNowMillis", originalNow)

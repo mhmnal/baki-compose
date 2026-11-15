@@ -578,3 +578,10 @@ No financial feature was removed.
 - Day strip now exposes one merged spoken summary per day.
 - Added a 200% font-scale Today golden; date/food/IN-OUT layouts adapt.
 - 205 tests, 0 failures; capped peak 4.2 GB.
+
+## 0.43.35 calendar/heatmap a11y
+
+- Calendar days and heatmap blocks announce their own date/hours and net/rate.
+- Added a 200% Summary golden and responsive month/chart header layouts.
+- Golden fixtures now clear the main and backup stores, preventing real data bleed.
+- 205 tests, 0 failures; capped peak 3.8 GB.
