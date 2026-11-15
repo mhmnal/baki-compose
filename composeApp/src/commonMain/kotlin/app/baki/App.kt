@@ -1004,7 +1004,6 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
         Box {
             ExpressiveBurst(
                 color = accent.copy(alpha = 0.13f),
-                reducedMotion = repo.config.reducedMotion,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .size(170.dp)

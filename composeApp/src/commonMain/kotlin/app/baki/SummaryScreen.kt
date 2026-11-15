@@ -100,13 +100,13 @@ fun SummaryScreen(
     ) {
         item {
             Md3Card(
-                container = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                container = MaterialTheme.colorScheme.surfaceContainerLow,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 StatementCover(
                     month = month, t = t, days = days, best = best, worst = worst,
                     cost = cost, prevNet = prevNet, streak = streak,
-                    onMonth = onMonth, reducedMotion = repo.config.reducedMotion,
+                    onMonth = onMonth,
                 )
             }
         }
@@ -191,21 +191,12 @@ private fun StatementCover(
     prevNet: Long,
     streak: Int,
     onMonth: (String) -> Unit,
-    reducedMotion: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val delta = t.net - prevNet
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
 
     Box(Modifier.fillMaxWidth()) {
-        ExpressiveBurst(
-            color = scheme.tertiaryContainer.copy(alpha = 0.50f),
-            reducedMotion = reducedMotion,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(200.dp)
-                .offset(x = 54.dp, y = (-72).dp),
-        )
         Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             ShapeNavButton(
@@ -213,8 +204,8 @@ private fun StatementCover(
                 enabled = true,
                 onClick = { onMonth(addDays("$month-01", -1).take(7)) },
                 description = "Previous month",
-                background = scheme.tertiaryContainer,
-                ink = scheme.onTertiaryContainer,
+                background = scheme.surfaceContainerHighest,
+                ink = scheme.onSurface,
             )
             Text(
                 monthLabel(month), color = scheme.onSurface,
@@ -226,8 +217,8 @@ private fun StatementCover(
                 enabled = true,
                 onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) },
                 description = "Next month",
-                background = scheme.tertiaryContainer,
-                ink = scheme.onTertiaryContainer,
+                background = scheme.surfaceContainerHighest,
+                ink = scheme.onSurface,
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

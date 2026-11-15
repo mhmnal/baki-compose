@@ -563,3 +563,10 @@ No financial feature was removed.
 - Date arrows are round, not soft-bursts; the date stage is shallower.
 - Week strip highlights the day being viewed with a thin outline, not a tinted burst cell.
 - 204 tests, 0 failures; capped build peak 3.8 GB.
+
+## 0.43.33 neutral summary
+
+- Monthly statement header is a neutral surface; the chart is the only coloured focal point.
+- Summary month arrows are quiet tonal circles.
+- ExpressiveBurst is now static everywhere; motion is reserved for state changes/celebrations.
+- 204 tests, 0 failures; capped peak 4.1 GB.

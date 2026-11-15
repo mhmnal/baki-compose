@@ -310,34 +310,17 @@ fun ShapeNavButton(
 }
 
 /**
- * Baki's one decorative shape motif: a slowly turning soft burst. It is used only as a backdrop
- * for hero moments, never on ordinary cards. Reduced motion freezes it.
+ * Baki's one decorative shape motif: a soft-burst field. It is deliberately static; motion is
+ * reserved for real state changes and celebrations.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpressiveBurst(
     color: androidx.compose.ui.graphics.Color,
     modifier: Modifier = Modifier,
-    reducedMotion: Boolean = false,
 ) {
-    val angle = if (reducedMotion) {
-        0f
-    } else {
-        val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "bakiBurst")
-        val a by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                animation = androidx.compose.animation.core.tween(26_000, easing = androidx.compose.animation.core.LinearEasing),
-                repeatMode = androidx.compose.animation.core.RepeatMode.Restart,
-            ),
-            label = "bakiBurstAngle",
-        )
-        a
-    }
     androidx.compose.foundation.layout.Box(
         modifier
-            .graphicsLayer { rotationZ = angle }
             .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
             .background(color),
     )
