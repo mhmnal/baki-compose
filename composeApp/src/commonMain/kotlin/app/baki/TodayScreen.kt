@@ -286,6 +286,13 @@ fun TodayScreen(
                                 Text(if (shiftExpanded) "−" else "+", color = scheme.primary, style = MaterialTheme.typography.titleMedium)
                             }
                         }
+                        if (day == today && live == null && !repo.readOnly) {
+                            Spacer(Modifier.height(Space.s))
+                            FilledTonalButton(
+                                onClick = { repo.startLive() },
+                                modifier = Modifier.fillMaxWidth().height(44.dp),
+                            ) { Text("Start live shift", style = MaterialTheme.typography.labelLargeEmphasized) }
+                        }
                         if (shiftExpanded) {
                             Spacer(Modifier.height(Space.s))
                             Text(
@@ -311,25 +318,13 @@ fun TodayScreen(
                                     )
                                 }
                             }
-                            if (day == today && live == null && !repo.readOnly) {
-                                Spacer(Modifier.height(Space.s))
-                                FilledTonalButton(
-                                    onClick = { repo.startLive() },
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) { Text("Start the meter", style = MaterialTheme.typography.labelLargeEmphasized) }
-                            }
                         }
                     }
                 }
             }
         } else if (live == null && !repo.readOnly && day == today) {
         } else if (live == null && !repo.readOnly && day == today) {
-            item {
-                FilledTonalButton(
-                    onClick = { repo.startLive() },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                ) { Text("Start a live shift", style = MaterialTheme.typography.labelLargeEmphasized) }
-            }
+            item { StartShiftCard(onStart = { repo.startLive() }) }
         }
 
         // the day's movement: between the shift card and the ledger
@@ -664,7 +659,7 @@ private fun SplitInkAmount(
     )
     val shape = MaterialTheme.shapes.extraLarge
     val cardHeight = if (largeText) 175.dp else 206.dp
-    val verticalScale = if (largeText) 1f else 1.48f
+    val verticalScale = if (largeText) 1.8f else 2.05f
     Box(
         modifier
             .fillMaxWidth()
@@ -700,6 +695,35 @@ private fun SplitInkAmount(
                 modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l)
                     .graphicsLayer { scaleY = verticalScale }.clearAndSetSemantics {},
             )
+        }
+    }
+}
+
+@Composable
+private fun StartShiftCard(onStart: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = scheme.primaryContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "LIVE SHIFT",
+                    color = scheme.onPrimaryContainer.copy(alpha = 0.7f),
+                    letterSpacing = 1.2.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    "Ready when you are",
+                    color = scheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+            FilledTonalButton(onClick = onStart, modifier = Modifier.height(48.dp)) {
+                Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
+            }
         }
     }
 }

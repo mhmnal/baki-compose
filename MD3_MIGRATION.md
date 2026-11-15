@@ -626,3 +626,10 @@ No financial feature was removed.
 - Day card cells now use the same 8dp inner gutter as the grid.
 - All Today cards share 8dp outer gutters and 28dp corners.
 - 205 tests, 0 failures.
+
+## 0.43.41 tall hero/start action
+
+- Hero amount vertical stretch increased to 2.05× (1.8× at 200% font).
+- Start live shift is always visible inside the collapsed shift card.
+- Explicit no-shift start card added.
+- 205 tests, 0 failures.
