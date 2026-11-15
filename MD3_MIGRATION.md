@@ -592,3 +592,11 @@ No financial feature was removed.
 - RM moved above the figure; the amount uses auto-sized Barlow Condensed up to 132sp.
 - IN/OUT/operating moved to a quiet facts card below the hero.
 - 205 tests, 0 failures; capped peak 4.2 GB.
+
+## 0.43.37 split ink
+
+- Today hero now uses Archivo Expanded 800, auto-sized to fill the tile.
+- Hero card contains only the amount; RM/label/badge and facts live outside it.
+- Horizontal split ink: white numeral on fig above, fig numeral on lavender below, gold seam.
+- Removed the old Barlow font and license; added Archivo Expanded 800 + OFL.
+- 205 tests, 0 failures.

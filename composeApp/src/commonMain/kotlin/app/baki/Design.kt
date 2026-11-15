@@ -52,7 +52,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.Res
-import baki_compose.composeapp.generated.resources.barlow_condensed_bold
+import baki_compose.composeapp.generated.resources.archivo_expanded_800
 import org.jetbrains.compose.resources.Font
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
@@ -345,8 +345,8 @@ fun BakiDialogHeader(
     }
 }
 
-/** Brand display face used only for the Today hero amount. Barlow Condensed has tabular figures. */
+/** Wide display face used only for the Split Ink hero: Archivo Expanded 800. */
 @Composable
-fun bakiDisplayFontFamily(): FontFamily = FontFamily(
-    Font(Res.font.barlow_condensed_bold, weight = FontWeight.Bold),
+fun archivoDisplayFontFamily(): FontFamily = FontFamily(
+    Font(Res.font.archivo_expanded_800, weight = FontWeight.ExtraBold),
 )

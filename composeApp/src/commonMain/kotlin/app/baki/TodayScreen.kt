@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
@@ -23,6 +24,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -52,18 +54,27 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToLong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -139,56 +150,42 @@ fun TodayScreen(
         item {
             BoxWithConstraints {
                 val largeText = LocalDensity.current.fontScale >= 1.6f
-                val heroInk = scheme.onPrimaryContainer
-                val heroFont = bakiDisplayFontFamily()
-                val amountSize = when {
-                    largeText -> 72.sp
-                    maxWidth < 340.dp -> 108.sp
-                    else -> 132.sp
-                }
-                Surface(
-                    shape = MaterialTheme.shapes.extraLarge,
-                    color = scheme.primaryContainer,
-                    contentColor = heroInk,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(Modifier.padding(Space.l)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                if (t.net >= 0) "TODAY'S TAKE" else "DAMAGE REPORT",
-                                color = heroInk.copy(alpha = 0.72f),
-                                letterSpacing = 1.6.sp,
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                modifier = Modifier.weight(1f),
-                            )
-                            val perHour = operating.perHour
-                            if (operating.shiftCount > 0 && perHour != null) {
-                                TargetBadge(
-                                    beat = perHour >= cfg.targetRate,
-                                    reducedMotion = repo.config.reducedMotion,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.height(Space.s))
+                Column(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "RM",
-                            color = heroInk.copy(alpha = 0.62f),
-                            letterSpacing = 1.sp,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            if (t.net >= 0) "TODAY'S TAKE" else "DAMAGE REPORT",
+                            color = scheme.onSurfaceVariant,
+                            letterSpacing = 1.6.sp,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier.weight(1f),
                         )
-                        EasedMoney(
-                            t.net,
-                            heroInk,
-                            heroMoneyStyle(t.net, MaterialTheme.typography).copy(
-                                fontFamily = heroFont,
-                                fontFeatureSettings = "tnum",
-                                fontSize = amountSize,
-                                lineHeight = amountSize,
-                                letterSpacing = (-3).sp,
-                            ),
-                            prefix = "",
-                        )
+                        val perHour = operating.perHour
+                        if (operating.shiftCount > 0 && perHour != null) {
+                            TargetBadge(
+                                beat = perHour >= cfg.targetRate,
+                                reducedMotion = repo.config.reducedMotion,
+                            )
+                        }
                     }
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "RM",
+                        color = scheme.onSurfaceVariant,
+                        letterSpacing = 1.sp,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Spacer(Modifier.height(Space.xxs))
+                    SplitInkAmount(
+                        cents = t.net,
+                        reducedMotion = repo.config.reducedMotion,
+                        fontFamily = archivoDisplayFontFamily(),
+                        upper = scheme.primary,
+                        lower = scheme.primaryContainer,
+                        upperInk = scheme.onPrimary,
+                        lowerInk = scheme.onPrimaryContainer,
+                        seam = scheme.tertiary,
+                        largeText = largeText,
+                    )
                 }
             }
         }
@@ -755,6 +752,71 @@ fun RowCardIcon(
             Text(amount, color = tint, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
         }
     }
+    }
+}
+
+@Composable
+private fun SplitInkAmount(
+    cents: Long,
+    reducedMotion: Boolean,
+    fontFamily: FontFamily,
+    upper: Color,
+    lower: Color,
+    upperInk: Color,
+    lowerInk: Color,
+    seam: Color,
+    largeText: Boolean,
+) {
+    val motion = MaterialTheme.motionScheme
+    val shown = remember { Animatable(0f) }
+    LaunchedEffect(cents, reducedMotion) {
+        if (reducedMotion) shown.snapTo(cents.toFloat())
+        else shown.animateTo(cents.toFloat(), motion.defaultSpatialSpec())
+    }
+    val text = rm(shown.value.roundToLong())
+    val style = TextStyle(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = if (largeText) 76.sp else 150.sp,
+        fontFeatureSettings = "tnum",
+        letterSpacing = (-4).sp,
+    )
+    val shape = MaterialTheme.shapes.extraLarge
+    val cardHeight = if (largeText) 175.dp else 210.dp
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(cardHeight)
+            .clip(shape)
+            .drawBehind {
+                val split = size.height * 0.50f
+                drawRect(upper)
+                drawRect(lower, topLeft = androidx.compose.ui.geometry.Offset(0f, split), size = androidx.compose.ui.geometry.Size(size.width, size.height - split))
+                drawLine(seam, androidx.compose.ui.geometry.Offset(0f, split), androidx.compose.ui.geometry.Offset(size.width, split), strokeWidth = 2.dp.toPx())
+            }
+            .semantics { contentDescription = "Today's take, RM ${rm(cents)}" },
+    ) {
+        val auto = TextAutoSize.StepBased(minFontSize = 18.sp, maxFontSize = style.fontSize, stepSize = 2.sp)
+        Box(
+            Modifier.fillMaxSize().drawWithContent {
+                clipRect(0f, 0f, size.width, size.height * 0.50f) { this@drawWithContent.drawContent() }
+            },
+        ) {
+            Text(
+                text, color = upperInk, style = style, maxLines = 1, softWrap = false, autoSize = auto,
+                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l).clearAndSetSemantics {},
+            )
+        }
+        Box(
+            Modifier.fillMaxSize().drawWithContent {
+                clipRect(0f, size.height * 0.50f, size.width, size.height) { this@drawWithContent.drawContent() }
+            },
+        ) {
+            Text(
+                text, color = lowerInk, style = style, maxLines = 1, softWrap = false, autoSize = auto,
+                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l).clearAndSetSemantics {},
+            )
+        }
     }
 }
 
