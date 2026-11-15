@@ -416,7 +416,13 @@ private fun MonthInkChart(store: Store, month: String) {
             best?.let {
                 Text("+RM ${rm(it.net)} · ${it.iso.takeLast(5)}", color = scheme.tertiary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
             }
-            worst?.let { Text("${rm(it.net)} · ${it.iso.takeLast(5)}", color = scheme.error, style = MaterialTheme.typography.labelMedium) }
+            worst?.let {
+                Text(
+                    "${rm(it.net)} · ${it.iso.takeLast(5)}",
+                    color = if (it.net < 0) scheme.error else scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
         }
     }
 }

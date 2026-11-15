@@ -1051,7 +1051,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 FilledTonalButton(
                     onClick = onPayout,
                     modifier = Modifier.weight(1f),
-                ) { Text("+ Payout", style = MaterialTheme.typography.labelLargeEmphasized) }
+                ) { Text("Payout", style = MaterialTheme.typography.labelLargeEmphasized, maxLines = 1, softWrap = false) }
                 Button(
                     enabled = !repo.readOnly,
                     onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },

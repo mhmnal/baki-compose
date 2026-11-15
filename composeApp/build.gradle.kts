@@ -56,8 +56,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 138
-        versionName = "0.43.7"
+        versionCode = 139
+        versionName = "0.43.8"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -116,6 +116,8 @@ tasks.withType<JavaExec>().configureEach {
 
 tasks.withType<Test>().configureEach {
     systemProperty("user.home", System.getProperty("java.io.tmpdir"))
+    // pass the golden-update switch into the test JVM (Gradle -D does not do that automatically)
+    systemProperty("baki.golden.update", System.getProperty("baki.golden.update") ?: "false")
     // benchmarks print their numbers; keep them visible
     testLogging { showStandardStreams = true }
 }

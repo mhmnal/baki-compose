@@ -376,3 +376,10 @@ No financial feature was removed.
 - Server logs a warning when the ledger API is open.
 - Backups include the token (private data warning in the UI).
 - Today shows a “No movement recorded” card when a day has shifts but no route, instead of silently omitting the map.
+
+## 0.43.8 golden suite
+
+- Added deterministic, date-pinned golden screenshots for Today and Stats at 360dp light and 390dp×1.3 dark.
+- Added pixel-tolerance comparison, with a documented update switch (`-Dbaki.golden.update=true`).
+- Goldens immediately exposed and fixed a wrapped “+ Payout” label at 360dp, a stale live-shift fixture, and a positive worst-day shown in error red.
+- 199 tests, 0 failures.
