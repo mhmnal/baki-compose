@@ -570,3 +570,11 @@ No financial feature was removed.
 - Summary month arrows are quiet tonal circles.
 - ExpressiveBurst is now static everywhere; motion is reserved for state changes/celebrations.
 - 204 tests, 0 failures; capped peak 4.1 GB.
+
+## 0.43.34 accessibility/motion
+
+- Removed the last decorative burst backdrops from live/estimated-take cards.
+- ExpressiveBurst was fully removed; no decorative continuous rotation remains.
+- Day strip now exposes one merged spoken summary per day.
+- Added a 200% font-scale Today golden; date/food/IN-OUT layouts adapt.
+- 205 tests, 0 failures; capped peak 4.2 GB.

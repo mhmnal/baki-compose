@@ -309,23 +309,6 @@ fun ShapeNavButton(
     }
 }
 
-/**
- * Baki's one decorative shape motif: a soft-burst field. It is deliberately static; motion is
- * reserved for real state changes and celebrations.
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun ExpressiveBurst(
-    color: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
-) {
-    androidx.compose.foundation.layout.Box(
-        modifier
-            .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
-            .background(color),
-    )
-}
-
 /** Consistent expressive heading for the remaining dialog shells. */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable

@@ -57,11 +57,18 @@ fun WeekStrip(store: Store, endDay: String) {
                 val isSelected = d == selected
                 val shape = MaterialTheme.shapes.medium
                 val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
+                val dayDescription = buildString {
+                    append(prettyDate(d))
+                    if (t.entryCount == 0 && t.shiftCount == 0) append(", no entries")
+                    else append(", net RM ${rm(t.net)}")
+                    if (isSelected) append(", selected")
+                }
                 Column(
                     Modifier.weight(1f)
                         .clip(shape)
                         .background(if (isSelected) scheme.surfaceContainerHigh else scheme.surfaceContainerLow)
                         .then(if (isSelected) Modifier.border(1.dp, scheme.primary, shape) else Modifier)
+                        .semantics(mergeDescendants = true) { contentDescription = dayDescription }
                         .padding(vertical = Space.s),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

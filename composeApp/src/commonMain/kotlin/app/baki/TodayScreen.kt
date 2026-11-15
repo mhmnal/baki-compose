@@ -60,6 +60,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -207,9 +208,16 @@ fun TodayScreen(
                                 )
                             }
                             Spacer(Modifier.height(Space.m))
-                            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                                HeroStat("IN", "RM ${rm(t.income)}", heroInk, scheme.tertiary, Modifier.weight(1f))
-                                HeroStat("OUT", "RM ${rm(t.expense)}", heroInk, scheme.error, Modifier.weight(1f))
+                            if (LocalDensity.current.fontScale >= 1.6f) {
+                                Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                                    HeroStat("IN", "RM ${rm(t.income)}", heroInk, scheme.tertiary, Modifier.fillMaxWidth())
+                                    HeroStat("OUT", "RM ${rm(t.expense)}", heroInk, scheme.error, Modifier.fillMaxWidth())
+                                }
+                            } else {
+                                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                                    HeroStat("IN", "RM ${rm(t.income)}", heroInk, scheme.tertiary, Modifier.weight(1f))
+                                    HeroStat("OUT", "RM ${rm(t.expense)}", heroInk, scheme.error, Modifier.weight(1f))
+                                }
                             }
                         }
                     }
@@ -226,19 +234,36 @@ fun TodayScreen(
                         .background(scheme.surfaceContainerLow)
                         .padding(horizontal = Space.m, vertical = Space.m),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "FOOD FUND",
-                            color = scheme.onSurfaceVariant,
-                            letterSpacing = 1.2.sp,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        )
-                        Spacer(Modifier.weight(1f))
-                        Text(
-                            "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                            color = if (f.over) scheme.error else scheme.onSurface,
-                            style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
-                        )
+                    if (LocalDensity.current.fontScale >= 1.6f) {
+                        Column {
+                            Text(
+                                "FOOD FUND",
+                                color = scheme.onSurfaceVariant,
+                                letterSpacing = 1.2.sp,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Spacer(Modifier.height(Space.xxs))
+                            Text(
+                                "RM ${rm(f.spent)} / ${rm(f.cap)}",
+                                color = if (f.over) scheme.error else scheme.onSurface,
+                                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+                            )
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "FOOD FUND",
+                                color = scheme.onSurfaceVariant,
+                                letterSpacing = 1.2.sp,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                "RM ${rm(f.spent)} / ${rm(f.cap)}",
+                                color = if (f.over) scheme.error else scheme.onSurface,
+                                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+                            )
+                        }
                     }
                     Spacer(Modifier.height(Space.s))
                     LinearWavyProgressIndicator(
@@ -581,7 +606,12 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
                 Text(
                     prettyDate(day),
                     color = scheme.onSurface,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = if (LocalDensity.current.fontScale >= 1.6f) 2 else 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    style = if (LocalDensity.current.fontScale >= 1.6f)
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    else MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Text(
                     if (isToday) "a day in the life" else weekdayShort(day),

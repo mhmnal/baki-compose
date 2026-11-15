@@ -11,10 +11,10 @@ Two surfaces, one ledger:
 | Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.43.33** (`versionCode` 164+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.43.34** (`versionCode` 165+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **204 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -90,11 +90,11 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.43.33
+./scripts/release.sh 0.43.34
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.43.33.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.43.34.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync

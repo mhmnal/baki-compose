@@ -69,6 +69,21 @@ class UiContractTest {
     }
 
     @Test
+    fun dayStripHasSpokenSummaries() = runSkikoComposeUiTest(
+        size = Size(720f, 1600f), density = Density(2f),
+    ) {
+        PhonePreview.active = true
+        try {
+            setContent { BakiTheme("light") { App(app()) } }
+            waitForIdle()
+            // The strip merges each cell into one announcement instead of reading four fragments.
+            onNodeWithContentDescription(prettyDate(todayIso()), substring = true).assertExists()
+        } finally {
+            PhonePreview.active = false
+        }
+    }
+
+    @Test
     fun wideRailStartsExpanded() = runSkikoComposeUiTest(
         size = Size(1760f, 1600f), density = Density(2f),
     ) {

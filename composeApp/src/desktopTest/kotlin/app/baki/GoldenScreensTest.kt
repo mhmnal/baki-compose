@@ -76,6 +76,16 @@ class GoldenScreensTest {
                         )
                     }
                 },
+                Shot("today-360-font-200", 360, 1000, fontScale = 2f, dark = false) {
+                    BakiTheme(mode = "light") {
+                        TodayScreen(
+                            repo = fixture, day = today, today = today,
+                            onDay = {}, onPayout = {}, onPayouts = {}, onQuickAdd = { _, _ -> },
+                            onEditEntry = {}, onDeleteEntry = {}, onPreset = {}, onSeeAll = {},
+                            onAdd = {}
+                        )
+                    }
+                },
                 Shot("summary-360-light", 360, 800, dark = false) {
                     BakiTheme(mode = "light") {
                         SummaryScreen(repo = fixture, store = store, month = month, onMonth = {})

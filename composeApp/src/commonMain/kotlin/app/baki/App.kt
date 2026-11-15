@@ -1002,13 +1002,6 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
         Box {
-            ExpressiveBurst(
-                color = accent.copy(alpha = 0.13f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(170.dp)
-                    .offset(x = 54.dp, y = (-58).dp),
-            )
             Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LiveTrace(
@@ -2841,10 +2834,6 @@ private fun ShiftDialog(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Box {
-                        ExpressiveBurst(
-                            color = scheme.tertiaryContainer.copy(alpha = 0.55f),
-                            modifier = Modifier.align(Alignment.TopEnd).size(130.dp).offset(x = 42.dp, y = (-40).dp),
-                        )
                         Column(Modifier.padding(Space.m)) {
                             Text(
                                 "ESTIMATED TAKE",
