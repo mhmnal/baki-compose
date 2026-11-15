@@ -140,7 +140,6 @@ private fun AppContent(repo: BakiRepo) {
     var tab by remember { mutableStateOf(PhonePreview.initialTab) }
     var adding by remember { mutableStateOf(0) }   // 0 none, 2 entry, 3 shift, 4 payout
     var addMenuOpen by remember { mutableStateOf(false) }
-    var dayPage by remember { mutableStateOf<String?>(null) }
     var day by remember { mutableStateOf(todayIso()) }
     var month by remember { mutableStateOf(todayIso().take(7)) }
     var todayTick by remember { mutableStateOf(todayIso()) }
@@ -220,9 +219,8 @@ private fun AppContent(repo: BakiRepo) {
         if (pendingAction != null) BakiIntents.pending = null
     }
 
-    PlatformBackHandler(enabled = adding != 0 || dayPage != null || tab != 0) {
+    PlatformBackHandler(enabled = adding != 0 || tab != 0) {
         if (adding != 0) { adding = 0; editingEntry = null; editingShift = null; presetCat = null }
-        else if (dayPage != null) dayPage = null
         else if (tab != 0) tab = 0
     }
 
@@ -329,7 +327,6 @@ private fun AppContent(repo: BakiRepo) {
                     },
                     onSeeAll = { tab = 1 },
                     onHeaderCollapsed = { headerCollapsed = it },
-                    onOpenDayPage = { dayPage = it },
                 )
                 1 -> SpendingScreen(
                     repo = repo,
@@ -370,7 +367,7 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // Adaptive navigation: rail on tablets, bar on phones.
-    if (wide && !sheetOpen && dayPage == null && wideRailState != null) {
+    if (wide && !sheetOpen && wideRailState != null) {
         val expanded = wideRailState.currentValue == WideNavigationRailValue.Expanded
         WideNavigationRail(
             state = wideRailState,
@@ -429,7 +426,7 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // Expressive short navigation bar on compact screens.
-    if (!wide && !sheetOpen && dayPage == null) {
+    if (!wide && !sheetOpen) {
         ShortNavigationBar(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -460,7 +457,7 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // M3 Expressive primary action menu.
-    if (!wide && tab == 0 && !repo.readOnly && repo.live == null && dayPage == null) {
+    if (!wide && tab == 0 && !repo.readOnly && repo.live == null) {
         FloatingActionButtonMenu(
             expanded = addMenuOpen,
             modifier = Modifier.align(Alignment.BottomEnd).testTag("quick-actions")
@@ -537,18 +534,6 @@ private fun AppContent(repo: BakiRepo) {
         if (repo.live != null) addMenuOpen = false
     }
 
-    dayPage?.let { pageDate ->
-        DayPage(
-            repo = repo,
-            day = pageDate,
-            onDay = { dayPage = it },
-            onClose = { dayPage = null },
-            onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
-            onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
-            onAddEntry = { day = pageDate; editingEntry = null; adding = 2 },
-            onEditShift = { editingShift = it; adding = 3 },
-        )
-    }
 
     // ---- level 2: the sheets sit above everything, on a scrim over the blurred app ----
     payoutsTarget?.let { target ->

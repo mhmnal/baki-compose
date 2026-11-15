@@ -393,3 +393,10 @@ No financial feature was removed.
 - Added a clock-controlled connected-group shape-morph test.
 - The geometry test exposed a real 40dp FAB gap caused by a hard-coded 80dp nav height; the FAB now anchors to the measured bar height.
 - 203 tests, 0 failures.
+
+## 0.43.10 Day Page removal
+
+- Removed the separate Day Page and its Today link.
+- Removed the receipt picker/preview UI and platform receipt helpers.
+- Day notes, closes and receipt fields remain in the schema so existing servers/backups stay compatible; they are no longer exposed in the UI.
+- Today keeps the compact entry-count header only.

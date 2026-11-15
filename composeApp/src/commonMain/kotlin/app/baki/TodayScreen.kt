@@ -90,7 +90,6 @@ fun TodayScreen(
     onSeeAll: () -> Unit,
     onAdd: () -> Unit,
     onHeaderCollapsed: (Boolean) -> Unit = {},
-    onOpenDayPage: (String) -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     val listState = rememberLazyListState()
@@ -114,8 +113,6 @@ fun TodayScreen(
     val shift = shifts.maxByOrNull { it.updated }
     val scope = rememberCoroutineScope()
     val quick = remember(store) { quickAdds(store) }
-    val dayClosed = store.dayCloses[day]?.closed == true
-
 
 
     PullToRefreshBox(
@@ -415,27 +412,12 @@ fun TodayScreen(
         }
 
         item {
-            // reserve the floating + gutter so the larger label never runs underneath it
-            Row(Modifier.fillMaxWidth().padding(end = 68.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES" + if (dayClosed) " · CLOSED" else "",
-                    color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-                Spacer(Modifier.weight(1f))
-                Box(
-                    modifier = Modifier
-                        .heightIn(min = Control.primary)
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable { onOpenDayPage(day) }
-                        .semantics { role = Role.Button }
-                        .padding(horizontal = Space.s),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "day page →", color = scheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
+            Text(
+                "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ENTRIES",
+                color = scheme.onSurfaceVariant,
+                letterSpacing = 1.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
         }
 
         items(shifts, key = { it.id }) { sh ->

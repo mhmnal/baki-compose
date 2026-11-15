@@ -63,7 +63,7 @@ class GoldenScreensTest {
                             repo = fixture, day = today, today = today,
                             onDay = {}, onPayout = {}, onPayouts = {}, onQuickAdd = { _, _ -> },
                             onEditEntry = {}, onDeleteEntry = {}, onPreset = {}, onSeeAll = {},
-                            onAdd = {}, onOpenDayPage = {},
+                            onAdd = {}
                         )
                     }
                 },
@@ -78,7 +78,7 @@ class GoldenScreensTest {
                             repo = fixture, day = today, today = today,
                             onDay = {}, onPayout = {}, onPayouts = {}, onQuickAdd = { _, _ -> },
                             onEditEntry = {}, onDeleteEntry = {}, onPreset = {}, onSeeAll = {},
-                            onAdd = {}, onOpenDayPage = {},
+                            onAdd = {}
                         )
                     }
                 },
