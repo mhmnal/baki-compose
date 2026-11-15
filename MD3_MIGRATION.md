@@ -514,3 +514,10 @@ No financial feature was removed.
 
 - Limit writes now run in the app scope, not the sheet scope, so dismissing the sheet cannot cancel them.
 - 203 tests, 0 failures.
+
+## 0.43.26 route sync
+
+- Sync now pulls sealed routes from the server as well as uploading them.
+- Ending a live shift triggers an immediate route upload after finalization.
+- Stopping the tracker flushes buffered points before dropping the provider.
+- 203 tests, 0 failures.

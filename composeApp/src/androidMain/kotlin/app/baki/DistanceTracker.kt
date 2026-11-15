@@ -169,6 +169,9 @@ object DistanceTracker {
     }
 
     fun stop() {
+        // A service restart or process teardown can happen between the 20-point / 30-second
+        // batches. Flush those fixes onto the current live route before dropping the provider.
+        flushRouteBuffer()
         (fused as? com.google.android.gms.location.FusedLocationProviderClient)?.let {
             (callback as? LocationCallback)?.let { cb -> runCatching { it.removeLocationUpdates(cb) } }
         }
@@ -177,6 +180,13 @@ object DistanceTracker {
         val l = listener
         if (lm != null && l != null) runCatching { lm.removeUpdates(l) }
         manager = null; listener = null
+    }
+
+    private fun flushRouteBuffer() {
+        val live = runCatching { loadLive() }.getOrNull() ?: return
+        val batch = drainBuffer()
+        if (batch.isEmpty()) return
+        writeScope.launch { RouteStore.append(live.id, startDate(live.start), batch) }
     }
 
     private fun accept(loc: Location) {

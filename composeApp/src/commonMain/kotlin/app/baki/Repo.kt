@@ -123,6 +123,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 // 304: the server has nothing new, but our outbox may still hold local edits
                 if (config.allowWrites && pendingPush) pushAll()
                 runCatching { pushRoutes() }
+                runCatching { pullRoutes(addDays(todayIso(), -45)) }
                 status = "synced"
                 lastError = null
                 lastSyncAt = nowMillis()
@@ -140,6 +141,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             // upload only when we hold something the server did not get last time
             if (config.allowWrites && pendingPush) pushAll()
             runCatching { pushRoutes() }
+            runCatching { pullRoutes(addDays(todayIso(), -45)) }
             status = "synced"
             lastError = null
             lastSyncAt = nowMillis()
@@ -581,6 +583,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             saveLocal(store)
             pendingPush = false
             status = "synced"
+            // route is finalized above; try immediately rather than waiting for the next tick
+            runCatching { pushRoutes() }
         } catch (e: Exception) {
             status = "cached"
             lastError = e.message
