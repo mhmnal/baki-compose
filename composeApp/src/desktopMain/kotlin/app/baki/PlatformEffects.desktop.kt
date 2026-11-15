@@ -40,4 +40,5 @@ actual object PlatformEffects {
 }
 
 /** No Monet on the desktop. */
-actual fun dynamicColorScheme(dark: Boolean): androidx.compose.material3.ColorScheme? = null
+@androidx.compose.runtime.Composable
+actual fun rememberDynamicColorScheme(dark: Boolean): androidx.compose.material3.ColorScheme? = null

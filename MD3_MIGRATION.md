@@ -348,3 +348,7 @@ No financial feature was removed.
 - Restored the earlier live-shift route trace: moving dashed line and travelling head dot, frozen when paused or when reduced motion is enabled.
 - Hid the target-streak badge for a one-day streak; it now appears only from two consecutive days.
 - Centered the Today “day page” action inside its 48dp target so it aligns with the entry-count label.
+
+## 0.43.4 dynamic colour
+
+- The Monet scheme was cached by light/dark alone, so wallpaper palette changes while the app remained alive were ignored. Added a WallpaperManager colour listener and wallpaper-change receiver to recompute the Material scheme in place.

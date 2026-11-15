@@ -40,7 +40,7 @@ fun BakiTheme(
         else -> isSystemInDarkTheme()
     }
     val dynamic = if (!Caps.isDesktop || PhonePreview.active) {
-        remember(dark) { dynamicColorScheme(dark) }
+        rememberDynamicColorScheme(dark)
     } else null
     val scheme = dynamic ?: if (dark) darkColorScheme() else lightColorScheme()
     MaterialTheme(
@@ -53,4 +53,5 @@ fun BakiTheme(
 }
 
 /** Wallpaper-derived MD3 scheme; null where the platform has no Monet. */
-expect fun dynamicColorScheme(dark: Boolean): ColorScheme?
+@Composable
+expect fun rememberDynamicColorScheme(dark: Boolean): ColorScheme?
