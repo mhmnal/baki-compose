@@ -4,7 +4,6 @@ import androidx.compose.foundation.shape.CircleShape
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialShapes
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.toShape
 
@@ -23,7 +22,9 @@ import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -148,164 +149,103 @@ fun TodayScreen(
         item { DayPill(day, today, onDay) }
 
         item {
-            BoxWithConstraints {
-                val largeText = LocalDensity.current.fontScale >= 1.6f
-                Column(Modifier.fillMaxWidth()) {
+            val largeText = LocalDensity.current.fontScale >= 1.6f
+            Column(Modifier.fillMaxWidth()) {
+                if (largeText) {
+                    Text(
+                        "TODAY'S TAKE",
+                        color = scheme.onSurfaceVariant,
+                        letterSpacing = 1.4.sp,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            if (t.net >= 0) "TODAY'S TAKE" else "DAMAGE REPORT",
+                            "RM",
                             color = scheme.onSurfaceVariant,
-                            letterSpacing = 1.6.sp,
+                            letterSpacing = 1.sp,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        val perHour = operating.perHour
+                        if (operating.shiftCount > 0 && perHour != null) {
+                            TargetBadge(perHour >= cfg.targetRate, repo.config.reducedMotion)
+                        }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "TODAY'S TAKE",
+                            color = scheme.onSurfaceVariant,
+                            letterSpacing = 1.4.sp,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             modifier = Modifier.weight(1f),
                         )
+                        Text(
+                            "RM",
+                            color = scheme.onSurfaceVariant,
+                            letterSpacing = 1.sp,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                        Spacer(Modifier.width(Space.s))
                         val perHour = operating.perHour
                         if (operating.shiftCount > 0 && perHour != null) {
-                            TargetBadge(
-                                beat = perHour >= cfg.targetRate,
-                                reducedMotion = repo.config.reducedMotion,
+                            TargetBadge(perHour >= cfg.targetRate, repo.config.reducedMotion)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(Space.xs))
+                if (largeText) {
+                    SplitInkAmount(
+                        cents = t.net, reducedMotion = repo.config.reducedMotion,
+                        fontFamily = archivoDisplayFontFamily(),
+                        upper = scheme.primary, lower = scheme.primaryContainer,
+                        upperInk = scheme.onPrimary, lowerInk = scheme.onPrimaryContainer,
+                        seam = scheme.tertiary, largeText = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(Space.m))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Space.m),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        FoodRing(food, Modifier.size(96.dp), showCenter = false)
+                        Column(Modifier.weight(1f)) {
+                            Text("FOOD FUND", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                food?.let { if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left" } ?: "no cap set",
+                                color = if (food?.over == true) scheme.error else scheme.onSurface,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             )
                         }
                     }
-                    Spacer(Modifier.height(Space.xs))
-                    Text(
-                        "RM",
-                        color = scheme.onSurfaceVariant,
-                        letterSpacing = 1.sp,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                    Spacer(Modifier.height(Space.xxs))
-                    SplitInkAmount(
-                        cents = t.net,
-                        reducedMotion = repo.config.reducedMotion,
-                        fontFamily = archivoDisplayFontFamily(),
-                        upper = scheme.primary,
-                        lower = scheme.primaryContainer,
-                        upperInk = scheme.onPrimary,
-                        lowerInk = scheme.onPrimaryContainer,
-                        seam = scheme.tertiary,
-                        largeText = largeText,
-                    )
-                }
-            }
-        }
-
-        // Supporting facts are deliberately quieter than the hero number.
-        item {
-            val largeText = LocalDensity.current.fontScale >= 1.6f
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = scheme.surfaceContainerLow,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(horizontal = Space.m, vertical = Space.m)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.l)) {
-                        DayFact("IN", "RM ${rm(t.income)}", scheme.tertiary, Modifier.weight(1f))
-                        DayFact("OUT", "RM ${rm(t.expense)}", scheme.error, Modifier.weight(1f))
-                    }
-                    if (operating.shiftCount > 0) {
-                        Spacer(Modifier.height(Space.s))
-                        val operatingValue = "RM ${rm(operating.net)}" + (operating.perHour?.let { " · ${rm(it)}/h" } ?: "")
-                        if (largeText) {
-                            Column {
-                                Text(
-                                    "OPERATING",
-                                    color = scheme.onSurfaceVariant,
-                                    letterSpacing = 1.2.sp,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                )
-                                Spacer(Modifier.height(Space.xxs))
-                                Text(
-                                    operatingValue,
-                                    color = if (operating.net >= 0) scheme.onSurface else scheme.error,
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        fontFeatureSettings = "tnum",
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                )
-                            }
-                        } else {
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    "OPERATING",
-                                    color = scheme.onSurfaceVariant,
-                                    letterSpacing = 1.2.sp,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(
-                                    operatingValue,
-                                    color = if (operating.net >= 0) scheme.onSurface else scheme.error,
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        fontFeatureSettings = "tnum",
-                                        fontWeight = FontWeight.Bold,
-                                    ),
-                                )
-                            }
-                        }
-                        Text(
-                            "after running costs",
-                            color = scheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.labelSmall,
+                    Spacer(Modifier.height(Space.s))
+                    DayPair(store, day)
+                } else {
+                    Row(
+                        Modifier.fillMaxWidth().height(236.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        SplitInkAmount(
+                            cents = t.net, reducedMotion = repo.config.reducedMotion,
+                            fontFamily = archivoDisplayFontFamily(),
+                            upper = scheme.primary, lower = scheme.primaryContainer,
+                            upperInk = scheme.onPrimary, lowerInk = scheme.onPrimaryContainer,
+                            seam = scheme.tertiary, largeText = false,
+                            modifier = Modifier.weight(0.6f).fillMaxHeight(),
+                        )
+                        TodayRail(
+                            store = store, day = day, food = food,
+                            modifier = Modifier.weight(0.4f).fillMaxHeight(),
                         )
                     }
                 }
-            }
-        }
-
-        food?.let { f ->
-            item {
-                val fraction = if (f.cap > 0) (f.spent.toFloat() / f.cap).coerceIn(0f, 1f) else 0f
-                Column(
-                    Modifier.fillMaxWidth()
-                        .clip(MaterialTheme.shapes.large)
-                        .background(scheme.surfaceContainerLow)
-                        .padding(horizontal = Space.m, vertical = Space.m),
-                ) {
-                    if (LocalDensity.current.fontScale >= 1.6f) {
-                        Column {
-                            Text(
-                                "FOOD FUND",
-                                color = scheme.onSurfaceVariant,
-                                letterSpacing = 1.2.sp,
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            )
-                            Spacer(Modifier.height(Space.xxs))
-                            Text(
-                                "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                                color = if (f.over) scheme.error else scheme.onSurface,
-                                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
-                            )
-                        }
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "FOOD FUND",
-                                color = scheme.onSurfaceVariant,
-                                letterSpacing = 1.2.sp,
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            )
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                                color = if (f.over) scheme.error else scheme.onSurface,
-                                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(Space.s))
-                    LinearWavyProgressIndicator(
-                        progress = { fraction },
-                        modifier = Modifier.fillMaxWidth().height(12.dp),
-                        color = if (f.over) scheme.error else scheme.tertiary,
-                        trackColor = scheme.outlineVariant.copy(alpha = 0.55f),
-                    )
-                    Spacer(Modifier.height(Space.s))
+                if (operating.shiftCount > 0) {
+                    Spacer(Modifier.height(Space.xs))
                     Text(
-                        if (f.over) "RM ${rm(-f.remaining)} over. The snacks won."
-                        else "RM ${rm(f.remaining)} left for snacks.",
-                        color = if (f.over) scheme.error else scheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        "OPERATING · RM ${rm(operating.net)}" + (operating.perHour?.let { " · ${rm(it)}/h" } ?: "") + " · after running costs",
+                        color = if (operating.net >= 0) scheme.onSurfaceVariant else scheme.error,
+                        style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }
@@ -328,8 +268,6 @@ fun TodayScreen(
                 }
             }
         }
-
-        item { WeekStrip(store, day) }
 
         val paidUntil = coverPaidUntil(store)
         if (paidUntil != null && nowMillis() < paidUntil) {
@@ -595,62 +533,43 @@ private fun QuickAction(
     
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val isToday = day == today
+    val largeText = LocalDensity.current.fontScale >= 1.6f
     Surface(
         color = scheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xs),
+            Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xxs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            horizontalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
             ShapeNavButton(
-                label = "‹",
-                enabled = true,
-                onClick = { onChange(addDays(day, -1)) },
+                label = "‹", enabled = true, onClick = { onChange(addDays(day, -1)) },
                 description = "Previous day",
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(
-                        Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(scheme.primary),
-                    )
-                    Text(
-                        if (isToday) "TODAY" else weekdayShort(day).uppercase(),
-                        color = scheme.primary,
-                        letterSpacing = 1.4.sp,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
+                Text(
+                    if (isToday) "TODAY" else weekdayShort(day).uppercase(),
+                    color = scheme.primary,
+                    letterSpacing = 1.4.sp,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                )
                 Text(
                     prettyDate(day),
                     color = scheme.onSurface,
-                    maxLines = if (LocalDensity.current.fontScale >= 1.6f) 2 else 1,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    style = if (LocalDensity.current.fontScale >= 1.6f)
-                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    else MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                )
-                Text(
-                    if (isToday) "a day in the life" else weekdayShort(day),
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = (if (largeText) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium)
+                        .copy(fontWeight = FontWeight.Bold),
                 )
             }
             ShapeNavButton(
-                label = "›",
-                enabled = day < today,
-                onClick = { onChange(addDays(day, 1)) },
+                label = "›", enabled = day < today, onClick = { onChange(addDays(day, 1)) },
                 description = "Next day",
             )
         }
@@ -766,6 +685,7 @@ private fun SplitInkAmount(
     lowerInk: Color,
     seam: Color,
     largeText: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val motion = MaterialTheme.motionScheme
     val shown = remember { Animatable(0f) }
@@ -784,7 +704,7 @@ private fun SplitInkAmount(
     val shape = MaterialTheme.shapes.extraLarge
     val cardHeight = if (largeText) 175.dp else 210.dp
     Box(
-        Modifier
+        modifier
             .fillMaxWidth()
             .height(cardHeight)
             .clip(shape)
@@ -821,22 +741,104 @@ private fun SplitInkAmount(
 }
 
 @Composable
-private fun DayFact(label: String, value: String, dot: Color, modifier: Modifier = Modifier) {
-    Column(modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Box(Modifier.size(6.dp).clip(CircleShape).background(dot))
-            Text(
-                label,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+private fun TodayRail(store: Store, day: String, food: DailyFood?, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "FOOD",
+            color = scheme.onSurfaceVariant,
+            letterSpacing = 1.2.sp,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        )
+        Spacer(Modifier.height(Space.xxs))
+        if (food != null) FoodRing(food, Modifier.size(84.dp)) else Text("—", color = scheme.onSurfaceVariant)
+        Spacer(Modifier.weight(1f))
+        DayPair(store, day)
+    }
+}
+
+@Composable
+private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter: Boolean = true) {
+    val scheme = MaterialTheme.colorScheme
+    val fraction = if (food != null && food.cap > 0) (food.spent.toFloat() / food.cap).coerceIn(0f, 1f) else 0f
+    val over = food?.over == true
+    val color = if (over) scheme.error else scheme.tertiary
+    val description = food?.let {
+        "Food fund, RM ${rm(it.spent)} spent of RM ${rm(it.cap)}, " +
+            if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left"
+    } ?: "Food fund not set"
+    Box(modifier.semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = 7.dp.toPx()
+            drawArc(
+                color = scheme.surfaceContainerHigh,
+                startAngle = -90f, sweepAngle = 360f, useCenter = false,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+            )
+            drawArc(
+                color = color,
+                startAngle = -90f, sweepAngle = 360f * fraction, useCenter = false,
+                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
             )
         }
-        Spacer(Modifier.height(2.dp))
+        if (showCenter) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clearAndSetSemantics {},
+            ) {
+                Text(
+                    food?.let { "RM ${rm(kotlin.math.abs(it.remaining))}" } ?: "—",
+                    color = if (over) scheme.error else scheme.onSurface,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    if (over) "over" else "left",
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayPair(store: Store, day: String, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+        MiniDay(store, addDays(day, -1), false, Modifier.weight(1f))
+        MiniDay(store, day, true, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun MiniDay(store: Store, iso: String, selected: Boolean, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val t = dayTotals(store, iso)
+    val shape = MaterialTheme.shapes.medium
+    val empty = t.entryCount == 0 && t.shiftCount == 0
+    val description = buildString {
+        append(prettyDate(iso))
+        if (empty) append(", no entries") else append(", net RM ${rm(t.net)}")
+        if (selected) append(", selected")
+    }
+    Column(
+        modifier
+            .clip(shape)
+            .background(if (selected) scheme.surfaceContainerHigh else scheme.surfaceContainerLow)
+            .then(if (selected) Modifier.border(1.dp, scheme.primary, shape) else Modifier)
+            .padding(vertical = 6.dp, horizontal = 4.dp)
+            .semantics(mergeDescendants = true) { contentDescription = description },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
-            value,
-            color = MaterialTheme.colorScheme.onSurface,
+            iso.takeLast(2),
+            color = if (selected) scheme.primary else scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        )
+        Text(
+            if (empty) "–" else (t.net / 100).toInt().toString(),
+            color = if (selected) scheme.onSurface else scheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+            maxLines = 1,
         )
     }
 }

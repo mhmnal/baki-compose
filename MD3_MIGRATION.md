@@ -600,3 +600,13 @@ No financial feature was removed.
 - Horizontal split ink: white numeral on fig above, fig numeral on lavender below, gold seam.
 - Removed the old Barlow font and license; added Archivo Expanded 800 + OFL.
 - 205 tests, 0 failures.
+
+## 0.43.38 compact Today
+
+- Date stage compressed to a single short row.
+- Hero number now sits in a 60% left tile; field split remains horizontal.
+- Food Fund is a ring in the right rail with remaining ringgit.
+- Right rail ends in selected + previous day cards; the 7-day strip is gone.
+- Removed IN/OUT facts and the DAMAGE REPORT title; operating is one caption.
+- 200% font scale stacks the mosaic cleanly.
+- 205 tests, 0 failures.
