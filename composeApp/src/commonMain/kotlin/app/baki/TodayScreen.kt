@@ -645,6 +645,7 @@ private fun SplitInkAmount(
 ) {
     val motion = MaterialTheme.motionScheme
     val shown = remember { Animatable(0f) }
+    var measuredLineHeight by remember { mutableStateOf(0) }
     LaunchedEffect(cents, reducedMotion) {
         if (reducedMotion) shown.snapTo(cents.toFloat())
         else shown.animateTo(cents.toFloat(), motion.defaultSpatialSpec())
@@ -659,7 +660,11 @@ private fun SplitInkAmount(
     )
     val shape = MaterialTheme.shapes.extraLarge
     val cardHeight = if (largeText) 175.dp else 206.dp
-    val verticalScale = if (largeText) 1.8f else 2.05f
+    val cardHeightPx = with(LocalDensity.current) { cardHeight.toPx() }
+    // Digits occupy roughly 72% of the line box; scale that ink height to the card.
+    val verticalScale = if (measuredLineHeight > 0) {
+        (cardHeightPx / measuredLineHeight * 1.18f).coerceIn(1f, 3.2f)
+    } else 1f
     Box(
         modifier
             .fillMaxWidth()
@@ -682,7 +687,9 @@ private fun SplitInkAmount(
             Text(
                 text, color = upperInk, style = style, maxLines = 1, softWrap = false, autoSize = auto,
                 modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l)
-                    .graphicsLayer { scaleY = verticalScale }.clearAndSetSemantics {},
+                    .graphicsLayer { scaleY = verticalScale }
+                    .clearAndSetSemantics {},
+                onTextLayout = { layout -> if (layout.size.height != measuredLineHeight) measuredLineHeight = layout.size.height },
             )
         }
         Box(

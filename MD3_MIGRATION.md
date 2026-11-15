@@ -633,3 +633,10 @@ No financial feature was removed.
 - Start live shift is always visible inside the collapsed shift card.
 - Explicit no-shift start card added.
 - 205 tests, 0 failures.
+
+## 0.43.42 auto-fill hero
+
+- Hero numeral now measures its line height and scales vertically to fill the card.
+- No fixed stretch factors.
+- Start live shift is always visible; explicit no-shift start card.
+- 205 tests, 0 failures.
