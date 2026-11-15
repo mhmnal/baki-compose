@@ -25,7 +25,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -605,17 +604,6 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
                 description = "Next day",
             )
         }
-    }
-}
-
-@Composable
-fun PillButton(label: String, bg: Color, ink: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Box(
-        modifier.heightIn(min = Control.primary).clip(CircleShape).background(bg).tactileClickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = ink,
-            modifier = Modifier.padding(horizontal = Space.l, vertical = 11.dp), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
     }
 }
 

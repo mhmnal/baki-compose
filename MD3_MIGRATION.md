@@ -521,3 +521,9 @@ No financial feature was removed.
 - Ending a live shift triggers an immediate route upload after finalization.
 - Stopping the tracker flushes buffered points before dropping the provider.
 - 203 tests, 0 failures.
+
+## 0.43.27 cleanup
+
+- Removed dead Chip, DayHeader, PillButton and tactileClickable code.
+- Removed the unused Source Serif license resource.
+- 203 tests, 0 failures.

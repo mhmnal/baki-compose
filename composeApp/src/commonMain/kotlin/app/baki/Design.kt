@@ -113,32 +113,6 @@ fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {
     }
 }
 
-/** Press feedback for the few surfaces that are not Material buttons. */
-@Composable
-fun Modifier.tactileClickable(
-    enabled: Boolean = true,
-    haptic: Boolean = true,
-    onClick: () -> Unit,
-): Modifier {
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.98f else 1f,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-        label = "pressScale",
-    )
-    return this.graphicsLayer {
-        scaleX = scale; scaleY = scale
-    }.clickable(
-        interactionSource = interaction,
-        indication = LocalIndication.current,
-        enabled = enabled,
-    ) {
-        if (haptic) PlatformEffects.haptic(Haptic.Tick)
-        onClick()
-    }
-}
-
 /**
  * The one empty state: a short line, optionally a hint. Same voice everywhere, no trailing "."
  * on the title, a real sentence in the hint.

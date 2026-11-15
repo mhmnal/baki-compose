@@ -826,21 +826,6 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
 }
 
 @Composable
-fun Chip(text: String, tint: Color, modifier: Modifier = Modifier) {
-    val scheme = MaterialTheme.colorScheme
-    
-        Row(
-            Modifier.clip(CircleShape).background(scheme.surfaceContainerLow).padding(horizontal = Space.l, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(7.dp).clip(CircleShape).background(tint))
-            Spacer(Modifier.width(Space.s))
-            Text(text, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-        }
-    
-}
-
-@Composable
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 fun RowCard(
     title: String,
@@ -1153,27 +1138,6 @@ private fun LiveMetric(label: String, value: String, tint: Color) {
     ) {
         Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Text(value, color = tint, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
-    }
-}
-
-@Composable
-private fun DayHeader(day: String, today: String, onChange: (String) -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val atToday = day >= today
-    Row(
-        Modifier.fillMaxWidth().clip(CircleShape).background(scheme.surfaceContainerLow).padding(vertical = Space.s),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = { onChange(addDays(day, -1)) }) {
-            Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge )
-        }
-        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (day == today) "Today" else day, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
-            Text(if (day == today) day else "tap ‹ › to move", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
-        }
-        TextButton(enabled = !atToday, onClick = { onChange(addDays(day, 1)) }) {
-            Text("›", color = if (atToday) scheme.onSurfaceVariant.copy(alpha = 0.35f) else scheme.onSurface, style = MaterialTheme.typography.bodyLarge )
-        }
     }
 }
 
