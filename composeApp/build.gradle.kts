@@ -27,7 +27,12 @@ kotlin {
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
             }
         }
-        val commonTest by getting { dependencies { implementation(kotlin("test")) } }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.compose.ui:ui-test:1.12.2")
+            }
+        }
         val androidMain by getting {
             dependencies {
                 implementation("androidx.activity:activity-compose:1.9.3")
@@ -56,8 +61,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 139
-        versionName = "0.43.8"
+        versionCode = 140
+        versionName = "0.43.9"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"

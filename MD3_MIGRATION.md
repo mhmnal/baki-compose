@@ -383,3 +383,13 @@ No financial feature was removed.
 - Added pixel-tolerance comparison, with a documented update switch (`-Dbaki.golden.update=true`).
 - Goldens immediately exposed and fixed a wrapped “+ Payout” label at 360dp, a stale live-shift fixture, and a positive worst-day shown in error red.
 - 199 tests, 0 failures.
+
+## 0.43.9 geometry and motion tests
+
+- Added Compose UI contract tests using `runSkikoComposeUiTest`:
+  - FAB sits 0–12dp above the measured ShortNavigationBar.
+  - Connected button segments meet 48dp dimensions.
+  - Wide rail starts expanded and compact nav is absent.
+- Added a clock-controlled connected-group shape-morph test.
+- The geometry test exposed a real 40dp FAB gap caused by a hard-coded 80dp nav height; the FAB now anchors to the measured bar height.
+- 203 tests, 0 failures.

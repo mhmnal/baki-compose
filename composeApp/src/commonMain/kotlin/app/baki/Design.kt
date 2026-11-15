@@ -5,6 +5,7 @@ import androidx.graphics.shapes.rectangle
 import androidx.compose.material3.toPath
 
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.testTag
 
 
 import androidx.compose.foundation.layout.Arrangement
@@ -188,6 +189,7 @@ fun ConnectedChoiceGroup(
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = Control.primary)
+                    .testTag("baki-choice")
                     .semantics { role = androidx.compose.ui.semantics.Role.RadioButton },
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Space.s, vertical = Space.xs),
             ) {

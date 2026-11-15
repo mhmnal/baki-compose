@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.ui.platform.testTag
+
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 import androidx.compose.ui.layout.onSizeChanged
@@ -237,6 +239,7 @@ private fun AppContent(repo: BakiRepo) {
             )
         } else null
         var railWidthPx by remember { mutableIntStateOf(0) }
+        var navHeightPx by remember { mutableIntStateOf(0) }
         val railStart = if (wide && railWidthPx > 0) {
             with(LocalDensity.current) { railWidthPx.toDp() }
         } else if (wide) 88.dp else 0.dp
@@ -244,6 +247,9 @@ private fun AppContent(repo: BakiRepo) {
             railStart + ((maxWidth - railStart - 960.dp).coerceAtLeast(0.dp) / 2)
         } else 0.dp
         val barHeight = 80.dp
+        val measuredNavHeight = if (navHeightPx > 0) {
+            with(LocalDensity.current) { navHeightPx.toDp() }
+        } else barHeight
         val fabSize = 56.dp
         // sit above the gesture bar, not on top of it
         val gestureInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -411,10 +417,12 @@ private fun AppContent(repo: BakiRepo) {
                     icon = { Icon(icons[i], contentDescription = null) },
                     label = { Text(label) },
                     railExpanded = expanded,
-                    modifier = Modifier.semantics {
-                        role = Role.Tab
-                        selected = tab == i
-                    },
+                    modifier = Modifier
+                        .testTag("rail-$label")
+                        .semantics {
+                            role = Role.Tab
+                            selected = tab == i
+                        },
                 )
             }
         }
@@ -423,7 +431,10 @@ private fun AppContent(repo: BakiRepo) {
     // Expressive short navigation bar on compact screens.
     if (!wide && !sheetOpen && dayPage == null) {
         ShortNavigationBar(
-            modifier = Modifier.align(Alignment.BottomCenter),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .onSizeChanged { navHeightPx = it.height }
+                .testTag("bottom-navigation"),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ) {
@@ -437,10 +448,12 @@ private fun AppContent(repo: BakiRepo) {
                     label = {
                         Text(label, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
                     },
-                    modifier = Modifier.semantics {
-                        role = Role.Tab
-                        selected = tab == i
-                    },
+                    modifier = Modifier
+                        .testTag("nav-$label")
+                        .semantics {
+                            role = Role.Tab
+                            selected = tab == i
+                        },
                 )
             }
         }
@@ -450,8 +463,12 @@ private fun AppContent(repo: BakiRepo) {
     if (!wide && tab == 0 && !repo.readOnly && repo.live == null && dayPage == null) {
         FloatingActionButtonMenu(
             expanded = addMenuOpen,
-            modifier = Modifier.align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = barHeight + barGap + 8.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).testTag("quick-actions")
+                .padding(
+                    end = 16.dp,
+                    // FloatingActionButtonMenu itself reserves 16dp below the visible button.
+                    bottom = (measuredNavHeight - 8.dp).coerceAtLeast(0.dp),
+                ),
             button = {
                 ToggleFloatingActionButton(
                     checked = addMenuOpen,
