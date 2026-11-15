@@ -620,3 +620,9 @@ No financial feature was removed.
 - Hero numerals get a 1.48 vertical stretch.
 - Shift card defaults to a compact summary and expands for details.
 - 205 tests, 0 failures.
+
+## 0.43.40 8dp grid spacing
+
+- Day card cells now use the same 8dp inner gutter as the grid.
+- All Today cards share 8dp outer gutters and 28dp corners.
+- 205 tests, 0 failures.

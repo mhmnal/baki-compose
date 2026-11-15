@@ -786,8 +786,8 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
 private fun DayCard(store: Store, day: String, onDay: (String) -> Unit, modifier: Modifier = Modifier) {
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(
-            Modifier.fillMaxSize().padding(Space.xs),
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            Modifier.fillMaxSize().padding(Space.s),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             MiniDay(store, addDays(day, -1), false, onDay, Modifier.weight(1f).fillMaxHeight())
             MiniDay(store, day, true, onDay, Modifier.weight(1f).fillMaxHeight())
