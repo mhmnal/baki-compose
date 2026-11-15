@@ -14,7 +14,7 @@ Two surfaces, one ledger:
 Current version: **0.43.31** (`versionCode` 162+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **204 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -81,10 +81,10 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 
 ```bash
 # tests (JVM)
-./gradlew :composeApp:desktopTest
+./scripts/gradle-capped.sh :composeApp:desktopTest
 
 # desktop app
-./gradlew :composeApp:run
+./scripts/gradle-capped.sh :composeApp:run
 
 # server (same machine or LAN)
 cd ../grab-tracker && node server.mjs
@@ -139,3 +139,16 @@ Enter the same token in **More → App → API token**. Without it, data, route 
 live-event requests receive `401`. The token is included in portable backups, so
 treat those files as private.
 
+
+## Build memory
+
+Heavy Gradle builds run in a capped cgroup so a memory spike kills the build, not the desktop:
+
+```bash
+./scripts/gradle-capped.sh :composeApp:desktopTest
+./scripts/gradle-capped.sh :composeApp:assembleRelease
+```
+
+The wrapper serializes builds, caps the Gradle and Kotlin JVMs, and stops idle daemons afterwards.
+Direct `./gradlew` builds still inherit the heap/worker caps in `gradle.properties`, but the 6 GB
+cgroup cage only applies through the wrapper. Use `BAKI_KEEP_DAEMONS=1` if you need warm daemons.

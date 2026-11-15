@@ -9,7 +9,7 @@ TOOLS="$ROOT/../.tools"
 BT="$TOOLS/sdk/build-tools/36.0.0"
 KS="$TOOLS/keystore/baki-release.jks"
 
-export JAVA_HOME="$TOOLS/jdk-17.0.21+9"
+export JAVA_HOME="${JAVA_HOME:-$TOOLS/jdk21}"
 export PATH="$JAVA_HOME/bin:$PATH"
 export GRADLE_USER_HOME="$TOOLS/gradle"
 export ANDROID_HOME="$TOOLS/sdk"
@@ -31,7 +31,7 @@ s = re.sub(r'versionName = "[^"]+"', f'versionName = "{v}"', s)
 open(p, 'w', encoding='utf-8').write(s)
 PY
 echo "==> building $VERSION (code $CODE)"
-./gradlew :composeApp:assembleRelease --no-daemon -q
+./scripts/gradle-capped.sh :composeApp:assembleRelease -q
 
 mkdir -p dist
 "$BT/zipalign" -p -f 4 composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk dist/aligned.apk
