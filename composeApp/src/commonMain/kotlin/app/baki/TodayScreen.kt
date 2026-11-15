@@ -138,88 +138,119 @@ fun TodayScreen(
 
         item {
             BoxWithConstraints {
-                val compact = maxWidth < 340.dp || LocalDensity.current.fontScale > 1.15f
+                val largeText = LocalDensity.current.fontScale >= 1.6f
                 val heroInk = scheme.onPrimaryContainer
                 val heroFont = bakiDisplayFontFamily()
+                val amountSize = when {
+                    largeText -> 72.sp
+                    maxWidth < 340.dp -> 108.sp
+                    else -> 132.sp
+                }
                 Surface(
                     shape = MaterialTheme.shapes.extraLarge,
                     color = scheme.primaryContainer,
                     contentColor = heroInk,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Box {
-                        Column(Modifier.padding(Space.l)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(
-                                        if (t.net >= 0) "TODAY'S TAKE" else "DAMAGE REPORT",
-                                        color = heroInk.copy(alpha = 0.78f),
-                                        letterSpacing = 1.5.sp,
-                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    )
-                                    Text(
-                                        if (t.net >= 0) "what the car didn't eat" else "the car ate first",
-                                        color = heroInk.copy(alpha = 0.72f),
-                                        style = MaterialTheme.typography.bodySmall,
-                                    )
-                                }
-                                val perHour = operating.perHour
-                                if (operating.shiftCount > 0 && perHour != null) {
-                                    TargetBadge(
-                                        beat = perHour >= cfg.targetRate,
-                                        reducedMotion = repo.config.reducedMotion,
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.height(Space.s))
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    "RM",
-                                    color = heroInk.copy(alpha = 0.8f),
-                                    modifier = Modifier.padding(bottom = Space.s, end = 6.dp),
-                                    style = MaterialTheme.typography.titleLarge,
-                                )
-                                EasedMoney(
-                                    t.net,
-                                    heroInk,
-                                    heroMoneyStyle(t.net, MaterialTheme.typography).copy(
-                                        fontFamily = heroFont,
-                                        fontFeatureSettings = "tnum",
-                                        letterSpacing = (-0.8).sp,
-                                    ),
-                                    prefix = "",
+                    Column(Modifier.padding(Space.l)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (t.net >= 0) "TODAY'S TAKE" else "DAMAGE REPORT",
+                                color = heroInk.copy(alpha = 0.72f),
+                                letterSpacing = 1.6.sp,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.weight(1f),
+                            )
+                            val perHour = operating.perHour
+                            if (operating.shiftCount > 0 && perHour != null) {
+                                TargetBadge(
+                                    beat = perHour >= cfg.targetRate,
+                                    reducedMotion = repo.config.reducedMotion,
                                 )
                             }
-                            if (operating.shiftCount > 0) {
-                                Spacer(Modifier.height(Space.s))
+                        }
+                        Spacer(Modifier.height(Space.s))
+                        Text(
+                            "RM",
+                            color = heroInk.copy(alpha = 0.62f),
+                            letterSpacing = 1.sp,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                        EasedMoney(
+                            t.net,
+                            heroInk,
+                            heroMoneyStyle(t.net, MaterialTheme.typography).copy(
+                                fontFamily = heroFont,
+                                fontFeatureSettings = "tnum",
+                                fontSize = amountSize,
+                                lineHeight = amountSize,
+                                letterSpacing = (-3).sp,
+                            ),
+                            prefix = "",
+                        )
+                    }
+                }
+            }
+        }
+
+        // Supporting facts are deliberately quieter than the hero number.
+        item {
+            val largeText = LocalDensity.current.fontScale >= 1.6f
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = scheme.surfaceContainerLow,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(horizontal = Space.m, vertical = Space.m)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.l)) {
+                        DayFact("IN", "RM ${rm(t.income)}", scheme.tertiary, Modifier.weight(1f))
+                        DayFact("OUT", "RM ${rm(t.expense)}", scheme.error, Modifier.weight(1f))
+                    }
+                    if (operating.shiftCount > 0) {
+                        Spacer(Modifier.height(Space.s))
+                        val operatingValue = "RM ${rm(operating.net)}" + (operating.perHour?.let { " · ${rm(it)}/h" } ?: "")
+                        if (largeText) {
+                            Column {
                                 Text(
-                                    "Operating · RM ${rm(operating.net)}" +
-                                        (operating.perHour?.let { " · ${rm(it)}/h" } ?: ""),
-                                    color = if (operating.net >= 0) heroInk else scheme.error,
+                                    "OPERATING",
+                                    color = scheme.onSurfaceVariant,
+                                    letterSpacing = 1.2.sp,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                )
+                                Spacer(Modifier.height(Space.xxs))
+                                Text(
+                                    operatingValue,
+                                    color = if (operating.net >= 0) scheme.onSurface else scheme.error,
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontFeatureSettings = "tnum",
                                         fontWeight = FontWeight.Bold,
                                     ),
                                 )
+                            }
+                        } else {
+                            Row(verticalAlignment = Alignment.Bottom) {
                                 Text(
-                                    "after running costs",
-                                    color = heroInk.copy(alpha = 0.72f),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    "OPERATING",
+                                    color = scheme.onSurfaceVariant,
+                                    letterSpacing = 1.2.sp,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text(
+                                    operatingValue,
+                                    color = if (operating.net >= 0) scheme.onSurface else scheme.error,
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontFeatureSettings = "tnum",
+                                        fontWeight = FontWeight.Bold,
+                                    ),
                                 )
                             }
-                            Spacer(Modifier.height(Space.m))
-                            if (LocalDensity.current.fontScale >= 1.6f) {
-                                Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                                    HeroStat("IN", "RM ${rm(t.income)}", heroInk, scheme.tertiary, Modifier.fillMaxWidth())
-                                    HeroStat("OUT", "RM ${rm(t.expense)}", heroInk, scheme.error, Modifier.fillMaxWidth())
-                                }
-                            } else {
-                                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                                    HeroStat("IN", "RM ${rm(t.income)}", heroInk, scheme.tertiary, Modifier.weight(1f))
-                                    HeroStat("OUT", "RM ${rm(t.expense)}", heroInk, scheme.error, Modifier.weight(1f))
-                                }
-                            }
                         }
+                        Text(
+                            "after running costs",
+                            color = scheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
                 }
             }
@@ -728,21 +759,25 @@ fun RowCardIcon(
 }
 
 @Composable
-private fun HeroStat(label: String, value: String, ink: Color, dot: Color, modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .clip(RoundedCornerShape(50))
-            .background(ink.copy(alpha = 0.10f))
-            .padding(horizontal = Space.m, vertical = Space.s),
-    ) {
+private fun DayFact(label: String, value: String, dot: Color, modifier: Modifier = Modifier) {
+    Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Box(Modifier.size(6.dp).clip(CircleShape).background(dot))
-            Text(label, color = ink.copy(alpha = 0.70f), letterSpacing = 1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.sp,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            )
         }
-        Text(value, color = ink, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(2.dp))
+        Text(
+            value,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+        )
     }
 }
-
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable

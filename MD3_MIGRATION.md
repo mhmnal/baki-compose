@@ -585,3 +585,10 @@ No financial feature was removed.
 - Added a 200% Summary golden and responsive month/chart header layouts.
 - Golden fixtures now clear the main and backup stores, preventing real data bleed.
 - 205 tests, 0 failures; capped peak 3.8 GB.
+
+## 0.43.36 hero emphasis
+
+- Today hero now devotes almost the whole tile to the take-home amount.
+- RM moved above the figure; the amount uses auto-sized Barlow Condensed up to 132sp.
+- IN/OUT/operating moved to a quiet facts card below the hero.
+- 205 tests, 0 failures; capped peak 4.2 GB.
