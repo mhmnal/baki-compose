@@ -2,8 +2,6 @@ package app.baki
 
 import androidx.compose.material3.toShape
 
-import androidx.compose.material3.MaterialShapes
-
 import androidx.compose.foundation.layout.Box
 
 import androidx.compose.foundation.shape.CircleShape
@@ -11,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -47,7 +46,7 @@ fun WeekStrip(store: Store, endDay: String) {
     val days = (6 downTo 0).map { addDays(endDay, -it) }
     val totals = remember(store, endDay) { days.map { dayTotals(store, it) } }
     val peak = totals.maxOfOrNull { abs(it.net) }?.coerceAtLeast(1) ?: 1
-    val today = todayIso()
+    val selected = endDay
 
     BoxWithConstraints {
         val compact = maxWidth < 360.dp || LocalDensity.current.fontScale > 1.15f
@@ -55,29 +54,21 @@ fun WeekStrip(store: Store, endDay: String) {
             days.forEachIndexed { i, d ->
                 val t = totals[i]
                 val up = t.net >= 0
+                val isSelected = d == selected
+                val shape = MaterialTheme.shapes.medium
                 val fraction = (abs(t.net).toFloat() / peak).coerceIn(0.04f, 1f)
                 Column(
                     Modifier.weight(1f)
-                        .then(
-                            Modifier.clip(if (d == today) MaterialTheme.shapes.large else MaterialTheme.shapes.medium)
-                                .background(if (d == today) scheme.primaryContainer else scheme.surfaceContainerLow)
-                                .padding(vertical = Space.s)
-                        ),
+                        .clip(shape)
+                        .background(if (isSelected) scheme.surfaceContainerHigh else scheme.surfaceContainerLow)
+                        .then(if (isSelected) Modifier.border(1.dp, scheme.primary, shape) else Modifier)
+                        .padding(vertical = Space.s),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    if (d == today) {
-                        Box(
-                            Modifier
-                                .size(7.dp)
-                                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
-                                .background(scheme.onPrimaryContainer),
-                        )
-                        Spacer(Modifier.height(3.dp))
-                    }
                     Text(
                         d.takeLast(2),
-                        color = if (d == today) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-                        fontWeight = if (d == today) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) scheme.primary else scheme.onSurfaceVariant,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                     )
@@ -95,7 +86,7 @@ fun WeekStrip(store: Store, endDay: String) {
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         if (t.entryCount == 0 && t.shiftCount == 0) "–" else if (BakiPrivacy.discreet) "••" else (t.net / 100).toInt().toString(),
-                        color = if (d == today) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                        color = if (isSelected) scheme.onSurface else scheme.onSurfaceVariant,
                         style = if (compact) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyMedium,
                         maxLines = 1, softWrap = false, overflow = TextOverflow.Clip,
                     )

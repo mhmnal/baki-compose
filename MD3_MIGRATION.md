@@ -555,3 +555,11 @@ No financial feature was removed.
 - Added a cut-out centre and check, matching the in-app soft-burst motif.
 - Updated adaptive foreground, monochrome layer, legacy PNGs and desktop icon.
 - 204 tests, 0 failures.
+
+## 0.43.32 calmer hierarchy
+
+- Removed the normal-state burst backdrop from the Today hero.
+- Food Fund is now a neutral surface with a gold wavy data line.
+- Date arrows are round, not soft-bursts; the date stage is shallower.
+- Week strip highlights the day being viewed with a thin outline, not a tinted burst cell.
+- 204 tests, 0 failures; capped build peak 3.8 GB.

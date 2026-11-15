@@ -147,14 +147,6 @@ fun TodayScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Box {
-                        ExpressiveBurst(
-                            color = scheme.tertiaryContainer.copy(alpha = 0.55f),
-                            reducedMotion = repo.config.reducedMotion,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .size(210.dp)
-                                .offset(x = 64.dp, y = (-64).dp),
-                        )
                         Column(Modifier.padding(Space.l)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
@@ -231,20 +223,20 @@ fun TodayScreen(
                 Column(
                     Modifier.fillMaxWidth()
                         .clip(MaterialTheme.shapes.large)
-                        .background(scheme.tertiaryContainer)
+                        .background(scheme.surfaceContainerLow)
                         .padding(horizontal = Space.m, vertical = Space.m),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "FOOD FUND",
-                            color = scheme.onTertiaryContainer.copy(alpha = 0.78f),
+                            color = scheme.onSurfaceVariant,
                             letterSpacing = 1.2.sp,
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
                             "RM ${rm(f.spent)} / ${rm(f.cap)}",
-                            color = if (f.over) scheme.error else scheme.onTertiaryContainer,
+                            color = if (f.over) scheme.error else scheme.onSurface,
                             style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                         )
                     }
@@ -252,14 +244,14 @@ fun TodayScreen(
                     LinearWavyProgressIndicator(
                         progress = { fraction },
                         modifier = Modifier.fillMaxWidth().height(12.dp),
-                        color = if (f.over) scheme.error else scheme.onTertiaryContainer,
-                        trackColor = scheme.onTertiaryContainer.copy(alpha = 0.16f),
+                        color = if (f.over) scheme.error else scheme.tertiary,
+                        trackColor = scheme.outlineVariant.copy(alpha = 0.55f),
                     )
                     Spacer(Modifier.height(Space.s))
                     Text(
                         if (f.over) "RM ${rm(-f.remaining)} over. The snacks won."
                         else "RM ${rm(f.remaining)} left for snacks.",
-                        color = if (f.over) scheme.error else scheme.onTertiaryContainer.copy(alpha = 0.85f),
+                        color = if (f.over) scheme.error else scheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                     )
                 }
@@ -557,11 +549,11 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val isToday = day == today
     Surface(
         color = scheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(Space.s),
+            Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
@@ -575,8 +567,8 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(
                         Modifier
-                            .size(7.dp)
-                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .size(6.dp)
+                            .clip(CircleShape)
                             .background(scheme.primary),
                     )
                     Text(

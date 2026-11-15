@@ -289,11 +289,10 @@ fun ShapeNavButton(
     background: Color = MaterialTheme.colorScheme.primaryContainer,
     ink: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
-    val shape = androidx.compose.material3.MaterialShapes.SoftBurst.toShape()
     Box(
         modifier
             .size(48.dp)
-            .clip(shape)
+            .clip(androidx.compose.foundation.shape.CircleShape)
             .background(if (enabled) background else background.copy(alpha = 0.35f))
             .clickable(enabled = enabled, onClick = onClick)
             .semantics {
