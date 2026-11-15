@@ -473,3 +473,11 @@ No financial feature was removed.
 - Reserves sheet is now a Baki sheet: burst header, large move-money field, wavy reserve bars, shaped movement rows.
 - Remaining conventional shells are settings dialogs; non-settings flows now share the language.
 - 203 tests, 0 failures.
+
+## 0.43.20 header and date chrome
+
+- Header is now a custom row: burst logo, bold Baki, coloured status pill, burst discreet control.
+- Day navigator is a shaped stage with burst arrows, TODAY marker, large date and playful subtitle.
+- Spend month navigator and Stats statement month navigation use the same shaped arrows.
+- Quick-hit icons sit in burst bubbles; ledger count has a burst marker.
+- All 203 tests and goldens green.

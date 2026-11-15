@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selectableGroup
 import androidx.compose.ui.semantics.semantics
@@ -297,6 +298,41 @@ internal fun md3CardScheme(
     primary = if (container == base.primaryContainer) contentColor else base.primary,
     onPrimary = if (container == base.primaryContainer) container else base.onPrimary,
 )
+
+/**
+ * A compact, shaped back/forward control used by the day and month navigators.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ShapeNavButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    description: String,
+    modifier: Modifier = Modifier,
+    background: Color = MaterialTheme.colorScheme.primaryContainer,
+    ink: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+) {
+    val shape = androidx.compose.material3.MaterialShapes.SoftBurst.toShape()
+    Box(
+        modifier
+            .size(48.dp)
+            .clip(shape)
+            .background(if (enabled) background else background.copy(alpha = 0.35f))
+            .clickable(enabled = enabled, onClick = onClick)
+            .semantics {
+                role = Role.Button
+                contentDescription = description
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            color = if (enabled) ink else ink.copy(alpha = 0.40f),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        )
+    }
+}
 
 /**
  * Baki's one decorative shape motif: a slowly turning soft burst. It is used only as a backdrop

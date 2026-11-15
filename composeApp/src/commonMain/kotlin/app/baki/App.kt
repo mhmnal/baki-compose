@@ -692,56 +692,62 @@ fun Header(repo: BakiRepo) {
         "cached" -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.primary
     }
-    TopAppBar(
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Box(
-                    Modifier
-                        .size(20.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
-                        .background(MaterialTheme.colorScheme.primary),
-                )
-                Text("Baki", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-            }
-        },
-        actions = {
-            IconButton(
-                onClick = { repo.setDiscreet(!repo.config.discreet) },
-                modifier = Modifier.semantics { contentDescription = "Toggle discreet mode" },
+    Row(
+        Modifier.fillMaxWidth().height(64.dp).padding(start = Space.l, end = Space.m),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(24.dp)
+                .clip(MaterialShapes.SoftBurst.toShape())
+                .background(MaterialTheme.colorScheme.primary),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            "Baki",
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        Spacer(Modifier.weight(1f))
+        Surface(
+            shape = CircleShape,
+            color = ink.copy(alpha = 0.13f),
+            contentColor = ink,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Text(
-                    if (repo.config.discreet) "◉" else "◎",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (status == "syncing") {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = Space.l),
-                ) {
-                    LoadingIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = ink,
-                    )
-                    Spacer(Modifier.width(Space.xs))
-                    Text("Syncing", color = ink, style = MaterialTheme.typography.labelSmall)
+                if (status == "syncing") {
+                    LoadingIndicator(modifier = Modifier.size(13.dp), color = ink)
+                } else {
+                    Box(Modifier.size(6.dp).clip(CircleShape).background(ink))
                 }
-            } else {
                 Text(
-                    status.replaceFirstChar { it.titlecase() },
+                    if (status == "syncing") "Syncing" else status.replaceFirstChar { it.titlecase() },
                     color = ink,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(end = Space.l),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        windowInsets = WindowInsets(0, 0, 0, 0),
-    )
+        }
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier
+                .size(40.dp)
+                .clip(MaterialShapes.SoftBurst.toShape())
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickable { repo.setDiscreet(!repo.config.discreet) }
+                .semantics { contentDescription = "Toggle discreet mode" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                if (repo.config.discreet) "◉" else "◎",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
@@ -1124,17 +1130,49 @@ private fun DayHeader(day: String, today: String, onChange: (String) -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MonthHeader(month: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        TextButton(onClick = { onChange(addDays("$month-01", -1).take(7)) }) {
-            Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge )
-        }
-        Text(monthLabel(month), color = scheme.onSurface,
-            modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
-        TextButton(onClick = { onChange(addDays(endOfMonth(month), 1).take(7)) }) {
-            Text("›", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge )
+    Surface(
+        color = scheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(Space.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            ShapeNavButton(
+                label = "‹",
+                enabled = true,
+                onClick = { onChange(addDays("$month-01", -1).take(7)) },
+                description = "Previous month",
+            )
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(Modifier.size(7.dp).clip(MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+                    Text(
+                        "MONTH IN PLAY",
+                        color = scheme.primary,
+                        letterSpacing = 1.3.sp,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+                Text(
+                    monthLabel(month),
+                    color = scheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
+                Text("the damage, monthly", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
+            ShapeNavButton(
+                label = "›",
+                enabled = true,
+                onClick = { onChange(addDays(endOfMonth(month), 1).take(7)) },
+                description = "Next month",
+            )
         }
     }
 }

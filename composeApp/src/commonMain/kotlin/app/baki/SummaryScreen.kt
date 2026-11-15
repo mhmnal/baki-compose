@@ -208,16 +208,27 @@ private fun StatementCover(
         )
         Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
-                Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
-            }
+            ShapeNavButton(
+                label = "‹",
+                enabled = true,
+                onClick = { onMonth(addDays("$month-01", -1).take(7)) },
+                description = "Previous month",
+                background = scheme.tertiaryContainer,
+                ink = scheme.onTertiaryContainer,
+            )
             Text(
                 monthLabel(month), color = scheme.onSurface,
-                textAlign = TextAlign.Center, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
-            TextButton(onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) }) {
-                Text("›", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
-            }
+            ShapeNavButton(
+                label = "›",
+                enabled = true,
+                onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) },
+                description = "Next month",
+                background = scheme.tertiaryContainer,
+                ink = scheme.onTertiaryContainer,
+            )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

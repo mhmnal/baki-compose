@@ -453,12 +453,20 @@ fun TodayScreen(
         }
 
         item {
-            Text(
-                "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ${if (t.entryCount == 1) "ENTRY" else "ENTRIES"}",
-                color = scheme.onSurfaceVariant,
-                letterSpacing = 1.sp,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Box(
+                    Modifier
+                        .size(12.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primary),
+                )
+                Text(
+                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ${if (t.entryCount == 1) "ENTRY" else "ENTRIES"}",
+                    color = scheme.onSurfaceVariant,
+                    letterSpacing = 1.sp,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                )
+            }
         }
 
         items(shifts, key = { it.id }) { sh ->
@@ -520,6 +528,7 @@ fun TodayScreen(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun QuickAction(
     label: String,
@@ -539,35 +548,75 @@ private fun QuickAction(
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             if (icon != null) {
-                Icon(icon, contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
+                Box(
+                    Modifier
+                        .size(26.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(scheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline))
+                }
             }
             Text(label, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            amount?.let { Text(it, color = scheme.primary, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")) }
+            amount?.let { Text(it, color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold)) }
         }
     
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth()) {
+    val isToday = day == today
+    Surface(
+        color = scheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
-            Modifier.fillMaxWidth()
-                .then(
-                    Modifier.clip(CircleShape).background(scheme.surfaceContainerLow).padding(vertical = Space.s)
-                ),
+            Modifier.fillMaxWidth().padding(Space.s),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            TextButton(onClick = { onChange(addDays(day, -1)) }) { Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge ) }
+            ShapeNavButton(
+                label = "‹",
+                enabled = true,
+                onClick = { onChange(addDays(day, -1)) },
+                description = "Previous day",
+            )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(if (day == today) "Today" else prettyDate(day), color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(
+                        Modifier
+                            .size(7.dp)
+                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .background(scheme.primary),
+                    )
+                    Text(
+                        if (isToday) "TODAY" else weekdayShort(day).uppercase(),
+                        color = scheme.primary,
+                        letterSpacing = 1.4.sp,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
                 Text(
-                    if (day == today) prettyDate(day) else "${weekdayShort(day)} · ${prettyDate(day)}",
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
+                    prettyDate(day),
+                    color = scheme.onSurface,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    if (isToday) "a day in the life" else weekdayShort(day),
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
-            TextButton(enabled = day < today, onClick = { onChange(addDays(day, 1)) }) {
-                Text("›", color = if (day < today) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.3f), style = MaterialTheme.typography.bodyLarge )
-            }
+            ShapeNavButton(
+                label = "›",
+                enabled = day < today,
+                onClick = { onChange(addDays(day, 1)) },
+                description = "Next day",
+            )
         }
     }
 }
