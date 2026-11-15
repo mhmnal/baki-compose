@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
@@ -102,7 +103,7 @@ fun SummaryScreen(
                 StatementCover(
                     month = month, t = t, days = days, best = best, worst = worst,
                     cost = cost, prevNet = prevNet, streak = streak,
-                    onMonth = onMonth,
+                    onMonth = onMonth, reducedMotion = repo.config.reducedMotion,
                 )
             }
         }
@@ -176,12 +177,22 @@ private fun StatementCover(
     prevNet: Long,
     streak: Int,
     onMonth: (String) -> Unit,
+    reducedMotion: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val delta = t.net - prevNet
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
 
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+    Box(Modifier.fillMaxWidth()) {
+        ExpressiveBurst(
+            color = scheme.tertiaryContainer.copy(alpha = 0.50f),
+            reducedMotion = reducedMotion,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(200.dp)
+                .offset(x = 54.dp, y = (-72).dp),
+        )
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { onMonth(addDays("$month-01", -1).take(7)) }) {
                 Text("‹", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge)
@@ -196,9 +207,10 @@ private fun StatementCover(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Monthly statement",
+                "MONTHLY STATEMENT",
                 color = scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleSmall,
+                letterSpacing = 1.2.sp,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
             )
             if (streak > 1) {
@@ -221,6 +233,11 @@ private fun StatementCover(
         Spacer(Modifier.height(Space.xs))
         EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
         Text(
+            if (t.net >= 0) "The month is behaving." else "A character-building month.",
+            color = scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+        )
+        Text(
             if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
             color = if (delta >= 0) scheme.onSurface else scheme.error,
             style = MaterialTheme.typography.bodyMedium,
@@ -238,6 +255,7 @@ private fun StatementCover(
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         Spacer(Modifier.height(Space.xs))
+        }
     }
 }
 
@@ -285,6 +303,13 @@ private fun MonthInkChart(store: Store, month: String) {
 
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .padding(end = Space.s)
+                    .size(18.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(scheme.primary),
+            )
             Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
             ConnectedChoiceGroup(
                 options = listOf("7D", "30D"),
@@ -414,13 +439,24 @@ private fun MonthInkChart(store: Store, month: String) {
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             best?.let {
-                Text("+RM ${rm(it.net)} · ${it.iso.takeLast(5)}", color = scheme.tertiary, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                Text(
+                    "+RM ${rm(it.net)} · ${it.iso.takeLast(5)}",
+                    color = scheme.tertiary,
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
             }
             worst?.let {
                 Text(
                     "${rm(it.net)} · ${it.iso.takeLast(5)}",
                     color = if (it.net < 0) scheme.error else scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -496,7 +532,12 @@ private fun WeekSection(store: Store, today: String) {
             }
         }
         Spacer(Modifier.height(Space.s))
-        Text("${thisWeek.shiftCount} shifts · ${thisWeek.entryCount} entries", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "${thisWeek.shiftCount} ${if (thisWeek.shiftCount == 1) "shift" else "shifts"} · " +
+                "${thisWeek.entryCount} ${if (thisWeek.entryCount == 1) "entry" else "entries"}",
+            color = scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 @Composable

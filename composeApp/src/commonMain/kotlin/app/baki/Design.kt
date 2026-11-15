@@ -36,12 +36,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.toShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -284,3 +287,37 @@ internal fun md3CardScheme(
     primary = if (container == base.primaryContainer) contentColor else base.primary,
     onPrimary = if (container == base.primaryContainer) container else base.onPrimary,
 )
+
+/**
+ * Baki's one decorative shape motif: a slowly turning soft burst. It is used only as a backdrop
+ * for hero moments, never on ordinary cards. Reduced motion freezes it.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ExpressiveBurst(
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    reducedMotion: Boolean = false,
+) {
+    val angle = if (reducedMotion) {
+        0f
+    } else {
+        val transition = androidx.compose.animation.core.rememberInfiniteTransition(label = "bakiBurst")
+        val a by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                animation = androidx.compose.animation.core.tween(26_000, easing = androidx.compose.animation.core.LinearEasing),
+                repeatMode = androidx.compose.animation.core.RepeatMode.Restart,
+            ),
+            label = "bakiBurstAngle",
+        )
+        a
+    }
+    androidx.compose.foundation.layout.Box(
+        modifier
+            .graphicsLayer { rotationZ = angle }
+            .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+            .background(color),
+    )
+}

@@ -36,7 +36,9 @@ class GoldenScreensTest {
     @Test
     fun coreScreensMatchTheirGoldens() = runBlocking {
         val originalToday = System.getProperty("baki.testToday")
+        val originalNow = System.getProperty("baki.testNowMillis")
         System.setProperty("baki.testToday", today)
+        System.setProperty("baki.testNowMillis", "1763200800000")
         val storeFile = File(LocalStore.path())
         val liveFile = File(storeFile.parentFile, "live.json")
         val storeBytes = storeFile.takeIf { it.exists() }?.readBytes()
@@ -46,7 +48,14 @@ class GoldenScreensTest {
             // Deterministic, synthetic ledger. Never use the user's store for a baseline.
             liveFile.delete()
             LocalStore.write(BakiJson.encodeToString(Store.serializer(), Store()))
-            val fixture = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"))
+            val fixture = BakiRepo(
+                ClientConfig(
+                    serverUrl = "http://127.0.0.1:1",
+                    allowWrites = true,
+                    themeMode = "light",
+                    reducedMotion = true,
+                ),
+            )
             repo = fixture
             fixture.addShift(today, "08:10", hours = 4.5, km = 96.0, grossCents = 11_000, note = "morning run")
             fixture.addShift(today, "17:40", hours = 3.2, km = 71.0, grossCents = 8_150, note = "evening surge")
@@ -101,11 +110,38 @@ class GoldenScreensTest {
                     assertImagesMatch(shot.name, golden, actual)
                 }
             }
+
+            // Start at 17:00, render at 18:00 so the live hero has real elapsed numbers.
+            System.setProperty("baki.testNowMillis", "1763197200000")
+            fixture.startLive()
+            System.setProperty("baki.testNowMillis", "1763200800000")
+            fixture.addPayout(8_000)
+            val liveShot = Shot("today-live-360-light", 360, 800, dark = false) {
+                BakiTheme(mode = "light") {
+                    TodayScreen(
+                        repo = fixture, day = today, today = today,
+                        onDay = {}, onPayout = {}, onPayouts = {}, onQuickAdd = { _, _ -> },
+                        onEditEntry = {}, onDeleteEntry = {}, onPreset = {}, onSeeAll = {},
+                        onAdd = {},
+                    )
+                }
+            }
+            val liveActual = render(liveShot)
+            val liveGolden = File("src/desktopTest/resources/golden/${liveShot.name}.png")
+            if (System.getProperty("baki.golden.update") == "true") {
+                liveGolden.parentFile.mkdirs()
+                liveActual.copyTo(liveGolden, overwrite = true)
+            } else {
+                assertTrue(liveGolden.exists(), "missing golden ${liveGolden.absolutePath}")
+                assertImagesMatch(liveShot.name, liveGolden, liveActual)
+            }
+            fixture.discardLive()
         } finally {
             repo = null
             if (storeBytes != null) storeFile.writeBytes(storeBytes) else storeFile.delete()
             if (liveBytes != null) liveFile.writeBytes(liveBytes) else liveFile.delete()
             if (originalToday == null) System.clearProperty("baki.testToday") else System.setProperty("baki.testToday", originalToday)
+            if (originalNow == null) System.clearProperty("baki.testNowMillis") else System.setProperty("baki.testNowMillis", originalNow)
         }
     }
 

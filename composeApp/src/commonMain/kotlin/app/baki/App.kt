@@ -745,7 +745,17 @@ fun Header(repo: BakiRepo) {
         else -> MaterialTheme.colorScheme.primary
     }
     TopAppBar(
-        title = { Text("Baki", style = MaterialTheme.typography.titleLarge) },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Box(
+                    Modifier
+                        .size(20.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+                Text("Baki", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            }
+        },
         actions = {
             IconButton(
                 onClick = { repo.setDiscreet(!repo.config.discreet) },
@@ -786,12 +796,26 @@ fun Header(repo: BakiRepo) {
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecified, size: Int = 46) {
     val scheme = MaterialTheme.colorScheme
     val ink = if (tint == Color.Unspecified) scheme.onSurface else tint
     Column {
-        Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Box(
+                Modifier
+                    .size(16.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(if (tint == Color.Unspecified) scheme.primary else tint),
+            )
+            Text(
+                label,
+                color = scheme.onSurfaceVariant,
+                letterSpacing = 1.1.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
+        }
         EasedMoney(
             cents = amountCents, color = ink,
             // tabular figures: the hero number keeps its width as digits change
@@ -968,28 +992,49 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Column(Modifier.fillMaxWidth().padding(Space.l)) {
+        Box {
+            ExpressiveBurst(
+                color = accent.copy(alpha = 0.13f),
+                reducedMotion = repo.config.reducedMotion,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(170.dp)
+                    .offset(x = 54.dp, y = (-58).dp),
+            )
+            Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LiveTrace(
                     active = !onBreak,
                     color = accent,
                     reducedMotion = repo.config.reducedMotion,
-                    modifier = Modifier.width(52.dp).height(18.dp),
+                    modifier = Modifier.width(72.dp).height(23.dp),
                 )
                 Spacer(Modifier.width(Space.s))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        if (onBreak) "On break" else "Live shift",
+                        if (onBreak) "BREAK TIME" else "ON THE CLOCK",
                         color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
                     )
                     Text("since ${startClock(live.start)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                 }
-                Text(
-                    if (onBreak) "PAUSED" else "ACTIVE",
-                    color = accent,
-                    style = MaterialTheme.typography.labelSmall,
-                )
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = accent.copy(alpha = 0.14f),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
+                        Text(
+                            if (onBreak) "PAUSED" else "LIVE",
+                            color = accent,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                }
             }
             Spacer(Modifier.height(Space.l))
             Text("Net so far", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
@@ -998,6 +1043,11 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 color = if (net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.headlineLargeEmphasized.copy(fontFeatureSettings = "tnum"),
             )
+            Text(
+                if (onBreak) "Recharging. The road can wait." else "The meter is running.",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
             Spacer(Modifier.height(Space.s))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Surface(
@@ -1005,7 +1055,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ) {
                     Text(
-                        "${live.payouts.size} payouts",
+                        "${live.payouts.size} ${if (live.payouts.size == 1) "payout" else "payouts"}",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = Space.m, vertical = Space.xs),
@@ -1068,6 +1118,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     ),
                 ) { Text("End", style = MaterialTheme.typography.labelLargeEmphasized) }
+            }
             }
         }
     }
@@ -1168,7 +1219,7 @@ private fun SpendingScreen(
     val shownLabel = when {
         catFilter != "all" -> "SPENT · ${(catName ?: catFilter).uppercase()}"
         query.isNotBlank() -> "SPENT · ${entries.size} MATCH(ES)"
-        else -> "SPENT THIS MONTH"
+        else -> "MONEY OUT"
     }
 
     val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
@@ -1195,9 +1246,9 @@ private fun SpendingScreen(
                 Hero(shownLabel, shown, scheme.error, 40)
                 Text(
                     (if (filtering) {
-                        "${entries.size} purchase(s)${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
+                        "${entries.size} ${if (entries.size == 1) "purchase" else "purchases"}${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
                     } else {
-                        "${t.entryCount} purchases · ${t.shiftCount} shifts · in RM ${rm(t.income)}"
+                        "${t.entryCount} ${if (t.entryCount == 1) "purchase" else "purchases"} · ${t.shiftCount} ${if (t.shiftCount == 1) "shift" else "shifts"} · in RM ${rm(t.income)} · no judgement"
                     }),
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
@@ -1355,9 +1406,9 @@ private fun ShiftsScreen(
         item {
             Column {
                 Spacer(Modifier.height(Space.l))
-                Hero("NET AFTER CAR COST", cents(net), scheme.onSurface, 40)
+                Hero("WHAT YOU ACTUALLY MADE", cents(net), scheme.onSurface, 40)
                 Text(
-                    "${rows.size} shifts · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
+                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(Space.m))
                 FilledTonalButton(
@@ -1368,7 +1419,7 @@ private fun ShiftsScreen(
             }
         }
         if (rows.isEmpty()) item {
-            EmptyState("No shifts yet", "Add a shift to see what it really paid after running costs.")
+            EmptyState("No shifts yet", "The road is waiting. Add a shift and see what it really paid.")
         }
         items(rows, key = { it.first.id }) { row ->
             val sh = row.first

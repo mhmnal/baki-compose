@@ -400,3 +400,21 @@ No financial feature was removed.
 - Removed the receipt picker/preview UI and platform receipt helpers.
 - Day notes, closes and receipt fields remain in the schema so existing servers/backups stay compatible; they are no longer exposed in the UI.
 - Today keeps the compact entry-count header only.
+
+## 0.43.11 expressive art direction
+
+- Added Baki’s soft-burst shape motif across the logo, hero backdrop, target sticker, Stats marker and live card.
+- Today is now a colour-blocked take stage with a huge net, target-beaten sticker, integrated in/out stats and playful copy.
+- Food is a wavy “FOOD FUND” meter with snack-left copy.
+- Live shift is a bolder on-the-clock card with a larger trace, status pill and a running-meter line.
+- Stats opens with a rotating burst, editorial statement line and best/worst copy.
+- Spend/Shifts use the same shape marker and human labels.
+- Goldens now freeze motion and cover a seeded live shift.
+- 203 tests, 0 failures.
+
+## 0.43.12 final expressive copy
+
+- Shift card now reads “WHAT THE SHIFT PAID”, target delta is human copy, and the live action is “Start the meter”.
+- Fixed singular/plural copy in shifts, payouts, purchases and week totals.
+- Regenerated the full golden set, including the seeded live-shift state.
+- 203 tests, 0 failures.
