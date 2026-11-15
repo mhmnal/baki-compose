@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.material3.toShape
 
 import androidx.compose.material3.MaterialShapes
@@ -61,6 +63,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.compose.material3.ColorScheme, bestDay: String?) {
     val t = dayTotals(store, iso)
@@ -85,7 +88,7 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
 
     Box(
         Modifier.fillMaxSize()
-            .clip(MaterialTheme.shapes.small)
+            .clip(if (isToday) MaterialShapes.SoftBurst.toShape() else CircleShape)
             .background(fill),
         contentAlignment = Alignment.Center,
     ) {

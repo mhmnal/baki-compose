@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.FlowRow
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.MutableTransitionState
@@ -171,29 +172,10 @@ fun TodayScreen(
                                 }
                                 val perHour = operating.perHour
                                 if (operating.shiftCount > 0 && perHour != null) {
-                                    val beat = perHour >= cfg.targetRate
-                                    Surface(
-                                        shape = RoundedCornerShape(50),
-                                        color = if (beat) scheme.tertiaryContainer else scheme.surfaceContainerHigh,
-                                        contentColor = if (beat) scheme.onTertiaryContainer else scheme.onSurface,
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        ) {
-                                            Box(
-                                                Modifier
-                                                    .size(14.dp)
-                                                    .clip(MaterialShapes.SoftBurst.toShape())
-                                                    .background(if (beat) scheme.onTertiaryContainer else scheme.primary),
-                                            )
-                                            Text(
-                                                if (beat) "BEATEN" else "CHASING",
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            )
-                                        }
-                                    }
+                                    TargetBadge(
+                                        beat = perHour >= cfg.targetRate,
+                                        reducedMotion = repo.config.reducedMotion,
+                                    )
                                 }
                             }
                             Spacer(Modifier.height(Space.s))
@@ -743,5 +725,66 @@ private fun HeroStat(label: String, value: String, ink: Color, dot: Color, modif
             Text(label, color = ink.copy(alpha = 0.70f), letterSpacing = 1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
         }
         Text(value, color = ink, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+    }
+}
+
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TargetBadge(beat: Boolean, reducedMotion: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    var celebrate by remember { mutableStateOf(false) }
+    LaunchedEffect(beat) {
+        if (beat && !reducedMotion) {
+            celebrate = true
+            delay(1200)
+            celebrate = false
+        }
+    }
+    Box(contentAlignment = Alignment.Center) {
+        if (celebrate) {
+            listOf(
+                (-54).dp to (-22).dp,
+                48.dp to (-28).dp,
+                54.dp to 18.dp,
+                (-42).dp to 24.dp,
+            ).forEachIndexed { index, (x, y) ->
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = celebrate,
+                    enter = fadeIn() + scaleIn(initialScale = 0.2f),
+                    exit = fadeOut(),
+                ) {
+                    Box(
+                        Modifier
+                            .offset(x = x, y = y)
+                            .size(if (index % 2 == 0) 9.dp else 6.dp)
+                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .background(if (index % 2 == 0) scheme.tertiary else scheme.primary),
+                    )
+                }
+            }
+        }
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = if (beat) scheme.tertiaryContainer else scheme.surfaceContainerHigh,
+            contentColor = if (beat) scheme.onTertiaryContainer else scheme.onSurface,
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(14.dp)
+                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .background(if (beat) scheme.onTertiaryContainer else scheme.primary),
+                )
+                Text(
+                    if (beat) "BEATEN" else "CHASING",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+        }
     }
 }

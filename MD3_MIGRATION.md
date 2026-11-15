@@ -481,3 +481,10 @@ No financial feature was removed.
 - Spend month navigator and Stats statement month navigation use the same shaped arrows.
 - Quick-hit icons sit in burst bubbles; ledger count has a burst marker.
 - All 203 tests and goldens green.
+
+## 0.43.21 max layer
+
+- Target-beaten badge fires a one-shot mini-burst celebration (suppressed by reduced motion).
+- FAB menu action icons sit in burst bubbles.
+- Calendar heat cells are circles; today is a soft burst.
+- Final 203 tests, 0 failures.

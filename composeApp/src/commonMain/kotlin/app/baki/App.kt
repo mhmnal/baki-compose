@@ -440,7 +440,12 @@ private fun AppContent(repo: BakiRepo) {
                     adding = 2
                 },
                 text = { Text("Add spending", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = { Icon(BakiIcons.Receipt, contentDescription = null) },
+                icon = {
+                    Box(
+                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(BakiIcons.Receipt, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
+                },
             )
             FloatingActionButtonMenuItem(
                 onClick = {
@@ -451,7 +456,12 @@ private fun AppContent(repo: BakiRepo) {
                     adding = 2
                 },
                 text = { Text("Add income", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = { Icon(BakiIcons.Wallet, contentDescription = null) },
+                icon = {
+                    Box(
+                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(BakiIcons.Wallet, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
+                },
             )
             FloatingActionButtonMenuItem(
                 onClick = {
@@ -460,7 +470,12 @@ private fun AppContent(repo: BakiRepo) {
                     adding = 3
                 },
                 text = { Text("Log shift", style = MaterialTheme.typography.labelLargeEmphasized) },
-                icon = { Icon(BakiIcons.Car, contentDescription = null) },
+                icon = {
+                    Box(
+                        Modifier.size(28.dp).clip(MaterialShapes.SoftBurst.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(BakiIcons.Car, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
+                },
             )
         }
     }
