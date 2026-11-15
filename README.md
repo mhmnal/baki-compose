@@ -126,3 +126,16 @@ committed.
 - Phone TalkBack coverage of custom canvases and swipe rows is incomplete.
 - Cover renewal uses the saved wall-clock end (`hours + breakMinutes`). Older shifts without a
   break value fall back to worked hours.
+
+## API token
+
+The ledger API is open on the LAN unless the server is started with a shared token:
+
+```bash
+BAKI_TOKEN='choose-a-long-random-token' ./sync.sh
+```
+
+Enter the same token in **More → App → API token**. Without it, data, route and
+live-event requests receive `401`. The token is included in portable backups, so
+treat those files as private.
+
