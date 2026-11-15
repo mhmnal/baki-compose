@@ -1513,6 +1513,7 @@ private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollapsed: (Boolean) -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
     var url by remember { mutableStateOf(repo.config.serverUrl) }
+    var token by remember { mutableStateOf(repo.config.serverToken) }
     var finding by remember { mutableStateOf(false) }
     var foundMsg by remember { mutableStateOf<String?>(null) }
     var foundOk by remember { mutableStateOf(false) }
@@ -1581,10 +1582,18 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 value = url, onValueChange = { url = it }, singleLine = true,
                 modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
             )
+            Spacer(Modifier.height(Space.s))
+            OutlinedTextField(
+                value = token, onValueChange = { token = it }, singleLine = true,
+                label = { Text("API token (optional)") },
+                supportingText = { Text("Only needed when the server runs with BAKI_TOKEN set.", color = scheme.onSurfaceVariant) },
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+            )
             Spacer(Modifier.height(Space.m))
             Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                 Button( shape = CircleShape,
-                    onClick = { repo.setServer(url) },
+                    onClick = { repo.setServer(url, token) },
                     colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 ) { Text("Save & sync") }
                 FilledTonalButton(onClick = { scope.launch { repo.sync() } }) { Text("Sync now") }
@@ -1601,7 +1610,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                             url = found.url
                             foundOk = true
                             foundMsg = "Found ${found.host}:${found.port}"
-                            repo.setServer(found.url)
+                            repo.setServer(found.url, token)
                             PlatformEffects.successFeedback()
                         } else {
                             foundOk = false

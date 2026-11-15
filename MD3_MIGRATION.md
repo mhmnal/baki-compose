@@ -368,3 +368,11 @@ No financial feature was removed.
 - Empty offline installs get a first-run server/write setup card.
 - Added card-scheme contrast regression coverage, backup round-trip coverage, and render-size/blank-image guards.
 - 198 tests, 0 failures.
+
+## 0.43.7 security and map discoverability
+
+- Optional server token: run the tracker with `BAKI_TOKEN=...`; enter the same token in More → App. Without a token, the original open-LAN mode still works.
+- Token is sent on data, route and SSE requests.
+- Server logs a warning when the ledger API is open.
+- Backups include the token (private data warning in the UI).
+- Today shows a “No movement recorded” card when a day has shifts but no route, instead of silently omitting the map.

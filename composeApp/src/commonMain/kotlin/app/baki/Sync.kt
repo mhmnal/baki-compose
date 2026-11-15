@@ -5,6 +5,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.client.plugins.sse.sse
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -44,7 +45,15 @@ private data class RoutesResponse(val ok: Boolean = true, val items: List<RouteB
  * The same tracker server the web app talks to, so both clients share one dataset.
  * `events()` is the live channel: the server broadcasts a change after any write.
  */
-class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultClient()) {
+class TrackerClient(
+    var baseUrl: String,
+    var token: String = "",
+    private val http: HttpClient = defaultClient(),
+) {
+
+    private fun HttpRequestBuilder.auth() {
+        if (token.isNotBlank()) header("X-Baki-Token", token)
+    }
 
     companion object {
         fun defaultClient(): HttpClient = HttpClient {
@@ -65,6 +74,7 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
     /** null means "nothing changed since the last pull". */
     suspend fun pull(): Store? {
         val res = http.get("$baseUrl/api/data") {
+            auth()
             etag?.let { header(HttpHeaders.IfNoneMatch, it) }
         }
         if (res.status == HttpStatusCode.NotModified) return null
@@ -75,6 +85,7 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
 
     suspend fun push(store: Store, deletedIds: List<String> = emptyList(), undeleteIds: List<String> = emptyList()): Store {
         val res = http.post("$baseUrl/api/data") {
+            auth()
             contentType(ContentType.Application.Json)
             setBody(BakiJson.encodeToString(PushBody.serializer(), PushBody(store, deletedIds, undeleteIds)))
         }
@@ -86,6 +97,7 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
     suspend fun pushRoutes(items: List<RouteBlob>): Int {
         if (items.isEmpty()) return 0
         val res = http.post("$baseUrl/api/routes") {
+            auth()
             contentType(ContentType.Application.Json)
             setBody(BakiJson.encodeToString(RoutesBody.serializer(), RoutesBody(items)))
         }
@@ -95,14 +107,14 @@ class TrackerClient(var baseUrl: String, private val http: HttpClient = defaultC
 
     /** Traces recorded since [since] (a yyyy-MM-dd date). */
     suspend fun pullRoutes(since: String): List<RouteBlob> {
-        val res = http.get("$baseUrl/api/routes?since=$since")
+        val res = http.get("$baseUrl/api/routes?since=$since") { auth() }
         if (res.status != HttpStatusCode.OK) return emptyList()
         return BakiJson.decodeFromString<RoutesResponse>(res.bodyAsText()).items
     }
 
     /** Emits once per server-side change. Reconnects by the caller's restart policy. */
     fun events(): Flow<String> = flow {
-        http.sse("$baseUrl/api/events") {
+        http.sse("$baseUrl/api/events", request = { auth() }) {
             incoming.collect { event ->
                 event.data?.let { emit(it) }
             }

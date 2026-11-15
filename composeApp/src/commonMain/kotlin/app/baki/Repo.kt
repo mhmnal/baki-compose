@@ -31,7 +31,7 @@ fun newId(prefix: String = "c"): String {
 class BakiRepo(initial: ClientConfig = loadConfig()) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
-    private var client = TrackerClient(initial.serverUrl)
+    private var client = TrackerClient(initial.serverUrl, initial.serverToken)
 
     var config by mutableStateOf(initial)
         private set
@@ -894,7 +894,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             // A restore must never silently turn writes on. The user re-enables explicitly.
             config = saved.copy(allowWrites = false, pendingPush = true)
             saveConfig(config)
-            client = TrackerClient(config.serverUrl)
+            client = TrackerClient(config.serverUrl, config.serverToken)
         }
         bundle?.calibration?.let { runCatching { Calibration.restore(it) } }
         bundle?.routes?.forEach { runCatching { RouteStore.put(it) } }
@@ -1085,12 +1085,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.tapFeedback()
     }
 
-    fun setServer(url: String) {
+    fun setServer(url: String, token: String = config.serverToken) {
         val clean = url.trim()
         if (clean.isEmpty()) return
-        config = config.copy(serverUrl = clean)
+        config = config.copy(serverUrl = clean, serverToken = token.trim())
         saveConfig(config)
-        client = TrackerClient(clean)
+        client = TrackerClient(clean, config.serverToken)
         scope.launch { runCatching { sync() } }
     }
 }

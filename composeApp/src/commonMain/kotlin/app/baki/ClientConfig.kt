@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClientConfig(
     val serverUrl: String = defaultServerUrl,
+    /** Shared API token; blank works only when the server is unsecured. */
+    val serverToken: String = "",
     /**
      * Safety catch. While false the app never pushes a write, so a half-finished screen
      * cannot disturb the ledger the real app is using.

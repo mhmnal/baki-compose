@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.material3.Surface
+
 import androidx.compose.foundation.shape.CircleShape
 
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +85,28 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
         }
     }
 
-    if (routes.isEmpty()) return
+    if (routes.isEmpty()) {
+        // Keep the feature discoverable when a day has shifts but no usable path (location off).
+        val hasActivity = (live != null && day == today) || store.shifts.any { it.date == day }
+        if (!hasActivity) return
+        Surface(
+            color = scheme.surfaceContainerLow,
+            shape = MaterialTheme.shapes.large,
+            modifier = modifier.fillMaxWidth().padding(vertical = Space.s),
+        ) {
+            Column(Modifier.padding(Space.ml)) {
+                Text(
+                    if (live != null && day == today) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    "No movement recorded. Keep location on during a live shift to draw the map.",
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        return
+    }
 
     val km = routes.sumOf { routeMetres(it.route.points) } / 1000.0
     val liveHere = live != null && day == today
