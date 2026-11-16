@@ -722,3 +722,11 @@ No financial feature was removed.
 - Selecting the previous day in the Today strip now drives the whole page: date, hero, operating, food, shift and entries.
 - Past-day view becomes read-only; quick add and FAB are hidden.
 - 205 tests, 0 failures.
+
+## 0.43.55 Desk shell
+
+- Desktop now renders a separate read-only Desk surface instead of the phone UI.
+- Overview, Ledger table, Shifts master-detail, Routes, Compare, Year, Settings.
+- Statement preview/tax/print, CSV/JSON/GPX export, route pull and sync.
+- No phone add/edit controls, FAB, bottom navigation or financial forms.
+- 205 tests, 0 failures.

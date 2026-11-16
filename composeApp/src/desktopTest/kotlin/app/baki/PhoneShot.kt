@@ -131,6 +131,25 @@ class PhoneShot {
                 grossCents = 8_150, note = "evening surge",
             )
         }
+        runCatching {
+            val shift = repo.store.shifts.firstOrNull { it.start == "17:40" }
+            if (shift != null) {
+                RouteStore.put(
+                    ShiftRoute(
+                        shiftId = shift.id,
+                        date = shift.date,
+                        points = listOf(
+                            RoutePoint(3.1390, 101.6869, 1_762_000_000_000),
+                            RoutePoint(3.1450, 101.6950, 1_762_000_120_000),
+                            RoutePoint(3.1520, 101.7020, 1_762_000_240_000),
+                            RoutePoint(3.1590, 101.7110, 1_762_000_360_000),
+                            RoutePoint(3.1510, 101.7210, 1_762_000_480_000),
+                            RoutePoint(3.1420, 101.7130, 1_762_000_600_000),
+                        ),
+                    ),
+                )
+            }
+        }
         runCatching { repo.addExpense(1_850, "food", "lunch at KJ", today) }
         runCatching { repo.addExpense(6_400, "fuel", "Petronas", today) }
         runCatching { repo.addExpense(320, "toll", "MEX", today) }

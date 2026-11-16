@@ -122,10 +122,14 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         reducedMotion = repo.config.reducedMotion,
     ) {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-            // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
-            SharedTransitionLayout {
-                androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
-                    AppContent(repo)
+            if (Caps.isDesktop && !PhonePreview.active) {
+                // Desktop is a separate read-only review surface, not a stretched phone.
+                DeskApp(repo)
+            } else {
+                SharedTransitionLayout {
+                    androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
+                        AppContent(repo)
+                    }
                 }
             }
             ActionFeedbackOverlay(Modifier.align(Alignment.BottomCenter))

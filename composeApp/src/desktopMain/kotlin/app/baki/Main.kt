@@ -59,6 +59,7 @@ fun main() {
         state = state,
     ) {
         window.minimumSize = java.awt.Dimension(1080, 700)
+        PhonePreview.desktopView = System.getenv("BAKI_VIEW")?.takeIf { it.isNotBlank() }
         App()
     }
 }

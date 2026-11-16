@@ -334,7 +334,7 @@ fun TodayScreen(
         item { TodayRouteCard(store = store, day = day, live = live) }
 
         // what you keep buying, one tap away
-        if (day == today && quick.isNotEmpty()) item {
+        if (day == today && !repo.readOnly && quick.isNotEmpty()) item {
             Column {
                 Text("QUICK HITS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(Space.s))
@@ -355,7 +355,7 @@ fun TodayScreen(
             }
         }
 
-        if (day == today && quick.isEmpty()) item {
+        if (day == today && !repo.readOnly && quick.isEmpty()) item {
             FlowRow(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
@@ -549,6 +549,7 @@ fun RowCardIcon(
     amount: String,
     tint: Color,
     sharedKey: String? = null,
+    editable: Boolean = true,
     onEdit: () -> Unit = {},
     onDelete: (() -> Unit)? = null,
 ) {
@@ -568,7 +569,7 @@ fun RowCardIcon(
 
     val swipe = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled && !acted) {
+            if (editable && value != SwipeToDismissBoxValue.Settled && !acted) {
                 acted = true
                 when (value) {
                     SwipeToDismissBoxValue.StartToEnd -> onEdit()
@@ -584,8 +585,8 @@ fun RowCardIcon(
 
     SwipeToDismissBox(
         state = swipe,
-        enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = onDelete != null,
+        enableDismissFromStartToEnd = editable,
+        enableDismissFromEndToStart = editable && onDelete != null,
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
@@ -602,8 +603,10 @@ fun RowCardIcon(
         },
     ) {
     val a11yActions = buildList {
-        add(CustomAccessibilityAction("Edit") { onEdit(); true })
-        if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
+        if (editable) {
+            add(CustomAccessibilityAction("Edit") { onEdit(); true })
+            if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
+        }
     }
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -611,7 +614,7 @@ fun RowCardIcon(
                 .then(
                     Modifier.clip(MaterialTheme.shapes.large).background(scheme.surfaceContainerLow)
                 )
-                .pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) }
+                .then(if (editable) Modifier.pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) } else Modifier)
                 .semantics { customActions = a11yActions }
                 .padding(vertical = Space.m, horizontal = Space.l),
             verticalAlignment = Alignment.CenterVertically,
