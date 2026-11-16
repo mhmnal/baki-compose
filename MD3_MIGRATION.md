@@ -708,3 +708,11 @@ No financial feature was removed.
 - Integer fills the card; decimal is small gold.
 - Negative values use a drawn minus bar, not a tiny glyph.
 - 205 tests, 0 failures.
+
+## 0.43.51 Roast & Pine
+
+- Replaced Fig Milk/Midnight Fig with Oat & Pine and Roast & Pine.
+- Light hero: deep pine card, matcha numerals, amber decimal.
+- Dark hero: soft mint card, dark roast numerals, deep gold decimal.
+- Terracotta secondary, amber tertiary; signature is default, System/dynamic optional.
+- 205 tests, 0 failures.

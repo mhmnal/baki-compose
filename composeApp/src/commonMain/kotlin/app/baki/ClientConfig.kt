@@ -15,8 +15,8 @@ data class ClientConfig(
     val allowWrites: Boolean = false,
     /** "auto" | "light" | "dark" — the web app's Auto/Light/Dark selector. */
     val themeMode: String = "auto",
-    /** "wallpaper" | "baki" — Material You or Baki's fixed Fig palette. */
-    val colorSource: String = "wallpaper",
+    /** "wallpaper" | "baki" — System Material You or Baki's fixed Roast & Pine palette. */
+    val colorSource: String = "baki",
     /** Stronger outlines and text contrast for the fixed Baki palette. */
     val highContrast: Boolean = false,
     /** Opt-in: upload sealed traces so the desk can review them. Off by default. */

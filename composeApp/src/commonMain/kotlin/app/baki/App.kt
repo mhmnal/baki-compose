@@ -2155,14 +2155,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             )
             Spacer(Modifier.height(Space.xs))
             ConnectedChoiceGroup(
-                options = listOf("Wallpaper", "Baki"),
-                selected = if (repo.config.colorSource == "baki") "Baki" else "Wallpaper",
+                options = listOf("System", "Baki"),
+                selected = if (repo.config.colorSource == "baki") "Baki" else "System",
                 onSelect = { repo.setColorSource(if (it == "Baki") "baki" else "wallpaper") },
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                if (repo.config.colorSource == "baki") "Baki's fixed Fig & Marigold colours."
-                else "Wallpaper uses Material You. Baki is the fixed fallback.",
+                if (repo.config.colorSource == "baki") "Roast & Pine: espresso, matcha and terracotta."
+                else "System uses Material You. Roast & Pine is the fixed fallback.",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
             if (repo.config.colorSource == "baki") {
