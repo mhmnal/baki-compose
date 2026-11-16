@@ -716,3 +716,9 @@ No financial feature was removed.
 - Dark hero: soft mint card, dark roast numerals, deep gold decimal.
 - Terracotta secondary, amber tertiary; signature is default, System/dynamic optional.
 - 205 tests, 0 failures.
+
+## 0.43.52 two-day strip
+
+- Selecting the previous day in the Today strip now drives the whole page: date, hero, operating, food, shift and entries.
+- Past-day view becomes read-only; quick add and FAB are hidden.
+- 205 tests, 0 failures.

@@ -165,7 +165,7 @@ fun TodayScreen(
             val largeText = LocalDensity.current.fontScale >= 1.6f
             Column(Modifier.fillMaxWidth()) {
                 Text(
-                    "TODAY'S TAKE",
+                    if (day == today) "TODAY'S TAKE" else "THAT DAY'S TAKE",
                     color = scheme.onSurfaceVariant,
                     letterSpacing = 1.4.sp,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
@@ -177,12 +177,13 @@ fun TodayScreen(
                         fontFamily = archivoDisplayFontFamily(),
                         background = scheme.primary, ink = scheme.onPrimary,
                         decimalInk = scheme.tertiaryContainer, largeText = true,
+                        description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(Space.s))
                     FoodCard(food, paidUntil, largeText = true, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(Space.s))
-                    DayCard(store, today, Modifier.fillMaxWidth().height(132.dp))
+                    DayCard(store, today, day, onDay, Modifier.fillMaxWidth().height(132.dp))
                 } else {
                     Row(
                         Modifier.fillMaxWidth().height(206.dp),
@@ -193,6 +194,7 @@ fun TodayScreen(
                             fontFamily = archivoDisplayFontFamily(),
                             background = scheme.primary, ink = scheme.onPrimary,
                             decimalInk = scheme.tertiaryContainer, largeText = false,
+                            description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                             modifier = Modifier.weight(0.6f).fillMaxHeight(),
                         )
                         Column(
@@ -200,7 +202,7 @@ fun TodayScreen(
                             verticalArrangement = Arrangement.spacedBy(Space.s),
                         ) {
                             FoodCard(food, paidUntil, largeText = false, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth().height(120.dp))
-                            DayCard(store, today, Modifier.fillMaxWidth().weight(1f))
+                            DayCard(store, today, day, onDay, Modifier.fillMaxWidth().weight(1f))
                         }
                     }
                 }
@@ -332,7 +334,7 @@ fun TodayScreen(
         item { TodayRouteCard(store = store, day = day, live = live) }
 
         // what you keep buying, one tap away
-        if (quick.isNotEmpty()) item {
+        if (day == today && quick.isNotEmpty()) item {
             Column {
                 Text("QUICK HITS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(Space.s))
@@ -353,7 +355,7 @@ fun TodayScreen(
             }
         }
 
-        if (quick.isEmpty()) item {
+        if (day == today && quick.isEmpty()) item {
             FlowRow(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Space.m),
@@ -641,6 +643,7 @@ private fun HeroAmount(
     ink: Color,
     decimalInk: Color,
     largeText: Boolean,
+    description: String,
     modifier: Modifier = Modifier,
 ) {
     val motion = MaterialTheme.motionScheme
@@ -674,7 +677,7 @@ private fun HeroAmount(
             .height(cardHeight)
             .clip(BakiHeroShape)
             .drawBehind { drawRect(background) }
-            .semantics { contentDescription = "Today's take, RM ${rm(cents)}" },
+            .semantics { contentDescription = "$description, RM ${rm(cents)}" },
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val edge = 10.dp.toPx()
@@ -866,16 +869,21 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
 }
 
 @Composable
-private fun DayCard(store: Store, today: String, modifier: Modifier = Modifier) {
+private fun DayCard(
+    store: Store,
+    today: String,
+    selectedDay: String,
+    onDay: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val previous = addDays(today, -1)
-    var selected by remember(today) { mutableStateOf(today) }
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(
             Modifier.fillMaxSize().padding(Space.s),
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            MiniDay(store, previous, selected == previous, { selected = previous }, Modifier.weight(1f).fillMaxHeight())
-            MiniDay(store, today, selected == today, { selected = today }, Modifier.weight(1f).fillMaxHeight())
+            MiniDay(store, previous, selectedDay == previous, { onDay(previous) }, Modifier.weight(1f).fillMaxHeight())
+            MiniDay(store, today, selectedDay == today, { onDay(today) }, Modifier.weight(1f).fillMaxHeight())
         }
     }
 }

@@ -61,8 +61,8 @@ android {
         applicationId = "app.baki.compose"   // coexists with com.baki.desktop
         minSdk = 24
         targetSdk = 36
-        versionCode = 182
-        versionName = "0.43.51"
+        versionCode = 183
+        versionName = "0.43.52"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -105,7 +105,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.AppImage)
             packageName = "Baki"
-            packageVersion = "0.43.51"
+            packageVersion = "0.43.52"
             description = "What your shift really pays"
             vendor = "Baki"
             linux { iconFile.set(project.file("icons/baki.png")) }

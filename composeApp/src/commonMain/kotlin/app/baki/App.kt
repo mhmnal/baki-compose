@@ -405,7 +405,7 @@ private fun AppContent(repo: BakiRepo) {
     }
 
     // M3 Expressive primary action menu.
-    if (!wide && tab == 0 && !repo.readOnly && repo.live == null) {
+    if (!wide && tab == 0 && day == todayTick && !repo.readOnly && repo.live == null) {
         Box(
             modifier = Modifier.align(Alignment.BottomEnd).testTag("quick-actions")
                 .padding(
