@@ -152,3 +152,14 @@ Heavy Gradle builds run in a capped cgroup so a memory spike kills the build, no
 The wrapper serializes builds, caps the Gradle and Kotlin JVMs, and stops idle daemons afterwards.
 Direct `./gradlew` builds still inherit the heap/worker caps in `gradle.properties`, but the 6 GB
 cgroup cage only applies through the wrapper. Use `BAKI_KEEP_DAEMONS=1` if you need warm daemons.
+
+## Visual reference rendering
+
+For JS-heavy design references, render the real page instead of scraping its title:
+
+```bash
+./scripts/render-site.sh https://m3.material.io/styles/spacing/overview
+RENDER_DARK=1 ./scripts/render-site.sh <url>
+```
+
+Outputs full-page desktop and phone screenshots under `design-reference/`.
