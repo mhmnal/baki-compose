@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -171,12 +172,11 @@ fun TodayScreen(
                 )
                 Spacer(Modifier.height(Space.xs))
                 if (largeText) {
-                    SplitInkAmount(
+                    HeroAmount(
                         cents = t.net, reducedMotion = repo.config.reducedMotion,
                         fontFamily = archivoDisplayFontFamily(),
-                        upper = scheme.primary, lower = scheme.primaryContainer,
-                        upperInk = scheme.onPrimary, lowerInk = scheme.onPrimaryContainer,
-                        seam = scheme.tertiary, largeText = true,
+                        background = scheme.primary, ink = scheme.onPrimary,
+                        decimalInk = scheme.tertiaryContainer, largeText = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(Space.s))
@@ -188,12 +188,11 @@ fun TodayScreen(
                         Modifier.fillMaxWidth().height(206.dp),
                         horizontalArrangement = Arrangement.spacedBy(Space.s),
                     ) {
-                        SplitInkAmount(
+                        HeroAmount(
                             cents = t.net, reducedMotion = repo.config.reducedMotion,
                             fontFamily = archivoDisplayFontFamily(),
-                            upper = scheme.primary, lower = scheme.primaryContainer,
-                            upperInk = scheme.onPrimary, lowerInk = scheme.onPrimaryContainer,
-                            seam = scheme.tertiary, largeText = false,
+                            background = scheme.primary, ink = scheme.onPrimary,
+                            decimalInk = scheme.tertiaryContainer, largeText = false,
                             modifier = Modifier.weight(0.6f).fillMaxHeight(),
                         )
                         Column(
@@ -634,15 +633,13 @@ fun RowCardIcon(
 }
 
 @Composable
-private fun SplitInkAmount(
+private fun HeroAmount(
     cents: Long,
     reducedMotion: Boolean,
     fontFamily: FontFamily,
-    upper: Color,
-    lower: Color,
-    upperInk: Color,
-    lowerInk: Color,
-    seam: Color,
+    background: Color,
+    ink: Color,
+    decimalInk: Color,
     largeText: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -665,96 +662,58 @@ private fun SplitInkAmount(
         fontFeatureSettings = "tnum",
         letterSpacing = (-4).sp,
     )
-    val shape = BakiHeroShape
+    val decimalStyle = style.copy(
+        fontSize = (BakiHeroFontSize.value * 0.33f).sp,
+        letterSpacing = (-1).sp,
+    )
     val cardHeight = if (largeText) 175.dp else 206.dp
     val measurer = rememberTextMeasurer()
     Box(
         modifier
             .fillMaxWidth()
             .height(cardHeight)
-            .clip(shape)
-            .drawBehind {
-                val split = size.height * 0.50f
-                drawRect(upper)
-                drawRect(lower, topLeft = androidx.compose.ui.geometry.Offset(0f, split), size = androidx.compose.ui.geometry.Size(size.width, size.height - split))
-                drawLine(seam, androidx.compose.ui.geometry.Offset(0f, split), androidx.compose.ui.geometry.Offset(size.width, split), strokeWidth = 2.dp.toPx())
-            }
+            .clip(BakiHeroShape)
+            .drawBehind { drawRect(background) }
             .semantics { contentDescription = "Today's take, RM ${rm(cents)}" },
     ) {
         Canvas(Modifier.fillMaxSize()) {
             val edge = 10.dp.toPx()
             val available = (size.width - edge * 2f).coerceAtLeast(1f)
-            val gap = 2.dp.toPx()
-            fun blockAt(fontSize: Float): HeroFit {
-                val intLayout = measurer.measure(
-                    whole,
-                    style.copy(fontSize = fontSize.sp),
-                    maxLines = 1,
-                    softWrap = false,
-                    constraints = Constraints(maxWidth = available.toInt().coerceAtLeast(1)),
+            val gap = 3.dp.toPx()
+            val int = measurer.measure(
+                whole, style, maxLines = 1, softWrap = false,
+            )
+            val dec = decimal.takeIf { it.isNotEmpty() }?.let {
+                measurer.measure(it, decimalStyle, maxLines = 1, softWrap = false)
+            }
+            val signWidth = if (negative) (size.width * 0.12f).coerceIn(16.dp.toPx(), 34.dp.toPx()) else 0f
+            val numberWidth = int.size.width + (dec?.size?.width ?: 0) + if (dec != null) gap else 0f
+            val numberAvailable = (available - signWidth - if (negative) gap else 0f).coerceAtLeast(1f)
+            val scaleX = (numberAvailable / numberWidth).coerceIn(0.20f, 1.18f)
+            val targetHeight = size.height * 1.16f
+            val scaleY = (targetHeight / int.size.height.toFloat()).coerceIn(1f, 2.6f)
+            val left = edge + signWidth + (if (negative) gap else 0f) +
+                (numberAvailable - numberWidth * scaleX) / 2f
+            val top = (size.height - int.size.height * scaleY) / 2f
+            val intBaseline = int.getLineBaseline(0)
+            val decTop = dec?.let { intBaseline - it.getLineBaseline(0) - int.size.height * 0.08f } ?: 0f
+            if (negative) {
+                drawRoundRect(
+                    color = ink,
+                    topLeft = androidx.compose.ui.geometry.Offset(edge, size.height * 0.49f),
+                    size = androidx.compose.ui.geometry.Size(signWidth, 4.dp.toPx()),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
                 )
-                val decLayout = decimal.takeIf { it.isNotEmpty() }?.let {
-                    measurer.measure(
-                        it,
-                        style.copy(fontSize = (fontSize * 0.32f).sp, letterSpacing = (-1).sp),
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                }
-                val signLayout = if (negative) {
-                    measurer.measure(
-                        "-",
-                        style.copy(fontSize = (fontSize * 0.26f).sp, letterSpacing = 0.sp),
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                } else null
-                return HeroFit(intLayout, decLayout, signLayout)
             }
-            var font = if (largeText) 130f else 180f
-            var fit = blockAt(font)
-            var guard = 0
-            while (fit.width(gap) > available && guard < 6) {
-                font = (font * (available / fit.width(gap)) * 0.95f).coerceAtLeast(20f)
-                fit = blockAt(font)
-                guard++
+            withTransform({
+                translate(left, top)
+                scale(scaleX, scaleY, pivot = androidx.compose.ui.geometry.Offset.Zero)
+            }) {
+                drawText(int, color = ink, topLeft = androidx.compose.ui.geometry.Offset(0f, 0f))
+                dec?.let { drawText(it, color = decimalInk, topLeft = androidx.compose.ui.geometry.Offset(int.size.width + gap, decTop)) }
             }
-            val int = fit.integer
-            val dec = fit.decimal
-            val sign = fit.sign
-            val contentHeight = maxOf(int.size.height, dec?.size?.height ?: 0, sign?.size?.height ?: 0)
-            val scaleY = (size.height / contentHeight.toFloat() * 1.02f).coerceIn(0.72f, 1.6f)
-            val totalWidth = fit.width(gap)
-            val startX = ((size.width - totalWidth) / 2f).coerceAtLeast(edge)
-            val intTop = ((size.height - contentHeight) / 2f).coerceAtLeast(0f)
-            val intBaseline = intTop + int.getLineBaseline(0)
-            val signTop = sign?.let { intBaseline - it.getLineBaseline(0) } ?: intTop
-            val decTop = dec?.let { intBaseline - it.getLineBaseline(0) - contentHeight * 0.12f } ?: intTop
-            fun drawLayer(ink: Color, top: Float, bottom: Float) {
-                clipRect(0f, top, size.width, bottom) {
-                    scale(1f, scaleY, pivot = center) {
-                        var x = startX
-                        sign?.let { drawText(it, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x, signTop)); x += it.size.width + gap }
-                        drawText(int, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x, intTop))
-                        x += int.size.width
-                        dec?.let { drawText(it, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x + gap, decTop)) }
-                    }
-                }
-            }
-            drawLayer(upperInk, 0f, size.height * 0.50f)
-            drawLayer(lowerInk, size.height * 0.50f, size.height)
         }
     }
-}
-
-private data class HeroFit(
-    val integer: TextLayoutResult,
-    val decimal: TextLayoutResult?,
-    val sign: TextLayoutResult?,
-) {
-    fun width(gap: Float): Float =
-        integer.size.width + (decimal?.size?.width ?: 0) + (sign?.size?.width ?: 0) +
-            (if (decimal != null) gap else 0f) + (if (sign != null) gap else 0f)
 }
 
 @Composable

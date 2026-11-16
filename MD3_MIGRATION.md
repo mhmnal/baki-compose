@@ -694,3 +694,17 @@ No financial feature was removed.
 - Width is solved before drawing; vertical fill is clamped to the card.
 - Split seam and Archivo Expanded unchanged.
 - 205 tests, 0 failures.
+
+## 0.43.49 seam-free hero
+
+- Removed the split seam; hero is one solid primary field.
+- Integer fills the card with fixed font size and transform fit; decimal stays small and gold.
+- Longer values compress horizontally instead of shrinking the type role.
+- 205 tests, 0 failures.
+
+## 0.43.50 solid hero/minus bar
+
+- Split seam removed; hero is a single primary field.
+- Integer fills the card; decimal is small gold.
+- Negative values use a drawn minus bar, not a tiny glyph.
+- 205 tests, 0 failures.
