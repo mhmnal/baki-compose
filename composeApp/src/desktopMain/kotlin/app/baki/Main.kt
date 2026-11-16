@@ -56,7 +56,6 @@ private fun preparePreviewHome() {
 }
 
 fun main(args: Array<String>) {
-    java.io.File("/tmp/baki-preview-boot.log").appendText("${java.time.Instant.now()} pid=${ProcessHandle.current().pid()} shell=${System.getenv("BAKI_SHELL")} args=${args.joinToString("|")}\n")
     val preview = previewRequested(args)
     if (preview) preparePreviewHome()
     // The preview is a development surface: it may open beside the Desk and must not be
@@ -122,6 +121,11 @@ fun main(args: Array<String>) {
         ) {
             window.minimumSize = java.awt.Dimension(1080, 700)
             PhonePreview.desktopView = System.getenv("BAKI_VIEW")?.takeIf { it.isNotBlank() }
+            LaunchedEffect(Unit) {
+                if (System.getenv("BAKI_AUTO_PREVIEW") == "1") {
+                    PlatformEffects.openPhonePreview()
+                }
+            }
             App()
         }
     }

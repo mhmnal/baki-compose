@@ -20,30 +20,29 @@ actual object PlatformEffects {
         runCatching {
             val launcher = System.getProperty("jpackage.app-path")
                 ?.takeIf { java.io.File(it).canExecute() }
+                ?: error("No Baki launcher path available")
             val log = java.io.File(System.getProperty("user.home") ?: ".", ".local/share/baki/preview-launch.log")
             log.parentFile?.mkdirs()
-            val child: Process = if (launcher != null) {
-                // Spawn through a shell so the preview flag is exported in the child even though
-                // the native launcher does not accept --phone-preview as an application argument.
-                val quoted = launcher.replace("\"", "\\\"")
-                val command = "exec env BAKI_SHELL=phone \"$quoted\""
-                log.appendText("${java.time.Instant.now()} launching shell: $command\n")
-                ProcessBuilder("/bin/bash", "-c", command)
-                    .redirectErrorStream(true)
-                    .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
-                    .start()
-            } else {
-                val command = ProcessHandle.current().info().command().orElse("")
-                val cp = System.getProperty("java.class.path").orEmpty()
-                if (command.substringAfterLast('/').startsWith("java") && cp.isNotBlank()) {
-                    log.appendText("${java.time.Instant.now()} launching java: $command -cp <classpath> app.baki.MainKt\n")
-                    ProcessBuilder(command, "-cp", cp, "app.baki.MainKt")
-                        .also { it.environment()["BAKI_SHELL"] = "phone" }
-                        .redirectErrorStream(true)
-                        .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
-                        .start()
-                } else error("No usable Baki launcher path")
+            // A tiny script avoids argv/quoting differences between the running app and a terminal.
+            val script = java.io.File(log.parentFile, "open-phone-preview.sh").apply {
+                writeText(
+                    "#!/bin/bash\n" +
+                        "unset JAVA_HOME _JPACKAGE_LAUNCHER LD_LIBRARY_PATH\n" +
+                        "exec env BAKI_SHELL=phone ${launcher.replace(" ", "\\ ")}\n",
+                )
+                setExecutable(true)
             }
+            log.appendText("${java.time.Instant.now()} launching script: ${script.absolutePath}\n")
+            val child = ProcessBuilder(script.absolutePath)
+                .also {
+                    it.environment()["BAKI_SHELL"] = "phone"
+                    it.environment().remove("JAVA_HOME")
+                    it.environment().remove("_JPACKAGE_LAUNCHER")
+                    it.environment().remove("LD_LIBRARY_PATH")
+                }
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
+                .start()
             log.appendText("${java.time.Instant.now()} child pid=${child.pid()}\n")
             Thread {
                 val code = runCatching { child.waitFor() }.getOrElse { -1 }
