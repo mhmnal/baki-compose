@@ -1,5 +1,8 @@
 package app.baki
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 /**
  * Switches the app into the phone shell for offscreen captures.
  *
@@ -17,6 +20,9 @@ object PhonePreview {
 
     /** Tab the phone shell opens on: 0 overview, 1 spending, 2 shifts, 3 summary, 4 more. */
     var initialTab: Int = 0
+
+    /** Expressive, standard, or a deliberately slower lab scheme. */
+    var motionMode: String by androidx.compose.runtime.mutableStateOf("expressive")
 
     /**
      * Desktop shell surface to open: overview, entries, shifts, routes, compare, year,

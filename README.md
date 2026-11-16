@@ -11,7 +11,7 @@ Two surfaces, one ledger:
 | Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.43.55** (`versionCode` 186+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.43.56** (`versionCode` 187+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
 Test suite: **205 JVM tests** (`:composeApp:desktopTest`).
@@ -90,11 +90,11 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.43.55
+./scripts/release.sh 0.43.56
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.43.55.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.43.56.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync
@@ -163,3 +163,23 @@ RENDER_DARK=1 ./scripts/render-site.sh <url>
 ```
 
 Outputs full-page desktop and phone screenshots under `design-reference/`.
+
+
+## Interactive Phone Preview
+
+A separate desktop window for testing the real phone shell without a phone:
+
+```bash
+BAKI_SHELL=phone ./Baki
+```
+
+It uses an isolated copy of the ledger under `~/.baki-preview-home`; edits never reach the real store
+or server. The side panel controls Auto/Light/Dark, System/Baki, high contrast, and the Motion Lab
+(Expressive / Standard / Slow, plus reduced motion).
+
+```bash
+BAKI_PREVIEW_RESET=1 BAKI_SHELL=phone ./Baki   # refresh the copy from the live ledger
+```
+
+Motion can be reviewed interactively. Slow mode is a deliberately low-stiffness preview scheme;
+real Android frame pacing still needs the emulator or phone.

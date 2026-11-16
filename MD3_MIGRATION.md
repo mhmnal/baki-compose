@@ -730,3 +730,10 @@ No financial feature was removed.
 - Statement preview/tax/print, CSV/JSON/GPX export, route pull and sync.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
+
+## 0.43.56 Phone Preview/Motion Lab
+
+- Desktop can launch the real phone shell in an isolated preview home with `BAKI_SHELL=phone`.
+- Side panel: appearance, palette, high contrast, expressive/standard/slow motion, reduced motion.
+- No phone, server, or real ledger writes required.
+- 205 tests, 0 failures.

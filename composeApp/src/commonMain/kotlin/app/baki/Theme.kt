@@ -6,6 +6,9 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -57,7 +60,15 @@ fun BakiTheme(
         colorScheme = scheme,
         typography = Typography(),
         shapes = Md3Shapes,
-        motionScheme = if (reducedMotion) MotionScheme.standard() else MotionScheme.expressive(),
+        motionScheme = if (reducedMotion) {
+            MotionScheme.standard()
+        } else if (PhonePreview.active && PhonePreview.motionMode == "slow") {
+            PreviewSlowMotionScheme
+        } else if (PhonePreview.active && PhonePreview.motionMode == "standard") {
+            MotionScheme.standard()
+        } else {
+            MotionScheme.expressive()
+        },
         content = content,
     )
 }
@@ -191,3 +202,18 @@ val BakiDarkHighContrast = BakiDarkColors.copy(
     outline = androidx.compose.ui.graphics.Color(0xFFD6CCC0),
     outlineVariant = androidx.compose.ui.graphics.Color(0xFFA79A8B),
 )
+
+
+/** A deliberately slow spring set for the desktop Phone Preview Motion Lab. */
+private object PreviewSlowMotionScheme : MotionScheme {
+    private fun <T> spatial(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessLow)
+    private fun <T> effects(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = Spring.StiffnessLow)
+    override fun <T> defaultSpatialSpec(): FiniteAnimationSpec<T> = spatial()
+    override fun <T> fastSpatialSpec(): FiniteAnimationSpec<T> = spatial()
+    override fun <T> slowSpatialSpec(): FiniteAnimationSpec<T> = spatial()
+    override fun <T> defaultEffectsSpec(): FiniteAnimationSpec<T> = effects()
+    override fun <T> fastEffectsSpec(): FiniteAnimationSpec<T> = effects()
+    override fun <T> slowEffectsSpec(): FiniteAnimationSpec<T> = effects()
+}

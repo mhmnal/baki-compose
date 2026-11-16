@@ -2,6 +2,7 @@ package app.baki
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
@@ -30,7 +31,32 @@ private fun acquireSingleInstance(): Boolean {
     return true
 }
 
-fun main() {
+private fun previewRequested(args: Array<String>): Boolean =
+    args.contains("--phone-preview") || System.getenv("BAKI_SHELL") == "phone"
+
+/** Copy the live encrypted store into a separate preview home; never write the real ledger. */
+private fun preparePreviewHome() {
+    val realHome = System.getProperty("user.home") ?: "."
+    val real = java.io.File(realHome, ".local/share/baki")
+    val previewHome = java.io.File(realHome, ".baki-preview-home").apply { mkdirs() }
+    val preview = java.io.File(previewHome, ".local/share/baki").apply { mkdirs() }
+    val reset = System.getenv("BAKI_PREVIEW_RESET") == "1"
+    if (reset || !java.io.File(preview, "store.json").exists()) {
+        listOf(".key", "store.json", "store.json.bak", "routes.json", "live.json").forEach { name ->
+            val from = java.io.File(real, name)
+            if (from.exists()) runCatching { from.copyTo(java.io.File(preview, name), overwrite = true) }
+        }
+    }
+    if (!java.io.File(preview, ".key").exists()) {
+        val key = java.io.File(real, ".key")
+        if (key.exists()) runCatching { key.copyTo(java.io.File(preview, ".key"), overwrite = false) }
+    }
+    System.setProperty("user.home", previewHome.absolutePath)
+}
+
+fun main(args: Array<String>) {
+    val preview = previewRequested(args)
+    if (preview) preparePreviewHome()
     if (!acquireSingleInstance()) {
         println("Baki is already running")
         return
@@ -49,18 +75,43 @@ fun main() {
         position = WindowPosition.Absolute(80.dp, 40.dp),
     )
 
-    Window(
-        onCloseRequest = {
-            prefs.putInt("w", state.size.width.value.toInt())
-            prefs.putInt("h", state.size.height.value.toInt())
-            exitApplication()
-        },
-        title = "Baki — shift logbook",
-        state = state,
-    ) {
-        window.minimumSize = java.awt.Dimension(1080, 700)
-        PhonePreview.desktopView = System.getenv("BAKI_VIEW")?.takeIf { it.isNotBlank() }
-        App()
+    if (preview) {
+        val previewState = rememberWindowState(
+            size = DpSize(760.dp, 900.dp),
+            position = WindowPosition.Absolute(140.dp, 50.dp),
+        )
+        Window(
+            onCloseRequest = { PhonePreview.active = false; exitApplication() },
+            title = "Baki — phone preview",
+            state = previewState,
+        ) {
+            val previewRepo = remember {
+                BakiRepo(
+                    ClientConfig(
+                        serverUrl = "",
+                        allowWrites = true,
+                        themeMode = "dark",
+                        colorSource = "baki",
+                    ),
+                )
+            }
+            PhonePreview.active = true
+            PhonePreviewLab(previewRepo)
+        }
+    } else {
+        Window(
+            onCloseRequest = {
+                prefs.putInt("w", state.size.width.value.toInt())
+                prefs.putInt("h", state.size.height.value.toInt())
+                exitApplication()
+            },
+            title = "Baki — shift logbook",
+            state = state,
+        ) {
+            window.minimumSize = java.awt.Dimension(1080, 700)
+            PhonePreview.desktopView = System.getenv("BAKI_VIEW")?.takeIf { it.isNotBlank() }
+            App()
+        }
     }
 }
 }
