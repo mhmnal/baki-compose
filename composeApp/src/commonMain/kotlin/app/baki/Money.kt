@@ -129,3 +129,22 @@ fun EasedMoney(
         modifier = modifier,
     )
 }
+
+/** Normalize a money field as the user types: digits, one decimal point, at most 2 decimals. */
+fun cleanMoneyInput(raw: String): String {
+    val normalized = raw.replace(',', '.').filter { it.isDigit() || it == '.' }
+    val firstDot = normalized.indexOf('.')
+    if (firstDot < 0) return normalized.take(9)
+    val whole = normalized.substring(0, firstDot).take(9)
+    val fraction = normalized.substring(firstDot + 1).filter { it.isDigit() }.take(2)
+    return "$whole.$fraction"
+}
+
+/** Exact cents parser for user-entered ringgit strings; avoids Double rounding at the boundary. */
+fun parseMoneyCents(raw: String): Long? {
+    val clean = cleanMoneyInput(raw)
+    if (clean.isBlank() || clean == ".") return null
+    val whole = clean.substringBefore('.').ifBlank { "0" }.toLongOrNull() ?: return null
+    val fraction = clean.substringAfter('.', "").padEnd(2, '0').take(2).toLongOrNull() ?: 0L
+    return whole * 100 + fraction
+}

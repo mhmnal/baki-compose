@@ -744,7 +744,14 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
-            FilledTonalButton(onClick = onStart, modifier = Modifier.height(48.dp)) {
+            FilledTonalButton(
+                onClick = onStart,
+                modifier = Modifier.height(48.dp),
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.primary,
+                    contentColor = scheme.onPrimary,
+                ),
+            ) {
                 Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
             }
         }

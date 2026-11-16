@@ -731,6 +731,18 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.0 Backup, reconciliation, Work
+
+- Backup health (last backup, size, counts) with a restore summary and explicit merge confirmation.
+- Restore works in read-only mode; it never turns writes on and never deletes existing records.
+- Sync health shows pending upload, last pull/push, and overlapping edits; newest edit wins, tombstones win.
+- Payout reconciliation is visible on every shift and in the payout sheet: recorded, received, still due.
+- Shift payouts no longer overwrite recorded gross; outstanding cash stays honest.
+- More tabs are Money / Work / App; the home-screen widget moved to App.
+- Constructive actions use primary pine; terracotta/red stay for caution and destruction.
+- Money fields use exact cents parsing, decimal keyboards and visible validation; ledger tap targets and semantics improved.
+- 209 tests, 0 failures.
+
 ## 0.43.63 Phone Preview/Motion Lab
 
 - Desktop can launch the real phone shell in an isolated preview home with `BAKI_SHELL=phone`.

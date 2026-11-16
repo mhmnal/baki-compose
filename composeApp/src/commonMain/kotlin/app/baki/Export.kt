@@ -113,3 +113,35 @@ fun statementHtml(store: Store, month: String): String {
 
 private fun String.escapeHtml(): String =
     replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+/** A file-picker summary shown before a restore mutates anything. */
+data class BackupSummary(
+    val exportedAt: String,
+    val entries: Int,
+    val shifts: Int,
+    val bills: Int,
+    val statements: Int,
+    val routes: Int,
+    val hasDeviceConfig: Boolean,
+    val bytes: Int,
+)
+
+fun summarizeBackup(text: String): BackupSummary? {
+    val bundle = runCatching {
+        BakiJson.decodeFromString(BakiBackupBundle.serializer(), text)
+    }.getOrNull()
+    val store = bundle?.store ?: runCatching {
+        BakiJson.decodeFromString(Store.serializer(), text)
+    }.getOrNull() ?: return null
+    return BackupSummary(
+        exportedAt = bundle?.exportedAt ?: store.updatedAt,
+        entries = store.entries.size,
+        shifts = store.shifts.size,
+        bills = store.bills.count { it.active },
+        statements = store.statements.size,
+        routes = bundle?.routes?.size ?: 0,
+        hasDeviceConfig = bundle?.config != null,
+        bytes = text.length,
+    )
+}

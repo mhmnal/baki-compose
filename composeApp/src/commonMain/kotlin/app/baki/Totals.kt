@@ -646,3 +646,26 @@ fun shiftsBelowTarget(store: Store, weekStart: String, target: Double): List<Shi
         (m.netHr ?: 0.0) < target
     }
 }
+
+
+/** Per-shift payout reconciliation: recorded earnings versus cash actually received. */
+data class PayoutTruth(
+    val recorded: Long,
+    val received: Long,
+    val outstanding: Long,
+    val count: Int,
+) {
+    val isSettled: Boolean get() = outstanding <= 0L
+    val overpaid: Long get() = (received - recorded).coerceAtLeast(0L)
+}
+
+fun payoutTruth(shift: Shift): PayoutTruth {
+    val recorded = (shift.gross + shift.incentive).coerceAtLeast(0L)
+    val received = shift.payouts.sumOf { it.c }
+    return PayoutTruth(
+        recorded = recorded,
+        received = received,
+        outstanding = (recorded - received).coerceAtLeast(0L),
+        count = shift.payouts.size,
+    )
+}

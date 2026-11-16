@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TextFieldDefaults
@@ -42,6 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.datetime.Instant
@@ -59,6 +64,7 @@ import kotlinx.datetime.toLocalDateTime
 fun PayoutsSheet(
     title: String,
     payouts: List<Payout>,
+    recordedCents: Long? = null,
     editable: Boolean,
     onEdit: (index: Int, cents: Long) -> Unit,
     onDelete: (index: Int) -> Unit,
@@ -108,7 +114,36 @@ fun PayoutsSheet(
             )
             Text("RM ${rm(total)}", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"))
         }
-        if (editable) Text("tap to edit · swipe to delete", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        if (recordedCents != null) {
+            val truth = PayoutTruth(
+                recorded = recordedCents,
+                received = total,
+                outstanding = (recordedCents - total).coerceAtLeast(0L),
+                count = payouts.size,
+            )
+            Spacer(Modifier.height(Space.s))
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = if (truth.isSettled) scheme.tertiaryContainer else scheme.secondaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(horizontal = Space.m, vertical = Space.s)) {
+                    Row(Modifier.fillMaxWidth()) {
+                        Text("Recorded", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("RM ${rm(truth.recorded)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"))
+                    }
+                    Row(Modifier.fillMaxWidth()) {
+                        Text("Received", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text("RM ${rm(truth.received)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"))
+                    }
+                    Row(Modifier.fillMaxWidth()) {
+                        Text(if (truth.isSettled) "Settled" else "Still due", color = if (truth.isSettled) scheme.tertiary else scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
+                        Text("RM ${rm(truth.outstanding)}", color = if (truth.isSettled) scheme.tertiary else scheme.secondary, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+        if (editable) Text("Tap a payout to edit it · swipe left to delete", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.s))
 
         payouts.forEachIndexed { index, payout ->
@@ -138,6 +173,12 @@ fun PayoutsSheet(
                         .clip(MaterialTheme.shapes.large)
                         .background(scheme.surfaceContainerLow)
                         .clickable(enabled = editable) { editing = index }
+                        .semantics {
+                            if (editable) {
+                                role = androidx.compose.ui.semantics.Role.Button
+                                contentDescription = "Payout RM ${rm(payout.c)} at ${clockTime(payout.at)}; tap to edit"
+                            }
+                        }
                         .heightIn(min = Control.primary)
                         .padding(horizontal = Space.m, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -207,7 +248,7 @@ private fun PayoutAmountDialog(
 ) {
     val scheme = MaterialTheme.colorScheme
     var text by remember { mutableStateOf(if (initialCents > 0) "%.2f".format(initialCents / 100.0) else "") }
-    val amount = text.toDoubleOrNull()?.let { cents(it) } ?: 0L
+    val amount = parseMoneyCents(text) ?: 0L
     BakiSheet(onDismiss = onDismiss) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -227,7 +268,11 @@ private fun PayoutAmountDialog(
         }
         TextField(
             value = text,
-            onValueChange = { raw -> text = raw.filter { it.isDigit() || it == '.' } },
+            onValueChange = { raw -> text = cleanMoneyInput(raw) },
+            isError = text.isNotBlank() && amount <= 0,
+            supportingText = if (text.isNotBlank() && amount <= 0) {
+                { Text("Enter an amount greater than zero", color = scheme.error) }
+            } else null,
             leadingIcon = {
                 Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
             },
@@ -239,7 +284,9 @@ private fun PayoutAmountDialog(
             textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentDescription = "Payout amount in Malaysian ringgit"
+            },
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = scheme.secondaryContainer,
                 unfocusedContainerColor = scheme.secondaryContainer,

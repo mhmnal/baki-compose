@@ -47,6 +47,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** when the last successful upload finished */
     var lastPushAt by mutableStateOf<Long?>(null)
         private set
+    /** records that differed on both sides during the last pull; newest edit wins. */
+    var lastMergeConflicts by mutableStateOf(0)
+        private set
 
     val readOnly: Boolean get() = !config.allowWrites
 
@@ -120,7 +123,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         try {
             val remote = client.pull()
             if (remote == null) {
-                // 304: the server has nothing new, but our outbox may still hold local edits
+                // 304: the server has nothing new, but our outbox may still hold local edits.
+                // Keep the last conflict count; a 304 is not a new pull to clear it with.
                 if (config.allowWrites && pendingPush) pushAll()
                 runCatching { pushRoutes() }
                 runCatching { pullRoutes(addDays(todayIso(), -45)) }
@@ -129,6 +133,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 lastSyncAt = nowMillis()
                 return@withLock
             }
+            lastMergeConflicts = mergeReport(store, remote).total
             val merged = mergeStores(store, remote)
             // no change means no disk write: serialising + encrypting the store is not free
             // compare the whole store: a change that only touched bills, payments, statements or
@@ -475,7 +480,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     // ---- payouts on a shift that has already ended -------------------------
     // The breakdown is synced, so a correction here reaches the other device too.
-    // Gross is recomputed from the payouts unless the list would be empty.
+    // Gross is the recorded/expected earning. Payouts are cash received; editing them must not
+    // rewrite the recorded amount or the outstanding balance would always collapse to zero.
 
     suspend fun updateShiftPayout(shiftId: String, index: Int, cents: Long) = mutex.withLock {
         if (blocked()) return@withLock
@@ -514,8 +520,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     private suspend fun storeShiftPayouts(shift: Shift, payouts: List<Payout>) {
-        val gross = if (payouts.isNotEmpty()) payouts.sumOf { it.c } else shift.gross
-        val edited = shift.copy(payouts = payouts, gross = gross, updated = nowIso())
+        val edited = shift.copy(payouts = payouts, updated = nowIso())
         store = recomputeCover(
             store.copy(shifts = store.shifts.map { if (it.id == shift.id) edited else it }, updatedAt = nowIso()),
         ).first
@@ -880,9 +885,21 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
     }
 
+    /** Remember that a portable backup was created, so Settings can report backup health. */
+    fun markBackupExported(json: String) {
+        config = config.copy(
+            lastBackupAt = nowMillis(),
+            lastBackupEntries = store.entries.size,
+            lastBackupShifts = store.shifts.size,
+            lastBackupBytes = json.encodeToByteArray().size.toLong(),
+        )
+        saveConfig(config)
+    }
+
     /** Merge a backup file into what is already here (never destructive). */
     suspend fun importJson(text: String): Int = mutex.withLock {
-        if (blocked()) return@withLock 0
+        // Restoring a local backup is deliberately allowed in read-only mode. It mutates this
+        // device only; the upload below is still gated by allowWrites.
         val bundle = runCatching {
             BakiJson.decodeFromString(BakiBackupBundle.serializer(), text)
         }.getOrNull()
@@ -895,16 +912,26 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val before = store.entries.size + store.shifts.size
         store = mergeStores(store, incoming)
         saveLocal(store)
+        val added = (store.entries.size + store.shifts.size) - before
         bundle?.config?.let { saved ->
             // A restore must never silently turn writes on. The user re-enables explicitly.
-            config = saved.copy(allowWrites = false, pendingPush = true)
+            config = saved.copy(
+                allowWrites = false,
+                pendingPush = true,
+                lastRestoreAt = nowMillis(),
+                lastRestoreAdded = added,
+            )
             saveConfig(config)
             client = TrackerClient(config.serverUrl, config.serverToken)
         }
         bundle?.calibration?.let { runCatching { Calibration.restore(it) } }
         bundle?.routes?.forEach { runCatching { RouteStore.put(it) } }
-        pushWithTombs(emptyList())
-        (store.entries.size + store.shifts.size) - before
+        if (bundle?.config == null) {
+            config = config.copy(lastRestoreAt = nowMillis(), lastRestoreAdded = added)
+            saveConfig(config)
+        }
+        if (config.allowWrites) pushWithTombs(emptyList())
+        added
     }
 
     /** Forget the local copy and pull again from the server. */

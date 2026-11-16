@@ -106,3 +106,39 @@ fun mergeStores(
         ),
     )
 }
+
+
+/**
+ * How many records changed on both sides since the last shared point. This is a *report*, not a
+ * resolver: [mergeStores] uses newest-`updated` wins and tombstones win. Surfacing the count stops
+ * a cross-device overlap from disappearing silently.
+ */
+data class MergeReport(
+    val entries: Int = 0,
+    val shifts: Int = 0,
+    val bills: Int = 0,
+    val settings: Boolean = false,
+) {
+    val total: Int get() = entries + shifts + bills + if (settings) 1 else 0
+}
+
+fun mergeReport(a: Store, b: Store): MergeReport {
+    val dead = a.tomb.ids + b.tomb.ids
+    val ae = a.entries.associateBy { it.id }
+    val be = b.entries.associateBy { it.id }
+    val asx = a.shifts.associateBy { it.id }
+    val bsx = b.shifts.associateBy { it.id }
+    val aber = a.bills.associateBy { it.id }
+    val bber = b.bills.associateBy { it.id }
+    val entries = ae.keys.intersect(be.keys).count { id ->
+        id !in dead && ae[id] != be[id] && ae[id]?.updated != be[id]?.updated
+    }
+    val shifts = asx.keys.intersect(bsx.keys).count { id ->
+        id !in dead && asx[id] != bsx[id] && asx[id]?.updated != bsx[id]?.updated
+    }
+    val bills = aber.keys.intersect(bber.keys).count { id ->
+        aber[id] != bber[id] && aber[id]?.updated != bber[id]?.updated
+    }
+    val settings = a.settings != b.settings
+    return MergeReport(entries, shifts, bills, settings)
+}

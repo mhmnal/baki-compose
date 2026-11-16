@@ -29,6 +29,14 @@ data class ClientConfig(
     val discreet: Boolean = false,
     /** Prefer the standard motion scheme without expressive overshoot. */
     val reducedMotion: Boolean = false,
+    /** Last successful portable backup created on this device. */
+    val lastBackupAt: Long? = null,
+    val lastBackupEntries: Int = 0,
+    val lastBackupShifts: Int = 0,
+    val lastBackupBytes: Long = 0,
+    /** Last time a backup file was merged back into this device. */
+    val lastRestoreAt: Long? = null,
+    val lastRestoreAdded: Int = 0,
     /**
      * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
      * launch after this field was introduced reconciles any pre-existing local-only edits.

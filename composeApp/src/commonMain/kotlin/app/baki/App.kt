@@ -132,7 +132,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
                     }
                 }
             }
-            ActionFeedbackOverlay(Modifier.align(Alignment.BottomCenter))
+            ActionFeedbackOverlay(Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
         }
     }
 }
@@ -350,6 +350,7 @@ private fun AppContent(repo: BakiRepo) {
                     repo = repo,
                     onAddShift = { editingShift = null; adding = 3 },
                     onEditShift = { editingShift = it; adding = 3 },
+                    onPayouts = { payoutsTarget = PayoutsTarget.Stored(it.id) },
                     onHeaderCollapsed = { headerCollapsed = it },
                     onDeleteShift = { shift ->
                         scope.launch {
@@ -509,6 +510,7 @@ private fun AppContent(repo: BakiRepo) {
         PayoutsSheet(
             title = title,
             payouts = payouts,
+            recordedCents = stored?.let { (it.gross + it.incentive).coerceAtLeast(0L) },
             editable = !repo.readOnly,
             onEdit = { index, cents ->
                 scope.launch {
@@ -779,7 +781,10 @@ fun Header(repo: BakiRepo) {
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { repo.setDiscreet(!repo.config.discreet) }
-                .semantics { contentDescription = "Toggle discreet mode" },
+                .semantics {
+                    role = Role.Button
+                    contentDescription = if (repo.config.discreet) "Show ledger amounts" else "Hide ledger amounts"
+                },
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -797,8 +802,8 @@ private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit)
     val scheme = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = scheme.secondaryContainer,
-        contentColor = scheme.onSecondaryContainer,
+        color = scheme.primaryContainer,
+        contentColor = scheme.onPrimaryContainer,
         shadowElevation = 4.dp,
     ) {
         Row(
@@ -809,8 +814,8 @@ private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit)
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Icon(icon, contentDescription = null, tint = scheme.onSecondaryContainer, modifier = Modifier.size(IconSize.bar))
-            Text(label, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+            Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.bar))
+            Text(label, color = scheme.onPrimaryContainer, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
         }
     }
 }
@@ -852,8 +857,11 @@ fun RowCard(
     amountTint: Color = Color.Unspecified,
     icon: ImageVector? = null,
     onLongPress: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
     running: String? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val ink = if (amountTint == Color.Unspecified) scheme.onSurface else amountTint
@@ -897,7 +905,9 @@ fun RowCard(
         },
     ) {
     val a11yActions = buildList {
+        if (onClick != null) add(CustomAccessibilityAction("Open") { onClick(); true })
         if (onLongPress != null) add(CustomAccessibilityAction("Edit") { onLongPress(); true })
+        if (onAction != null && actionLabel != null) add(CustomAccessibilityAction(actionLabel) { onAction(); true })
         if (onDelete != null) add(CustomAccessibilityAction("Delete") { onDelete(); true })
     }
     Column(Modifier.fillMaxWidth()) {
@@ -907,11 +917,21 @@ fun RowCard(
                     Modifier.clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceContainerLow)
                 )
                 .then(
-                    if (onLongPress != null) Modifier.pointerInput(title) {
-                        detectTapGestures(onLongPress = { onLongPress() })
+                    if (onClick != null || onLongPress != null) Modifier.pointerInput(title) {
+                        detectTapGestures(
+                            onTap = { onClick?.invoke() },
+                            onLongPress = { onLongPress?.invoke() },
+                        )
                     } else Modifier
                 )
-                .semantics { customActions = a11yActions }
+                .semantics {
+                    customActions = a11yActions
+                    contentDescription = buildString {
+                        append(title)
+                        if (amount.isNotBlank()) append(", $amount")
+                        actionLabel?.let { append(", $it available") }
+                    }
+                }
                 .padding(vertical = Space.l, horizontal = Space.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -941,6 +961,24 @@ fun RowCard(
             Column(horizontalAlignment = Alignment.End) {
                 Text(amount, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
                 if (running != null) Text(running, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        if (actionLabel != null && onAction != null) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = Space.l, end = Space.m, bottom = Space.xs),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    onClick = onAction,
+                    modifier = Modifier.heightIn(min = Control.primary),
+                    contentPadding = PaddingValues(horizontal = Space.m),
+                ) {
+                    Text(
+                        actionLabel,
+                        color = scheme.primary,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
             }
         }
     }
@@ -1068,9 +1106,15 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 Surface(
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier
+                        .clickable(onClick = onPayouts)
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = "Open payouts; ${live.payouts.size} recorded"
+                        },
                 ) {
                     Text(
-                        "${live.payouts.size} ${if (live.payouts.size == 1) "payout" else "payouts"}",
+                        "${live.payouts.size} ${if (live.payouts.size == 1) "payout" else "payouts"} · view",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = Space.m, vertical = Space.xs),
@@ -1404,6 +1448,7 @@ private fun ShiftsScreen(
     repo: BakiRepo,
     onAddShift: () -> Unit,
     onEditShift: (Shift) -> Unit,
+    onPayouts: (Shift) -> Unit,
     onDeleteShift: (Shift) -> Unit,
     onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
@@ -1434,12 +1479,16 @@ private fun ShiftsScreen(
                 Spacer(Modifier.height(Space.l))
                 Hero("WHAT YOU ACTUALLY MADE", cents(net), scheme.onSurface, 40)
                 Text(
-                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · hold to edit",
+                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · tap a shift to edit",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(Space.m))
                 FilledTonalButton(
                     onClick = onAddShift,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = scheme.primary,
+                        contentColor = scheme.onPrimary,
+                    ),
                 ) { Text("Add shift", style = MaterialTheme.typography.labelLargeEmphasized) }
                 Spacer(Modifier.height(Space.l))
             }
@@ -1457,8 +1506,11 @@ private fun ShiftsScreen(
                     " · ${m.band}",
                 "RM ${rm(m.net)}",
                 if (m.net < 0) scheme.error else bandColor(m.band, scheme),
+                onClick = { onEditShift(sh) },
                 onLongPress = { onEditShift(sh) },
                 onDelete = { onDeleteShift(sh) },
+                actionLabel = if (sh.payouts.isEmpty()) "Add payout" else "Payouts",
+                onAction = { onPayouts(sh) },
             )
         }
     }
@@ -1495,7 +1547,7 @@ private fun BillEditorDialog(
                 )
                 OutlinedTextField(
                     value = amount,
-                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    onValueChange = { amount = cleanMoneyInput(it) },
                     singleLine = true, label = { Text("Amount RM") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
@@ -1547,7 +1599,7 @@ private fun BillEditorDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    val cents = parseMoneyCents(amount) ?: 0L
                     onSave(
                         Bill(
                             id = existing?.id ?: "",
@@ -1561,7 +1613,7 @@ private fun BillEditorDialog(
                         ),
                     )
                 },
-                enabled = name.isNotBlank() && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                enabled = name.isNotBlank() && (parseMoneyCents(amount) ?: 0L) > 0L,
             ) { Text("Save") }
         },
         dismissButton = {
@@ -1575,7 +1627,7 @@ private fun BillEditorDialog(
     )
 }
 
-private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Shift"), APP("App") }
+private enum class MoreTab(val label: String) { MONEY("Money"), SHIFT("Work"), APP("App") }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -1593,7 +1645,7 @@ private fun MoreHero(tab: MoreTab) {
     val scheme = MaterialTheme.colorScheme
     val (label, title, sub, icon) = when (tab) {
         MoreTab.MONEY -> Quad("MONEY DESK", "Bills, statement, car", "The desk side of the ledger.", BakiIcons.Wallet)
-        MoreTab.SHIFT -> Quad("SHIFT KIT", "Payment QR & service", "Keep the car on the road.", BakiIcons.Car)
+        MoreTab.SHIFT -> Quad("WORK KIT", "Payment QR & service", "Keep the car on the road.", BakiIcons.Car)
         MoreTab.APP -> Quad("BAKI SETUP", "Sync & appearance", "Make Baki feel like yours.", BakiIcons.Phone)
     }
     Surface(shape = MaterialTheme.shapes.extraLarge, color = scheme.primaryContainer) {
@@ -1637,16 +1689,38 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var notifRefresh by remember { mutableStateOf(0) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
+    var pendingRestore by remember { mutableStateOf<String?>(null) }
+    var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
+    var restoreError by remember { mutableStateOf<String?>(null) }
     val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
     LaunchedEffect(routeSaved) { if (routeSaved) { delay(1800); routeSaved = false } }
     // More is a settings page: keep the tabs reachable while its sections scroll.
     LaunchedEffect(Unit) { onHeaderCollapsed(false) }
-    val pickImport = rememberJsonImport { text ->
-        if (text != null) scope.launch {
-            val added = repo.importJson(text)
-            if (added > 0) PlatformEffects.successFeedback()
+    val pickRestore = rememberJsonImport { text ->
+        if (text == null) return@rememberJsonImport
+        val summary = summarizeBackup(text)
+        if (summary == null) {
+            restoreError = "That file is not a Baki backup."
+            PlatformEffects.haptic(Haptic.Warn)
+        } else {
+            restoreError = null
+            restoreSummary = summary
+            pendingRestore = text
+        }
+    }
+    fun createBackup() {
+        scope.launch {
+            val json = runCatching { backupBundleJson(repo) }.getOrNull()
+            if (json == null) {
+                ActionFeedback.show("Backup could not be created")
+                return@launch
+            }
+            repo.markBackupExported(json)
+            PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
+            PlatformEffects.successFeedback()
+            ActionFeedback.show("Backup ready")
         }
     }
 
@@ -1756,6 +1830,55 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
         Spacer(Modifier.height(Space.m))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
+            Text("SYNC HEALTH", color = scheme.primary, letterSpacing = 1.4.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Spacer(Modifier.height(Space.s))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                Box(
+                    Modifier.size(9.dp).clip(CircleShape)
+                        .background(if (repo.pendingPush) scheme.secondary else if (repo.status == "synced") scheme.tertiary else scheme.onSurfaceVariant),
+                )
+                Text(
+                    when {
+                        repo.readOnly -> "read-only · no uploads"
+                        repo.pendingPush -> "pending upload · retries automatically"
+                        repo.status == "synced" -> "synced"
+                        repo.status == "offline" -> "offline · local copy"
+                        else -> repo.status
+                    },
+                    color = scheme.onSurface,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                )
+            }
+            Text(
+                "Last pull ${repo.lastSyncAt?.let { ago(nowMillis(), it) } ?: "never"} · " +
+                    "last upload ${repo.lastPushAt?.let { ago(nowMillis(), it) } ?: "never"}",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            )
+            if (repo.lastMergeConflicts > 0) {
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "${repo.lastMergeConflicts} record(s) changed on both sides. Newest edit wins; deletions win. Review the affected month after syncing.",
+                    color = scheme.secondary, style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Text(
+                "Conflict policy: newest edit per record wins, tombstones stay deleted, and the phone remains the writer. Pull always runs before a push.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(Space.s))
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                TextButton(
+                    onClick = { scope.launch { repo.sync() } },
+                    contentPadding = PaddingValues(horizontal = 0.dp),
+                ) { Text("Pull & merge", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
+                if (repo.pendingPush && !repo.readOnly) TextButton(
+                    onClick = { scope.launch { repo.sync() } },
+                    contentPadding = PaddingValues(horizontal = 0.dp),
+                ) { Text("Retry upload", color = scheme.secondary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
+            }
+        }
+        Spacer(Modifier.height(Space.m))
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             Text("Route traces", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(
                 "Sealed with a key only your devices know, so the desk can review your drives. The server never sees coordinates.",
@@ -1853,6 +1976,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                             FilledTonalButton(
                                 onClick = { scope.launch { repo.payBill(bill.id, period) } },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = scheme.primary,
+                                    contentColor = scheme.onPrimary,
+                                ),
                             ) { Text("Mark paid") }
                             TextButton(
                                 onClick = { linkTarget = bill to period },
@@ -1866,6 +1993,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             if (repo.store.bills.isNotEmpty()) FilledTonalButton(
                 onClick = { scope.launch { repo.settleBills(target) } },
                 enabled = Bills.unpaid(repo.store, target).isNotEmpty(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.primaryContainer,
+                    contentColor = scheme.onPrimaryContainer,
+                ),
             ) { Text("Settle all for ${monthLabel(target)}") }
 
             // optional goals: only when the month actually leaves something over
@@ -2339,46 +2470,60 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
         }
 
-        if (moreTab == MoreTab.SHIFT) {
-        SectionTitle("HOME SCREEN")
-        Spacer(Modifier.height(Space.s))
-        Button(
-            onClick = { PlatformEffects.requestLiveWidget() },
-            colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
-            shape = CircleShape, modifier = Modifier.fillMaxWidth(),
-        ) { Text("Add the live widget", style = MaterialTheme.typography.labelLarge ) }
-        }
-
         if (moreTab == MoreTab.APP) {
         SectionTitle("BACKUP")
         Spacer(Modifier.height(Space.s))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Button(
-                onClick = {
-                    scope.launch {
-                        PlatformEffects.exportFile(
-                            "scheme-backup-${todayStamp()}.json",
-                            "application/json",
-                            backupBundleJson(repo),
-                        )
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
-                shape = CircleShape, modifier = Modifier.weight(1f),
-            ) { Text("Backup (JSON)", style = MaterialTheme.typography.labelLarge ) }
-            Button(
-                onClick = { PlatformEffects.exportFile("scheme-${todayStamp()}.csv", "text/csv", exportCsv(repo.store)) },
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
-                shape = CircleShape, modifier = Modifier.weight(1f),
-            ) { Text("Export (CSV)", style = MaterialTheme.typography.labelLarge ) }
+        Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
+            val last = repo.config.lastBackupAt
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(9.dp).clip(CircleShape).background(if (last == null) scheme.error else scheme.tertiary))
+                Spacer(Modifier.width(Space.s))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (last == null) "No portable backup yet" else "Last backup ${ago(nowMillis(), last)}",
+                        color = scheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        if (last == null) "Create one before changing phones or resetting this device."
+                        else "${repo.config.lastBackupEntries} entries · ${repo.config.lastBackupShifts} shifts · ${repo.config.lastBackupBytes / 1024} KB",
+                        color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            Spacer(Modifier.height(Space.m))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Button(
+                    onClick = { createBackup() },
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                    shape = CircleShape, modifier = Modifier.weight(1f),
+                ) { Text("Backup now", style = MaterialTheme.typography.labelLarge ) }
+                Button(
+                    onClick = { pickRestore() },
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
+                    shape = CircleShape, modifier = Modifier.weight(1f),
+                ) { Text("Restore JSON", style = MaterialTheme.typography.labelLarge ) }
+            }
+            Spacer(Modifier.height(Space.s))
+            Text(
+                "Backup includes the ledger, device settings, calibration and local routes. Restore merges into this device, never deletes, and keeps writes off. The file contains private server and route-key data; store it securely.",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            restoreError?.let {
+                Spacer(Modifier.height(Space.s))
+                Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium)
+            }
+            Spacer(Modifier.height(Space.s))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Button(
+                    onClick = { PlatformEffects.exportFile("baki-${todayStamp()}.csv", "text/csv", exportCsv(repo.store)) },
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.onSurface),
+                    shape = CircleShape, modifier = Modifier.weight(1f),
+                ) { Text("Export CSV", style = MaterialTheme.typography.labelLarge ) }
+            }
         }
-        Spacer(Modifier.height(Space.s))
-        Text(
-            "Backup includes the ledger, device settings, calibration and local routes. " +
-                "It contains private server and route-key data; store it securely.",
-            color = scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium,
-        )
         Spacer(Modifier.height(Space.s))
         Button(
             onClick = {
@@ -2397,20 +2542,25 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
             shape = CircleShape, modifier = Modifier.fillMaxWidth(),
         ) { Text("Export routes (GPX · 30 days)", style = MaterialTheme.typography.labelLarge ) }
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("HOME SCREEN")
         Spacer(Modifier.height(Space.s))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Button(
-                onClick = { pickImport() },
-                enabled = !repo.readOnly,
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.onSurface),
-                shape = CircleShape, modifier = Modifier.weight(1f),
-            ) { Text("Import JSON", style = MaterialTheme.typography.labelLarge ) }
-            Button(
-                onClick = { confirmReset = true },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = scheme.error),
-                shape = CircleShape, modifier = Modifier.weight(1f),
-            ) { Text("Reset device", style = MaterialTheme.typography.labelLarge ) }
-        }
+        Text(
+            "The live shift widget mirrors the clock and payouts. Add it from the launcher; it never writes ledger records.",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(Space.s))
+        Button(
+            onClick = { PlatformEffects.requestLiveWidget() },
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
+            shape = CircleShape, modifier = Modifier.fillMaxWidth(),
+        ) { Text("Add the live widget", style = MaterialTheme.typography.labelLarge ) }
+        Spacer(Modifier.height(Space.s))
+        Button(
+            onClick = { confirmReset = true },
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.error),
+            shape = CircleShape, modifier = Modifier.fillMaxWidth(),
+        ) { Text("Reset local device", style = MaterialTheme.typography.labelLarge ) }
         Spacer(Modifier.height(Space.l))
         SectionTitle("ON THIS DEVICE")
         Spacer(Modifier.height(Space.s))
@@ -2427,6 +2577,55 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
 
     if (statementHistoryOpen) {
         StatementHistorySheet(repo = repo, onDismiss = { statementHistoryOpen = false })
+    }
+
+    restoreSummary?.let { summary ->
+        AlertDialog(
+            onDismissRequest = { restoreSummary = null; pendingRestore = null },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = MaterialTheme.shapes.extraLarge,
+            title = { BakiDialogHeader("Restore this backup?", "merge · never delete", "↺") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                    Text(
+                        "Exported ${summary.exportedAt.ifBlank { "unknown time" }}",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        "${summary.entries} entries · ${summary.shifts} shifts · ${summary.bills} bills · ${summary.statements} statements · ${summary.routes} routes",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        "This merges into this device. Existing records with the same id follow the newest edit; nothing is deleted. " +
+                            (if (summary.hasDeviceConfig) "The backup also carries device settings, but writes stay off. " else "") +
+                            "A backup copy of the current file is still recommended.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val text = pendingRestore
+                        restoreSummary = null
+                        pendingRestore = null
+                        if (text != null) scope.launch {
+                            val added = repo.importJson(text)
+                            PlatformEffects.successFeedback()
+                            ActionFeedback.show(if (added > 0) "Restored · $added new records" else "Backup merged · no new records")
+                        }
+                    },
+                ) { Text("Restore", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { restoreSummary = null; pendingRestore = null }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+        )
     }
 
     if (confirmReset) {
@@ -2532,7 +2731,7 @@ private fun EntryDialog(
     val cats = (if (type == "income") settings.cats.catsIn else settings.cats.catsOut)
         .filterNot { isDerivedCategory(it.id) }
     var cat by remember(type) { mutableStateOf(existing?.cat ?: initialCat ?: cats.firstOrNull()?.id ?: "other") }
-    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+    val cents = parseMoneyCents(amount) ?: 0L
 
     // the sheet header shares its bounds with the row that opened it
     val sharedScope = LocalSharedTransition.current
@@ -2593,7 +2792,11 @@ private fun EntryDialog(
                 )
                 TextField(
                     value = amount,
-                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    onValueChange = { amount = cleanMoneyInput(it) },
+                    isError = amount.isNotBlank() && cents <= 0,
+                    supportingText = if (amount.isNotBlank() && cents <= 0) {
+                        { Text("Enter an amount greater than zero", color = scheme.error) }
+                    } else null,
                     leadingIcon = {
                         Text(
                             "RM",
@@ -2613,7 +2816,9 @@ private fun EntryDialog(
                     textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     shape = MaterialTheme.shapes.extraLarge,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().semantics {
+                        contentDescription = "Amount in Malaysian ringgit"
+                    },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = scheme.secondaryContainer,
                         unfocusedContainerColor = scheme.secondaryContainer,
@@ -2775,7 +2980,7 @@ private fun ShiftDialog(
     val dateValid = remember(date) { isValidIsoDate(date) }
     val startValid = remember(start) { isValidClock(start) }
 
-    val grossCents = ((gross.toDoubleOrNull() ?: 0.0) * 100).toLong()
+    val grossCents = parseMoneyCents(gross) ?: 0L
     val hoursValue = hours.toDoubleOrNull() ?: 0.0
     val kmValue = km.toDoubleOrNull() ?: 0.0
     val kmlValue = kml.toDoubleOrNull()?.takeIf { it > 0 }
@@ -2784,7 +2989,7 @@ private fun ShiftDialog(
         val charge = existing?.grabFee ?: draftCoverCharge(store, date, start)
         val probe = Shift(
             id = "__preview", date = date, start = start, hours = hoursValue, km = kmValue,
-            gross = grossCents, extra = ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(),
+            gross = grossCents, extra = parseMoneyCents(extra) ?: 0L,
             reimbursedTolls = reimbursed,
             grabFee = charge, kmPerLitre = kmlValue, odoStart = odoStart, odoEnd = odoEnd,
         )
@@ -2838,20 +3043,20 @@ private fun ShiftDialog(
                         modifier = m, colors = bakiFieldColors(),
                     ) },
                     second = { m -> OutlinedTextField(value = hours, onValueChange = { hours = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Hours") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Hours") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                 )
                 FormSection("PAY & DISTANCE")
                 PairFields(
                     first = { m -> OutlinedTextField(value = km, onValueChange = { km = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Km") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Km") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                     second = { m -> OutlinedTextField(value = gross, onValueChange = { gross = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Payout (RM)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Payout (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                 )
                 PairFields(
                     first = { m -> OutlinedTextField(value = extra, onValueChange = { extra = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Tolls (RM)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Tolls (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                     second = { m -> OutlinedTextField(value = kml, onValueChange = { kml = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("km/L (opt)") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("km/L (opt)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -2864,9 +3069,9 @@ private fun ShiftDialog(
                 FormSection("ODOMETER")
                 PairFields(
                     first = { m -> OutlinedTextField(value = odoA, onValueChange = { odoA = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Odometer start") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Odometer start") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                     second = { m -> OutlinedTextField(value = odoB, onValueChange = { odoB = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Odometer end") }, singleLine = true, modifier = m, colors = bakiFieldColors()) },
+                        label = { Text("Odometer end") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                 )
                 if (odoStart != null && odoEnd != null && odoEnd >= odoStart) {
                     Text("odometer says ${"%.1f".format(odoEnd - odoStart)} km — this wins over the Km field",
@@ -2931,13 +3136,13 @@ private fun ShiftDialog(
                     )
                 }
             if (existing != null) {
-                if (existing.payouts.isNotEmpty()) {
-                    TextButton(onClick = { onPayouts(existing) }) {
-                        Text(
-                            "Payouts (${existing.payouts.size})",
-                            color = scheme.primary, fontWeight = FontWeight.Bold,
-                        )
-                    }
+                val truth = payoutTruth(existing)
+                TextButton(onClick = { onPayouts(existing) }) {
+                    Text(
+                        if (truth.count == 0) "Add payout"
+                        else "Payouts (${truth.count}) · RM ${rm(truth.received)} received",
+                        color = scheme.primary, fontWeight = FontWeight.Bold,
+                    )
                 }
                 TextButton(onClick = { onDelete(existing) }) {
                     Text("Delete shift", color = scheme.error, fontWeight = FontWeight.Bold)
@@ -2945,7 +3150,7 @@ private fun ShiftDialog(
             }
             Button(
                 enabled = grossCents > 0 && hoursValue > 0 && dateValid && startValid,
-                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, ((extra.toDoubleOrNull() ?: 0.0) * 100).toLong(), kmlValue, odoStart, odoEnd, reimbursed) },
+                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, parseMoneyCents(extra) ?: 0L, kmlValue, odoStart, odoEnd, reimbursed) },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 shape = CircleShape,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -3025,7 +3230,7 @@ private fun ProfitField(label: String, state: androidx.compose.runtime.MutableSt
 private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     var amount by remember { mutableStateOf("") }
-    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+    val cents = parseMoneyCents(amount) ?: 0L
     BakiSheet(onDismiss = onDismiss) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -3044,7 +3249,11 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
                 }
             }
             TextField(
-                value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                value = amount, onValueChange = { amount = cleanMoneyInput(it) },
+                isError = amount.isNotBlank() && cents <= 0,
+                supportingText = if (amount.isNotBlank() && cents <= 0) {
+                    { Text("Enter an amount greater than zero", color = scheme.error) }
+                } else null,
                 leadingIcon = { Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
                 placeholder = { Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum")) },
                 label = { Text("HOW MUCH?") }, singleLine = true,

@@ -828,7 +828,23 @@ internal fun DeskSettings(repo: BakiRepo) {
     var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
     var saved by remember { mutableStateOf<String?>(null) }
+    var pendingRestore by remember { mutableStateOf<String?>(null) }
+    var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
+    var restoreError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val pickRestore = rememberJsonImport { text ->
+        if (text != null) {
+            val summary = summarizeBackup(text)
+            if (summary == null) {
+                restoreError = "That file is not a Baki backup."
+                PlatformEffects.haptic(Haptic.Warn)
+            } else {
+                restoreError = null
+                restoreSummary = summary
+                pendingRestore = text
+            }
+        }
+    }
 
     fun note(text: String) { saved = text }
 
@@ -858,11 +874,32 @@ internal fun DeskSettings(repo: BakiRepo) {
                         runCatching { repo.sync() }
                         note("Connection saved and synced")
                     }
-                }) { Text("Save & sync") }
+                }, colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.primaryContainer,
+                    contentColor = scheme.onPrimaryContainer,
+                )) { Text("Save & sync") }
                 TextButton(onClick = { scope.launch { runCatching { repo.sync() }; note("Sync requested") } }) { Text("Sync now") }
                 Spacer(Modifier.weight(1f))
-                Text("${repo.status} · ${repo.lastSyncAt?.let { clockOf(it) } ?: "not synced"}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "${repo.status} · ${repo.lastSyncAt?.let { clockOf(it) } ?: "not synced"}" +
+                        if (repo.lastMergeConflicts > 0) " · ${repo.lastMergeConflicts} overlaps" else "",
+                    color = if (repo.lastMergeConflicts > 0) scheme.secondary else scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
+            if (repo.lastMergeConflicts > 0) {
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    "${repo.lastMergeConflicts} record(s) overlapped on the last pull · newest edit wins.",
+                    color = scheme.secondary,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Text(
+                "Pull runs before push. Newest edit per record wins; deletions stay deleted.",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("APPEARANCE")
@@ -906,7 +943,10 @@ internal fun DeskSettings(repo: BakiRepo) {
             FilledTonalButton(onClick = {
                 repo.setRouteSync(routeSync, routeKey)
                 note("Route sync saved")
-            }) { Text("Save route settings") }
+            }, colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                containerColor = scheme.primaryContainer,
+                contentColor = scheme.onPrimaryContainer,
+            )) { Text("Save route settings") }
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("EXPORT")
@@ -916,10 +956,16 @@ internal fun DeskSettings(repo: BakiRepo) {
                 FilledTonalButton(onClick = {
                     scope.launch {
                         val json = runCatching { backupBundleJson(repo) }.getOrNull()
-                        if (json != null) PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
+                        if (json != null) {
+                            repo.markBackupExported(json)
+                            PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
+                        }
                         note(if (json != null) "Backup exported" else "Backup could not be created")
                     }
-                }) { Text("Backup JSON") }
+                }, colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.primaryContainer,
+                    contentColor = scheme.onPrimaryContainer,
+                )) { Text("Backup JSON") }
                 FilledTonalButton(onClick = {
                     scope.launch {
                         val routes = runCatching { RouteStore.routesSince(addDays(todayIso(), -30)) }.getOrDefault(emptyList())
@@ -927,9 +973,29 @@ internal fun DeskSettings(repo: BakiRepo) {
                         note("Exported ${routes.size} routes")
                     }
                 }) { Text("Routes GPX") }
+                FilledTonalButton(
+                    onClick = { pickRestore() },
+                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                        containerColor = scheme.primaryContainer,
+                        contentColor = scheme.onPrimaryContainer,
+                    ),
+                ) { Text("Restore JSON") }
                 Spacer(Modifier.weight(1f))
                 saved?.let { Text(it, color = scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
             }
+            Spacer(Modifier.height(Space.s))
+            Text(
+                repo.config.lastBackupAt?.let { "Last backup ${ago(nowMillis(), it)} · ${repo.config.lastBackupEntries} entries, ${repo.config.lastBackupShifts} shifts" }
+                    ?: "No portable backup yet. Create one before resetting this device.",
+                color = if (repo.config.lastBackupAt == null) scheme.secondary else scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                "Restore merges into the local copy and keeps writes off. Desktop never edits ledger records.",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            restoreError?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodySmall) }
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("PHONE PREVIEW")
@@ -952,6 +1018,34 @@ internal fun DeskSettings(repo: BakiRepo) {
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
         }
+    }
+
+    restoreSummary?.let { summary ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { restoreSummary = null; pendingRestore = null },
+            title = { Text("Restore this backup?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                    Text("Exported ${summary.exportedAt.ifBlank { "unknown time" }}")
+                    Text(
+                        "${summary.entries} entries · ${summary.shifts} shifts · ${summary.bills} bills · ${summary.statements} statements · ${summary.routes} routes",
+                    )
+                    Text("This merges into the local copy. Same-id records follow the newest edit; nothing is deleted.")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val text = pendingRestore
+                    restoreSummary = null
+                    pendingRestore = null
+                    if (text != null) scope.launch {
+                        val added = repo.importJson(text)
+                        note(if (added > 0) "Restored $added records" else "Backup merged")
+                    }
+                }) { Text("Restore") }
+            },
+            dismissButton = { TextButton(onClick = { restoreSummary = null; pendingRestore = null }) { Text("Cancel") } },
+        )
     }
 }
 
