@@ -687,3 +687,10 @@ No financial feature was removed.
 - More has a tonal mode hero (Money/Shift/App).
 - Spending's normal hero moved from error red to secondary.
 - 205 tests, 0 failures.
+
+## 0.43.48 hero hierarchy
+
+- Hero amount uses measured canvas text: integer dominant, decimal smaller, sign separate.
+- Width is solved before drawing; vertical fill is clamped to the card.
+- Split seam and Archivo Expanded unchanged.
+- 205 tests, 0 failures.

@@ -64,7 +64,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -73,11 +75,15 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToLong
 import kotlinx.coroutines.delay
@@ -642,26 +648,26 @@ private fun SplitInkAmount(
 ) {
     val motion = MaterialTheme.motionScheme
     val shown = remember { Animatable(0f) }
-    var measuredLineHeight by remember { mutableStateOf(0) }
     LaunchedEffect(cents, reducedMotion) {
         if (reducedMotion) shown.snapTo(cents.toFloat())
         else shown.animateTo(cents.toFloat(), motion.defaultSpatialSpec())
     }
-    val text = rm(shown.value.roundToLong())
+    val raw = rm(shown.value.roundToLong())
+    val negative = raw.startsWith("-")
+    val unsigned = raw.removePrefix("-")
+    val dot = unsigned.lastIndexOf('.')
+    val whole = if (dot >= 0) unsigned.substring(0, dot) else unsigned
+    val decimal = if (dot >= 0) unsigned.substring(dot) else ""
     val style = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = if (largeText) 76.sp else 150.sp,
+        fontSize = BakiHeroFontSize,
         fontFeatureSettings = "tnum",
         letterSpacing = (-4).sp,
     )
     val shape = BakiHeroShape
     val cardHeight = if (largeText) 175.dp else 206.dp
-    val cardHeightPx = with(LocalDensity.current) { cardHeight.toPx() }
-    // Digits occupy roughly 72% of the line box; scale that ink height to the card.
-    val verticalScale = if (measuredLineHeight > 0) {
-        (cardHeightPx / measuredLineHeight * 1.18f).coerceIn(1f, 3.2f)
-    } else 1f
+    val measurer = rememberTextMeasurer()
     Box(
         modifier
             .fillMaxWidth()
@@ -675,32 +681,80 @@ private fun SplitInkAmount(
             }
             .semantics { contentDescription = "Today's take, RM ${rm(cents)}" },
     ) {
-        val auto = TextAutoSize.StepBased(minFontSize = 18.sp, maxFontSize = style.fontSize, stepSize = 2.sp)
-        Box(
-            Modifier.fillMaxSize().drawWithContent {
-                clipRect(0f, 0f, size.width, size.height * 0.50f) { this@drawWithContent.drawContent() }
-            },
-        ) {
-            Text(
-                text, color = upperInk, style = style, maxLines = 1, softWrap = false, autoSize = auto,
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l)
-                    .graphicsLayer { scaleY = verticalScale }
-                    .clearAndSetSemantics {},
-                onTextLayout = { layout -> if (layout.size.height != measuredLineHeight) measuredLineHeight = layout.size.height },
-            )
-        }
-        Box(
-            Modifier.fillMaxSize().drawWithContent {
-                clipRect(0f, size.height * 0.50f, size.width, size.height) { this@drawWithContent.drawContent() }
-            },
-        ) {
-            Text(
-                text, color = lowerInk, style = style, maxLines = 1, softWrap = false, autoSize = auto,
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = Space.l)
-                    .graphicsLayer { scaleY = verticalScale }.clearAndSetSemantics {},
-            )
+        Canvas(Modifier.fillMaxSize()) {
+            val edge = 10.dp.toPx()
+            val available = (size.width - edge * 2f).coerceAtLeast(1f)
+            val gap = 2.dp.toPx()
+            fun blockAt(fontSize: Float): HeroFit {
+                val intLayout = measurer.measure(
+                    whole,
+                    style.copy(fontSize = fontSize.sp),
+                    maxLines = 1,
+                    softWrap = false,
+                    constraints = Constraints(maxWidth = available.toInt().coerceAtLeast(1)),
+                )
+                val decLayout = decimal.takeIf { it.isNotEmpty() }?.let {
+                    measurer.measure(
+                        it,
+                        style.copy(fontSize = (fontSize * 0.32f).sp, letterSpacing = (-1).sp),
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+                val signLayout = if (negative) {
+                    measurer.measure(
+                        "-",
+                        style.copy(fontSize = (fontSize * 0.26f).sp, letterSpacing = 0.sp),
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                } else null
+                return HeroFit(intLayout, decLayout, signLayout)
+            }
+            var font = if (largeText) 130f else 180f
+            var fit = blockAt(font)
+            var guard = 0
+            while (fit.width(gap) > available && guard < 6) {
+                font = (font * (available / fit.width(gap)) * 0.95f).coerceAtLeast(20f)
+                fit = blockAt(font)
+                guard++
+            }
+            val int = fit.integer
+            val dec = fit.decimal
+            val sign = fit.sign
+            val contentHeight = maxOf(int.size.height, dec?.size?.height ?: 0, sign?.size?.height ?: 0)
+            val scaleY = (size.height / contentHeight.toFloat() * 1.02f).coerceIn(0.72f, 1.6f)
+            val totalWidth = fit.width(gap)
+            val startX = ((size.width - totalWidth) / 2f).coerceAtLeast(edge)
+            val intTop = ((size.height - contentHeight) / 2f).coerceAtLeast(0f)
+            val intBaseline = intTop + int.getLineBaseline(0)
+            val signTop = sign?.let { intBaseline - it.getLineBaseline(0) } ?: intTop
+            val decTop = dec?.let { intBaseline - it.getLineBaseline(0) - contentHeight * 0.12f } ?: intTop
+            fun drawLayer(ink: Color, top: Float, bottom: Float) {
+                clipRect(0f, top, size.width, bottom) {
+                    scale(1f, scaleY, pivot = center) {
+                        var x = startX
+                        sign?.let { drawText(it, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x, signTop)); x += it.size.width + gap }
+                        drawText(int, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x, intTop))
+                        x += int.size.width
+                        dec?.let { drawText(it, color = ink, topLeft = androidx.compose.ui.geometry.Offset(x + gap, decTop)) }
+                    }
+                }
+            }
+            drawLayer(upperInk, 0f, size.height * 0.50f)
+            drawLayer(lowerInk, size.height * 0.50f, size.height)
         }
     }
+}
+
+private data class HeroFit(
+    val integer: TextLayoutResult,
+    val decimal: TextLayoutResult?,
+    val sign: TextLayoutResult?,
+) {
+    fun width(gap: Float): Float =
+        integer.size.width + (decimal?.size?.width ?: 0) + (sign?.size?.width ?: 0) +
+            (if (decimal != null) gap else 0f) + (if (sign != null) gap else 0f)
 }
 
 @Composable

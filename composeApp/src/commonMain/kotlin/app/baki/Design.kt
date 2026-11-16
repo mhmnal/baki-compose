@@ -350,3 +350,6 @@ fun BakiDialogHeader(
 fun archivoDisplayFontFamily(): FontFamily = FontFamily(
     Font(Res.font.archivo_expanded_800, weight = FontWeight.ExtraBold),
 )
+
+/** Hero display size; relative roles are derived in the amount composition. */
+val BakiHeroFontSize = 150.sp
