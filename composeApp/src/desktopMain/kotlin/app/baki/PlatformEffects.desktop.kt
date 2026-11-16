@@ -18,16 +18,24 @@ actual object PlatformEffects {
 
     actual fun openPhonePreview() {
         runCatching {
+            // jpackage knows the installed launcher; ProcessHandle often points at the bundled JVM.
+            val launcher = System.getProperty("jpackage.app-path")?.takeIf { java.io.File(it).canExecute() }
             val command = ProcessHandle.current().info().command().orElse("")
             val cp = System.getProperty("java.class.path").orEmpty()
-            val args = if (command.substringAfterLast('/').startsWith("java") && cp.isNotBlank()) {
-                listOf(command, "-cp", cp, "app.baki.MainKt")
-            } else {
-                listOf(command, "--phone-preview")
+            val args = when {
+                launcher != null -> listOf(launcher, "--phone-preview")
+                command.substringAfterLast('/').startsWith("java") && cp.isNotBlank() ->
+                    listOf(command, "-cp", cp, "app.baki.MainKt")
+                command.isNotBlank() -> listOf(command, "--phone-preview")
+                else -> error("No Baki launcher path available")
             }
+            val log = java.io.File(System.getProperty("user.home") ?: ".", ".local/share/baki/preview-launch.log")
+            log.parentFile?.mkdirs()
+            log.appendText("${java.time.Instant.now()} launching: $args\n")
             ProcessBuilder(args)
                 .also { it.environment()["BAKI_SHELL"] = "phone" }
                 .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
                 .start()
         }.onFailure { println("[scheme] could not open phone preview: ${it.message}") }
     }
