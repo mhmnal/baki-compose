@@ -79,34 +79,45 @@ fun main(args: Array<String>) {
     )
 
     if (preview) {
-        val previewState = rememberWindowState(
-            size = DpSize(760.dp, 900.dp),
-            position = WindowPosition.Absolute(140.dp, 50.dp),
+        val phoneState = rememberWindowState(
+            size = DpSize(390.dp, 844.dp),
+            position = WindowPosition.Absolute(80.dp, 40.dp),
         )
+        val controlsState = rememberWindowState(
+            size = DpSize(310.dp, 760.dp),
+            position = WindowPosition.Absolute(500.dp, 60.dp),
+        )
+        val previewRepo = remember {
+            BakiRepo(
+                ClientConfig(
+                    serverUrl = "",
+                    allowWrites = true,
+                    themeMode = "dark",
+                    colorSource = "baki",
+                ),
+            )
+        }
+        PhonePreview.active = true
         Window(
             onCloseRequest = { PhonePreview.active = false; exitApplication() },
             title = "Baki — phone preview",
-            state = previewState,
+            state = phoneState,
+            resizable = false,
         ) {
-            val previewRepo = remember {
-                BakiRepo(
-                    ClientConfig(
-                        serverUrl = "",
-                        allowWrites = true,
-                        themeMode = "dark",
-                        colorSource = "baki",
-                    ),
-                )
-            }
-            PhonePreview.active = true
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(250)
-                // A development preview must never disappear behind the Desk on Wayland.
                 window.isAlwaysOnTop = true
                 window.toFront()
                 window.requestFocus()
             }
-            PhonePreviewLab(previewRepo)
+            PhonePreviewPhone(previewRepo)
+        }
+        Window(
+            onCloseRequest = { PhonePreview.active = false; exitApplication() },
+            title = "Baki — phone controls",
+            state = controlsState,
+        ) {
+            PhonePreviewControls(previewRepo)
         }
     } else {
         Window(
