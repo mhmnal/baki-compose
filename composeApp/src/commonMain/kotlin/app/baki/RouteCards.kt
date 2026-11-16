@@ -106,7 +106,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
                 Box(
                     Modifier
                         .size(38.dp)
-                        .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                        .clip(androidx.compose.foundation.shape.CircleShape)
                         .background(scheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {

@@ -17,6 +17,8 @@ data class ClientConfig(
     val themeMode: String = "auto",
     /** "wallpaper" | "baki" — Material You or Baki's fixed Fig palette. */
     val colorSource: String = "wallpaper",
+    /** Stronger outlines and text contrast for the fixed Baki palette. */
+    val highContrast: Boolean = false,
     /** Opt-in: upload sealed traces so the desk can review them. Off by default. */
     val syncRoutes: Boolean = false,
     /** Shared passphrase for the sealed traces; blank disables route sync entirely. */

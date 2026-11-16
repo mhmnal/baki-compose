@@ -331,7 +331,7 @@ private fun MonthInkChart(store: Store, month: String) {
                     Modifier
                         .padding(end = Space.s)
                         .size(18.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primary),
                 )
                 Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
@@ -349,7 +349,7 @@ private fun MonthInkChart(store: Store, month: String) {
                     Modifier
                         .padding(end = Space.s)
                         .size(18.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primary),
                 )
                 Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
@@ -729,7 +729,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
             Box(
                 Modifier
                     .size(46.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(scheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
@@ -848,7 +848,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                     Box(
                         Modifier
                             .size(26.dp)
-                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .clip(CircleShape)
                             .background(if (tx.amount > 0) scheme.tertiaryContainer else scheme.errorContainer),
                     )
                     Spacer(Modifier.width(Space.s))

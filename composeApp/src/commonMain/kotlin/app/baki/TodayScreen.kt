@@ -20,6 +20,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.SharedTransitionScope
@@ -172,7 +173,7 @@ fun TodayScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(Space.s))
-                    FoodCard(food, paidUntil, largeText = true, modifier = Modifier.fillMaxWidth())
+                    FoodCard(food, paidUntil, largeText = true, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(Space.s))
                     DayCard(store, today, Modifier.fillMaxWidth().height(132.dp))
                 } else {
@@ -192,7 +193,7 @@ fun TodayScreen(
                             Modifier.weight(0.4f).fillMaxHeight(),
                             verticalArrangement = Arrangement.spacedBy(Space.s),
                         ) {
-                            FoodCard(food, paidUntil, largeText = false, modifier = Modifier.fillMaxWidth().height(120.dp))
+                            FoodCard(food, paidUntil, largeText = false, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth().height(120.dp))
                             DayCard(store, today, Modifier.fillMaxWidth().weight(1f))
                         }
                     }
@@ -376,7 +377,7 @@ fun TodayScreen(
                 Box(
                     Modifier
                         .size(12.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primary),
                 )
                 Text(
@@ -427,7 +428,7 @@ fun TodayScreen(
                 Box(
                     Modifier
                         .size(52.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -610,7 +611,7 @@ fun RowCardIcon(
             Box(
                 Modifier
                     .size(36.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(tint.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
             ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(IconSize.inline)) }
@@ -653,7 +654,7 @@ private fun SplitInkAmount(
         fontFeatureSettings = "tnum",
         letterSpacing = (-4).sp,
     )
-    val shape = MaterialTheme.shapes.extraLarge
+    val shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomEnd = 32.dp, bottomStart = 8.dp)
     val cardHeight = if (largeText) 175.dp else 206.dp
     val cardHeightPx = with(LocalDensity.current) { cardHeight.toPx() }
     // Digits occupy roughly 72% of the line box; scale that ink height to the card.
@@ -731,14 +732,14 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
 }
 
 @Composable
-private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, modifier: Modifier = Modifier) {
+private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, animate: Boolean = true, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val cover = paidUntil?.takeIf { it > nowMillis() }
     val status = food?.let { if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left" } ?: "no cap set"
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
         if (largeText) {
             Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-                FoodRing(food, Modifier.size(88.dp), showCenter = false)
+                FoodRing(food, Modifier.size(88.dp), showCenter = false, animate = animate)
                 Spacer(Modifier.width(Space.m))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -757,7 +758,7 @@ private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, mod
                     CoverMark(cover != null, paidUntil)
                 }
                 Spacer(Modifier.height(2.dp))
-                FoodRing(food, Modifier.size(70.dp))
+                FoodRing(food, Modifier.size(70.dp), animate = animate)
             }
         }
     }
@@ -779,9 +780,16 @@ private fun CoverMark(active: Boolean, paidUntil: Long?) {
 }
 
 @Composable
-private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter: Boolean = true) {
+private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter: Boolean = true, animate: Boolean = true) {
     val scheme = MaterialTheme.colorScheme
-    val fraction = if (food != null && food.cap > 0) (food.spent.toFloat() / food.cap).coerceIn(0f, 1f) else 0f
+    val targetFraction = if (food != null && food.cap > 0) (food.spent.toFloat() / food.cap).coerceIn(0f, 1f) else 0f
+    val fraction = if (animate) {
+        animateFloatAsState(
+            targetValue = targetFraction,
+            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            label = "foodProgress",
+        ).value
+    } else targetFraction
     val over = food?.over == true
     val color = if (over) scheme.error else scheme.tertiary
     val description = food?.let {
@@ -942,7 +950,7 @@ private fun TargetBadge(beat: Boolean, reducedMotion: Boolean) {
                         Modifier
                             .offset(x = x, y = y)
                             .size(if (index % 2 == 0) 9.dp else 6.dp)
-                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .clip(CircleShape)
                             .background(if (index % 2 == 0) scheme.tertiary else scheme.primary),
                     )
                 }
@@ -961,7 +969,7 @@ private fun TargetBadge(beat: Boolean, reducedMotion: Boolean) {
                 Box(
                     Modifier
                         .size(14.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(if (beat) scheme.onTertiaryContainer else scheme.primary),
                 )
                 Text(

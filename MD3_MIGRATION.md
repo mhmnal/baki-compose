@@ -669,3 +669,13 @@ No financial feature was removed.
 - Global save feedback overlay for theme/color/motion/budgets/food cap/payouts.
 - Section/day/heatmap markers use circles; Cookie9Sided is the status shape; SoftBurst remains brand/selection.
 - 205 tests, 0 failures.
+
+## 0.43.46 shape/motion/contrast
+
+- Corner scale extraLarge moved 28 -> 32dp.
+- SoftBurst reduced to brand/header and selected navigation only.
+- Hero card gets one asymmetric 8dp corner for tension.
+- Food progress spring now respects reduced motion.
+- Bottom sheets use 28dp top radius and 640dp max width.
+- Added Baki high-contrast light/dark palettes with an Appearance switch.
+- 205 tests, 0 failures.

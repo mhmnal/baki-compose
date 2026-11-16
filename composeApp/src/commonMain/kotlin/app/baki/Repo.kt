@@ -1087,6 +1087,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         ActionFeedback.show("Theme saved")
     }
 
+    fun setHighContrast(on: Boolean) {
+        config = config.copy(highContrast = on)
+        saveConfig(config)
+        ActionFeedback.show(if (on) "High contrast on" else "Standard contrast")
+        PlatformEffects.tapFeedback()
+    }
+
     fun setColorSource(source: String) {
         val clean = if (source == "baki") "baki" else "wallpaper"
         config = config.copy(colorSource = clean)

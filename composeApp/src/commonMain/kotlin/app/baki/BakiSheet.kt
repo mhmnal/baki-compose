@@ -1,10 +1,13 @@
 package app.baki
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,11 +39,12 @@ fun BakiSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)) },
         tonalElevation = 0.dp,
     ) {
-        Column(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.fillMaxWidth().widthIn(max = 640.dp)) {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -65,5 +69,5 @@ fun BakiSheet(
                 androidx.compose.foundation.layout.Spacer(Modifier.padding(bottom = 20.dp))
             }
         }
-    }
+    }    }
 }

@@ -44,5 +44,7 @@ class FixedThemeContrastTest {
     fun fixedLightAndDarkAreReadable() {
         check("Fig Milk", BakiLightColors)
         check("Midnight Fig", BakiDarkColors)
+        check("Fig Milk high contrast", BakiLightHighContrast)
+        check("Midnight Fig high contrast", BakiDarkHighContrast)
     }
 }

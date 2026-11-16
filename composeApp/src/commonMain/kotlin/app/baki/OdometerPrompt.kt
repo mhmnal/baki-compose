@@ -1,5 +1,7 @@
 package app.baki
 
+import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,7 +65,7 @@ fun OdometerPromptDialog(
             Box(
                 Modifier
                     .size(46.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(scheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

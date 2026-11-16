@@ -89,7 +89,7 @@ fun PayoutsSheet(
             Box(
                 Modifier
                     .size(40.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(scheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
@@ -145,7 +145,7 @@ fun PayoutsSheet(
                     Box(
                         Modifier
                             .size(28.dp)
-                            .clip(MaterialShapes.SoftBurst.toShape())
+                            .clip(CircleShape)
                             .background(scheme.tertiaryContainer),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -213,7 +213,7 @@ private fun PayoutAmountDialog(
             Box(
                 Modifier
                     .size(44.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(scheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

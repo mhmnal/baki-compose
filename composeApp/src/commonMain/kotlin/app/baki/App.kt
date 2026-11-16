@@ -118,6 +118,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
     BakiTheme(
         mode = repo.config.themeMode,
         colorSource = repo.config.colorSource,
+        highContrast = repo.config.highContrast,
         reducedMotion = repo.config.reducedMotion,
     ) {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
@@ -688,7 +689,7 @@ private fun FirstRunCard(onOpenMore: () -> Unit) {
             Box(
                 Modifier
                     .size(44.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(scheme.onPrimaryContainer.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -765,7 +766,7 @@ fun Header(repo: BakiRepo) {
         Box(
             Modifier
                 .size(40.dp)
-                .clip(MaterialShapes.SoftBurst.toShape())
+                .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .clickable { repo.setDiscreet(!repo.config.discreet) }
                 .semantics { contentDescription = "Toggle discreet mode" },
@@ -813,7 +814,7 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
             Box(
                 Modifier
                     .size(16.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(if (tint == Color.Unspecified) scheme.primary else tint),
             )
             Text(
@@ -907,7 +908,7 @@ fun RowCard(
                 Box(
                     Modifier
                         .size(34.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primaryContainer.copy(alpha = 0.75f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
@@ -916,7 +917,7 @@ fun RowCard(
                 Box(
                     Modifier
                         .size(30.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(ink.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center,
                 ) { Box(Modifier.size(7.dp).clip(CircleShape).background(ink)) }
@@ -945,7 +946,7 @@ private fun SectionTitle(text: String, trailing: String = "") {
                 Box(
                     Modifier
                         .size(13.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.primary),
                 )
                 Text(
@@ -1161,7 +1162,7 @@ private fun MonthHeader(month: String, onChange: (String) -> Unit) {
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(7.dp).clip(MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(scheme.primary))
                     Text(
                         "MONTH IN PLAY",
                         color = scheme.primary,
@@ -2128,6 +2129,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 else "Wallpaper uses Material You. Baki is the fixed fallback.",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
+            if (repo.config.colorSource == "baki") {
+                Spacer(Modifier.height(Space.s))
+                SwitchRow(
+                    title = "High contrast",
+                    sub = if (repo.config.highContrast) "stronger text and outlines" else "standard contrast",
+                    checked = repo.config.highContrast,
+                ) { repo.setHighContrast(it) }
+            }
         } else {
             Text(
                 "Baki fixed colours are in use — dynamic colour isn't available on this device.",
@@ -2434,7 +2443,7 @@ private fun SwitchRow(
             Box(
                 Modifier
                     .size(10.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .clip(CircleShape)
                     .background(if (warn) scheme.secondary else scheme.primary),
             )
             Spacer(Modifier.width(Space.s))
@@ -2503,7 +2512,7 @@ private fun EntryDialog(
                 Box(
                     Modifier
                         .size(46.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -2691,7 +2700,7 @@ private fun FormSection(label: String) {
         Box(
             Modifier
                 .size(14.dp)
-                .clip(MaterialShapes.SoftBurst.toShape())
+                .clip(CircleShape)
                 .background(scheme.primary),
         )
         Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
@@ -2747,7 +2756,7 @@ private fun ShiftDialog(
                 Box(
                     Modifier
                         .size(46.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -2982,7 +2991,7 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
                 Box(
                     Modifier
                         .size(44.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
+                        .clip(CircleShape)
                         .background(scheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {

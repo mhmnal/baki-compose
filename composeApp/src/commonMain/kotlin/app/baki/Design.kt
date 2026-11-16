@@ -125,7 +125,7 @@ fun EmptyState(title: String, hint: String? = null, modifier: Modifier = Modifie
         Box(
             Modifier
                 .size(42.dp)
-                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                .clip(androidx.compose.foundation.shape.CircleShape)
                 .background(scheme.primaryContainer),
         )
         Spacer(Modifier.height(Space.m))
@@ -326,7 +326,7 @@ fun BakiDialogHeader(
         Box(
             Modifier
                 .size(40.dp)
-                .clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape())
+                .clip(androidx.compose.foundation.shape.CircleShape)
                 .background(background),
             contentAlignment = Alignment.Center,
         ) {
