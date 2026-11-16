@@ -672,6 +672,14 @@ private fun HeroAmount(
         fontSize = (BakiHeroFontSize.value * 0.33f).sp,
         letterSpacing = (-1).sp,
     )
+    // "RM" belongs to the hero but must not compete with the number: small, baseline-aligned.
+    // A negative hero keeps the drawn minus as the sign and tucks RM underneath it, so the
+    // number itself keeps the same left edge as a positive value.
+    val currencyStyle = style.copy(
+        fontSize = (BakiHeroFontSize.value * 0.18f).sp,
+        letterSpacing = 0.sp,
+        fontWeight = FontWeight.Bold,
+    )
     val cardHeight = if (largeText) 175.dp else 206.dp
     val measurer = rememberTextMeasurer()
     Box(
@@ -692,17 +700,37 @@ private fun HeroAmount(
             val dec = decimal.takeIf { it.isNotEmpty() }?.let {
                 measurer.measure(it, decimalStyle, maxLines = 1, softWrap = false)
             }
+            val currency = measurer.measure("RM", currencyStyle, maxLines = 1, softWrap = false)
+            val currencyGap = 4.dp.toPx()
             val signWidth = if (negative) (size.width * 0.12f).coerceIn(16.dp.toPx(), 34.dp.toPx()) else 0f
+            // Positive: reserve room for RM before the number. Negative: RM sits under the
+            // drawn minus, so the number keeps the space after the sign instead.
+            val currencySpace = if (negative) 0f else currency.size.width + currencyGap
             val numberWidth = int.size.width + (dec?.size?.width ?: 0) + if (dec != null) gap else 0f
-            val numberAvailable = (available - signWidth - if (negative) gap else 0f).coerceAtLeast(1f)
-            val scaleX = (numberAvailable / numberWidth).coerceIn(0.20f, 1.18f)
+            val numberAvailable = (available - signWidth - (if (negative) gap else 0f) - currencySpace).coerceAtLeast(1f)
+            // A positive hero must never upscale past the space left by RM; otherwise the decimal
+            // runs off the card. Negative heroes keep the original 1.18× fill because RM sits under
+            // the minus and does not consume number width.
+            val maxScale = if (negative) 1.18f else 1f
+            val scaleX = (numberAvailable / numberWidth).coerceIn(0.20f, maxScale)
             val targetHeight = size.height * 1.16f
             val scaleY = (targetHeight / int.size.height.toFloat()).coerceIn(1f, 2.6f)
-            val left = edge + signWidth + (if (negative) gap else 0f) +
-                (numberAvailable - numberWidth * scaleX) / 2f
+            val left = if (negative) {
+                edge + signWidth + gap + (numberAvailable - numberWidth * scaleX).coerceAtLeast(0f) / 2f
+            } else {
+                // RM is the leading element; the number starts immediately after it. Centering the
+                // number here would leave a gap and could push the decimal past the card edge.
+                edge + currencySpace
+            }
             val top = (size.height - int.size.height * scaleY) / 2f
             val intBaseline = int.getLineBaseline(0)
+            val visualBaseline = top + intBaseline * scaleY
+            val currencyTop = visualBaseline - currency.getLineBaseline(0)
+            val currencyLeft = if (negative) {
+                edge + ((signWidth - currency.size.width) / 2f).coerceAtLeast(0f)
+            } else edge
             val decTop = dec?.let { intBaseline - it.getLineBaseline(0) - int.size.height * 0.08f } ?: 0f
+            drawText(currency, color = ink.copy(alpha = 0.72f), topLeft = androidx.compose.ui.geometry.Offset(currencyLeft, currencyTop))
             if (negative) {
                 drawRoundRect(
                     color = ink,
