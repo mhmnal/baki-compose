@@ -174,7 +174,7 @@ fun TodayScreen(
                     Spacer(Modifier.height(Space.s))
                     FoodCard(food, paidUntil, largeText = true, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(Space.s))
-                    DayCard(store, day, onDay, Modifier.fillMaxWidth().height(132.dp))
+                    DayCard(store, today, Modifier.fillMaxWidth().height(132.dp))
                 } else {
                     Row(
                         Modifier.fillMaxWidth().height(206.dp),
@@ -193,7 +193,7 @@ fun TodayScreen(
                             verticalArrangement = Arrangement.spacedBy(Space.s),
                         ) {
                             FoodCard(food, paidUntil, largeText = false, modifier = Modifier.fillMaxWidth().height(120.dp))
-                            DayCard(store, day, onDay, Modifier.fillMaxWidth().weight(1f))
+                            DayCard(store, today, Modifier.fillMaxWidth().weight(1f))
                         }
                     }
                 }
@@ -224,6 +224,10 @@ fun TodayScreen(
                     LiveCard(repo, live, onPayout, onPayouts)
                 }
             }
+        }
+
+        if (day == today && live == null && !repo.readOnly) {
+            item { StartShiftCard(hasShift = shift != null, onStart = { repo.startLive() }) }
         }
 
         if (shift != null) {
@@ -286,13 +290,6 @@ fun TodayScreen(
                                 Text(if (shiftExpanded) "−" else "+", color = scheme.primary, style = MaterialTheme.typography.titleMedium)
                             }
                         }
-                        if (day == today && live == null && !repo.readOnly) {
-                            Spacer(Modifier.height(Space.s))
-                            FilledTonalButton(
-                                onClick = { repo.startLive() },
-                                modifier = Modifier.fillMaxWidth().height(44.dp),
-                            ) { Text("Start live shift", style = MaterialTheme.typography.labelLargeEmphasized) }
-                        }
                         if (shiftExpanded) {
                             Spacer(Modifier.height(Space.s))
                             Text(
@@ -322,9 +319,6 @@ fun TodayScreen(
                     }
                 }
             }
-        } else if (live == null && !repo.readOnly && day == today) {
-        } else if (live == null && !repo.readOnly && day == today) {
-            item { StartShiftCard(onStart = { repo.startLive() }) }
         }
 
         // the day's movement: between the shift card and the ledger
@@ -473,15 +467,7 @@ private fun QuickAction(
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             if (icon != null) {
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .clip(MaterialShapes.SoftBurst.toShape())
-                        .background(scheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline))
-                }
+                Icon(icon, contentDescription = null, tint = scheme.onSurfaceVariant, modifier = Modifier.size(IconSize.row))
             }
             Text(label, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             amount?.let { Text(it, color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold)) }
@@ -489,6 +475,7 @@ private fun QuickAction(
     
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
@@ -496,32 +483,40 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val largeText = LocalDensity.current.fontScale >= 1.6f
     Surface(
         color = scheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.extraLarge,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Space.s, vertical = Space.xxs),
+            Modifier.fillMaxWidth().padding(Space.s),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             ShapeNavButton(
                 label = "‹", enabled = true, onClick = { onChange(addDays(day, -1)) },
                 description = "Previous day",
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    if (isToday) "TODAY" else weekdayShort(day).uppercase(),
-                    color = scheme.primary,
-                    letterSpacing = 1.4.sp,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Box(Modifier.size(7.dp).clip(MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+                    Text(
+                        if (isToday) "DAY IN PLAY" else weekdayShort(day).uppercase(),
+                        color = scheme.primary,
+                        letterSpacing = 1.3.sp,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
                 Text(
                     prettyDate(day),
                     color = scheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = (if (largeText) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium)
+                    style = (if (largeText) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
                         .copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    if (isToday) "a day in the life" else "tap ‹ › to move",
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
                 )
             }
             ShapeNavButton(
@@ -707,7 +702,7 @@ private fun SplitInkAmount(
 }
 
 @Composable
-private fun StartShiftCard(onStart: () -> Unit) {
+private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -723,7 +718,7 @@ private fun StartShiftCard(onStart: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 )
                 Text(
-                    "Ready when you are",
+                    if (hasShift) "Start another live shift" else "Ready when you are",
                     color = scheme.onPrimaryContainer,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
@@ -740,16 +735,18 @@ private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, mod
     val scheme = MaterialTheme.colorScheme
     val cover = paidUntil?.takeIf { it > nowMillis() }
     val status = food?.let { if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left" } ?: "no cap set"
-    fun footer(): String = cover?.let { "Cover ${clockOf(it)}" } ?: "daily food cap"
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
         if (largeText) {
             Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
                 FoodRing(food, Modifier.size(88.dp), showCenter = false)
                 Spacer(Modifier.width(Space.m))
                 Column(Modifier.weight(1f)) {
-                    Text("FOOD FUND", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("FOOD FUND", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                        Spacer(Modifier.weight(1f))
+                        CoverMark(cover != null, paidUntil)
+                    }
                     Text(status, color = if (food?.over == true) scheme.error else scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-                    Text(footer(), color = if (cover != null) scheme.tertiary else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 }
             }
         } else {
@@ -757,19 +754,28 @@ private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, mod
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("FOOD", color = scheme.onSurfaceVariant, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     Spacer(Modifier.weight(1f))
+                    CoverMark(cover != null, paidUntil)
                 }
                 Spacer(Modifier.height(2.dp))
-                FoodRing(food, Modifier.size(62.dp))
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    footer(),
-                    color = if (cover != null) scheme.tertiary else scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                )
+                FoodRing(food, Modifier.size(70.dp))
             }
         }
     }
+}
+
+@Composable
+private fun CoverMark(active: Boolean, paidUntil: Long?) {
+    val scheme = MaterialTheme.colorScheme
+    Text(
+        if (active) "✓" else "×",
+        color = if (active) scheme.tertiary else scheme.onSurfaceVariant,
+        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+        modifier = Modifier.semantics {
+            contentDescription = if (active) {
+                paidUntil?.let { "Cover active until ${clockOf(it)}" } ?: "Cover active"
+            } else "Cover not active"
+        },
+    )
 }
 
 @Composable
@@ -795,6 +801,14 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
                 startAngle = -90f, sweepAngle = 360f * fraction, useCenter = false,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
             )
+            if (fraction > 0f) {
+                val angle = Math.toRadians((-90f + 360f * fraction).toDouble())
+                val r = size.minDimension / 2f - stroke / 2f
+                drawCircle(color, radius = 3.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(
+                    center.x + (r * kotlin.math.cos(angle)).toFloat(),
+                    center.y + (r * kotlin.math.sin(angle)).toFloat(),
+                ))
+            }
         }
         if (showCenter) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clearAndSetSemantics {}) {
@@ -814,14 +828,16 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
 }
 
 @Composable
-private fun DayCard(store: Store, day: String, onDay: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun DayCard(store: Store, today: String, modifier: Modifier = Modifier) {
+    val previous = addDays(today, -1)
+    var selected by remember(today) { mutableStateOf(today) }
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Row(
             Modifier.fillMaxSize().padding(Space.s),
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            MiniDay(store, addDays(day, -1), false, onDay, Modifier.weight(1f).fillMaxHeight())
-            MiniDay(store, day, true, onDay, Modifier.weight(1f).fillMaxHeight())
+            MiniDay(store, previous, selected == previous, { selected = previous }, Modifier.weight(1f).fillMaxHeight())
+            MiniDay(store, today, selected == today, { selected = today }, Modifier.weight(1f).fillMaxHeight())
         }
     }
 }
@@ -865,10 +881,11 @@ private fun MiniDay(store: Store, iso: String, selected: Boolean, onDay: (String
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ShiftBand(band: String, scheme: androidx.compose.material3.ColorScheme) {
     Box(
-        Modifier.clip(CircleShape)
+        Modifier.clip(MaterialShapes.Cookie9Sided.toShape())
             .background(bandColor(band, scheme).copy(alpha = 0.18f))
             .padding(horizontal = Space.m, vertical = 2.dp),
     ) {

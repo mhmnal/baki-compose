@@ -305,7 +305,12 @@ private fun AppContent(repo: BakiRepo) {
                     day = day,
                     today = todayTick,
                     onDay = { day = it },
-                    onAdd = { adding = 1 },
+                    onAdd = {
+                        editingEntry = null
+                        entryType = "expense"
+                        presetCat = null
+                        adding = 2
+                    },
                     onPayout = { adding = 4 },
                     onPayouts = { payoutsTarget = PayoutsTarget.Live },
                     onQuickAdd = { cat, cents ->
@@ -787,15 +792,7 @@ private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit)
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            Box(
-                Modifier
-                    .size(32.dp)
-                    .clip(MaterialShapes.SoftBurst.toShape())
-                    .background(scheme.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(icon, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(IconSize.inline))
-            }
+            Icon(icon, contentDescription = null, tint = scheme.onSecondaryContainer, modifier = Modifier.size(IconSize.row))
             Text(label, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLargeEmphasized)
         }
     }
@@ -1584,6 +1581,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var foundOk by remember { mutableStateOf(false) }
     var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
+    var routeSaved by remember { mutableStateOf(false) }
     var editingProfit by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
     var linkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
@@ -1598,6 +1596,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
+    LaunchedEffect(routeSaved) { if (routeSaved) { delay(1800); routeSaved = false } }
     // More is a settings page: keep the tabs reachable while its sections scroll.
     LaunchedEffect(Unit) { onHeaderCollapsed(false) }
     val pickImport = rememberJsonImport { text ->
@@ -1724,6 +1723,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             ) {
                 routeSync = it
                 repo.setRouteSync(it, routeKey)
+                routeSaved = true
+                PlatformEffects.successFeedback()
             }
             Spacer(Modifier.height(Space.m))
             OutlinedTextField(
@@ -1732,10 +1733,17 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
             )
             Spacer(Modifier.height(Space.m))
-            Button( shape = CircleShape,
-                onClick = { repo.setRouteSync(routeSync, routeKey) },
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
-            ) { Text("Save route key") }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Button( shape = CircleShape,
+                    onClick = {
+                        repo.setRouteSync(routeSync, routeKey)
+                        routeSaved = true
+                        PlatformEffects.successFeedback()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                ) { Text("Save route key") }
+                if (routeSaved) Text("Saved ✓", color = scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
         }
         }
 

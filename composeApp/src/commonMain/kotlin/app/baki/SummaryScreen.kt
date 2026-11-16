@@ -41,6 +41,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -389,7 +390,7 @@ private fun MonthInkChart(store: Store, month: String) {
         Spacer(Modifier.height(Space.s))
         Box(Modifier.fillMaxWidth()) {
         Canvas(
-            Modifier.fillMaxWidth().height(142.dp)
+            Modifier.fillMaxWidth().height(142.dp).clipToBounds()
                 .pointerInput(shown) {
                     detectTapGestures { point ->
                         if (shown.isNotEmpty()) {
@@ -411,8 +412,9 @@ private fun MonthInkChart(store: Store, month: String) {
                     }
                 },
         ) {
-            val zeroY = size.height * 0.64f
-            val usable = size.height * 0.50f
+            val topPad = 4.dp.toPx()
+            val zeroY = size.height * 0.62f
+            val usable = minOf(size.height * 0.50f, zeroY - topPad, size.height - zeroY - topPad)
             val targetY = (zeroY - (targetPerDay / maxAbs * usable).toFloat())
                 .coerceIn(4.dp.toPx(), size.height - 4.dp.toPx())
             // A single quiet baseline and one solid target line; no floating dashes.
@@ -490,7 +492,6 @@ private fun MonthInkChart(store: Store, month: String) {
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            Text("0", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

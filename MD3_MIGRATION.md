@@ -640,3 +640,15 @@ No financial feature was removed.
 - No fixed stretch factors.
 - Start live shift is always visible; explicit no-shift start card.
 - 205 tests, 0 failures.
+
+## 0.43.43 P0/P1 fixes
+
+- Start live shift is a standalone card, independent of shift history.
+- Quick Add More now opens the entry sheet instead of hiding the nav.
+- Latest two-day strip is fixed and locally selectable; it no longer walks backwards.
+- Removed the chart zero label and clipped negative bars to the plot area.
+- Day header matches the Spending month-header pattern.
+- Cover status is now a check/x mark only.
+- FAB and quick-action icons are bare.
+- Shift band uses a Cookie9Sided status shape; route key save shows confirmation.
+- 205 tests, 0 failures.
