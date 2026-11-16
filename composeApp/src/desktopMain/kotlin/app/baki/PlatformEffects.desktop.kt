@@ -22,11 +22,13 @@ actual object PlatformEffects {
             val launcher = System.getProperty("jpackage.app-path")?.takeIf { java.io.File(it).canExecute() }
             val command = ProcessHandle.current().info().command().orElse("")
             val cp = System.getProperty("java.class.path").orEmpty()
+            // BAKI_SHELL is the source of truth. A native jpackage launcher treats a
+            // leading --flag as a JVM option, so do not pass the preview flag as an argument.
             val args = when {
-                launcher != null -> listOf(launcher, "--phone-preview")
+                launcher != null -> listOf(launcher)
                 command.substringAfterLast('/').startsWith("java") && cp.isNotBlank() ->
                     listOf(command, "-cp", cp, "app.baki.MainKt")
-                command.isNotBlank() -> listOf(command, "--phone-preview")
+                command.isNotBlank() -> listOf(command)
                 else -> error("No Baki launcher path available")
             }
             val log = java.io.File(System.getProperty("user.home") ?: ".", ".local/share/baki/preview-launch.log")

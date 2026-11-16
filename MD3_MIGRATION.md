@@ -731,7 +731,7 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
-## 0.43.58 Phone Preview/Motion Lab
+## 0.43.59 Phone Preview/Motion Lab
 
 - Desktop can launch the real phone shell in an isolated preview home with `BAKI_SHELL=phone`.
 - Side panel: appearance, palette, high contrast, expressive/standard/slow motion, reduced motion.

@@ -58,7 +58,9 @@ private fun preparePreviewHome() {
 fun main(args: Array<String>) {
     val preview = previewRequested(args)
     if (preview) preparePreviewHome()
-    if (!acquireSingleInstance()) {
+    // The preview is a development surface: it may open beside the Desk and must not be
+    // blocked by a stale preview window holding the single-instance lock.
+    if (!preview && !acquireSingleInstance()) {
         println("Baki is already running")
         return
     }
