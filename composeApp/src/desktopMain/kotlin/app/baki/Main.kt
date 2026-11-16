@@ -100,12 +100,11 @@ fun main(args: Array<String>) {
             }
             PhonePreview.active = true
             LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(350)
+                kotlinx.coroutines.delay(250)
+                // A development preview must never disappear behind the Desk on Wayland.
                 window.isAlwaysOnTop = true
                 window.toFront()
                 window.requestFocus()
-                kotlinx.coroutines.delay(1400)
-                window.isAlwaysOnTop = false
             }
             PhonePreviewLab(previewRepo)
         }
