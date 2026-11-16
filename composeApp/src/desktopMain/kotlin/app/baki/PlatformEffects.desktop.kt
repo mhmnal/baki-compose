@@ -18,27 +18,37 @@ actual object PlatformEffects {
 
     actual fun openPhonePreview() {
         runCatching {
-            // jpackage knows the installed launcher; ProcessHandle often points at the bundled JVM.
-            val launcher = System.getProperty("jpackage.app-path")?.takeIf { java.io.File(it).canExecute() }
-            val command = ProcessHandle.current().info().command().orElse("")
-            val cp = System.getProperty("java.class.path").orEmpty()
-            // BAKI_SHELL is the source of truth. A native jpackage launcher treats a
-            // leading --flag as a JVM option, so do not pass the preview flag as an argument.
-            val args = when {
-                launcher != null -> listOf(launcher)
-                command.substringAfterLast('/').startsWith("java") && cp.isNotBlank() ->
-                    listOf(command, "-cp", cp, "app.baki.MainKt")
-                command.isNotBlank() -> listOf(command)
-                else -> error("No Baki launcher path available")
-            }
+            val launcher = System.getProperty("jpackage.app-path")
+                ?.takeIf { java.io.File(it).canExecute() }
             val log = java.io.File(System.getProperty("user.home") ?: ".", ".local/share/baki/preview-launch.log")
             log.parentFile?.mkdirs()
-            log.appendText("${java.time.Instant.now()} launching: $args\n")
-            ProcessBuilder(args)
-                .also { it.environment()["BAKI_SHELL"] = "phone" }
-                .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
-                .start()
+            val child: Process = if (launcher != null) {
+                // Spawn through a shell so the preview flag is exported in the child even though
+                // the native launcher does not accept --phone-preview as an application argument.
+                val quoted = launcher.replace("\"", "\\\"")
+                val command = "exec env BAKI_SHELL=phone \"$quoted\""
+                log.appendText("${java.time.Instant.now()} launching shell: $command\n")
+                ProcessBuilder("/bin/bash", "-c", command)
+                    .redirectErrorStream(true)
+                    .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
+                    .start()
+            } else {
+                val command = ProcessHandle.current().info().command().orElse("")
+                val cp = System.getProperty("java.class.path").orEmpty()
+                if (command.substringAfterLast('/').startsWith("java") && cp.isNotBlank()) {
+                    log.appendText("${java.time.Instant.now()} launching java: $command -cp <classpath> app.baki.MainKt\n")
+                    ProcessBuilder(command, "-cp", cp, "app.baki.MainKt")
+                        .also { it.environment()["BAKI_SHELL"] = "phone" }
+                        .redirectErrorStream(true)
+                        .redirectOutput(ProcessBuilder.Redirect.appendTo(java.io.File(log.parentFile, "preview-window.log")))
+                        .start()
+                } else error("No usable Baki launcher path")
+            }
+            log.appendText("${java.time.Instant.now()} child pid=${child.pid()}\n")
+            Thread {
+                val code = runCatching { child.waitFor() }.getOrElse { -1 }
+                log.appendText("${java.time.Instant.now()} child pid=${child.pid()} exited code=$code\n")
+            }.apply { isDaemon = true }.start()
         }.onFailure { println("[scheme] could not open phone preview: ${it.message}") }
     }
 

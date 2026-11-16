@@ -56,6 +56,7 @@ private fun preparePreviewHome() {
 }
 
 fun main(args: Array<String>) {
+    java.io.File("/tmp/baki-preview-boot.log").appendText("${java.time.Instant.now()} pid=${ProcessHandle.current().pid()} shell=${System.getenv("BAKI_SHELL")} args=${args.joinToString("|")}\n")
     val preview = previewRequested(args)
     if (preview) preparePreviewHome()
     // The preview is a development surface: it may open beside the Desk and must not be
@@ -101,8 +102,11 @@ fun main(args: Array<String>) {
             PhonePreview.active = true
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(350)
+                window.isAlwaysOnTop = true
                 window.toFront()
                 window.requestFocus()
+                kotlinx.coroutines.delay(1400)
+                window.isAlwaysOnTop = false
             }
             PhonePreviewLab(previewRepo)
         }
