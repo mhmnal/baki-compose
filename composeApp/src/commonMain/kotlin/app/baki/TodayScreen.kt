@@ -26,6 +26,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
@@ -330,9 +331,9 @@ fun TodayScreen(
             Column {
                 Text("QUICK HITS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(Space.s))
-                FlowRow(
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    verticalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
                     val cats = store.settings.cats.catsOut
                     quick.forEach { q ->
@@ -654,7 +655,7 @@ private fun SplitInkAmount(
         fontFeatureSettings = "tnum",
         letterSpacing = (-4).sp,
     )
-    val shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomEnd = 32.dp, bottomStart = 8.dp)
+    val shape = BakiHeroShape
     val cardHeight = if (largeText) 175.dp else 206.dp
     val cardHeightPx = with(LocalDensity.current) { cardHeight.toPx() }
     // Digits occupy roughly 72% of the line box; scale that ink height to the card.

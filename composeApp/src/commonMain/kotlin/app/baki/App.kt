@@ -423,8 +423,8 @@ private fun AppContent(repo: BakiRepo) {
                 ) {
                     Column(
                         horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(Space.s),
-                        modifier = Modifier.padding(bottom = Space.s),
+                        verticalArrangement = Arrangement.spacedBy(Space.m),
+                        modifier = Modifier.padding(bottom = Space.m),
                     ) {
                         QuickMenuItem("Add spending", BakiIcons.Receipt) {
                             addMenuOpen = false
@@ -447,11 +447,17 @@ private fun AppContent(repo: BakiRepo) {
                         }
                     }
                 }
+                val fabScale by animateFloatAsState(
+                    targetValue = if (addMenuOpen) 1.04f else 1f,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    label = "fabScale",
+                )
                 ToggleFloatingActionButton(
                     checked = addMenuOpen,
                     onCheckedChange = { addMenuOpen = it },
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(96.dp)
+                        .graphicsLayer { scaleX = fabScale; scaleY = fabScale }
                         .semantics { contentDescription = if (addMenuOpen) "Close quick actions" else "Open quick actions" },
                     contentAlignment = Alignment.Center,
                     containerColor = ToggleFloatingActionButtonDefaults.containerColor(
@@ -469,7 +475,7 @@ private fun AppContent(repo: BakiRepo) {
                             "+",
                             color = if (addMenuOpen) MaterialTheme.colorScheme.onPrimary
                             else MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier.rotate(rotation),
                         )
                     }
@@ -786,7 +792,7 @@ fun Header(repo: BakiRepo) {
 private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
-        shape = CircleShape,
+        shape = MaterialTheme.shapes.large,
         color = scheme.secondaryContainer,
         contentColor = scheme.onSecondaryContainer,
         shadowElevation = 4.dp,
@@ -794,12 +800,13 @@ private fun QuickMenuItem(label: String, icon: ImageVector, onClick: () -> Unit)
         Row(
             Modifier
                 .clickable(onClick = onClick)
-                .padding(start = Space.s, end = Space.l, top = Space.xs, bottom = Space.xs),
+                .heightIn(min = 56.dp)
+                .padding(start = Space.m, end = Space.xl, top = Space.s, bottom = Space.s),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            horizontalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Icon(icon, contentDescription = null, tint = scheme.onSecondaryContainer, modifier = Modifier.size(IconSize.row))
-            Text(label, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLargeEmphasized)
+            Icon(icon, contentDescription = null, tint = scheme.onSecondaryContainer, modifier = Modifier.size(IconSize.bar))
+            Text(label, color = scheme.onSecondaryContainer, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
         }
     }
 }
@@ -1258,7 +1265,7 @@ private fun SpendingScreen(
                 Spacer(Modifier.height(Space.m))
                 MonthHeader(month, onMonth)
                 Spacer(Modifier.height(Space.s))
-                Hero(shownLabel, shown, scheme.error, 40)
+                Hero(shownLabel, shown, scheme.secondary, 40)
                 Text(
                     (if (filtering) {
                         "${entries.size} ${if (entries.size == 1) "purchase" else "purchases"}${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
@@ -1576,6 +1583,33 @@ private fun MoreTabs(selected: MoreTab, onSelect: (MoreTab) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     )
 }
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun MoreHero(tab: MoreTab) {
+    val scheme = MaterialTheme.colorScheme
+    val (label, title, sub, icon) = when (tab) {
+        MoreTab.MONEY -> Quad("MONEY DESK", "Bills, statement, car", "The desk side of the ledger.", BakiIcons.Wallet)
+        MoreTab.SHIFT -> Quad("SHIFT KIT", "Payment QR & service", "Keep the car on the road.", BakiIcons.Car)
+        MoreTab.APP -> Quad("BAKI SETUP", "Sync & appearance", "Make Baki feel like yours.", BakiIcons.Phone)
+    }
+    Surface(shape = MaterialTheme.shapes.extraLarge, color = scheme.primaryContainer) {
+        Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(44.dp).clip(CircleShape).background(scheme.primary),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(IconSize.row)) }
+            Spacer(Modifier.width(Space.m))
+            Column(Modifier.weight(1f)) {
+                Text(label, color = scheme.onPrimaryContainer.copy(alpha = 0.68f), letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Text(title, color = scheme.onPrimaryContainer, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                Text(sub, color = scheme.onPrimaryContainer.copy(alpha = 0.78f), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollapsed: (Boolean) -> Unit = {}) {
@@ -1617,6 +1651,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     ) {
         // The More header and its tabs stay put; only the settings body scrolls.
         MoreTabs(moreTab, onSelect = { moreTab = it })
+        Spacer(Modifier.height(Space.s))
+        MoreHero(moreTab)
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(moreScroll)) {
         if (moreTab == MoreTab.SHIFT) {

@@ -679,3 +679,11 @@ No financial feature was removed.
 - Bottom sheets use 28dp top radius and 640dp max width.
 - Added Baki high-contrast light/dark palettes with an Appearance switch.
 - 205 tests, 0 failures.
+
+## 0.43.47 FAB/menu and More
+
+- FAB is 96dp, menu actions 56dp with larger type/icons.
+- Quick Hits is one horizontally scrollable row.
+- More has a tonal mode hero (Money/Shift/App).
+- Spending's normal hero moved from error red to secondary.
+- 205 tests, 0 failures.
