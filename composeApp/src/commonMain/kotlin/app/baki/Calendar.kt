@@ -37,7 +37,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Box(Modifier.size(14.dp).clip(androidx.compose.material3.MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+            Box(Modifier.size(14.dp).clip(CircleShape).background(scheme.primary))
             Text("CALENDAR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }
         Spacer(Modifier.height(Space.s))

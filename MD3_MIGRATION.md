@@ -661,3 +661,11 @@ No financial feature was removed.
 - Food ring changed to a segmented gauge.
 - Day cards default to today and only switch local selection.
 - 205 tests, 0 failures.
+
+## 0.43.45 wavy food ring/shape roles
+
+- Food ring is now a smooth track with a wavy gold progress and head dot.
+- Payout rows have the SwipeToDismissBox rim removed.
+- Global save feedback overlay for theme/color/motion/budgets/food cap/payouts.
+- Section/day/heatmap markers use circles; Cookie9Sided is the status shape; SoftBurst remains brand/selection.
+- 205 tests, 0 failures.

@@ -497,7 +497,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(7.dp).clip(MaterialShapes.SoftBurst.toShape()).background(scheme.primary))
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(scheme.primary))
                     Text(
                         if (isToday) "DAY IN PLAY" else weekdayShort(day).uppercase(),
                         color = scheme.primary,
@@ -790,27 +790,40 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
     } ?: "Food fund not set"
     Box(modifier.semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
-            val segments = 24
-            val stroke = 4.dp.toPx()
-            val radius = size.minDimension / 2f - stroke
-            val gap = 0.20f
-            for (i in 0 until segments) {
-                val a0 = Math.toRadians((-90.0 + (i + gap / 2f) * 360.0 / segments))
-                val a1 = Math.toRadians((-90.0 + (i + 1 - gap / 2f) * 360.0 / segments))
-                val active = (i + 0.5f) / segments <= fraction
-                drawLine(
-                    if (active) color else scheme.surfaceContainerHigh,
-                    androidx.compose.ui.geometry.Offset(
-                        center.x + (radius * kotlin.math.cos(a0)).toFloat(),
-                        center.y + (radius * kotlin.math.sin(a0)).toFloat(),
-                    ),
-                    androidx.compose.ui.geometry.Offset(
-                        center.x + (radius * kotlin.math.cos(a1)).toFloat(),
-                        center.y + (radius * kotlin.math.sin(a1)).toFloat(),
-                    ),
-                    strokeWidth = stroke,
-                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+            val stroke = 3.4.dp.toPx()
+            val amplitude = 0.9.dp.toPx()
+            val baseR = size.minDimension / 2f - stroke - amplitude
+            // Crisp tonal track, wavy gold progress. The wave is on the data, not the container.
+            drawArc(
+                color = scheme.surfaceContainerHigh,
+                startAngle = -90f, sweepAngle = 360f, useCenter = false,
+                topLeft = androidx.compose.ui.geometry.Offset(stroke / 2f, stroke / 2f),
+                size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
+            )
+            if (fraction > 0f) {
+                fun point(angle: Double): androidx.compose.ui.geometry.Offset {
+                    val r = baseR + amplitude * kotlin.math.sin(angle * 12.0).toFloat()
+                    return androidx.compose.ui.geometry.Offset(
+                        center.x + (r * kotlin.math.cos(angle)).toFloat(),
+                        center.y + (r * kotlin.math.sin(angle)).toFloat(),
+                    )
+                }
+                val steps = (96 * fraction).toInt().coerceAtLeast(2)
+                val progressPath = Path().apply {
+                    val p0 = point(Math.toRadians(-90.0))
+                    moveTo(p0.x, p0.y)
+                    for (i in 1..steps) {
+                        val p = point(Math.toRadians(-90.0 + 360.0 * fraction * i / steps))
+                        lineTo(p.x, p.y)
+                    }
+                }
+                drawPath(
+                    progressPath, color,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round),
                 )
+                val end = point(Math.toRadians(-90.0 + 360.0 * fraction))
+                drawCircle(color, radius = 3.2.dp.toPx(), center = end)
             }
         }
         if (showCenter) {

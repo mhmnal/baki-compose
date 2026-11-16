@@ -147,7 +147,7 @@ private fun SectionMark(tint: Color, size: androidx.compose.ui.unit.Dp = 16.dp) 
     Box(
         Modifier
             .size(size)
-            .clip(MaterialShapes.SoftBurst.toShape())
+            .clip(CircleShape)
             .background(tint),
     )
 }
