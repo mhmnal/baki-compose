@@ -120,11 +120,14 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         colorSource = repo.config.colorSource,
         reducedMotion = repo.config.reducedMotion,
     ) {
-        // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
-        SharedTransitionLayout {
-            androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
-                AppContent(repo)
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+            // a desktop gets a desktop: rail, wide canvas, tables — not a stretched phone
+            SharedTransitionLayout {
+                androidx.compose.runtime.CompositionLocalProvider(LocalSharedTransition provides this) {
+                    AppContent(repo)
+                }
             }
+            ActionFeedbackOverlay(Modifier.align(Alignment.BottomCenter))
         }
     }
 }
@@ -502,6 +505,7 @@ private fun AppContent(repo: BakiRepo) {
                         PayoutsTarget.Live -> repo.updatePayout(index, cents)
                         is PayoutsTarget.Stored -> repo.updateShiftPayout(target.shiftId, index, cents)
                     }
+                    ActionFeedback.show("Payout updated")
                 }
             },
             onDelete = { index ->
@@ -531,6 +535,7 @@ private fun AppContent(repo: BakiRepo) {
                         PayoutsTarget.Live -> repo.addPayout(cents)
                         is PayoutsTarget.Stored -> repo.addShiftPayout(target.shiftId, cents)
                     }
+                    ActionFeedback.show("Payout added")
                 }
             },
             onDismiss = { payoutsTarget = null },
@@ -3185,4 +3190,37 @@ private fun EnvelopeMoveDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = scheme.onSurfaceVariant) } },
     )
+}
+
+
+@Composable
+private fun ActionFeedbackOverlay(modifier: Modifier = Modifier) {
+    val message = ActionFeedback.message
+    LaunchedEffect(message) {
+        if (message != null) {
+            delay(1800)
+            ActionFeedback.clear(message)
+        }
+    }
+    AnimatedVisibility(
+        visible = message != null,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it / 3 },
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = modifier.padding(horizontal = Space.xl, vertical = Space.s),
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            shadowElevation = 3.dp,
+        ) {
+            Row(
+                Modifier.padding(horizontal = Space.m, vertical = Space.s),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                Text("✓", color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                Text(message.orEmpty(), color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
 }

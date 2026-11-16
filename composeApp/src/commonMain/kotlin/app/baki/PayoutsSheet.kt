@@ -115,6 +115,7 @@ fun PayoutsSheet(
             val dismiss = rememberSwipeToDismissBoxState()
             SwipeToDismissBox(
                 state = dismiss,
+                modifier = Modifier.clip(MaterialTheme.shapes.large),
                 enableDismissFromStartToEnd = false,
                 enableDismissFromEndToStart = editable,
                 backgroundContent = {
@@ -134,7 +135,6 @@ fun PayoutsSheet(
                 Column(Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth()
-                        .padding(vertical = 3.dp)
                         .clip(MaterialTheme.shapes.large)
                         .background(scheme.surfaceContainerLow)
                         .clickable(enabled = editable) { editing = index }

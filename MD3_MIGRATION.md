@@ -652,3 +652,12 @@ No financial feature was removed.
 - FAB and quick-action icons are bare.
 - Shift band uses a Cookie9Sided status shape; route key save shows confirmation.
 - 205 tests, 0 failures.
+
+## 0.43.44 second batch
+
+- Payout rows no longer show the SwipeToDismissBox rim (the "legacy ledger" edges).
+- Standalone Start card remains above shift history.
+- Save feedback added for Theme/Colour/Reduced motion/Budgets/Food cap, plus payouts.
+- Food ring changed to a segmented gauge.
+- Day cards default to today and only switch local selection.
+- 205 tests, 0 failures.

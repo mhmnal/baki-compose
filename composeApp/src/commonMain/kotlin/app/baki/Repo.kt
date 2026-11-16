@@ -947,6 +947,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         saveLocal(store)
         pushWithTombs(emptyList())
+        ActionFeedback.show("Budgets saved")
     }
 
     suspend fun setEnvelopeCarry(on: Boolean) = mutex.withLock {
@@ -1059,6 +1060,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         saveLocal(store)
         pushWithTombs(emptyList())
+        ActionFeedback.show("Food cap saved")
     }
 
     /** The service target is user-set; null clears it. */
@@ -1082,6 +1084,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         config = config.copy(themeMode = mode)
         saveConfig(config)
         PlatformEffects.tapFeedback()
+        ActionFeedback.show("Theme saved")
     }
 
     fun setColorSource(source: String) {
@@ -1089,12 +1092,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         config = config.copy(colorSource = clean)
         saveConfig(config)
         PlatformEffects.tapFeedback()
+        ActionFeedback.show("Colour source saved")
     }
 
     fun setReducedMotion(on: Boolean) {
         config = config.copy(reducedMotion = on)
         saveConfig(config)
         PlatformEffects.tapFeedback()
+        ActionFeedback.show(if (on) "Reduced motion on" else "Reduced motion off")
     }
 
     fun setServer(url: String, token: String = config.serverToken) {

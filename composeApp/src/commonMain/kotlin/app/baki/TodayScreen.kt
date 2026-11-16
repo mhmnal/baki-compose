@@ -790,24 +790,27 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
     } ?: "Food fund not set"
     Box(modifier.semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
-            val stroke = 6.dp.toPx()
-            drawArc(
-                color = scheme.surfaceContainerHigh,
-                startAngle = -90f, sweepAngle = 360f, useCenter = false,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
-            )
-            drawArc(
-                color = color,
-                startAngle = -90f, sweepAngle = 360f * fraction, useCenter = false,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
-            )
-            if (fraction > 0f) {
-                val angle = Math.toRadians((-90f + 360f * fraction).toDouble())
-                val r = size.minDimension / 2f - stroke / 2f
-                drawCircle(color, radius = 3.5.dp.toPx(), center = androidx.compose.ui.geometry.Offset(
-                    center.x + (r * kotlin.math.cos(angle)).toFloat(),
-                    center.y + (r * kotlin.math.sin(angle)).toFloat(),
-                ))
+            val segments = 24
+            val stroke = 4.dp.toPx()
+            val radius = size.minDimension / 2f - stroke
+            val gap = 0.20f
+            for (i in 0 until segments) {
+                val a0 = Math.toRadians((-90.0 + (i + gap / 2f) * 360.0 / segments))
+                val a1 = Math.toRadians((-90.0 + (i + 1 - gap / 2f) * 360.0 / segments))
+                val active = (i + 0.5f) / segments <= fraction
+                drawLine(
+                    if (active) color else scheme.surfaceContainerHigh,
+                    androidx.compose.ui.geometry.Offset(
+                        center.x + (radius * kotlin.math.cos(a0)).toFloat(),
+                        center.y + (radius * kotlin.math.sin(a0)).toFloat(),
+                    ),
+                    androidx.compose.ui.geometry.Offset(
+                        center.x + (radius * kotlin.math.cos(a1)).toFloat(),
+                        center.y + (radius * kotlin.math.sin(a1)).toFloat(),
+                    ),
+                    strokeWidth = stroke,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                )
             }
         }
         if (showCenter) {
