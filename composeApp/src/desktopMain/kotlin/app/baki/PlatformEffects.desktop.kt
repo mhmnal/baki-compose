@@ -16,6 +16,22 @@ actual object PlatformEffects {
 
     actual fun requestLiveWidget() {}
 
+    actual fun openPhonePreview() {
+        runCatching {
+            val command = ProcessHandle.current().info().command().orElse("")
+            val cp = System.getProperty("java.class.path").orEmpty()
+            val args = if (command.substringAfterLast('/').startsWith("java") && cp.isNotBlank()) {
+                listOf(command, "-cp", cp, "app.baki.MainKt")
+            } else {
+                listOf(command, "--phone-preview")
+            }
+            ProcessBuilder(args)
+                .also { it.environment()["BAKI_SHELL"] = "phone" }
+                .redirectErrorStream(true)
+                .start()
+        }.onFailure { println("[scheme] could not open phone preview: ${it.message}") }
+    }
+
     actual fun notice(text: String) {
         println("[scheme] $text")
     }

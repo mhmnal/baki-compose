@@ -115,6 +115,8 @@ actual object PlatformEffects {
         }
     }
 
+    actual fun openPhonePreview() {}
+
     actual fun requestLiveWidget() {
         val ctx = AppCtx.ctx ?: return
         runCatching {

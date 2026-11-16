@@ -33,6 +33,8 @@ expect object PlatformEffects {
     fun printStatement(html: String)
     /** Ask the launcher to place the live widget; desktop has no home screen. */
     fun requestLiveWidget()
+    /** Desktop-only: launch the isolated interactive phone preview process. */
+    fun openPhonePreview()
     /** Short, non-blocking feedback (a Toast on Android, a log line on desktop). */
     fun notice(text: String)
     /** Schedule or cancel the weekly Wednesday statement reminder. */

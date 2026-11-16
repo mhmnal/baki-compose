@@ -932,6 +932,19 @@ internal fun DeskSettings(repo: BakiRepo) {
             }
         }
         DeskCard(Modifier.fillMaxWidth()) {
+            DeskLabel("PHONE PREVIEW")
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "Open the interactive phone shell beside the desk. It uses an isolated copy of the ledger for motion and UI testing.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(Space.s))
+            FilledTonalButton(onClick = {
+                PlatformEffects.openPhonePreview()
+                note("Opening Phone Preview")
+            }) { Text("Open Phone Preview", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
+        }
+        DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("READ-ONLY DESK")
             Spacer(Modifier.height(Space.xs))
             Text(
