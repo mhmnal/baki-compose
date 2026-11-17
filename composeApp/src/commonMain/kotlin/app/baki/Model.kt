@@ -155,6 +155,8 @@ data class ImportedTxn(
     val suggestedEntryId: String? = null,
     val batchId: String = "",
     val pairId: String = "",
+    val suggestedPairId: String = "",
+    val pairRejected: Boolean = false,
     val updated: String = "",
 )
 

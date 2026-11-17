@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.4 pairing/tests
+
+- Transfer pairs now require Confirm/Reject; auto-pairing removed.
+- Test-only `.verify` seed exercises phone summary and synthetic rows.
+- Android instrumentation verifies matched/unrecorded counts.
+- Quoted CSV fields supported.
+- Dedicated statement API and batch audit retained.
+- 216 tests, 0 failures.
+
 ## 0.45.3 statement transport
 
 - Dedicated `/api/statements` GET/POST; `/api/data` no longer carries sidecar rows.

@@ -90,13 +90,34 @@ private fun csvDate(raw: String): String? {
     return null
 }
 
+/** RFC4180-ish line splitter: quoted fields may contain delimiters and doubled quotes. */
+private fun splitCsvLine(line: String, delimiter: Char): List<String> {
+    val out = mutableListOf<String>()
+    val cell = StringBuilder()
+    var quoted = false
+    var i = 0
+    while (i < line.length) {
+        val c = line[i]
+        when {
+            c == '"' && quoted && i + 1 < line.length && line[i + 1] == '"' -> { cell.append('"'); i++ }
+            c == '"' -> quoted = !quoted
+            c == delimiter && !quoted -> { out += cell.toString().trim(); cell.clear() }
+            else -> cell.append(c)
+        }
+        i++
+    }
+    out += cell.toString().trim()
+    return out
+}
+
 /** Provider-neutral CSV parser: header detection, common date/amount columns, signed/debit-credit. */
 fun parseCsvStatement(text: String): List<DraftTxn> {
     val lines = text.lines().filter { it.isNotBlank() }
     if (lines.size < 2) return emptyList()
     val delimiter = listOf(',', '\t', ';').maxByOrNull { c -> lines.first().count { it == c } } ?: ','
+    fun split(line: String) = splitCsvLine(line, delimiter)
     val rows = lines.map { line ->
-        line.split(delimiter).map { it.trim().trim('"') }
+        split(line)
     }
     val header = rows.first().map { it.lowercase() }
     fun col(vararg names: String): Int = header.indexOfFirst { h -> names.any { h.contains(it) } }

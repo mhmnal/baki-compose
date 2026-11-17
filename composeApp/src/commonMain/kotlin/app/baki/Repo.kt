@@ -361,7 +361,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updatedAt = stamp,
         )
         saveLocal(store)
-        pairTransfers()
+        suggestTransfers()
         pushStatementsNow()
         StageResult(next.size, duplicates)
     }
@@ -434,8 +434,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     /** Suggest opposite-direction transfer pairs on different accounts, exact amount, ±1 day. */
-    private fun pairTransfers() {
-        val pending = store.importedTxns.filter { it.status == "pending" && it.transfer && it.pairId.isBlank() }
+    private fun suggestTransfers() {
+        val pending = store.importedTxns.filter { it.status == "pending" && it.transfer && it.pairId.isBlank() && it.suggestedPairId.isBlank() && !it.pairRejected }
         val used = mutableSetOf<String>()
         var changed = false
         val rows = store.importedTxns.toMutableList()
@@ -452,11 +452,30 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             val pair = newId("pair")
             val ia = rows.indexOfFirst { it.id == a.id }; val ib = rows.indexOfFirst { it.id == b.id }
             if (ia >= 0 && ib >= 0) {
-                rows[ia] = rows[ia].copy(pairId = pair); rows[ib] = rows[ib].copy(pairId = pair)
+                rows[ia] = rows[ia].copy(suggestedPairId = pair); rows[ib] = rows[ib].copy(suggestedPairId = pair)
                 used += a.id; used += b.id; changed = true
             }
         }
         if (changed) store = store.copy(importedTxns = rows)
+    }
+
+    suspend fun confirmTransferPair(suggestedPairId: String): Boolean = mutex.withLock {
+        val rows = store.importedTxns.filter { it.suggestedPairId == suggestedPairId }
+        if (rows.size != 2) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(importedTxns = store.importedTxns.map {
+            if (it.suggestedPairId == suggestedPairId) it.copy(pairId = suggestedPairId, suggestedPairId = "", updated = stamp) else it
+        }, updatedAt = stamp)
+        saveLocal(store); pushStatementsNow(); true
+    }
+
+    suspend fun rejectTransferPair(suggestedPairId: String): Boolean = mutex.withLock {
+        if (store.importedTxns.none { it.suggestedPairId == suggestedPairId }) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(importedTxns = store.importedTxns.map {
+            if (it.suggestedPairId == suggestedPairId) it.copy(suggestedPairId = "", pairRejected = true, updated = stamp) else it
+        }, updatedAt = stamp)
+        saveLocal(store); pushStatementsNow(); true
     }
 
     suspend fun ignoreImported(id: String): Boolean = mutex.withLock {

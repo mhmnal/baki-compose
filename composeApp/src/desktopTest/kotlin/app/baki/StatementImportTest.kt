@@ -34,6 +34,13 @@ class StatementImportTest {
         assertEquals("out", rows[0].direction)
     }
 
+    @Test fun quotedCsvDescription() {
+        val text = "Date,Description,Amount\n01/10/2026,\"Coffee, milk\",-12.30"
+        val rows = parseCsvStatement(text)
+        assertEquals(1, rows.size)
+        assertEquals("Coffee, milk", rows[0].description)
+    }
+
     @Test fun tngAmountAndDirection() {
         val text = """
             TNG WALLET TRANSACTION HISTORY

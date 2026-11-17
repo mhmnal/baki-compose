@@ -1243,6 +1243,12 @@ internal fun DeskStatements(repo: BakiRepo) {
                                 color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                             )
                             Text(row.description.take(140), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                            if (row.suggestedPairId.isNotBlank() && row.pairId.isBlank()) {
+                                Text(
+                                    "Suggested transfer pair — confirm both sides.",
+                                    color = scheme.tertiary, style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
                             if (suggestion != null) {
                                 Text(
                                     "Suggested: ${suggestion.date} · ${suggestion.note.ifBlank { categoryLabel(store, suggestion.cat) }} · RM ${rm(suggestion.amount / 100.0)}",
@@ -1251,6 +1257,10 @@ internal fun DeskStatements(repo: BakiRepo) {
                             } else if (!row.transfer) {
                                 Text("Unrecorded on phone — add it manually on the phone, then match later.", color = scheme.secondary, style = MaterialTheme.typography.bodySmall)
                             }
+                        }
+                        if (row.suggestedPairId.isNotBlank() && row.pairId.isBlank()) {
+                            TextButton(onClick = { scope.launch { repo.confirmTransferPair(row.suggestedPairId) } }) { Text("Confirm pair", color = scheme.primary) }
+                            TextButton(onClick = { scope.launch { repo.rejectTransferPair(row.suggestedPairId) } }) { Text("Reject", color = scheme.onSurfaceVariant) }
                         }
                         if (suggestion != null) {
                             TextButton(onClick = { scope.launch { repo.matchImported(row.id, suggestion.id) } }) { Text("Match", color = scheme.primary) }
