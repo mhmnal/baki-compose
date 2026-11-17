@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.7 internal transfers
+
+- AEON Pot transfers and TNG GO+/reload/cash-out moves are classified as internal.
+- Internal moves are hidden from review and spending, retained for audit.
+- Existing pending rows are reclassified on startup/sync.
+- Third-party DuitNow remains expense/review.
+- Cashback/rewards remain income.
+- 222 tests, 0 failures.
+
 ## 0.45.6 conflict/Desk tests
 
 - Newest-write-wins conflict test for statement rows.

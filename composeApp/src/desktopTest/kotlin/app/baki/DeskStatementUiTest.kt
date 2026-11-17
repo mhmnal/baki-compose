@@ -28,12 +28,12 @@ class DeskStatementUiTest {
         """.trimIndent())
         repo.stageStatementText("""
             AEON Bank (M) Berhad
-            04 Oct 26   UIPAIR$suffix OUT - Transfer to Pot
+            04 Oct 26   UIPAIR$suffix OUT - Fund Transfer
                         -RM 7.77                    RM 82.23
         """.trimIndent())
         repo.stageStatementText("""
             TNG WALLET TRANSACTION HISTORY
-            04/10/2026 Success Reload 20261004101 UIPAIR$suffix IN RM7.77 RM90.00
+            04/10/2026 Success DUITNOW_RECEIVEFROM 20261004101 UIPAIR$suffix IN RM7.77 RM90.00
         """.trimIndent())
         return repo
     }

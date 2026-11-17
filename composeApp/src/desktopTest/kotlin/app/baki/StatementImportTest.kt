@@ -41,6 +41,25 @@ class StatementImportTest {
         assertEquals("Coffee, milk", rows[0].description)
     }
 
+    @Test fun internalSubAccountMovesAreClassifiedAndThirdPartyIsNot() {
+        val aeon = parseAeonStatement("""
+            AEON Bank (M) Berhad
+            01 Oct 26   Emergency - Transfer to Pot
+                        -RM 0.80                    RM 23.02
+            01 Oct 26   RESTORAN NASI KANDAR - DuitNowQR - QR Payment
+                        -RM 4.20                    RM 18.82
+        """.trimIndent())
+        assertTrue(aeon[0].isInternal)
+        assertTrue(!aeon[1].isInternal)
+        val tng = parseTngStatement("""
+            TNG WALLET TRANSACTION HISTORY
+            20/10/2026 Success Reload 20261020101 Quick Reload Payment (via GO+ Balance) RM57.69 RM114.38
+            20/10/2026 Success DUITNOW_RECEIVEFROM 20261024111 FRIEND RM24.00 RM138.38
+        """.trimIndent())
+        assertTrue(tng[0].isInternal)
+        assertTrue(!tng[1].isInternal, "third-party DuitNow is not an internal move")
+    }
+
     @Test fun tngAmountAndDirection() {
         val text = """
             TNG WALLET TRANSACTION HISTORY

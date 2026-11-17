@@ -157,6 +157,7 @@ data class ImportedTxn(
     val pairId: String = "",
     val suggestedPairId: String = "",
     val pairRejected: Boolean = false,
+    val internal: Boolean = false,
     val updated: String = "",
 )
 

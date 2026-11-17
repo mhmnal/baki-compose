@@ -82,6 +82,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     fun start() {
         ensureTollCategory()
+        normalizeInternalTransfers()
+        scope.launch { runCatching { pushStatementsNow() } }
         // enforce retention and drop paths whose shift no longer exists, even if no shift is ended.
         // The id of a shift in progress is NOT in store.shifts yet: sweeping without it deletes the
         // path being recorded right now, which is what made a drive appear to restart after a stop.
@@ -127,6 +129,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 // Keep the last conflict count; a 304 is not a new pull to clear it with.
                 if (config.allowWrites && pendingPush) pushAll()
                 runCatching { pullStatementsNow() }
+                normalizeInternalTransfers()
+                runCatching { pushStatementsNow() }
                 runCatching { pushRoutes() }
                 runCatching { pullRoutes(addDays(todayIso(), -45)) }
                 status = "synced"
@@ -148,6 +152,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             // upload only when we hold something the server did not get last time
             if (config.allowWrites && pendingPush) pushAll()
             runCatching { pullStatementsNow() }
+            normalizeInternalTransfers()
+            runCatching { pushStatementsNow() }
             runCatching { pushRoutes() }
             runCatching { pullRoutes(addDays(todayIso(), -45)) }
             status = "synced"
@@ -315,6 +321,21 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLocal(store)
     }
 
+    /** Reclassify sub-account moves already in the queue: hide, but retain for audit. */
+    private fun normalizeInternalTransfers() {
+        var changed = false
+        val rows = store.importedTxns.map {
+            if (!it.internal && it.status == "pending" && isInternalTransfer(it.description, it.source)) {
+                changed = true
+                it.copy(internal = true, transfer = true, status = "internal", updated = nowIso())
+            } else it
+        }
+        if (changed) {
+            store = store.copy(importedTxns = rows, updatedAt = nowIso())
+            saveLocal(store)
+        }
+    }
+
     data class StageResult(val staged: Int, val duplicates: Int)
 
     /** Parse AEON/TNG/CSV text and stage rows for review. Nothing enters ledger totals. */
@@ -344,6 +365,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 direction = d.direction, transfer = d.isTransfer, source = d.source,
                 suggestedEntryId = suggestStatementMatch(store, d),
                 batchId = batchId,
+                internal = d.isInternal,
+                status = if (d.isInternal) "internal" else "pending",
                 updated = stamp,
             )
         }

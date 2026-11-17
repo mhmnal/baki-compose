@@ -12,6 +12,7 @@ data class DraftTxn(
     val amountCents: Long,
     val direction: String,
     val isTransfer: Boolean,
+    val isInternal: Boolean = false,
 )
 
 private val AEON_DATE = Regex("""(?m)^\s*(\d{2})\s+([A-Z][a-z]{2})\s+(\d{2})\s+(.+)$""")
@@ -47,7 +48,7 @@ fun parseAeonStatement(text: String): List<DraftTxn> {
         val direction = if (amount.trimStart().startsWith("-")) "out" else "in"
         val transfer = desc.contains("Transfer to Pot", true) || desc.contains("Fund Transfer", true)
         val cleanDesc = desc.substringBefore("Transaction date:").trim()
-        out += DraftTxn("AEON Bank — Savings Account-i", "bank", "aeon", date.toString(), cleanDesc, cents(amount), direction, transfer)
+        out += DraftTxn("AEON Bank — Savings Account-i", "bank", "aeon", date.toString(), cleanDesc, cents(amount), direction, transfer, isInternalTransfer(cleanDesc, "aeon"))
     }
     return out
 }
@@ -69,7 +70,7 @@ fun parseTngStatement(text: String): List<DraftTxn> {
             else -> "out"
         }
         val desc = head.substringAfter("Success", "").trim().ifBlank { "TNG transaction" }
-        out += DraftTxn("TNG eWallet", "ewallet", "tng", date.toString(), desc, cents(amount), direction, transfer)
+        out += DraftTxn("TNG eWallet", "ewallet", "tng", date.toString(), desc, cents(amount), direction, transfer, isInternalTransfer(desc, "tng"))
     }
     return out
 }
@@ -155,7 +156,7 @@ fun parseCsvStatement(text: String): List<DraftTxn> {
         val n = value.toDoubleOrNull() ?: return@mapNotNull null
         if (n == 0.0) return@mapNotNull null
         val transfer = desc.contains("transfer", true) || desc.contains("reload", true) || desc.contains("cash out", true) || desc.contains("top up", true)
-        DraftTxn(account, kind, source, date, desc, kotlin.math.abs(kotlin.math.round(n * 100).toLong()), if (n < 0) "out" else "in", transfer)
+        DraftTxn(account, kind, source, date, desc, kotlin.math.abs(kotlin.math.round(n * 100).toLong()), if (n < 0) "out" else "in", transfer, isInternalTransfer(desc, source))
     }
 }
 
@@ -173,5 +174,16 @@ fun statementCategoryHint(description: String): String {
         d.contains("toll") || d.contains("plus") || d.contains("lpt") -> "toll"
         d.contains("restoran") || d.contains("food") || d.contains("mcd") || d.contains("kfc") -> "food"
         else -> "other"
+    }
+}
+
+
+/** Same-app sub-account movement: Pot, GO+, reloads and wallet cash-outs. */
+fun isInternalTransfer(description: String, source: String): Boolean {
+    val d = description.lowercase()
+    return when (source) {
+        "aeon" -> d.contains("transfer to pot") || d.contains("transfer from pot") || d.contains(" pot")
+        "tng" -> d.contains("go+") || d.contains("reload") || d.contains("cash out") || d.contains("cash in") || d.contains("ewallet cash")
+        else -> d.contains("transfer to pot") || d.contains("go+") || d.contains("reload") || d.contains("cash out")
     }
 }

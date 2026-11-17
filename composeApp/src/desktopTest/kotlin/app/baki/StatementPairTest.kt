@@ -14,14 +14,14 @@ class StatementPairTest {
         repo.stageStatementText(
             """
             AEON Bank (M) Berhad
-            01 Oct 26   TESTPAIR OUT - Transfer to Pot
+            01 Oct 26   TESTPAIR OUT - Fund Transfer
                         -RM 10.00                    RM 90.00
             """.trimIndent(),
         )
         repo.stageStatementText(
             """
             TNG WALLET TRANSACTION HISTORY
-            01/10/2026 Success Reload 20261001101 TESTPAIR IN RM10.00 RM100.00
+            01/10/2026 Success DUITNOW_RECEIVEFROM 20261001101 TESTPAIR IN RM10.00 RM100.00
             """.trimIndent(),
         )
         val rows = repo.store.importedTxns.filter { it.description.contains("TESTPAIR") }
@@ -42,14 +42,14 @@ class StatementPairTest {
         repo.stageStatementText(
             """
             AEON Bank (M) Berhad
-            02 Oct 26   TESTREJECT OUT - Transfer to Pot
+            02 Oct 26   TESTREJECT OUT - Fund Transfer
                         -RM 11.00                    RM 79.00
             """.trimIndent(),
         )
         repo.stageStatementText(
             """
             TNG WALLET TRANSACTION HISTORY
-            02/10/2026 Success Reload 20261002101 TESTREJECT IN RM11.00 RM111.00
+            02/10/2026 Success DUITNOW_RECEIVEFROM 20261002101 TESTREJECT IN RM11.00 RM111.00
             """.trimIndent(),
         )
         val rows = repo.store.importedTxns.filter { it.description.contains("TESTREJECT") }

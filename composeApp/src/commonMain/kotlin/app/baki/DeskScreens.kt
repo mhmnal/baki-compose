@@ -1186,6 +1186,14 @@ internal fun DeskStatements(repo: BakiRepo) {
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
             )
         }
+        val internalCount = store.importedTxns.count { it.status == "internal" }
+        if (internalCount > 0) {
+            Spacer(Modifier.height(Space.s))
+            Text(
+                "$internalCount internal sub-account transfers hidden from review · kept for audit",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
+        }
         Spacer(Modifier.height(Space.l))
         if (store.accounts.isNotEmpty()) {
             Text("ACCOUNTS", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
