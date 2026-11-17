@@ -1949,7 +1949,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 color = if (pendingRows > 0) scheme.secondary else scheme.tertiary,
                 style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
             )
-            repo.store.accounts.filter { acc -> statementRows.any { it.accountId == acc.id } }.forEach { acc ->
+            repo.store.accounts.filter { acc -> !acc.archived && statementRows.any { it.accountId == acc.id } }.forEach { acc ->
                 val rows = statementRows.filter { it.accountId == acc.id }
                 val open = rows.count { it.status == "pending" }
                 Text(

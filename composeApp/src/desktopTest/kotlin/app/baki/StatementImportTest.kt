@@ -22,6 +22,18 @@ class StatementImportTest {
         assertEquals("AEON Bank — Savings Account-i", rows[0].accountName)
     }
 
+    @Test fun genericCsvDebitCredit() {
+        val text = """
+            Date,Description,Debit,Credit
+            01/10/2026,AEON QR Payment,12.30,
+            02/10/2026,Transfer to Pot,,
+        """.trimIndent()
+        val rows = parseCsvStatement(text)
+        assertEquals(1, rows.size)
+        assertEquals(1230, rows[0].amountCents)
+        assertEquals("out", rows[0].direction)
+    }
+
     @Test fun tngAmountAndDirection() {
         val text = """
             TNG WALLET TRANSACTION HISTORY

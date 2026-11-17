@@ -1132,16 +1132,29 @@ internal fun DeskStatements(repo: BakiRepo) {
         if (files.isNullOrEmpty()) return@rememberStatementImport
         scope.launch {
             var staged = 0
+            var duplicates = 0
             files.forEach { bytes ->
-                val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { PdfText.extract(bytes) }
-                if (text != null) staged += repo.stageStatementText(text)
+                val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    if (looksLikePdf(bytes)) PdfText.extract(bytes) else bytes.decodeToString()
+                }
+                if (text != null) {
+                    val result = repo.stageStatementText(text)
+                    staged += result.staged
+                    duplicates += result.duplicates
+                }
             }
-            message = if (staged == 0) "No AEON or TNG rows found." else "Staged $staged rows for review."
+            message = when {
+                staged == 0 && duplicates > 0 -> "Skipped $duplicates duplicate rows."
+                staged == 0 -> "No AEON, TNG or CSV rows found."
+                duplicates > 0 -> "Staged $staged rows · skipped $duplicates duplicates."
+                else -> "Staged $staged rows for review."
+            }
         }
     }
     val pending = store.importedTxns.filter { it.status == "pending" }
     val matched = store.importedTxns.count { it.status == "matched" }
     val accounts = store.accounts.associateBy { it.id }
+    var editingAccount by remember { mutableStateOf<Account?>(null) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.xl, vertical = Space.l)) {
         Text("STATEMENTS", color = scheme.onSurfaceVariant, letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
@@ -1159,7 +1172,7 @@ internal fun DeskStatements(repo: BakiRepo) {
                     Text("${store.importedTxns.size} statement rows", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                     Text("$matched matched · ${pending.size} open", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
-                FilledTonalButton(onClick = { pick() }) { Text("Import AEON / TNG PDFs") }
+                FilledTonalButton(onClick = { pick() }) { Text("Import AEON / TNG PDF or CSV") }
             }
             message?.let {
                 Spacer(Modifier.height(Space.s))
@@ -1170,6 +1183,26 @@ internal fun DeskStatements(repo: BakiRepo) {
                 "Imports are sidecar data. Ledger entries remain phone-written; there is no Accept-to-ledger action.",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
             )
+        }
+        Spacer(Modifier.height(Space.l))
+        if (store.accounts.isNotEmpty()) {
+            Text("ACCOUNTS", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Spacer(Modifier.height(Space.s))
+            store.accounts.forEach { acc ->
+                DeskCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(acc.name, color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                            Text(
+                                (if (acc.archived) "archived · " else "") + "opening ${if (acc.openingBalance != 0L) "RM ${rm(acc.openingBalance / 100.0)}" else "not set"} ${acc.openingDate}".trim(),
+                                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        TextButton(onClick = { editingAccount = acc }) { Text("Edit", color = scheme.primary) }
+                    }
+                }
+                Spacer(Modifier.height(Space.xs))
+            }
         }
         Spacer(Modifier.height(Space.l))
         if (pending.isEmpty()) {
@@ -1215,4 +1248,47 @@ internal fun DeskStatements(repo: BakiRepo) {
         }
         Spacer(Modifier.height(80.dp))
     }
+    editingAccount?.let { acc ->
+        AccountEditDialog(acc, onDismiss = { editingAccount = null }) { name, opening, date, archived ->
+            scope.launch {
+                repo.renameAccount(acc.id, name, opening, date)
+                repo.archiveAccount(acc.id, archived)
+                editingAccount = null
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountEditDialog(
+    account: Account,
+    onDismiss: () -> Unit,
+    onSave: (String, Long, String, Boolean) -> Unit,
+) {
+    var name by remember { mutableStateOf(account.name) }
+    var opening by remember { mutableStateOf(if (account.openingBalance == 0L) "" else (account.openingBalance / 100.0).toString()) }
+    var date by remember { mutableStateOf(account.openingDate) }
+    var archived by remember { mutableStateOf(account.archived) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit account") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(opening, { opening = it }, label = { Text("Opening balance (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(date, { date = it }, label = { Text("Opening date (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Archived", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                    Switch(archived, { archived = it })
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val cents = ((opening.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                onSave(name, cents, date, archived)
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

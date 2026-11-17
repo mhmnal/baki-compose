@@ -122,6 +122,9 @@ data class Account(
     val id: String,
     val name: String,
     val kind: String = "bank",
+    val openingBalance: Long = 0,
+    val openingDate: String = "",
+    val archived: Boolean = false,
 )
 
 @Serializable

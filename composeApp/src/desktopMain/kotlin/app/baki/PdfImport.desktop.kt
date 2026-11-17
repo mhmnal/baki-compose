@@ -16,7 +16,7 @@ actual fun rememberStatementImport(onBytes: (List<ByteArray>?) -> Unit): () -> U
     val chooser = javax.swing.JFileChooser().apply {
         fileSelectionMode = javax.swing.JFileChooser.FILES_ONLY
         isMultiSelectionEnabled = true
-        fileFilter = javax.swing.filechooser.FileNameExtensionFilter("Grab statement PDF", "pdf")
+        fileFilter = javax.swing.filechooser.FileNameExtensionFilter("Statement PDF / CSV", "pdf", "csv")
     }
     if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
         onBytes(chooser.selectedFiles.mapNotNull { file -> runCatching { file.readBytes() }.getOrNull() })

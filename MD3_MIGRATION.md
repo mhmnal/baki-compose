@@ -731,6 +731,16 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.2 statement hardening
+
+- Duplicate fingerprints skip re-imports and report counts.
+- Generic CSV parser and CSV picker support.
+- Merchant-aware statement suggestions.
+- Account rename, archive, opening balance and date.
+- Phone statement summary hides archived accounts.
+- Known gap: statements still travel in the synced store as a sidecar namespace, not a dedicated API.
+- 215 tests, 0 failures.
+
 ## 0.45.1 statement sidecar
 
 - Statements moved to a sidecar reconciliation layer; matching never creates ledger entries.

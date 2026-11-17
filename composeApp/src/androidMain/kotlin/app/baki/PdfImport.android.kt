@@ -30,5 +30,5 @@ actual fun rememberStatementImport(onBytes: (List<ByteArray>?) -> Unit): () -> U
         }
         onBytes(files)
     }
-    return remember(launcher) { { launcher.launch(arrayOf("application/pdf")) } }
+    return remember(launcher) { { launcher.launch(arrayOf("application/pdf", "text/csv", "text/comma-separated-values", "text/plain")) } }
 }

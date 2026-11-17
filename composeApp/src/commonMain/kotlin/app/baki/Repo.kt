@@ -299,31 +299,64 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         n
     }
 
-    /** Parse AEON/TNG PDF text and stage rows for review. Nothing enters totals yet. */
-    suspend fun stageStatementText(text: String): Int = mutex.withLock {
+    data class StageResult(val staged: Int, val duplicates: Int)
+
+    /** Parse AEON/TNG/CSV text and stage rows for review. Nothing enters ledger totals. */
+    suspend fun stageStatementText(text: String): StageResult = mutex.withLock {
         // Statement rows are sidecar evidence; this is allowed even when ledger writes are off.
         val drafts = parseStatementText(text)
-        if (drafts.isEmpty()) return@withLock 0
+        if (drafts.isEmpty()) return@withLock StageResult(0, 0)
         val stamp = nowIso()
         var accounts = store.accounts.toList()
         val next = mutableListOf<ImportedTxn>()
+        var duplicates = 0
         for (d in drafts) {
             var account = accounts.firstOrNull { it.name == d.accountName }
             if (account == null) {
                 account = Account(id = newId("acc"), name = d.accountName, kind = d.accountKind)
                 accounts += account
             }
+            val fingerprint = fingerprintOf(account.id, d)
+            if ((store.importedTxns + next).any { fingerprintOf(it.accountId, it) == fingerprint }) {
+                duplicates++
+                continue
+            }
             next += ImportedTxn(
                 id = newId("imp"), accountId = account.id, date = d.date,
                 description = d.description.take(160), amount = d.amountCents,
                 direction = d.direction, transfer = d.isTransfer, source = d.source,
+                suggestedEntryId = suggestStatementMatch(store, d),
                 updated = stamp,
             )
         }
+        if (next.isEmpty()) return@withLock StageResult(0, duplicates)
         store = store.copy(accounts = accounts, importedTxns = store.importedTxns + next, updatedAt = stamp)
         saveLocal(store)
         pushWithTombs(emptyList())
-        next.size
+        StageResult(next.size, duplicates)
+    }
+
+    private fun fingerprintOf(accountId: String, t: ImportedTxn): String =
+        "$accountId|${t.date}|${t.direction}|${t.amount}|${t.description.lowercase().replace(Regex("\\s+"), " ").trim().take(100)}"
+
+    private fun fingerprintOf(accountId: String, d: DraftTxn): String =
+        "$accountId|${d.date}|${d.direction}|${d.amountCents}|${d.description.lowercase().replace(Regex("\\s+"), " ").trim().take(100)}"
+
+    suspend fun renameAccount(id: String, name: String, openingBalance: Long? = null, openingDate: String? = null): Boolean = mutex.withLock {
+        if (name.isBlank()) return@withLock false
+        if (store.accounts.none { it.id == id }) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(accounts = store.accounts.map {
+            if (it.id == id) it.copy(name = name.trim().take(60), openingBalance = openingBalance ?: it.openingBalance, openingDate = openingDate ?: it.openingDate) else it
+        }, updatedAt = stamp)
+        saveLocal(store); pushWithTombs(emptyList()); true
+    }
+
+    suspend fun archiveAccount(id: String, archived: Boolean): Boolean = mutex.withLock {
+        if (store.accounts.none { it.id == id }) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(accounts = store.accounts.map { if (it.id == id) it.copy(archived = archived) else it }, updatedAt = stamp)
+        saveLocal(store); pushWithTombs(emptyList()); true
     }
 
     /** Link a staged statement row to a phone-written entry. Never creates or edits an entry. */
@@ -341,18 +374,23 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     private fun suggestStatementMatch(store: Store, d: DraftTxn): String? {
         val target = runCatching { kotlinx.datetime.LocalDate.parse(d.date) }.getOrNull() ?: return null
+        val stop = setOf("the", "and", "payment", "purchase", "transfer", "via", "for", "with", "from", "sdn", "bhd")
+        val tokens = d.description.lowercase().split(Regex("[^a-z0-9]+")).filter { it.length >= 3 && it !in stop }.toSet()
         return store.entries
             .filter { it.type == (if (d.direction == "in") "income" else "expense") && it.amount == d.amountCents }
             .mapNotNull { e ->
                 val day = runCatching { kotlinx.datetime.LocalDate.parse(e.date) }.getOrNull() ?: return@mapNotNull null
                 val diff = kotlin.math.abs((target.toEpochDays() - day.toEpochDays()).toInt())
-                if (diff <= 3) e to diff else null
+                if (diff > 3) return@mapNotNull null
+                val noteTokens = (e.note + " " + categoryLabel(store, e.cat)).lowercase().split(Regex("[^a-z0-9]+")).filter { it.length >= 3 }.toSet()
+                val overlap = tokens.intersect(noteTokens).size
+                Triple(e, diff, overlap)
             }
-            .minByOrNull { it.second }?.first?.id
+            .sortedWith(compareByDescending<Triple<Entry, Int, Int>> { it.third }.thenBy { it.second })
+            .firstOrNull()?.first?.id
     }
 
     suspend fun ignoreImported(id: String): Boolean = mutex.withLock {
-        if (blocked()) return@withLock false
         if (store.importedTxns.none { it.id == id && it.status == "pending" }) return@withLock false
         val stamp = nowIso()
         store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "ignored", updated = stamp) else it }, updatedAt = stamp)
