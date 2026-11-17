@@ -36,6 +36,7 @@ class BakiSmokeTest {
 
         app.onNodeWithContentDescription("More").performClick()
         app.onNodeWithText("Money").assertIsDisplayed()
+        app.onNodeWithText("Statement reconciliation").assertIsDisplayed()
         app.onNodeWithText("Work").performClick()
         app.onNodeWithText("Payment QR & service").assertIsDisplayed()
 
