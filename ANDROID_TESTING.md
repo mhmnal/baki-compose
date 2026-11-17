@@ -52,3 +52,20 @@ The script never installs on a connected physical device unless that serial is e
 - live GPS/service
 - widget/share intents
 - real hardware insets and frame pacing
+
+## Open the emulator for manual use
+
+```bash
+./scripts/android-emulator-gui.sh
+```
+
+This opens `baki_api36` in a normal window and installs the signed APK from `dist/`
+if present. The app is installed under the normal `app.baki.compose` package in the emulator,
+separate from your physical phone.
+
+Stop it with:
+
+```bash
+~/.local/opt/baki/bin/Baki  # not this
+/home/min/Documents/deepseek-harness/default-workspace/.tools/sdk/platform-tools/adb -s emulator-5554 emu kill
+```

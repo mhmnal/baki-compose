@@ -84,6 +84,7 @@ The API 36 AVD lane installs a separate `.verify` build and runs Compose instrum
 ```bash
 ./scripts/android-avd-setup.sh   # once
 ./scripts/android-test.sh
+./scripts/android-emulator-gui.sh   # visible emulator + signed app
 ```
 
 See [ANDROID_TESTING.md](ANDROID_TESTING.md).
