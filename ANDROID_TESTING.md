@@ -66,6 +66,5 @@ separate from your physical phone.
 Stop it with:
 
 ```bash
-~/.local/opt/baki/bin/Baki  # not this
 /home/min/Documents/deepseek-harness/default-workspace/.tools/sdk/platform-tools/adb -s emulator-5554 emu kill
 ```
