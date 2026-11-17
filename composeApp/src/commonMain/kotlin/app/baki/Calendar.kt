@@ -60,6 +60,11 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
             }
             Spacer(Modifier.height(if (compact) Space.xxs else Space.xs))
         }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m), verticalAlignment = Alignment.CenterVertically) {
+            CalendarLegendDot(scheme.primary, "profit")
+            CalendarLegendDot(scheme.error, "loss")
+            CalendarLegendDot(scheme.surfaceContainerHigh, "not driven")
+        }
     }
 }
 
@@ -110,5 +115,19 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
                 else -> scheme.onSurface
             },
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = MaterialTheme.typography.bodyMedium )
+        if (!future && !positive && magnitude > 0) {
+            Box(
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp)
+                    .width(6.dp).height(2.dp).background(scheme.onSurface),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CalendarLegendDot(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
     }
 }

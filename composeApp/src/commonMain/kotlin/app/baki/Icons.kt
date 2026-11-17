@@ -105,6 +105,8 @@ fun categoryIcon(id: String, name: String = ""): ImageVector {
         "food" in key || "meal" in key || "eat" in key -> BakiIcons.Food
         "grab" in key || "fee" in key -> BakiIcons.Taxi
         "income" in key || "payout" in key -> BakiIcons.Wallet
+        "deepseek" in key -> BakiIcons.Insights
+        "other" in key -> BakiIcons.More
         else -> BakiIcons.Tag
     }
 }

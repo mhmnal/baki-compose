@@ -217,14 +217,19 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
             VehicleWearCard(store)
         }
         item {
-            DeskCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DeskLabel("DAILY NET · ${monthLabel(month).uppercase()}")
-                    Spacer(Modifier.weight(1f))
-                    Text("${days.size} active days", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                DeskCard(Modifier.weight(1.35f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        DeskLabel("DAILY NET · ${monthLabel(month).uppercase()}")
+                        Spacer(Modifier.weight(1f))
+                        Text("${days.size} active days", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.height(Space.m))
+                    DayBars(days)
                 }
-                Spacer(Modifier.height(Space.m))
-                DayBars(days)
+                if (remember(store) { hourHeatmap(store).isNotEmpty() }) {
+                    DeskCard(Modifier.weight(1f)) { HoursHeatmap(store) }
+                }
             }
         }
         item {

@@ -731,6 +731,17 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.46.1 Stats and Desk clarity
+
+- Merged the duplicate This Week view into the 7D chart.
+- Added day labels, target-line legend, explicit best/lowest labels and current-week delta.
+- Moved heatmap above diagnostics and Cash/Funds to the end of Stats.
+- Fixed Funds contrast and enlarged shortfall emphasis.
+- Added calendar legend and a shape cue for loss days.
+- Distinct icons for Other and Deepseek categories.
+- Desk Overview puts daily net and best hours side by side.
+- 226 tests, 0 failures.
+
 ## 0.46.0 month close
 
 - Close Month screen with statement, bills, payout and reconciliation checks.

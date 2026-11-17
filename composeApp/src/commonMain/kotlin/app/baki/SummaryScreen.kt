@@ -98,7 +98,7 @@ fun SummaryScreen(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.s),
-        contentPadding = PaddingValues(top = 0.dp, bottom = 132.dp),
+        contentPadding = PaddingValues(top = 0.dp, bottom = 148.dp),
     ) {
         item {
             Md3Card(
@@ -113,25 +113,18 @@ fun SummaryScreen(
             }
         }
         item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
-        item {
-            Md3Card(
-                container = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = MaterialTheme.shapes.extraLarge,
-                padding = Space.ml,
-            ) { WeekSection(store = store, today = todayIso()) }
-        }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }
         item { Md3Card { CalendarHeat(store, month, compact = true) } }
+        item { Md3Card { HoursHeatmap(store) } }
         item {
             Md3Card(
-                container = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                container = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) { FundsSection(repo = repo, funds = funds, onManage = { managingFund = it }) }
         }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh) { CashTruthCard(cash, month, compact = true) } }
-        item { Md3Card { HoursHeatmap(store) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerLow) { CashTruthCard(cash, month, compact = true) } }
         if (cats.isEmpty()) item {
             EmptyState("A quiet month.", "Your spending stories will show up here.")
         }
@@ -309,6 +302,8 @@ private fun MonthInkChart(store: Store, month: String) {
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
     val anyActive = shown.any { it.active }
+    val currentWeek = if (month == today.take(7)) weekTotals(store, weekStartOf(today)) else null
+    val lastWeek = if (month == today.take(7)) weekTotals(store, addDays(weekStartOf(today), -7)) else null
     val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
         buildString {
             append("Daily net chart for ${monthLabel(month)}, ${range} day view. ")
@@ -470,6 +465,14 @@ private fun MonthInkChart(store: Store, month: String) {
             )
         }
         }
+        Spacer(Modifier.height(Space.xs))
+        if (targetPerDay > 0.01) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.width(18.dp).height(1.5.dp).background(scheme.tertiary))
+                Spacer(Modifier.width(Space.xs))
+                Text("Target line RM ${rm(targetPerDay)}/day", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall)
+            }
+        }
         Spacer(Modifier.height(Space.s))
         selectedDay?.let { day ->
             Surface(
@@ -490,14 +493,25 @@ private fun MonthInkChart(store: Store, month: String) {
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        if (range == 7) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                shown.forEach { day ->
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(weekdayShort(day.iso), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                        Text(day.iso.takeLast(2), color = scheme.onSurfaceVariant.copy(alpha = 0.65f), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (active.size > 1) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             best?.let {
                 Text(
-                    "+RM ${rm(it.net)} · ${it.iso.takeLast(5)}",
+                    "Best · +RM ${rm(it.net)} · ${it.iso.takeLast(5)}",
                     color = scheme.tertiary,
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 2,
@@ -507,7 +521,7 @@ private fun MonthInkChart(store: Store, month: String) {
             }
             worst?.let {
                 Text(
-                    "${rm(it.net)} · ${it.iso.takeLast(5)}",
+                    "Lowest · ${rm(it.net)} · ${it.iso.takeLast(5)}",
                     color = if (it.net < 0) scheme.error else scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 2,
@@ -516,6 +530,13 @@ private fun MonthInkChart(store: Store, month: String) {
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
+        currentWeek?.let { week ->
+            val delta = week.net - (lastWeek?.net ?: 0L)
+            Text(
+                "This week: ${if (delta >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(delta))} vs last · RM ${rm(week.net)} net",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }
@@ -642,9 +663,9 @@ private fun FundsSection(repo: BakiRepo, funds: Funds, onManage: (String) -> Uni
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionMark(scheme.onTertiaryContainer, 14.dp)
+            SectionMark(scheme.primary, 14.dp)
             Spacer(Modifier.width(Space.s))
-            Text("FUNDS · ROLLING", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleSmall)
+            Text("FUNDS · ROLLING", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
         }
         Spacer(Modifier.height(Space.s))
         FundRow("Fuel", "fuel", funds.fuel, repo.store.settings.reserveTargets["fuel"] ?: 0.0, scheme) { onManage("fuel") }
@@ -689,16 +710,17 @@ private fun FundRow(
             Text(
                 "target RM ${rm(target)}" +
                     (if (configuredTarget > 0.0) "" else " · one-month default"),
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )
             ReserveBadge(progress.toFloat())
         }
-        Text(
-            "this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}" +
-                if (fund.monthNet < 0) " · shortfall RM ${rm(-fund.monthNet)}" else "",
-            color = if (fund.monthNet < 0) scheme.error else scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-        )
+        if (fund.monthNet < 0) {
+            Text("Shortfall RM ${rm(-fund.monthNet)}", color = scheme.error, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+            Text("this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        } else {
+            Text("this month +RM ${rm(fund.monthAccrued)} · −RM ${rm(fund.monthSpent)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
 
@@ -879,7 +901,9 @@ private fun CashTruthCard(t: CashTruth, month: String, compact: Boolean = false)
         }
         Spacer(Modifier.height(Space.xs))
         CashLine("Recorded net", t.recordedNet, scheme.onSurface, scheme)
-        CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) scheme.tertiary else scheme.error, scheme)
+        if (t.cashNet != t.recordedNet) {
+            CashLine("Net cash", t.cashNet, if (t.cashNet >= 0) scheme.tertiary else scheme.error, scheme)
+        }
         Text("cash in RM ${rm(t.cashReceived)} · cash out RM ${rm(t.cashSpent)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
         if (t.unpaid > 0) {
             Text(
