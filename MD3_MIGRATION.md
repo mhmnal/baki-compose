@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.3 odometer wear
+
+- Derived vehicle-wear layer uses existing shift odometer endpoints and fuel odometer anchors.
+- Work wear stays per shift; total and personal wear use odometer intervals without inventing missing distance.
+- No daily input; fuel-fill odometers improve coverage. Sparse or inconsistent intervals are reported.
+- 213 tests, 0 failures.
+
 ## 0.44.2 smaller hero currency
 
 - The hero RM mark is reduced to a quiet 11% mark, freeing more width for the digits.

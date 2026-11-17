@@ -1741,6 +1741,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         SectionTitle("SERVICE")
         Spacer(Modifier.height(Space.s))
         ServiceCard(repo, onSetTarget = { serviceTargetOpen = true })
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("VEHICLE WEAR")
+        Spacer(Modifier.height(Space.s))
+        VehicleWearCard(repo.store)
         if (serviceTargetOpen) {
             val info = remember(repo.store) { serviceInfo(repo.store) }
             ServiceTargetDialog(

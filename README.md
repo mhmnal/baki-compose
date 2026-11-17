@@ -11,10 +11,10 @@ Two surfaces, one ledger:
 | Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.44.2** (`versionCode` 197+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.44.3** (`versionCode` 198+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **209 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **213 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -23,6 +23,7 @@ Test suite: **209 JVM tests** (`:composeApp:desktopTest`).
 - live yield so far: net RM/h and gross RM/km against the target
 - net per shift after fuel, wear and real expenses; rate against a target RM/h
 - odometer-based measured economy (km/L) when fills include readings
+- odometer-anchored wear: work wear per shift, personal wear only from covered odometer intervals
 - Grab insurance is shift-generated only: one fee per rolling 24h window, excluded from Quick Add
 
 **Money**
@@ -92,11 +93,11 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.44.2
+./scripts/release.sh 0.44.3
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.44.2.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.44.3.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync
