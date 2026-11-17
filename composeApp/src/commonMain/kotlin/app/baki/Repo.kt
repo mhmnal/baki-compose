@@ -307,17 +307,17 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         n
     }
 
-    private fun statementBook() = StatementBook(store.accounts, store.statementBatches, store.importedTxns)
+    private fun statementBook() = StatementBook(store.accounts, store.statementBatches, store.importedTxns, store.monthCloses)
 
     private suspend fun pushStatementsNow(deletedBatchIds: List<String> = emptyList()) {
         val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds) }.getOrNull() ?: return
-        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches)
+        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
         saveLocal(store)
     }
 
     private suspend fun pullStatementsNow() {
         val remote = runCatching { client.pullStatements() }.getOrNull() ?: return
-        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches)
+        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
         saveLocal(store)
     }
 
@@ -441,6 +441,22 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             }
             .sortedWith(compareByDescending<Triple<Entry, Int, Int>> { it.third }.thenBy { it.second })
             .firstOrNull()?.first?.id
+    }
+
+    suspend fun closeMonth(month: String): Boolean = mutex.withLock {
+        if (!isValidIsoDate("$month-01")) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(monthCloses = store.monthCloses + (month to stamp), updatedAt = stamp)
+        saveLocal(store)
+        pushStatementsNow()
+        true
+    }
+
+    suspend fun reopenMonth(month: String): Boolean = mutex.withLock {
+        store = store.copy(monthCloses = store.monthCloses - month, updatedAt = nowIso())
+        saveLocal(store)
+        pushStatementsNow()
+        true
     }
 
     suspend fun deleteStatementBatch(batchId: String): Boolean = mutex.withLock {

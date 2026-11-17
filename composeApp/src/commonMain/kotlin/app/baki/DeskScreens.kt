@@ -1368,3 +1368,77 @@ private fun AccountEditDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
+
+@Composable
+internal fun DeskMonthClose(repo: BakiRepo, month: String) {
+    val scheme = MaterialTheme.colorScheme
+    val store = repo.store
+    val scope = rememberCoroutineScope()
+    val statementRows = store.importedTxns.filter { it.date.startsWith(month) }
+    val pending = statementRows.count { it.status == "pending" }
+    val matched = statementRows.count { it.status == "matched" }
+    val internal = statementRows.count { it.status == "internal" }
+    val billsUnpaid = Bills.unpaid(store, month)
+    val truth = cashTruth(store, month)
+    val totals = monthTotals(store, month)
+    val shifts = store.shifts.filter { it.date.startsWith(month) }
+    val insurance = shifts.fold(0L) { acc, sh ->
+        acc + kotlin.math.round(shiftMetrics(sh, store.settings.profit, overheadPerHour(store, month)).grabFee * 100.0).toLong()
+    }
+    val closedAt = store.monthCloses[month]
+    val allReconciled = statementRows.isNotEmpty() && pending == 0
+    val billsDone = billsUnpaid.isEmpty()
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.xl, vertical = Space.l)) {
+        Text("MONTH CLOSE", color = scheme.onSurfaceVariant, letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(Space.xs))
+        Text(monthLabel(month), color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "A review stamp, not a lock. You can keep editing after closing.",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(Space.l))
+        DeskCard(Modifier.fillMaxWidth()) {
+            Text("CHECKS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Spacer(Modifier.height(Space.s))
+            CloseCheck("Statement rows imported", statementRows.isNotEmpty(), if (statementRows.isEmpty()) "No AEON/TNG rows for this month" else "${statementRows.size} rows")
+            CloseCheck("Statement reconciled", allReconciled, "$matched matched · $pending open · $internal internal")
+            CloseCheck("Bills covered", billsDone, if (billsDone) "No open bills" else "${billsUnpaid.size} still open")
+            CloseCheck("Payouts settled", truth.unpaid == 0L, if (truth.unpaid == 0L) "No unpaid payout" else "RM ${rm(truth.unpaid)} unpaid")
+            Spacer(Modifier.height(Space.s))
+            Text(
+                "Insurance ${if (insurance == 0L) "—" else "RM ${rm(insurance)}"} · recorded net ${if (totals.net >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(totals.net))} · cash ${if (truth.cashNet >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(truth.cashNet))}",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+            )
+        }
+        Spacer(Modifier.height(Space.l))
+        if (closedAt == null) {
+            FilledTonalButton(
+                onClick = { scope.launch { repo.closeMonth(month) } },
+                colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                    containerColor = scheme.primary, contentColor = scheme.onPrimary,
+                ),
+            ) { Text("Close ${monthLabel(month)}") }
+        } else {
+            DeskCard(Modifier.fillMaxWidth()) {
+                Text("CLOSED", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                Text(closedAt, color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(Space.s))
+                TextButton(onClick = { scope.launch { repo.reopenMonth(month) } }) { Text("Reopen month", color = scheme.onSurfaceVariant) }
+            }
+        }
+        Spacer(Modifier.height(80.dp))
+    }
+}
+
+@Composable
+private fun CloseCheck(label: String, done: Boolean, detail: String) {
+    val scheme = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(9.dp).clip(CircleShape).background(if (done) scheme.tertiary else scheme.secondary))
+        Spacer(Modifier.width(Space.s))
+        Text(label, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(detail, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+    }
+}

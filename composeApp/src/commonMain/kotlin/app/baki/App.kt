@@ -1945,6 +1945,10 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             Text("No statement batches yet — open Desk → Statements.", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium)
         } else {
             Spacer(Modifier.height(Space.m))
+            val currentMonth = todayIso().take(7)
+            if (repo.store.monthCloses.containsKey(currentMonth)) {
+                Text("✓ ${monthLabel(currentMonth)} closed", color = scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
             Text(
                 "$matchedRows matched · $pendingRows unrecorded",
                 color = if (pendingRows > 0) scheme.secondary else scheme.tertiary,
@@ -2670,7 +2674,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
                     if (cents > 0) {
                         scope.launch {
-                            repo.addEntry(if (row.direction == "in") "income" else "expense", cents, category, note, date)
+                            val entryId = repo.addEntry(if (row.direction == "in") "income" else "expense", cents, category, note, date)
+                            if (entryId != null) repo.matchImported(row.id, entryId)
                             prefillStatement = null
                         }
                     }

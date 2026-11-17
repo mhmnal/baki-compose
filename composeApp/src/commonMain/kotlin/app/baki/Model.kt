@@ -271,6 +271,8 @@ data class Store(
     val accounts: List<Account> = emptyList(),
     val importedTxns: List<ImportedTxn> = emptyList(),
     val statementBatches: List<StatementBatch> = emptyList(),
+    /** month (YYYY-MM) → close timestamp; review state, not a ledger lock. */
+    val monthCloses: Map<String, String> = emptyMap(),
 )
 
 val BakiJson = Json {
