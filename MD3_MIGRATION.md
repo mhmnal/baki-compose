@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.6 conflict/Desk tests
+
+- Newest-write-wins conflict test for statement rows.
+- Desk Compose test covers confirm pair, match without ledger write, and batch delete.
+- Server audit test retained.
+- 221 tests, 0 failures.
+
 ## 0.45.5 test-complete
 
 - Server stamps deletion audit on `/api/statements` batch delete.

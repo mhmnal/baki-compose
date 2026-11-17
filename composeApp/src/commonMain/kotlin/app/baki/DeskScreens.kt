@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -1217,7 +1218,7 @@ internal fun DeskStatements(repo: BakiRepo) {
                             Text("${batch.periodStart} → ${batch.periodEnd}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                             Text("${batch.source.uppercase()} · ${batch.rowCount} rows · ${batch.duplicateCount} duplicates skipped", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                         }
-                        TextButton(onClick = { deletingBatch = batch }) { Text("Delete", color = scheme.error) }
+                        TextButton(onClick = { deletingBatch = batch }, modifier = Modifier.testTag("delete-batch")) { Text("Delete", color = scheme.error) }
                     }
                 }
                 Spacer(Modifier.height(Space.xs))
@@ -1259,11 +1260,11 @@ internal fun DeskStatements(repo: BakiRepo) {
                             }
                         }
                         if (row.suggestedPairId.isNotBlank() && row.pairId.isBlank()) {
-                            TextButton(onClick = { scope.launch { repo.confirmTransferPair(row.suggestedPairId) } }) { Text("Confirm pair", color = scheme.primary) }
+                            TextButton(onClick = { scope.launch { repo.confirmTransferPair(row.suggestedPairId) } }, modifier = Modifier.testTag("confirm-pair")) { Text("Confirm pair", color = scheme.primary) }
                             TextButton(onClick = { scope.launch { repo.rejectTransferPair(row.suggestedPairId) } }) { Text("Reject", color = scheme.onSurfaceVariant) }
                         }
                         if (suggestion != null) {
-                            TextButton(onClick = { scope.launch { repo.matchImported(row.id, suggestion.id) } }) { Text("Match", color = scheme.primary) }
+                            TextButton(onClick = { scope.launch { repo.matchImported(row.id, suggestion.id) } }, modifier = Modifier.testTag("match-statement")) { Text("Match", color = scheme.primary) }
                         }
                         TextButton(onClick = { scope.launch { repo.ignoreImported(row.id) } }) { Text("Ignore", color = scheme.onSurfaceVariant) }
                     }
@@ -1294,7 +1295,7 @@ internal fun DeskStatements(repo: BakiRepo) {
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch { repo.deleteStatementBatch(batch.id); deletingBatch = null }
-                }) { Text("Delete batch", color = scheme.error) }
+                }, modifier = Modifier.testTag("confirm-delete-batch")) { Text("Delete batch", color = scheme.error) }
             },
             dismissButton = { TextButton(onClick = { deletingBatch = null }) { Text("Cancel") } },
         )
