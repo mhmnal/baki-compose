@@ -731,6 +731,16 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.3 statement transport
+
+- Dedicated `/api/statements` GET/POST; `/api/data` no longer carries sidecar rows.
+- Statement batches with period/row/duplicate metadata and delete-with-audit.
+- Transfer pair suggestions (opposite direction, exact amount, ±1 day).
+- Phone unrecorded rows open a prefilled entry form.
+- Ledger push strips statement fields.
+- Known gaps: Android synthetic import/match test, quoted CSV fields.
+- 215 tests, 0 failures.
+
 ## 0.45.2 statement hardening
 
 - Duplicate fingerprints skip re-imports and report counts.

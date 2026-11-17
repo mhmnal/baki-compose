@@ -1650,6 +1650,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var serviceBaselineOpen by remember { mutableStateOf(false) }
     var manualOdometerOpen by remember { mutableStateOf(false) }
+    var prefillStatement by remember { mutableStateOf<ImportedTxn?>(null) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
@@ -1956,6 +1957,15 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     "${acc.name}: ${rows.count { it.status == "matched" }} matched · $open open",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                 )
+            }
+            statementRows.filter { it.status == "pending" && !it.transfer }.take(5).forEach { row ->
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "${row.date} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}",
+                        color = scheme.onSurface, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"), modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { prefillStatement = row }, contentPadding = PaddingValues(0.dp)) { Text("Add", color = scheme.primary) }
+                }
             }
             Spacer(Modifier.height(Space.xs))
             Text(
@@ -2632,6 +2642,38 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
     }
     SnackbarHost(undoSnackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
+    }
+
+    prefillStatement?.let { row ->
+        val account = repo.store.accounts.firstOrNull { it.id == row.accountId }?.name ?: "Statement"
+        var amount by remember(row.id) { mutableStateOf((row.amount / 100.0).toString()) }
+        var date by remember(row.id) { mutableStateOf(row.date) }
+        var category by remember(row.id) { mutableStateOf(statementCategoryHint(row.description)) }
+        var note by remember(row.id) { mutableStateOf("$account · ${row.description}".take(160)) }
+        AlertDialog(
+            onDismissRequest = { prefillStatement = null },
+            title = { Text(if (row.direction == "in") "Add statement income" else "Add statement expense") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                    OutlinedTextField(amount, { amount = it }, label = { Text("Amount (RM)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(date, { date = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(category, { category = it }, label = { Text("Category") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(note, { note = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    if (cents > 0) {
+                        scope.launch {
+                            repo.addEntry(if (row.direction == "in") "income" else "expense", cents, category, note, date)
+                            prefillStatement = null
+                        }
+                    }
+                }) { Text("Save on phone") }
+            },
+            dismissButton = { TextButton(onClick = { prefillStatement = null }) { Text("Cancel") } },
+        )
     }
 
     if (statementHistoryOpen) {

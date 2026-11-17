@@ -126,6 +126,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 // 304: the server has nothing new, but our outbox may still hold local edits.
                 // Keep the last conflict count; a 304 is not a new pull to clear it with.
                 if (config.allowWrites && pendingPush) pushAll()
+                runCatching { pullStatementsNow() }
                 runCatching { pushRoutes() }
                 runCatching { pullRoutes(addDays(todayIso(), -45)) }
                 status = "synced"
@@ -146,6 +147,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             }
             // upload only when we hold something the server did not get last time
             if (config.allowWrites && pendingPush) pushAll()
+            runCatching { pullStatementsNow() }
             runCatching { pushRoutes() }
             runCatching { pullRoutes(addDays(todayIso(), -45)) }
             status = "synced"
@@ -299,6 +301,20 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         n
     }
 
+    private fun statementBook() = StatementBook(store.accounts, store.statementBatches, store.importedTxns)
+
+    private suspend fun pushStatementsNow(deletedBatchIds: List<String> = emptyList()) {
+        val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds) }.getOrNull() ?: return
+        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches)
+        saveLocal(store)
+    }
+
+    private suspend fun pullStatementsNow() {
+        val remote = runCatching { client.pullStatements() }.getOrNull() ?: return
+        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches)
+        saveLocal(store)
+    }
+
     data class StageResult(val staged: Int, val duplicates: Int)
 
     /** Parse AEON/TNG/CSV text and stage rows for review. Nothing enters ledger totals. */
@@ -310,6 +326,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         var accounts = store.accounts.toList()
         val next = mutableListOf<ImportedTxn>()
         var duplicates = 0
+        val batchId = newId("batch")
         for (d in drafts) {
             var account = accounts.firstOrNull { it.name == d.accountName }
             if (account == null) {
@@ -326,13 +343,26 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 description = d.description.take(160), amount = d.amountCents,
                 direction = d.direction, transfer = d.isTransfer, source = d.source,
                 suggestedEntryId = suggestStatementMatch(store, d),
+                batchId = batchId,
                 updated = stamp,
             )
         }
         if (next.isEmpty()) return@withLock StageResult(0, duplicates)
-        store = store.copy(accounts = accounts, importedTxns = store.importedTxns + next, updatedAt = stamp)
+        val dates = next.map { it.date }.sorted()
+        val batch = StatementBatch(
+            id = batchId, accountId = next.first().accountId, source = next.first().source,
+            importedAt = stamp, periodStart = dates.firstOrNull() ?: "", periodEnd = dates.lastOrNull() ?: "",
+            rowCount = next.size, duplicateCount = duplicates,
+        )
+        store = store.copy(
+            accounts = accounts,
+            importedTxns = store.importedTxns + next,
+            statementBatches = store.statementBatches + batch,
+            updatedAt = stamp,
+        )
         saveLocal(store)
-        pushWithTombs(emptyList())
+        pairTransfers()
+        pushStatementsNow()
         StageResult(next.size, duplicates)
     }
 
@@ -349,7 +379,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(accounts = store.accounts.map {
             if (it.id == id) it.copy(name = name.trim().take(60), openingBalance = openingBalance ?: it.openingBalance, openingDate = openingDate ?: it.openingDate) else it
         }, updatedAt = stamp)
-        saveLocal(store); pushWithTombs(emptyList()); true
+        saveLocal(store); pushStatementsNow(); true
     }
 
     suspend fun archiveAccount(id: String, archived: Boolean): Boolean = mutex.withLock {
@@ -368,7 +398,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             if (it.id == id) it.copy(status = "matched", entryId = entryId, updated = stamp) else it
         }, updatedAt = stamp)
         saveLocal(store)
-        pushWithTombs(emptyList())
+        pushStatementsNow()
         true
     }
 
@@ -390,12 +420,51 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             .firstOrNull()?.first?.id
     }
 
+    suspend fun deleteStatementBatch(batchId: String): Boolean = mutex.withLock {
+        if (store.statementBatches.none { it.id == batchId }) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(
+            importedTxns = store.importedTxns.filterNot { it.batchId == batchId },
+            statementBatches = store.statementBatches.map { if (it.id == batchId) it.copy(deletedAt = stamp) else it },
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushStatementsNow(listOf(batchId))
+        true
+    }
+
+    /** Suggest opposite-direction transfer pairs on different accounts, exact amount, ±1 day. */
+    private fun pairTransfers() {
+        val pending = store.importedTxns.filter { it.status == "pending" && it.transfer && it.pairId.isBlank() }
+        val used = mutableSetOf<String>()
+        var changed = false
+        val rows = store.importedTxns.toMutableList()
+        for (a in pending) {
+            if (a.id in used) continue
+            val match = pending.firstOrNull { b ->
+                b.id != a.id && b.id !in used && b.accountId != a.accountId &&
+                    b.direction != a.direction && b.amount == a.amount &&
+                    runCatching {
+                        kotlin.math.abs(kotlinx.datetime.LocalDate.parse(a.date).toEpochDays() - kotlinx.datetime.LocalDate.parse(b.date).toEpochDays()) <= 1
+                    }.getOrDefault(false)
+            }
+            val b = match ?: continue
+            val pair = newId("pair")
+            val ia = rows.indexOfFirst { it.id == a.id }; val ib = rows.indexOfFirst { it.id == b.id }
+            if (ia >= 0 && ib >= 0) {
+                rows[ia] = rows[ia].copy(pairId = pair); rows[ib] = rows[ib].copy(pairId = pair)
+                used += a.id; used += b.id; changed = true
+            }
+        }
+        if (changed) store = store.copy(importedTxns = rows)
+    }
+
     suspend fun ignoreImported(id: String): Boolean = mutex.withLock {
         if (store.importedTxns.none { it.id == id && it.status == "pending" }) return@withLock false
         val stamp = nowIso()
         store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "ignored", updated = stamp) else it }, updatedAt = stamp)
         saveLocal(store)
-        pushWithTombs(emptyList())
+        pushStatementsNow()
         true
     }
 

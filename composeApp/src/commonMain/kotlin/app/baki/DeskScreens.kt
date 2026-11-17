@@ -1155,6 +1155,7 @@ internal fun DeskStatements(repo: BakiRepo) {
     val matched = store.importedTxns.count { it.status == "matched" }
     val accounts = store.accounts.associateBy { it.id }
     var editingAccount by remember { mutableStateOf<Account?>(null) }
+    var deletingBatch by remember { mutableStateOf<StatementBatch?>(null) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.xl, vertical = Space.l)) {
         Text("STATEMENTS", color = scheme.onSurfaceVariant, letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
@@ -1204,6 +1205,24 @@ internal fun DeskStatements(repo: BakiRepo) {
                 Spacer(Modifier.height(Space.xs))
             }
         }
+        val batches = store.statementBatches.filter { it.deletedAt.isBlank() }
+        if (batches.isNotEmpty()) {
+            Spacer(Modifier.height(Space.l))
+            Text("BATCHES", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Spacer(Modifier.height(Space.s))
+            batches.forEach { batch ->
+                DeskCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${batch.periodStart} → ${batch.periodEnd}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                            Text("${batch.source.uppercase()} · ${batch.rowCount} rows · ${batch.duplicateCount} duplicates skipped", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                        TextButton(onClick = { deletingBatch = batch }) { Text("Delete", color = scheme.error) }
+                    }
+                }
+                Spacer(Modifier.height(Space.xs))
+            }
+        }
         Spacer(Modifier.height(Space.l))
         if (pending.isEmpty()) {
             DeskEmpty(
@@ -1220,7 +1239,7 @@ internal fun DeskStatements(repo: BakiRepo) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                "${row.date} · ${account} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.transfer) " · TRANSFER" else ""}",
+                                "${row.date} · ${account} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.pairId.isNotBlank()) " · PAIRED TRANSFER" else if (row.transfer) " · TRANSFER" else ""}",
                                 color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                             )
                             Text(row.description.take(140), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
@@ -1256,6 +1275,19 @@ internal fun DeskStatements(repo: BakiRepo) {
                 editingAccount = null
             }
         }
+    }
+    deletingBatch?.let { batch ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { deletingBatch = null },
+            title = { Text("Delete statement batch?") },
+            text = { Text("This removes ${batch.rowCount} staged rows from ${batch.periodStart} → ${batch.periodEnd}. The ledger is not touched. A deletion audit record remains on the server.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch { repo.deleteStatementBatch(batch.id); deletingBatch = null }
+                }) { Text("Delete batch", color = scheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deletingBatch = null }) { Text("Cancel") } },
+        )
     }
 }
 

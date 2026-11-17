@@ -128,6 +128,19 @@ data class Account(
 )
 
 @Serializable
+data class StatementBatch(
+    val id: String,
+    val accountId: String,
+    val source: String = "",
+    val importedAt: String = "",
+    val periodStart: String = "",
+    val periodEnd: String = "",
+    val rowCount: Int = 0,
+    val duplicateCount: Int = 0,
+    val deletedAt: String = "",
+)
+
+@Serializable
 data class ImportedTxn(
     val id: String,
     val accountId: String,
@@ -140,6 +153,8 @@ data class ImportedTxn(
     val status: String = "pending",
     val entryId: String? = null,
     val suggestedEntryId: String? = null,
+    val batchId: String = "",
+    val pairId: String = "",
     val updated: String = "",
 )
 
@@ -252,6 +267,7 @@ data class Store(
     /** Bank/e-wallet accounts and staged statement rows. */
     val accounts: List<Account> = emptyList(),
     val importedTxns: List<ImportedTxn> = emptyList(),
+    val statementBatches: List<StatementBatch> = emptyList(),
 )
 
 val BakiJson = Json {

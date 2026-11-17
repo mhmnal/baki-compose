@@ -143,3 +143,14 @@ fun parseStatementText(text: String): List<DraftTxn> = when {
     text.contains("AEON Bank", true) -> parseAeonStatement(text)
     else -> parseCsvStatement(text)
 }
+
+/** Plain keyword category hint; the phone form still lets the user change it. */
+fun statementCategoryHint(description: String): String {
+    val d = description.lowercase()
+    return when {
+        d.contains("petrol") || d.contains("fuel") || d.contains("petronas") || d.contains("shell") -> "fuel"
+        d.contains("toll") || d.contains("plus") || d.contains("lpt") -> "toll"
+        d.contains("restoran") || d.contains("food") || d.contains("mcd") || d.contains("kfc") -> "food"
+        else -> "other"
+    }
+}
