@@ -9,6 +9,8 @@ fun mergeStores(
     b: Store,
     dead: Set<String> = emptySet(),
     deadCats: Set<String> = emptySet(),
+    /** Keep this device's settings when it has an unsent local change. */
+    keepLocalSettings: Boolean = false,
 ): Store {
     // tombstones are authoritative: a record deleted on any client must not come back
     val deadIds = dead + a.tomb.ids + b.tomb.ids
@@ -73,7 +75,11 @@ fun mergeStores(
         entries = entries.values.toList(),
         shifts = shifts.values.toList(),
         statements = statements,
-        settings = Settings(
+        settings = if (keepLocalSettings) {
+            // A local setting change is still in the outbox. Do not let a pull from a stale
+            // remote overwrite it before the push reaches the server.
+            a.settings
+        } else Settings(
             name = b.settings.name.ifEmpty { a.settings.name },
             cats = Cats(catsIn.values.toList(), catsOut.values.toList()),
             profit = b.settings.profit,

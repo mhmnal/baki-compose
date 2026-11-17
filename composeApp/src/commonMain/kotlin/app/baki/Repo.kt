@@ -134,7 +134,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 return@withLock
             }
             lastMergeConflicts = mergeReport(store, remote).total
-            val merged = mergeStores(store, remote)
+            val merged = mergeStores(store, remote, keepLocalSettings = pendingPush)
             // no change means no disk write: serialising + encrypting the store is not free
             // compare the whole store: a change that only touched bills, payments, statements or
             // settings used to be merged and then discarded because the old test looked at four fields
@@ -598,9 +598,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     }
 
     fun discardLive() {
+        val id = live?.id
         live = null
         saveLive(null)
-        live?.let { clearLiveCover(it.id) }
+        if (id != null) {
+            clearLiveCover(id)
+            saveLocal(store)
+        }
         PlatformEffects.liveChanged(null, 0)
     }
 
@@ -808,7 +812,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val resurrect = neededFees.filter { it in store.tomb.ids }
         val deleted = (extraIds + store.tomb.ids).distinct()
         val saved = client.push(store, deletedIds = deleted, undeleteIds = resurrect)
-        store = mergeStores(store, saved)
+        store = mergeStores(store, saved, keepLocalSettings = true)
         if (resurrect.isNotEmpty()) {
             store = store.copy(tomb = store.tomb.copy(ids = store.tomb.ids - resurrect.toSet()))
         }

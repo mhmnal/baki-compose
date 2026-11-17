@@ -43,3 +43,18 @@ class BackupSyncPayoutTest {
         assertTrue(summary.hasDeviceConfig.not()) // no config was supplied
     }
 }
+
+class BackupEncryptionTest {
+    @Test fun encryptedBackupRoundTripsAndRejectsWrongPassphrase() {
+        val json = """{"v":1,"entries":[]}"""
+        val sealed = assertNotNull(encryptBackup(json, "correct horse battery staple"))
+        assertTrue(isEncryptedBackup(sealed))
+        assertEquals(json, decryptBackup(sealed, "correct horse battery staple"))
+        assertEquals(null, decryptBackup(sealed, "wrong passphrase"))
+    }
+
+    @Test fun plainJsonIsNotMistakenForEncrypted() {
+        assertTrue(!isEncryptedBackup("""{"entries":[]}"""))
+        assertEquals(null, decryptBackup("""{"entries":[]}""", "anything"))
+    }
+}

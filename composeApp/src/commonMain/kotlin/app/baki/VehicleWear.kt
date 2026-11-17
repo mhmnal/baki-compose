@@ -97,9 +97,19 @@ fun odometerWear(store: Store): OdometerWear {
         }
         val total = to.km - from.km
         if (total <= 0.0) continue
-        val intervalWork = store.shifts
-            .filter { sh -> shiftStartMs(sh) in from.at until to.at }
-            .sumOf { sh -> shiftKm(sh, store.settings.profit).coerceAtLeast(0.0) }
+        val intervalWork = store.shifts.sumOf { sh ->
+            val start = shiftStartMs(sh)
+            val end = shiftEndMs(sh)
+            val shiftKm = shiftKm(sh, store.settings.profit).coerceAtLeast(0.0)
+            if (shiftKm <= 0.0) return@sumOf 0.0
+            val duration = end - start
+            if (duration <= 0L) {
+                if (start in from.at until to.at) shiftKm else 0.0
+            } else {
+                val overlap = (minOf(end, to.at) - maxOf(start, from.at)).coerceAtLeast(0L)
+                if (overlap <= 0L) 0.0 else shiftKm * (overlap.toDouble() / duration.toDouble())
+            }
+        }
         // A shift can only use at most the distance the odometer says existed. If the work
         // figure is larger, the anchors are incomplete or inconsistent; report it rather than
         // subtracting a negative personal distance.

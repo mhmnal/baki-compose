@@ -138,8 +138,6 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
 }
 
 /** Which shift's payouts the sheet is showing. */
-private data class FuelPrompt(val entryId: String, val label: String, val cents: Long)
-
 private sealed interface PayoutsTarget {
     data object Live : PayoutsTarget
     data class Stored(val shiftId: String) : PayoutsTarget
@@ -161,9 +159,7 @@ private fun AppContent(repo: BakiRepo) {
     var entryType by remember { mutableStateOf("expense") }
     var presetCat by remember { mutableStateOf<String?>(null) }
     var editingBudgets by remember { mutableStateOf(false) }
-    var showDiagnostics by remember { mutableStateOf(false) }
     var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
-    var fuelPrompt by remember { mutableStateOf<FuelPrompt?>(null) }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     suspend fun announceAdded(id: String, label: String, cents: Long) {
@@ -176,11 +172,7 @@ private fun AppContent(repo: BakiRepo) {
     fun routeAdded(id: String, type: String, cat: String, cents: Long, odo: Int?) {
         val name = (repo.store.settings.cats.catsOut + repo.store.settings.cats.catsIn)
             .firstOrNull { it.id == cat }?.name ?: cat
-        if (type != "income" && isFuelCat(cat) && odo == null) {
-            fuelPrompt = FuelPrompt(id, name, cents)
-        } else {
-            scope.launch { announceAdded(id, name, cents) }
-        }
+        scope.launch { announceAdded(id, name, cents) }
     }
 
     // A swipe can report the same confirmation twice; never queue two Undo bars for one row.
@@ -552,27 +544,6 @@ private fun AppContent(repo: BakiRepo) {
                 }
             },
             onDismiss = { payoutsTarget = null },
-        )
-    }
-
-    fuelPrompt?.let { p ->
-        OdometerPromptDialog(
-            label = p.label,
-            cents = p.cents,
-            lastOdo = repo.store.entries
-                .filter { isFuelCat(it.cat) && (it.odo ?: 0) > 0 }
-                .maxOfOrNull { it.odo ?: 0 },
-            onSave = { odo ->
-                fuelPrompt = null
-                scope.launch {
-                    repo.setEntryOdometer(p.entryId, odo)
-                    announceAdded(p.entryId, p.label, p.cents)
-                }
-            },
-            onSkip = {
-                fuelPrompt = null
-                scope.launch { announceAdded(p.entryId, p.label, p.cents) }
-            },
         )
     }
 
@@ -1530,7 +1501,6 @@ private fun BillEditorDialog(
     var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
     var annual by remember { mutableStateOf(existing?.cadence == "annual") }
     var category by remember { mutableStateOf(existing?.category ?: categories.firstOrNull()?.id ?: "other") }
-    var business by remember { mutableStateOf(existing?.business ?: false) }
     var optional by remember { mutableStateOf(existing?.optional ?: false) }
     var anchor by remember { mutableStateOf(existing?.anchorMonth?.toString() ?: "1") }
 
@@ -1585,11 +1555,6 @@ private fun BillEditorDialog(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Business (tax deductible)", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.weight(1f))
-                    Switch(checked = business, onCheckedChange = { business = it })
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Optional (pay from leftovers)", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.weight(1f))
                     Switch(checked = optional, onCheckedChange = { optional = it })
@@ -1607,7 +1572,6 @@ private fun BillEditorDialog(
                             amount = cents,
                             cadence = if (annual) "annual" else "monthly",
                             category = category,
-                            business = business,
                             optional = optional,
                             anchorMonth = if (annual) anchor.toIntOrNull()?.coerceIn(1, 12) ?: 1 else null,
                         ),
@@ -1687,11 +1651,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var historyOpen by remember { mutableStateOf(false) }
     var statementHistoryOpen by remember { mutableStateOf(false) }
     var notifRefresh by remember { mutableStateOf(0) }
+    var diagnosticsOpen by remember { mutableStateOf(false) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
     var restoreError by remember { mutableStateOf<String?>(null) }
+    var backupPassMode by remember { mutableStateOf<String?>(null) }
+    var encryptedRestore by remember { mutableStateOf<String?>(null) }
     val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
@@ -1700,14 +1667,20 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     LaunchedEffect(Unit) { onHeaderCollapsed(false) }
     val pickRestore = rememberJsonImport { text ->
         if (text == null) return@rememberJsonImport
-        val summary = summarizeBackup(text)
-        if (summary == null) {
-            restoreError = "That file is not a Baki backup."
-            PlatformEffects.haptic(Haptic.Warn)
-        } else {
+        if (isEncryptedBackup(text)) {
+            encryptedRestore = text
+            backupPassMode = "restore"
             restoreError = null
-            restoreSummary = summary
-            pendingRestore = text
+        } else {
+            val summary = summarizeBackup(text)
+            if (summary == null) {
+                restoreError = "That file is not a Baki backup."
+                PlatformEffects.haptic(Haptic.Warn)
+            } else {
+                restoreError = null
+                restoreSummary = summary
+                pendingRestore = text
+            }
         }
     }
     fun createBackup() {
@@ -1866,7 +1839,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 )
             }
             Text(
-                "Conflict policy: newest edit per record wins, tombstones stay deleted, and the phone remains the writer. Pull always runs before a push.",
+                "Conflict policy: newest edit per record wins, tombstones stay deleted, and the phone remains the writer. Pull always runs before a push. Pending local settings are uploaded before a remote settings block can replace them.",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(Space.s))
@@ -2397,7 +2370,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
 
         if (moreTab == MoreTab.APP) {
-        SectionTitle("DIAGNOSTICS")
+        SectionTitle("ABOUT & DEVELOPER")
+        Spacer(Modifier.height(Space.s))
+        Text("Baki $APP_VERSION · the ledger stays yours.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = { diagnosticsOpen = !diagnosticsOpen }, contentPadding = PaddingValues(0.dp)) {
+            Text(if (diagnosticsOpen) "Hide diagnostics" else "Diagnostics & support", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
+        if (diagnosticsOpen) {
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             val h = healthOf(repo)
@@ -2455,7 +2434,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 TextButton(
                     onClick = {
                         val report = buildString {
-                            appendLine("Baki 0.1.9 diagnostics")
+                            appendLine("Baki $APP_VERSION diagnostics")
                             appendLine("status: ${h.status}")
                             appendLine("sync: ${ago(now, h.lastSyncAt)}  upload: ${ago(now, h.lastPushAt)} pending=${h.pendingPush}")
                             appendLine("gps: ${h.tracker.provider} fixes=${h.tracker.fixes} rejected=${h.tracker.rejected}")
@@ -2471,6 +2450,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     Text("Sync now", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 }
             }
+        }
         }
         }
 
@@ -2507,8 +2487,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     onClick = { pickRestore() },
                     colors = ButtonDefaults.buttonColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
                     shape = CircleShape, modifier = Modifier.weight(1f),
-                ) { Text("Restore JSON", style = MaterialTheme.typography.labelLarge ) }
+                ) { Text("Restore backup", style = MaterialTheme.typography.labelLarge ) }
             }
+            Spacer(Modifier.height(Space.s))
+            Button(
+                onClick = { backupPassMode = "create" },
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.onSurface),
+                shape = CircleShape, modifier = Modifier.fillMaxWidth(),
+            ) { Text("Encrypted backup", style = MaterialTheme.typography.labelLarge) }
             Spacer(Modifier.height(Space.s))
             Text(
                 "Backup includes the ledger, device settings, calibration and local routes. Restore merges into this device, never deletes, and keeps writes off. The file contains private server and route-key data; store it securely.",
@@ -2581,6 +2567,44 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
 
     if (statementHistoryOpen) {
         StatementHistorySheet(repo = repo, onDismiss = { statementHistoryOpen = false })
+    }
+
+    backupPassMode?.let { mode ->
+        BackupPassphraseDialog(
+            title = if (mode == "create") "Create encrypted backup" else "Open encrypted backup",
+            confirmLabel = if (mode == "create") "Create" else "Open",
+            onConfirm = { passphrase ->
+                backupPassMode = null
+                if (mode == "create") {
+                    scope.launch {
+                        val json = runCatching { backupBundleJson(repo) }.getOrNull()
+                        val sealed = json?.let { encryptBackup(it, passphrase) }
+                        if (json != null && sealed != null) {
+                            repo.markBackupExported(json)
+                            PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
+                            PlatformEffects.successFeedback()
+                            ActionFeedback.show("Encrypted backup ready")
+                        } else {
+                            restoreError = "Could not create encrypted backup"
+                        }
+                    }
+                } else {
+                    val text = encryptedRestore
+                    val decoded = text?.let { decryptBackup(it, passphrase) }
+                    val summary = decoded?.let { summarizeBackup(it) }
+                    if (text == null || decoded == null || summary == null) {
+                        restoreError = "Wrong passphrase or damaged encrypted backup"
+                        encryptedRestore = null
+                        PlatformEffects.haptic(Haptic.Warn)
+                    } else {
+                        encryptedRestore = null
+                        restoreSummary = summary
+                        pendingRestore = decoded
+                    }
+                }
+            },
+            onDismiss = { backupPassMode = null; encryptedRestore = null },
+        )
     }
 
     restoreSummary?.let { summary ->

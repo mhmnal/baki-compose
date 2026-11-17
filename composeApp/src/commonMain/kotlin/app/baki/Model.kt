@@ -95,8 +95,6 @@ data class Shift(
     /** "monthly" or "annual" */
     val cadence: String = "monthly",
     val category: String,
-    /** deductible on the tax pack (phone, subscriptions) */
-    val business: Boolean = false,
     /** a leftover goal, never a due bill (e.g. the car loan the family covers) */
     val optional: Boolean = false,
     /** annual bills renew in this month (1..12) */

@@ -1,7 +1,7 @@
 # Baki
 
 A shift logbook for Grab drivers in Malaysia: what a shift actually pays after fuel, wear and the daily
-insurance — plus weekly statement reconciliation, bills, and a Borang B tax pack.
+insurance — plus weekly statement reconciliation and bills.
 
 Two surfaces, one ledger:
 
@@ -11,10 +11,10 @@ Two surfaces, one ledger:
 | Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.44.3** (`versionCode` 198+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.44.4** (`versionCode` 199+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **213 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **212 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -38,11 +38,8 @@ Test suite: **213 JVM tests** (`:composeApp:desktopTest`).
 - bulk import, share a PDF straight into the app, Wednesday 10:00 reminder
 - reconcile statement income and insurance count against what was logged
 - per-shift payout reconciliation: recorded vs received vs still due, with visible Add payout/Edit actions
-- portable backup with last-backup health, merge-only restore confirmation, and merge-conflict reporting
-
-**Tax**
-- Borang B pack: income, expenses by category with deductible flags, business-use pro-rata, mileage,
-  insurance windows, net business income; printable HTML and CSV
+- portable backup with last-backup health, merge-only restore confirmation, merge-conflict reporting, and optional passphrase encryption
+- odometer-anchored vehicle wear on phone and Desk
 
 **Desk extras**
 - read-only tables, route traces (sealed end-to-end), month comparison, year at a glance, statement preview
@@ -73,7 +70,7 @@ Test suite: **213 JVM tests** (`:composeApp:desktopTest`).
 ## Layout
 
 ```
-composeApp/src/commonMain/   model, money maths, cover rule, merge, sync, statement parser, tax pack, UI
+composeApp/src/commonMain/   model, money maths, cover rule, merge, sync, statement parser, vehicle wear, UI
 composeApp/src/androidMain/  activity, live service, GPS, widget, statement reminder, PDF picker
 composeApp/src/desktopMain/  neumorphic shell, read-only views, PDF, printing
 ../grab-tracker/             sync server + PWA (still intact)
@@ -93,11 +90,11 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.44.3
+./scripts/release.sh 0.44.4
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.44.3.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.44.4.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync
@@ -114,7 +111,7 @@ committed.
 
 ## Docs
 
-- [DESIGN.md](DESIGN.md) — material doctrine, Surface depth, desktop layout, statement/tax decisions
+- [DESIGN.md](DESIGN.md) — material doctrine, Surface depth, desktop layout, statement decisions
 - [ACCESSIBILITY.md](ACCESSIBILITY.md) — enforced contrast/behaviour and current gaps
 - [BUGS.md](BUGS.md) — known issues and parked work
 - [NEXT.md](NEXT.md) — current priorities

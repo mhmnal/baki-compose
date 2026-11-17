@@ -175,7 +175,9 @@ fun expensesByCategory(store: Store, month: String): List<Pair<String, Long>> =
 
 /** Every day in the month that has activity, with its totals. */
 fun monthDays(store: Store, month: String): List<Pair<String, Totals>> =
-    store.entries.filter { it.date.startsWith(month) }.map { it.date }.distinct().sorted()
+    (store.entries.map { it.date } + store.shifts.map { it.date })
+        .filter { it.startsWith(month) }
+        .distinct().sorted()
         .map { it to dayTotals(store, it) }
 
 /** Shift a date by whole days. */
@@ -566,7 +568,7 @@ fun weeklyReview(store: Store, weekStart: String): WeeklyReview? {
     val fuel = store.entries
         .filter { it.date >= weekStart && it.date < end && it.type != "income" && isFuelCat(it.cat) }
         .sumOf { it.amount }
-    val km = shifts.sumOf { it.km }
+    val km = shifts.sumOf { shiftKm(it, store.settings.profit) }
     val fuelPerKm = if (km > 0.5) fuel / 100.0 / km else 0.0
     val byDay = shifts.groupBy { it.date }
         .mapValues { (_, rows) -> rows.sumOf { shiftMetrics(it, cfg, overhead).net } }
@@ -596,7 +598,7 @@ fun latestWeekWithData(store: Store, today: String): Pair<String, WeeklyReview>?
 /**
  * Toll outlay for a month. Grab reimburses tolls instantly from its own trip data, so this is a
  * pass-through: the money returns inside gross earnings. It is shown for route decisions and for the
- * tax pack (where the toll and its reimbursement cancel), never as a cost that reduces net.
+ * reporting context (where the toll and its reimbursement cancel), never as a cost that reduces net.
  */
 data class TollSummary(val paid: Long, val reimbursed: Long) {
     val recordedBack: Boolean get() = reimbursed > 0
@@ -618,7 +620,6 @@ data class StatementCheck(
     val appInsurance: Int,
     val statementInsurance: Int,
 ) {
-    val grossDelta: Long get() = loggedGross
     val insuranceMatches: Boolean get() = appInsurance == statementInsurance
 }
 

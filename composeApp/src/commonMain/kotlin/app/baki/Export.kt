@@ -145,3 +145,25 @@ fun summarizeBackup(text: String): BackupSummary? {
         bytes = text.length,
     )
 }
+
+/** Portable backup envelope: plaintext JSON, or this AES-GCM wrapper when a passphrase is used. */
+const val ENCRYPTED_BACKUP_PREFIX = "BAKI-BACKUP-1:"
+
+fun encryptBackup(json: String, passphrase: String): String? {
+    if (passphrase.isBlank()) return null
+    return runCatching {
+        ENCRYPTED_BACKUP_PREFIX + RouteBase64.encode(
+            RouteCrypto.seal(passphrase, json.encodeToByteArray()),
+        )
+    }.getOrNull()
+}
+
+fun isEncryptedBackup(text: String): Boolean = text.trimStart().startsWith(ENCRYPTED_BACKUP_PREFIX)
+
+fun decryptBackup(text: String, passphrase: String): String? {
+    if (!isEncryptedBackup(text) || passphrase.isBlank()) return null
+    return runCatching {
+        val sealed = RouteBase64.decode(text.trimStart().removePrefix(ENCRYPTED_BACKUP_PREFIX))
+        RouteCrypto.open(passphrase, sealed).decodeToString()
+    }.getOrNull()
+}

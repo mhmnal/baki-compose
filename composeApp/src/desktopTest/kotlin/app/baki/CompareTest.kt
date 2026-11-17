@@ -73,6 +73,14 @@ class CompareTest {
     }
 
     @Test
+    fun periodKmUsesTheSameOdometerAwareDistanceAsShiftMetrics() {
+        val s = Store(
+            shifts = listOf(Shift(id = "s", date = "2026-11-01", start = "09:00", hours = 4.0, km = 0.0, odoStart = 1000.0, odoEnd = 1120.0, gross = 5000)),
+        )
+        assertEquals(120.0, periodStats(s, "2026-11").km, 0.001)
+    }
+
+    @Test
     fun categoriesAreRankedBySpend() {
         val cats = categoryTotals(store(), "2026-11")
         assertEquals("fuel", cats.first().first)

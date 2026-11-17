@@ -39,6 +39,13 @@ class VehicleWearTest {
         assertEquals("2026-11-10", wear.lastDate)
     }
 
+    @Test fun shiftOnlyDaysAreActiveDays() {
+        val store = Store(shifts = listOf(shift("s1", "2026-11-05", km = 50.0)))
+        val days = monthDays(store, "2026-11")
+        assertEquals(1, days.size)
+        assertEquals(100.0, days.single().second.income / 100.0, 0.001)
+    }
+
     @Test fun doesNotInventPersonalDistanceWithoutAnchors() {
         val store = Store(shifts = listOf(shift("s1", "2026-11-05", km = 50.0)))
         val wear = odometerWear(store)

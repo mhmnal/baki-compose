@@ -32,7 +32,7 @@ fun periodStats(store: Store, month: String): PeriodStats {
         income = t.income,
         expense = t.expense,
         hours = shifts.sumOf { it.hours },
-        km = shifts.sumOf { it.km },
+        km = shifts.sumOf { shiftKm(it, store.settings.profit) },
         entries = t.entryCount,
         shifts = t.shiftCount,
     )
@@ -89,11 +89,6 @@ fun categoryTotals(store: Store, month: String): List<Pair<String, Long>> {
         .sortedByDescending { it.second }
 }
 
-private fun pct(a: Long, b: Long): String {
-    if (a == 0L) return if (b == 0L) "—" else "+∞"
-    val change = (b - a) * 100.0 / kotlin.math.abs(a)
-    return (if (change >= 0) "+" else "") + "%.0f".format(change) + "%"
-}
 
 /**
  * The comparison table for two months. Money rows compare A against B with a relative change; rate

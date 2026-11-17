@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.4 cleanup
+
+- Removed the tax pack and Business/deductible tax controls entirely.
+- Pending local settings now survive a pull until they are uploaded.
+- Fixed shift-only active days, live discard fee cleanup, and odometer-aware km across Compare/Desk/weekly review.
+- Added optional passphrase-encrypted backups and moved diagnostics under About/Developer.
+- Vehicle wear is now visible on Desk Overview and Year.
+- 212 tests, 0 failures.
+
 ## 0.44.3 odometer wear
 
 - Derived vehicle-wear layer uses existing shift odometer endpoints and fuel odometer anchors.

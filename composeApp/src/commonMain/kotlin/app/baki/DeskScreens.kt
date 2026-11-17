@@ -159,7 +159,7 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
     val entries = remember(store) { store.entries.sortedWith(compareByDescending<Entry> { it.date }.thenByDescending { it.loggedAt }).take(7) }
     val days = remember(store, month) { monthDays(store, month) }
     val hours = shifts.sumOf { it.hours }
-    val km = shifts.sumOf { it.km }
+    val km = shifts.sumOf { shiftKm(it, store.settings.profit) }
     val best = days.maxByOrNull { it.second.net }
 
     LazyColumn(
@@ -211,6 +211,9 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                     Text("Last sync: ${repo.lastSyncAt?.let { clockOf(it) } ?: "not yet"}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
             }
+        }
+        item {
+            VehicleWearCard(store)
         }
         item {
             DeskCard(Modifier.fillMaxWidth()) {
@@ -585,7 +588,7 @@ internal fun DeskRoutes(repo: BakiRepo, month: String) {
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(prettyDate(sh.date), color = if (active) scheme.onPrimaryContainer else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                                    Text("${sh.start} · ${"%.0f".format(sh.km)} km", color = if (active) scheme.onPrimaryContainer.copy(alpha = 0.75f) else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                                    Text("${sh.start} · ${"%.0f".format(shiftKm(sh, store.settings.profit))} km", color = if (active) scheme.onPrimaryContainer.copy(alpha = 0.75f) else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                                 }
                                 Text(if (hasRoute) "route" else "—", color = if (hasRoute) scheme.tertiary else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                             }
@@ -634,7 +637,7 @@ internal fun DeskRoutes(repo: BakiRepo, month: String) {
                     )
                     Spacer(Modifier.height(Space.s))
                     Text(
-                        "Read-only route from the phone · RM ${rm(if (selectedShift.km > 0.01) shiftMetrics(selectedShift, store.settings.profit).net / selectedShift.km else 0.0)}/km · pull again if a drive is missing.",
+                        "Read-only route from the phone · RM ${rm(shiftMetrics(selectedShift, store.settings.profit).let { m -> if (m.km > 0.01) m.net / m.km else 0.0 })}/km · pull again if a drive is missing.",
                         color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -690,7 +693,7 @@ internal fun DeskCompare(repo: BakiRepo, month: String) {
 internal fun DeskYear(repo: BakiRepo, month: String) {
     val store = repo.store
     val scheme = MaterialTheme.colorScheme
-    val year = todayIso().take(4).toIntOrNull() ?: 2026
+    val year = month.take(4).toIntOrNull() ?: todayIso().take(4).toIntOrNull() ?: 2026
     val months = remember(store, year) {
         (1..12).map { m ->
             val label = "%04d-%02d".format(year, m)
@@ -716,7 +719,7 @@ internal fun DeskYear(repo: BakiRepo, month: String) {
                 Spacer(Modifier.height(Space.m))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                     DeskMetric("HOURS", "%.0f".format(yearShifts.sumOf { it.hours }))
-                    DeskMetric("KM", "%.0f".format(yearShifts.sumOf { it.km }))
+                    DeskMetric("KM", "%.0f".format(yearShifts.sumOf { shiftKm(it, store.settings.profit) }))
                     DeskMetric("SHIFTS", yearShifts.size.toString())
                 }
             }
@@ -729,18 +732,13 @@ internal fun DeskYear(repo: BakiRepo, month: String) {
                     FilledTonalButton(onClick = { statementOpen = true }, modifier = Modifier.fillMaxWidth()) {
                         Text("Preview", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }, modifier = Modifier.weight(1f)) {
-                            Text("Print / PDF", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                        }
-                        FilledTonalButton(onClick = {
-                            val tax = taxYear(store, year)
-                            PlatformEffects.printStatement(taxPackHtml(tax))
-                        }, modifier = Modifier.weight(1f)) { Text("Tax pack", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
+                    FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Print / PDF", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
         }
+        VehicleWearCard(store, Modifier.fillMaxWidth())
         Surface(Modifier.fillMaxWidth().weight(1f), shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = Space.l, vertical = Space.s)) {
                 items(months) { (label, t) ->
@@ -831,17 +829,25 @@ internal fun DeskSettings(repo: BakiRepo) {
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
     var restoreError by remember { mutableStateOf<String?>(null) }
+    var backupPassMode by remember { mutableStateOf<String?>(null) }
+    var encryptedRestore by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val pickRestore = rememberJsonImport { text ->
         if (text != null) {
-            val summary = summarizeBackup(text)
-            if (summary == null) {
-                restoreError = "That file is not a Baki backup."
-                PlatformEffects.haptic(Haptic.Warn)
-            } else {
+            if (isEncryptedBackup(text)) {
+                encryptedRestore = text
+                backupPassMode = "restore"
                 restoreError = null
-                restoreSummary = summary
-                pendingRestore = text
+            } else {
+                val summary = summarizeBackup(text)
+                if (summary == null) {
+                    restoreError = "That file is not a Baki backup."
+                    PlatformEffects.haptic(Haptic.Warn)
+                } else {
+                    restoreError = null
+                    restoreSummary = summary
+                    pendingRestore = text
+                }
             }
         }
     }
@@ -979,7 +985,8 @@ internal fun DeskSettings(repo: BakiRepo) {
                         containerColor = scheme.primaryContainer,
                         contentColor = scheme.onPrimaryContainer,
                     ),
-                ) { Text("Restore JSON") }
+                ) { Text("Restore backup") }
+                FilledTonalButton(onClick = { backupPassMode = "create" }) { Text("Encrypted") }
                 Spacer(Modifier.weight(1f))
                 saved?.let { Text(it, color = scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
             }
@@ -1018,6 +1025,41 @@ internal fun DeskSettings(repo: BakiRepo) {
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
         }
+    }
+
+    backupPassMode?.let { mode ->
+        BackupPassphraseDialog(
+            title = if (mode == "create") "Create encrypted backup" else "Open encrypted backup",
+            confirmLabel = if (mode == "create") "Create" else "Open",
+            onConfirm = { passphrase ->
+                backupPassMode = null
+                if (mode == "create") {
+                    scope.launch {
+                        val json = runCatching { backupBundleJson(repo) }.getOrNull()
+                        val sealed = json?.let { encryptBackup(it, passphrase) }
+                        if (json != null && sealed != null) {
+                            repo.markBackupExported(json)
+                            PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
+                            note("Encrypted backup ready")
+                        } else note("Could not create encrypted backup")
+                    }
+                } else {
+                    val text = encryptedRestore
+                    val decoded = text?.let { decryptBackup(it, passphrase) }
+                    val summary = decoded?.let { summarizeBackup(it) }
+                    if (text == null || decoded == null || summary == null) {
+                        restoreError = "Wrong passphrase or damaged encrypted backup"
+                        encryptedRestore = null
+                        PlatformEffects.haptic(Haptic.Warn)
+                    } else {
+                        encryptedRestore = null
+                        restoreSummary = summary
+                        pendingRestore = decoded
+                    }
+                }
+            },
+            onDismiss = { backupPassMode = null; encryptedRestore = null },
+        )
     }
 
     restoreSummary?.let { summary ->
