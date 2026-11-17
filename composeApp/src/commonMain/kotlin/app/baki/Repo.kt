@@ -299,6 +299,66 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         n
     }
 
+    /** Parse AEON/TNG PDF text and stage rows for review. Nothing enters totals yet. */
+    suspend fun stageStatementText(text: String): Int = mutex.withLock {
+        if (blocked()) return@withLock 0
+        val drafts = parseStatementText(text)
+        if (drafts.isEmpty()) return@withLock 0
+        val stamp = nowIso()
+        var accounts = store.accounts.toList()
+        val next = mutableListOf<ImportedTxn>()
+        for (d in drafts) {
+            var account = accounts.firstOrNull { it.name == d.accountName }
+            if (account == null) {
+                account = Account(id = newId("acc"), name = d.accountName, kind = d.accountKind)
+                accounts += account
+            }
+            next += ImportedTxn(
+                id = newId("imp"), accountId = account.id, date = d.date,
+                description = d.description.take(160), amount = d.amountCents,
+                direction = d.direction, transfer = d.isTransfer, source = d.source,
+                updated = stamp,
+            )
+        }
+        store = store.copy(accounts = accounts, importedTxns = store.importedTxns + next, updatedAt = stamp)
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        next.size
+    }
+
+    /** Confirm one staged row. Transfers are recorded as moves and do not affect spending totals. */
+    suspend fun acceptImported(id: String, category: String = "other"): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val row = store.importedTxns.firstOrNull { it.id == id && it.status == "pending" } ?: return@withLock false
+        val stamp = nowIso()
+        if (row.transfer) {
+            store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "accepted", updated = stamp) else it }, updatedAt = stamp)
+        } else {
+            val entry = Entry(
+                id = newId(), date = row.date, type = if (row.direction == "in") "income" else "expense",
+                cat = category, amount = row.amount, note = row.description, updated = stamp, loggedAt = stamp,
+            )
+            store = store.copy(
+                entries = store.entries + entry,
+                importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "accepted", entryId = entry.id, updated = stamp) else it },
+                updatedAt = stamp,
+            )
+        }
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
+    suspend fun ignoreImported(id: String): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        if (store.importedTxns.none { it.id == id && it.status == "pending" }) return@withLock false
+        val stamp = nowIso()
+        store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "ignored", updated = stamp) else it }, updatedAt = stamp)
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     suspend fun addExpense(amountCents: Long, cat: String, note: String, date: String, odo: Int? = null) =
         addEntry("expense", amountCents, cat, note, date, odo)
 

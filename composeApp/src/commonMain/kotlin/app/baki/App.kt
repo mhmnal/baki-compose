@@ -1930,6 +1930,56 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
 
         if (moreTab == MoreTab.MONEY) {
+        var bankImportMsg by remember { mutableStateOf<String?>(null) }
+        val pickBankStatement = rememberStatementImport { files ->
+            if (files.isNullOrEmpty()) return@rememberStatementImport
+            scope.launch {
+                var staged = 0
+                var skipped = 0
+                files.forEach { bytes ->
+                    val text = withContext(Dispatchers.Default) { PdfText.extract(bytes) }
+                    if (text == null) skipped++ else {
+                        val n = repo.stageStatementText(text)
+                        if (n == 0) skipped++ else staged += n
+                    }
+                }
+                bankImportMsg = if (staged == 0) "No AEON or TNG rows found." else "Staged $staged row${if (staged == 1) "" else "s"} for review" + if (skipped > 0) " · skipped $skipped" else ""
+            }
+        }
+        SectionTitle("BANK & WALLET IMPORTS")
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "AEON Bank and TNG eWallet PDFs. Nothing enters totals until you accept it.",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(Space.s))
+        FilledTonalButton(onClick = { pickBankStatement() }) {
+            Text("Import AEON / TNG PDFs", style = MaterialTheme.typography.labelLargeEmphasized)
+        }
+        bankImportMsg?.let {
+            Spacer(Modifier.height(Space.xs))
+            Text(it, color = if (it.startsWith("Staged")) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium)
+        }
+        val pendingBank = repo.store.importedTxns.filter { it.status == "pending" }
+        if (pendingBank.isNotEmpty()) {
+            Spacer(Modifier.height(Space.m))
+            Text("${pendingBank.size} awaiting review", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            pendingBank.take(12).forEach { row ->
+                val account = repo.store.accounts.firstOrNull { it.id == row.accountId }?.name ?: "Account"
+                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${row.date} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.transfer) " · transfer" else ""}",
+                            color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
+                        )
+                        Text("$account · ${row.description.take(80)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                    }
+                    TextButton(onClick = { scope.launch { repo.acceptImported(row.id) } }) { Text("Accept", color = scheme.primary) }
+                    TextButton(onClick = { scope.launch { repo.ignoreImported(row.id) } }) { Text("Ignore", color = scheme.onSurfaceVariant) }
+                }
+            }
+        }
+        Spacer(Modifier.height(Space.l))
         SectionTitle("BILLS")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {

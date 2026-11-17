@@ -118,6 +118,28 @@ data class Shift(
 )
 
 @Serializable
+data class Account(
+    val id: String,
+    val name: String,
+    val kind: String = "bank",
+)
+
+@Serializable
+data class ImportedTxn(
+    val id: String,
+    val accountId: String,
+    val date: String,
+    val description: String,
+    val amount: Long,
+    val direction: String,
+    val transfer: Boolean = false,
+    val source: String = "",
+    val status: String = "pending",
+    val entryId: String? = null,
+    val updated: String = "",
+)
+
+@Serializable
 data class OdometerReading(
     val id: String,
     val date: String,
@@ -223,6 +245,9 @@ data class Store(
     val reserveTxns: List<ReserveTxn> = emptyList(),
     /** Manual dashboard readings; fuel/shift odometers are derived automatically. */
     val odometerReadings: List<OdometerReading> = emptyList(),
+    /** Bank/e-wallet accounts and staged statement rows. */
+    val accounts: List<Account> = emptyList(),
+    val importedTxns: List<ImportedTxn> = emptyList(),
 )
 
 val BakiJson = Json {

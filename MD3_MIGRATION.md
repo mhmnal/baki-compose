@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.0 statement import
+
+- AEON Bank and TNG eWallet PDF importers built from real statement layouts.
+- Staged review queue; imported rows do not enter totals until accepted.
+- Auto-created AEON/TNG accounts; transfers are recorded separately from spending.
+- Manual reading, annual export and persistent ledger filters retained.
+- 214 tests, 0 failures.
+
 ## 0.44.6 final data pass
 
 - Added synced manual odometer readings and service baseline fields, with server merge support.

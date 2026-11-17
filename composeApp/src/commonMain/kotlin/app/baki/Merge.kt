@@ -56,6 +56,13 @@ fun mergeStores(
         val cur = statementMarks[week]
         if (cur == null || mark.updated >= cur.updated) statementMarks[week] = mark
     }
+    val imported = LinkedHashMap<String, ImportedTxn>()
+    for (t in a.importedTxns + b.importedTxns) {
+        val cur = imported[t.id]
+        if (cur == null || t.updated >= cur.updated) imported[t.id] = t
+    }
+    val accounts = LinkedHashMap<String, Account>()
+    for (acc in a.accounts + b.accounts) accounts[acc.id] = acc
     val odometerReadings = LinkedHashMap<String, OdometerReading>()
     for (r in a.odometerReadings + b.odometerReadings) {
         val cur = odometerReadings[r.id]
@@ -113,6 +120,8 @@ fun mergeStores(
         envelopeMoves = envelopeMoves,
         reserveTxns = reserveTxns.values.toList(),
         odometerReadings = odometerReadings.values.toList(),
+        accounts = accounts.values.toList(),
+        importedTxns = imported.values.toList(),
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),
