@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.8 own-account hints
+
+- Desk-local name/account-suffix hints classify own DuitNow transfers as internal.
+- Third-party names/accounts remain spending.
+- Identity editor in Desk Settings.
+- Existing pending rows reclassify on restart/sync.
+- 226 tests, 0 failures.
+
 ## 0.45.7 internal transfers
 
 - AEON Pot transfers and TNG GO+/reload/cash-out moves are classified as internal.

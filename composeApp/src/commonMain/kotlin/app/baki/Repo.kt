@@ -325,7 +325,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     private fun normalizeInternalTransfers() {
         var changed = false
         val rows = store.importedTxns.map {
-            if (!it.internal && it.status == "pending" && isInternalTransfer(it.description, it.source)) {
+            if (!it.internal && it.status == "pending" && isInternalTransfer(it.description, it.source, config.statementName, config.statementAccountSuffixes)) {
                 changed = true
                 it.copy(internal = true, transfer = true, status = "internal", updated = nowIso())
             } else it
@@ -365,8 +365,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 direction = d.direction, transfer = d.isTransfer, source = d.source,
                 suggestedEntryId = suggestStatementMatch(store, d),
                 batchId = batchId,
-                internal = d.isInternal,
-                status = if (d.isInternal) "internal" else "pending",
+                internal = d.isInternal || isInternalTransfer(d.description, d.source, config.statementName, config.statementAccountSuffixes),
+                status = if (d.isInternal || isInternalTransfer(d.description, d.source, config.statementName, config.statementAccountSuffixes)) "internal" else "pending",
                 updated = stamp,
             )
         }
@@ -1193,6 +1193,15 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (config.deskQuery == query && config.deskCategory == category && config.deskSort == sort) return
         config = config.copy(deskQuery = query, deskCategory = category, deskSort = sort)
         saveConfig(config)
+    }
+
+    fun setStatementIdentity(name: String, suffixes: List<String>) {
+        config = config.copy(
+            statementName = name.trim().uppercase(),
+            statementAccountSuffixes = suffixes.map { it.filter { c -> c.isDigit() }.takeLast(6) }.filter { it.length == 6 }.distinct(),
+        )
+        saveConfig(config)
+        ActionFeedback.show("Statement identity saved")
     }
 
     suspend fun setServiceBaseline(km: Int?, date: String?) = mutex.withLock {

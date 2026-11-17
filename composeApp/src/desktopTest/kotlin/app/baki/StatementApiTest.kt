@@ -31,15 +31,18 @@ class StatementApiTest {
             description = "statement api test", amount = 1234, direction = "out",
             source = "test", batchId = batch.id, updated = nowIso(),
         )
+        println("APITEST before txns=" + before.txns.size + " accounts=" + before.accounts.size)
         val pushed = client.pushStatements(StatementBook(before.accounts + account, before.batches + batch, before.txns + row))
         assertTrue(pushed.accounts.any { it.id == account.id })
         assertTrue(pushed.txns.any { it.id == row.id })
 
+        println("APITEST pushed txns=" + pushed.txns.count { it.id == row.id } + " batches=" + pushed.batches.count { it.id == batch.id })
         val pulled = client.pullStatements()
         assertEquals(1234L, pulled.txns.first { it.id == row.id }.amount)
 
         client.pushStatements(pulled, deletedBatchIds = listOf(batch.id))
         val after = client.pullStatements()
+        println("APITEST after row=" + after.txns.count { it.id == row.id } + " batch=" + after.batches.count { it.id == batch.id } + " batchDeleted=" + after.batches.firstOrNull { it.id == batch.id }?.deletedAt)
         assertTrue(after.txns.none { it.id == row.id }, "deleted batch rows are removed")
         val deleted = after.batches.first { it.id == batch.id }
         assertTrue(deleted.deletedAt.isNotBlank(), "deletion audit retained")

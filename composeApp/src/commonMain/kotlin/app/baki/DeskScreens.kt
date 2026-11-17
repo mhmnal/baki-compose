@@ -851,6 +851,8 @@ internal fun DeskSettings(repo: BakiRepo) {
     var token by remember { mutableStateOf(repo.config.serverToken) }
     var routeKey by remember { mutableStateOf(repo.config.routeSecret) }
     var routeSync by remember { mutableStateOf(repo.config.syncRoutes) }
+    var identityName by remember { mutableStateOf(repo.config.statementName) }
+    var identitySuffixes by remember { mutableStateOf(repo.config.statementAccountSuffixes.joinToString(", ")) }
     var saved by remember { mutableStateOf<String?>(null) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
@@ -884,6 +886,29 @@ internal fun DeskSettings(repo: BakiRepo) {
         Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
+        DeskCard(Modifier.fillMaxWidth()) {
+            DeskLabel("STATEMENT IDENTITY")
+            Spacer(Modifier.height(Space.s))
+            Text(
+                "Own-name and account-suffix hints for DuitNow classification. Desk-local; never synced.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
+            Spacer(Modifier.height(Space.s))
+            OutlinedTextField(
+                value = identityName, onValueChange = { identityName = it }, singleLine = true,
+                label = { Text("Name as printed on statements") }, modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(Space.s))
+            OutlinedTextField(
+                value = identitySuffixes, onValueChange = { identitySuffixes = it }, singleLine = true,
+                label = { Text("Own account suffixes (last 6 digits, comma-separated)") }, modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(Space.s))
+            FilledTonalButton(onClick = {
+                repo.setStatementIdentity(identityName, identitySuffixes.split(',').map { it.trim() })
+                note("Statement identity saved")
+            }) { Text("Save identity") }
+        }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("CONNECTION")
             Spacer(Modifier.height(Space.s))

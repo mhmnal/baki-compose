@@ -179,11 +179,25 @@ fun statementCategoryHint(description: String): String {
 
 
 /** Same-app sub-account movement: Pot, GO+, reloads and wallet cash-outs. */
-fun isInternalTransfer(description: String, source: String): Boolean {
+fun isInternalTransfer(
+    description: String,
+    source: String,
+    ownName: String = "",
+    ownAccountSuffixes: List<String> = emptyList(),
+): Boolean {
     val d = description.lowercase()
-    return when (source) {
+    val keyword = when (source) {
         "aeon" -> d.contains("transfer to pot") || d.contains("transfer from pot") || d.contains(" pot")
         "tng" -> d.contains("go+") || d.contains("reload") || d.contains("cash out") || d.contains("cash in") || d.contains("ewallet cash")
         else -> d.contains("transfer to pot") || d.contains("go+") || d.contains("reload") || d.contains("cash out")
     }
+    if (keyword) return true
+    val context = d.contains("duitnow") || d.contains("fund transfer") || d.contains("transfer") || d.contains("cash out") || d.contains("reload")
+    if (!context) return false
+    val normalized = d.replace(Regex("[^a-z0-9 ]"), " ").replace(Regex("\\s+"), " ").trim()
+    val own = ownName.lowercase().replace(Regex("\\b(encik|puan|mr|mrs|bin|binti)\\b"), " ")
+        .replace(Regex("[^a-z0-9 ]"), " ").replace(Regex("\\s+"), " ").trim()
+    val ownMatch = own.isNotBlank() && own.split(' ').filter { it.length > 1 }.all { normalized.split(' ').contains(it) }
+    val suffixMatch = ownAccountSuffixes.any { suffix -> Regex("(?<!\\d)" + Regex.escape(suffix) + "(?!\\d)").containsMatchIn(description) }
+    return ownMatch || suffixMatch
 }
