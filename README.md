@@ -77,6 +77,17 @@ composeApp/src/desktopMain/  neumorphic shell, read-only views, PDF, printing
 scripts/                     release.sh, shots.sh (deterministic desk captures)
 ```
 
+## Android verification
+
+The API 36 AVD lane installs a separate `.verify` build and runs Compose instrumentation tests without touching the real ledger:
+
+```bash
+./scripts/android-avd-setup.sh   # once
+./scripts/android-test.sh
+```
+
+See [ANDROID_TESTING.md](ANDROID_TESTING.md).
+
 ## Running
 
 ```bash
