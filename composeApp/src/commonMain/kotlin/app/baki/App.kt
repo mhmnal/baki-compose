@@ -1930,54 +1930,38 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
 
         if (moreTab == MoreTab.MONEY) {
-        var bankImportMsg by remember { mutableStateOf<String?>(null) }
-        val pickBankStatement = rememberStatementImport { files ->
-            if (files.isNullOrEmpty()) return@rememberStatementImport
-            scope.launch {
-                var staged = 0
-                var skipped = 0
-                files.forEach { bytes ->
-                    val text = withContext(Dispatchers.Default) { PdfText.extract(bytes) }
-                    if (text == null) skipped++ else {
-                        val n = repo.stageStatementText(text)
-                        if (n == 0) skipped++ else staged += n
-                    }
-                }
-                bankImportMsg = if (staged == 0) "No AEON or TNG rows found." else "Staged $staged row${if (staged == 1) "" else "s"} for review" + if (skipped > 0) " · skipped $skipped" else ""
-            }
-        }
-        SectionTitle("BANK & WALLET IMPORTS")
+        val statementRows = repo.store.importedTxns
+        val matchedRows = statementRows.count { it.status == "matched" }
+        val pendingRows = statementRows.count { it.status == "pending" }
+        SectionTitle("STATEMENT RECONCILIATION")
         Spacer(Modifier.height(Space.s))
         Text(
-            "AEON Bank and TNG eWallet PDFs. Nothing enters totals until you accept it.",
+            "Statements are imported and matched on Desk. The phone ledger is unchanged; only the reconciliation summary appears here.",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
-        Spacer(Modifier.height(Space.s))
-        FilledTonalButton(onClick = { pickBankStatement() }) {
-            Text("Import AEON / TNG PDFs", style = MaterialTheme.typography.labelLargeEmphasized)
-        }
-        bankImportMsg?.let {
-            Spacer(Modifier.height(Space.xs))
-            Text(it, color = if (it.startsWith("Staged")) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium)
-        }
-        val pendingBank = repo.store.importedTxns.filter { it.status == "pending" }
-        if (pendingBank.isNotEmpty()) {
+        if (statementRows.isEmpty()) {
+            Spacer(Modifier.height(Space.s))
+            Text("No statement batches yet — open Desk → Statements.", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+        } else {
             Spacer(Modifier.height(Space.m))
-            Text("${pendingBank.size} awaiting review", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            pendingBank.take(12).forEach { row ->
-                val account = repo.store.accounts.firstOrNull { it.id == row.accountId }?.name ?: "Account"
-                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "${row.date} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.transfer) " · transfer" else ""}",
-                            color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"),
-                        )
-                        Text("$account · ${row.description.take(80)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
-                    }
-                    TextButton(onClick = { scope.launch { repo.acceptImported(row.id) } }) { Text("Accept", color = scheme.primary) }
-                    TextButton(onClick = { scope.launch { repo.ignoreImported(row.id) } }) { Text("Ignore", color = scheme.onSurfaceVariant) }
-                }
+            Text(
+                "$matchedRows matched · $pendingRows unrecorded",
+                color = if (pendingRows > 0) scheme.secondary else scheme.tertiary,
+                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+            )
+            repo.store.accounts.filter { acc -> statementRows.any { it.accountId == acc.id } }.forEach { acc ->
+                val rows = statementRows.filter { it.accountId == acc.id }
+                val open = rows.count { it.status == "pending" }
+                Text(
+                    "${acc.name}: ${rows.count { it.status == "matched" }} matched · $open open",
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                )
             }
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "Review and match the full list on Desk. Missing rows are still added manually on the phone.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
         }
         Spacer(Modifier.height(Space.l))
         SectionTitle("BILLS")

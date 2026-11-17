@@ -301,7 +301,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     /** Parse AEON/TNG PDF text and stage rows for review. Nothing enters totals yet. */
     suspend fun stageStatementText(text: String): Int = mutex.withLock {
-        if (blocked()) return@withLock 0
+        // Statement rows are sidecar evidence; this is allowed even when ledger writes are off.
         val drafts = parseStatementText(text)
         if (drafts.isEmpty()) return@withLock 0
         val stamp = nowIso()
@@ -326,27 +326,29 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         next.size
     }
 
-    /** Confirm one staged row. Transfers are recorded as moves and do not affect spending totals. */
-    suspend fun acceptImported(id: String, category: String = "other"): Boolean = mutex.withLock {
-        if (blocked()) return@withLock false
+    /** Link a staged statement row to a phone-written entry. Never creates or edits an entry. */
+    suspend fun matchImported(id: String, entryId: String): Boolean = mutex.withLock {
         val row = store.importedTxns.firstOrNull { it.id == id && it.status == "pending" } ?: return@withLock false
+        if (store.entries.none { it.id == entryId }) return@withLock false
         val stamp = nowIso()
-        if (row.transfer) {
-            store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "accepted", updated = stamp) else it }, updatedAt = stamp)
-        } else {
-            val entry = Entry(
-                id = newId(), date = row.date, type = if (row.direction == "in") "income" else "expense",
-                cat = category, amount = row.amount, note = row.description, updated = stamp, loggedAt = stamp,
-            )
-            store = store.copy(
-                entries = store.entries + entry,
-                importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "accepted", entryId = entry.id, updated = stamp) else it },
-                updatedAt = stamp,
-            )
-        }
+        store = store.copy(importedTxns = store.importedTxns.map {
+            if (it.id == id) it.copy(status = "matched", entryId = entryId, updated = stamp) else it
+        }, updatedAt = stamp)
         saveLocal(store)
         pushWithTombs(emptyList())
         true
+    }
+
+    private fun suggestStatementMatch(store: Store, d: DraftTxn): String? {
+        val target = runCatching { kotlinx.datetime.LocalDate.parse(d.date) }.getOrNull() ?: return null
+        return store.entries
+            .filter { it.type == (if (d.direction == "in") "income" else "expense") && it.amount == d.amountCents }
+            .mapNotNull { e ->
+                val day = runCatching { kotlinx.datetime.LocalDate.parse(e.date) }.getOrNull() ?: return@mapNotNull null
+                val diff = kotlin.math.abs((target.toEpochDays() - day.toEpochDays()).toInt())
+                if (diff <= 3) e to diff else null
+            }
+            .minByOrNull { it.second }?.first?.id
     }
 
     suspend fun ignoreImported(id: String): Boolean = mutex.withLock {

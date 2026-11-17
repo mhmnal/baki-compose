@@ -136,6 +136,7 @@ data class ImportedTxn(
     val source: String = "",
     val status: String = "pending",
     val entryId: String? = null,
+    val suggestedEntryId: String? = null,
     val updated: String = "",
 )
 

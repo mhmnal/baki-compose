@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.1 statement sidecar
+
+- Statements moved to a sidecar reconciliation layer; matching never creates ledger entries.
+- Import/review screen is Desk-only; phone only shows matched/open counts.
+- Auto-suggested matches by amount and date window; Match/Unignore actions only.
+- Accounts/transfers remain sidecar data; phone ledger remains phone-written.
+- Known gaps: no CSV, no duplicate detection, no account management, no separate statement API.
+- 214 tests, 0 failures.
+
 ## 0.45.0 statement import
 
 - AEON Bank and TNG eWallet PDF importers built from real statement layouts.

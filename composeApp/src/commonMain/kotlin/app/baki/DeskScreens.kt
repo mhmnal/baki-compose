@@ -1117,3 +1117,102 @@ internal fun DeskSettings(repo: BakiRepo) {
 }
 
 private fun shortDate(iso: String): String = if (iso.length >= 10) iso.substring(5).replace('-', '/') else iso
+
+// ---------------------------------------------------------------------------
+// Statement reconciliation (Desk-only writer; never touches ledger entries)
+// ---------------------------------------------------------------------------
+
+@Composable
+internal fun DeskStatements(repo: BakiRepo) {
+    val scheme = MaterialTheme.colorScheme
+    val store = repo.store
+    val scope = rememberCoroutineScope()
+    var message by remember { mutableStateOf<String?>(null) }
+    val pick = rememberStatementImport { files ->
+        if (files.isNullOrEmpty()) return@rememberStatementImport
+        scope.launch {
+            var staged = 0
+            files.forEach { bytes ->
+                val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { PdfText.extract(bytes) }
+                if (text != null) staged += repo.stageStatementText(text)
+            }
+            message = if (staged == 0) "No AEON or TNG rows found." else "Staged $staged rows for review."
+        }
+    }
+    val pending = store.importedTxns.filter { it.status == "pending" }
+    val matched = store.importedTxns.count { it.status == "matched" }
+    val accounts = store.accounts.associateBy { it.id }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Space.xl, vertical = Space.l)) {
+        Text("STATEMENTS", color = scheme.onSurfaceVariant, letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(Space.xs))
+        Text("Evidence, not a second ledger", color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(Space.s))
+        Text(
+            "Import AEON/TNG PDFs here. Matching links a statement row to a phone-written entry; it never creates or edits an entry. The phone only shows the reconciliation summary.",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(Space.l))
+        DeskCard(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("${store.importedTxns.size} statement rows", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                    Text("$matched matched · ${pending.size} open", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                }
+                FilledTonalButton(onClick = { pick() }) { Text("Import AEON / TNG PDFs") }
+            }
+            message?.let {
+                Spacer(Modifier.height(Space.s))
+                Text(it, color = if (it.startsWith("Staged")) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium)
+            }
+            Spacer(Modifier.height(Space.s))
+            Text(
+                "Imports are sidecar data. Ledger entries remain phone-written; there is no Accept-to-ledger action.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        Spacer(Modifier.height(Space.l))
+        if (pending.isEmpty()) {
+            DeskEmpty(
+                if (store.importedTxns.isEmpty()) "No statements imported" else "Everything reviewed",
+                if (store.importedTxns.isEmpty()) "Import a monthly AEON statement or a TNG date-range PDF to start comparing." else "No open statement rows remain. Unmatched phone entries can still be reviewed in the ledger.",
+            )
+        } else {
+            Text("OPEN ROWS (${pending.size})", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            Spacer(Modifier.height(Space.s))
+            pending.take(250).forEach { row ->
+                val account = accounts[row.accountId]?.name ?: "Account"
+                val suggestion = row.suggestedEntryId?.let { id -> store.entries.firstOrNull { it.id == id } }
+                DeskCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "${row.date} · ${account} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.transfer) " · TRANSFER" else ""}",
+                                color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+                            )
+                            Text(row.description.take(140), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                            if (suggestion != null) {
+                                Text(
+                                    "Suggested: ${suggestion.date} · ${suggestion.note.ifBlank { categoryLabel(store, suggestion.cat) }} · RM ${rm(suggestion.amount / 100.0)}",
+                                    color = scheme.tertiary, style = MaterialTheme.typography.bodySmall,
+                                )
+                            } else if (!row.transfer) {
+                                Text("Unrecorded on phone — add it manually on the phone, then match later.", color = scheme.secondary, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        if (suggestion != null) {
+                            TextButton(onClick = { scope.launch { repo.matchImported(row.id, suggestion.id) } }) { Text("Match", color = scheme.primary) }
+                        }
+                        TextButton(onClick = { scope.launch { repo.ignoreImported(row.id) } }) { Text("Ignore", color = scheme.onSurfaceVariant) }
+                    }
+                }
+                Spacer(Modifier.height(Space.xs))
+            }
+            if (pending.size > 250) {
+                Spacer(Modifier.height(Space.s))
+                Text("Showing the first 250 of ${pending.size} open rows. Match or ignore these to reveal the rest.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Spacer(Modifier.height(80.dp))
+    }
+}

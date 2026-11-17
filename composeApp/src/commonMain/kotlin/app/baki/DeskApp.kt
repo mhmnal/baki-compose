@@ -52,6 +52,7 @@ internal enum class DeskScreen(val label: String, val subtitle: String, val icon
     ROUTES("Routes", "the drives behind the numbers", BakiIcons.Route),
     COMPARE("Compare", "two periods, side by side", BakiIcons.Insights),
     YEAR("Year", "the long view", BakiIcons.Doc),
+    STATEMENTS("Statements", "evidence, not a second ledger", BakiIcons.Receipt),
     SETTINGS("Settings", "connection and appearance", BakiIcons.More),
 }
 
@@ -91,6 +92,7 @@ fun DeskApp(repo: BakiRepo) {
                     DeskScreen.ROUTES -> DeskRoutes(repo, month)
                     DeskScreen.COMPARE -> DeskCompare(repo, month)
                     DeskScreen.YEAR -> DeskYear(repo, month)
+                    DeskScreen.STATEMENTS -> DeskStatements(repo)
                     DeskScreen.SETTINGS -> DeskSettings(repo)
                 }
             }
