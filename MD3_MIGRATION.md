@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.2 smaller hero currency
+
+- The hero RM mark is reduced to a quiet 11% mark, freeing more width for the digits.
+- 209 tests, 0 failures.
+
 ## 0.44.1 hero currency
 
 - Small RM now sits inside the Today hero, before the number; negative heroes tuck it beneath the drawn minus on the same baseline.

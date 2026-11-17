@@ -676,9 +676,9 @@ private fun HeroAmount(
     // A negative hero keeps the drawn minus as the sign and tucks RM underneath it, so the
     // number itself keeps the same left edge as a positive value.
     val currencyStyle = style.copy(
-        fontSize = (BakiHeroFontSize.value * 0.18f).sp,
+        fontSize = (BakiHeroFontSize.value * 0.11f).sp,
         letterSpacing = 0.sp,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
     )
     val cardHeight = if (largeText) 175.dp else 206.dp
     val measurer = rememberTextMeasurer()
@@ -701,7 +701,7 @@ private fun HeroAmount(
                 measurer.measure(it, decimalStyle, maxLines = 1, softWrap = false)
             }
             val currency = measurer.measure("RM", currencyStyle, maxLines = 1, softWrap = false)
-            val currencyGap = 4.dp.toPx()
+            val currencyGap = 6.dp.toPx()
             val signWidth = if (negative) (size.width * 0.12f).coerceIn(16.dp.toPx(), 34.dp.toPx()) else 0f
             // Positive: reserve room for RM before the number. Negative: RM sits under the
             // drawn minus, so the number keeps the space after the sign instead.
@@ -730,7 +730,7 @@ private fun HeroAmount(
                 edge + ((signWidth - currency.size.width) / 2f).coerceAtLeast(0f)
             } else edge
             val decTop = dec?.let { intBaseline - it.getLineBaseline(0) - int.size.height * 0.08f } ?: 0f
-            drawText(currency, color = ink.copy(alpha = 0.72f), topLeft = androidx.compose.ui.geometry.Offset(currencyLeft, currencyTop))
+            drawText(currency, color = ink.copy(alpha = 0.58f), topLeft = androidx.compose.ui.geometry.Offset(currencyLeft, currencyTop))
             if (negative) {
                 drawRoundRect(
                     color = ink,
