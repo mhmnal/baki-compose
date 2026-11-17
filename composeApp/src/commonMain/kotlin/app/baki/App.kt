@@ -1964,7 +1964,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                         "${row.date} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}",
                         color = scheme.onSurface, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"), modifier = Modifier.weight(1f),
                     )
-                    TextButton(onClick = { prefillStatement = row }, contentPadding = PaddingValues(0.dp)) { Text("Add", color = scheme.primary) }
+                    TextButton(
+                        onClick = { prefillStatement = row },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.testTag("statement-prefill"),
+                    ) { Text("Add", color = scheme.primary) }
                 }
             }
             Spacer(Modifier.height(Space.xs))

@@ -132,6 +132,7 @@ class MainActivity : ComponentActivity() {
         val current = runCatching { loadLocal() }.getOrNull() ?: return
         if (current.importedTxns.isNotEmpty()) return
         val stamp = nowIso()
+        runCatching { saveConfig(loadConfig().copy(allowWrites = true)) }
         val aeon = Account(id = "test-aeon", name = "AEON Bank — Savings Account-i", kind = "bank")
         val tng = Account(id = "test-tng", name = "TNG eWallet", kind = "ewallet")
         val batch = StatementBatch(

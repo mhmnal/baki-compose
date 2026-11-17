@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.45.5 test-complete
+
+- Server stamps deletion audit on `/api/statements` batch delete.
+- Real API round-trip test covers push/pull/delete/audit.
+- Pair suggestion Confirm/Reject covered by tests.
+- Android instrumentation covers prefilled statement save and summary.
+- 219 tests, 0 failures.
+
 ## 0.45.4 pairing/tests
 
 - Transfer pairs now require Confirm/Reject; auto-pairing removed.
