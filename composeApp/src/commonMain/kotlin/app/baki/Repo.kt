@@ -309,8 +309,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     private fun statementBook() = StatementBook(store.accounts, store.statementBatches, store.importedTxns, store.monthCloses)
 
-    private suspend fun pushStatementsNow(deletedBatchIds: List<String> = emptyList()) {
-        val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds) }.getOrNull() ?: return
+    private suspend fun pushStatementsNow(
+        deletedBatchIds: List<String> = emptyList(),
+        removedMonths: List<String> = emptyList(),
+    ) {
+        val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds, removedMonths) }.getOrNull() ?: return
         store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
         saveLocal(store)
     }
@@ -455,7 +458,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun reopenMonth(month: String): Boolean = mutex.withLock {
         store = store.copy(monthCloses = store.monthCloses - month, updatedAt = nowIso())
         saveLocal(store)
-        pushStatementsNow()
+        pushStatementsNow(removedMonths = listOf(month))
         true
     }
 

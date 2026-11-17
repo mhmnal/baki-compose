@@ -101,11 +101,15 @@ class TrackerClient(
         return BakiJson.decodeFromString<StatementBook>(res.bodyAsText())
     }
 
-    suspend fun pushStatements(book: StatementBook, deletedBatchIds: List<String> = emptyList()): StatementBook {
+    suspend fun pushStatements(
+        book: StatementBook,
+        deletedBatchIds: List<String> = emptyList(),
+        removedMonths: List<String> = emptyList(),
+    ): StatementBook {
         val res = http.post("$baseUrl/api/statements") {
             auth()
             contentType(ContentType.Application.Json)
-            setBody(BakiJson.encodeToString(StatementPush.serializer(), StatementPush(book.accounts, book.batches, book.txns, book.monthCloses, deletedBatchIds)))
+            setBody(BakiJson.encodeToString(StatementPush.serializer(), StatementPush(book.accounts, book.batches, book.txns, book.monthCloses, removedMonths, deletedBatchIds)))
         }
         if (res.status != HttpStatusCode.OK) throw IllegalStateException("statement push failed: ${res.status}")
         val value = BakiJson.decodeFromString<StatementBook>(res.bodyAsText())
@@ -155,5 +159,6 @@ private data class StatementPush(
     val batches: List<StatementBatch> = emptyList(),
     val txns: List<ImportedTxn> = emptyList(),
     val monthCloses: Map<String, String> = emptyMap(),
+    val removedMonths: List<String> = emptyList(),
     val deletedBatchIds: List<String> = emptyList(),
 )

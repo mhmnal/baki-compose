@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.46.0 month close
+
+- Close Month screen with statement, bills, payout and reconciliation checks.
+- Month close stamp syncs through the statement sidecar; Desk writes it, phone reads it.
+- Reopening removes the server stamp via removedMonths tombstones.
+- Server backfills missing statement batches from row batch ids.
+- Phone prefill now auto-matches the statement row.
+- 226 tests, 0 failures; Android lane passed.
+
 ## 0.45.9 month close
 
 - Close Month screen with statement, bills, payout and reconciliation checks.
