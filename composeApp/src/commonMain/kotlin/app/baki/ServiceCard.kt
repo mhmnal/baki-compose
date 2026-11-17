@@ -33,8 +33,8 @@ import kotlinx.datetime.LocalDate
 @Composable
 fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
-    val info = remember(repo.store, repo.config.serviceOdoBase, repo.config.serviceOdoBaseOn) {
-        serviceInfo(repo.store, repo.config.serviceOdoBase, repo.config.serviceOdoBaseOn)
+    val info = remember(repo.store) {
+        serviceInfo(repo.store, repo.store.settings.serviceOdoBase, repo.store.settings.serviceOdoBaseOn)
     }
     val last = info.last
 
@@ -86,9 +86,9 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> 
             }
             if (info.overdue) Text("Target reached or date passed", color = scheme.error, style = MaterialTheme.typography.bodyMedium )
         }
-        if (repo.config.serviceOdoBase != null) {
+        if (repo.store.settings.serviceOdoBase != null) {
             Text(
-                "Baseline ${repo.config.serviceOdoBase} km · ${repo.config.serviceOdoBaseOn ?: "today"}",
+                "Baseline ${repo.store.settings.serviceOdoBase} km · ${repo.store.settings.serviceOdoBaseOn ?: "today"}",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
             )
         }

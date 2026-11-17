@@ -35,9 +35,10 @@ data class ClientConfig(
     /** Last time a backup file was merged back into this device. */
     val lastRestoreAt: Long? = null,
     val lastRestoreAdded: Int = 0,
-    /** Device-local service odometer baseline, used after a car/odometer reset. */
-    val serviceOdoBase: Int? = null,
-    val serviceOdoBaseOn: String? = null,
+    /** Desk Ledger preferences, device-local. */
+    val deskQuery: String = "",
+    val deskCategory: String = "all",
+    val deskSort: String = "Newest",
     /**
      * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
      * launch after this field was introduced reconciles any pre-existing local-only edits.

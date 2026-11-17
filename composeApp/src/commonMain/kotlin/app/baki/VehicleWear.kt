@@ -12,7 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +69,17 @@ fun odometerWear(store: Store): OdometerWear {
         anchors += Anchor(if (end > start) end else start, sh.date, b)
     }
     val noon = Shift(id = "fuel-anchor", date = "", start = "12:00")
+    for (r in store.odometerReadings) {
+        if (r.km <= 0) continue
+        val at = shiftStartMs(noon.copy(date = r.date))
+        if (at > 0L) anchors += Anchor(at, r.date, r.km.toDouble())
+    }
+    val base = store.settings.serviceOdoBase
+    val baseOn = store.settings.serviceOdoBaseOn
+    if (base != null && base > 0 && baseOn != null) {
+        val at = shiftStartMs(noon.copy(date = baseOn))
+        if (at > 0L) anchors += Anchor(at, baseOn, base.toDouble())
+    }
     for (e in store.entries) {
         val km = e.odo ?: continue
         if (!isFuelCat(e.cat) || km <= 0) continue
@@ -141,7 +155,7 @@ fun odometerWear(store: Store): OdometerWear {
 }
 
 @Composable
-fun VehicleWearCard(store: Store, modifier: Modifier = Modifier) {
+fun VehicleWearCard(store: Store, modifier: Modifier = Modifier, onAddReading: (() -> Unit)? = null) {
     val scheme = MaterialTheme.colorScheme
     val wear = remember(store) { odometerWear(store) }
     Surface(
@@ -168,6 +182,11 @@ fun VehicleWearCard(store: Store, modifier: Modifier = Modifier) {
                     color = scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                 )
+                if (onAddReading != null) {
+                    androidx.compose.material3.TextButton(onClick = onAddReading, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                        Text("Add odometer reading", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
                 return@Column
             }
             Text(
@@ -190,12 +209,25 @@ fun VehicleWearCard(store: Store, modifier: Modifier = Modifier) {
                 color = scheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall,
             )
+            val perKm = if (wear.coveredKm > 0.01) wear.totalWear / wear.coveredKm else 0.0
+            val workPerKm = if (wear.workKm > 0.01) wear.workWear / wear.workKm else 0.0
+            val personalPerKm = if (wear.personalKm > 0.01) wear.personalWear / wear.personalKm else 0.0
+            Text(
+                "RM ${"%.2f".format(perKm)}/km total · work ${"%.2f".format(workPerKm)} · personal ${"%.2f".format(personalPerKm)}",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+            )
             Text(
                 "Coverage ${wear.firstDate ?: "?"} → ${wear.lastDate ?: "?"}" +
                     if (wear.unknownIntervals > 0) " · ${wear.unknownIntervals} reading gap(s)" else "",
                 color = if (wear.unknownIntervals > 0) scheme.secondary else scheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall,
             )
+            if (onAddReading != null) {
+                androidx.compose.material3.TextButton(onClick = onAddReading, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                    Text("Add odometer reading", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                }
+            }
         }
     }
 }
@@ -213,4 +245,50 @@ private fun WearStat(
         Text(km, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
         Text(wear, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"))
     }
+}
+
+
+@Composable
+fun ManualOdometerDialog(
+    onSave: (String, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    var date by remember { mutableStateOf(todayIso()) }
+    var km by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = scheme.surfaceContainerHigh,
+        title = { BakiDialogHeader("Add odometer reading", "one anchor, no daily habit", "◎") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                Text(
+                    "This is optional. It improves total and personal wear; fuel and shift odometers already count automatically.",
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it.filter { c -> c.isDigit() || c == '-' }.take(10) },
+                    label = { Text("Date") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = km,
+                    onValueChange = { km = it.filter { c -> c.isDigit() }.take(9) },
+                    label = { Text("Dashboard km") }, singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = (km.toIntOrNull() ?: 0) > 0 && date.length == 10,
+                onClick = { onSave(date, km.toIntOrNull() ?: 0) },
+            ) { Text("Save reading", color = scheme.primary) }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

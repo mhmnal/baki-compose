@@ -1649,6 +1649,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var diagnosticsOpen by remember { mutableStateOf(false) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var serviceBaselineOpen by remember { mutableStateOf(false) }
+    var manualOdometerOpen by remember { mutableStateOf(false) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
@@ -1730,7 +1731,18 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.l))
         SectionTitle("VEHICLE WEAR")
         Spacer(Modifier.height(Space.s))
-        VehicleWearCard(repo.store)
+        VehicleWearCard(repo.store, onAddReading = { manualOdometerOpen = true })
+        if (manualOdometerOpen) {
+            ManualOdometerDialog(
+                onSave = { date, km ->
+                    manualOdometerOpen = false
+                    scope.launch {
+                        if (repo.addOdometerReading(date, km)) ActionFeedback.show("Odometer reading saved")
+                    }
+                },
+                onDismiss = { manualOdometerOpen = false },
+            )
+        }
         if (serviceTargetOpen) {
             val info = remember(repo.store) { serviceInfo(repo.store) }
             ServiceTargetDialog(
@@ -1745,11 +1757,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
         if (serviceBaselineOpen) {
             ServiceBaselineDialog(
-                initialKm = repo.config.serviceOdoBase,
-                initialDate = repo.config.serviceOdoBaseOn,
+                initialKm = repo.store.settings.serviceOdoBase,
+                initialDate = repo.store.settings.serviceOdoBaseOn,
                 onSave = { km, date ->
                     serviceBaselineOpen = false
-                    repo.setServiceBaseline(km, date)
+                    scope.launch { repo.setServiceBaseline(km, date) }
                 },
                 onDismiss = { serviceBaselineOpen = false },
             )
@@ -2389,6 +2401,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         SectionTitle("ABOUT & DEVELOPER")
         Spacer(Modifier.height(Space.s))
         Text("Baki $APP_VERSION · the ledger stays yours.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        val healthWear = remember(repo.store) { odometerWear(repo.store) }
+        Text(
+            "Odometer coverage: ${healthWear.anchors} anchors / ${healthWear.intervals} intervals · last backup ${repo.config.lastBackupAt?.let { ago(nowMillis(), it) } ?: "never"} · last sync ${repo.lastSyncAt?.let { ago(nowMillis(), it) } ?: "never"}",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+        )
         TextButton(onClick = { diagnosticsOpen = !diagnosticsOpen }, contentPadding = PaddingValues(0.dp)) {
             Text(if (diagnosticsOpen) "Hide diagnostics" else "Diagnostics & support", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }

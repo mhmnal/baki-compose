@@ -337,9 +337,10 @@ private fun DayBars(days: List<Pair<String, Totals>>) {
 internal fun DeskLedger(repo: BakiRepo, month: String) {
     val store = repo.store
     val scheme = MaterialTheme.colorScheme
-    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
-    var cat by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
-    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("Newest") }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(repo.config.deskQuery) }
+    var cat by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(repo.config.deskCategory) }
+    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(repo.config.deskSort) }
+    androidx.compose.runtime.LaunchedEffect(query, cat, sort) { repo.setDeskLedgerPrefs(query, cat, sort) }
     val cats = remember(store) { store.settings.cats.catsOut }
     val monthEntries = remember(store, month) { store.entries.filter { it.date.startsWith(month) } }
     val filtered = monthEntries
@@ -748,6 +749,16 @@ internal fun DeskYear(repo: BakiRepo, month: String) {
                     }
                     FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }, modifier = Modifier.fillMaxWidth()) {
                         Text("Print / PDF", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                        FilledTonalButton(
+                            onClick = { PlatformEffects.exportFile("baki-$year.csv", "text/csv", annualCsv(store, year)) },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Annual CSV", style = MaterialTheme.typography.labelSmall) }
+                        FilledTonalButton(
+                            onClick = { PlatformEffects.printStatement(annualSummaryHtml(store, year)) },
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Annual PDF", style = MaterialTheme.typography.labelSmall) }
                     }
                 }
             }

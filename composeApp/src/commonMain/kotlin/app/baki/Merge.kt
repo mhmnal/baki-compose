@@ -56,6 +56,11 @@ fun mergeStores(
         val cur = statementMarks[week]
         if (cur == null || mark.updated >= cur.updated) statementMarks[week] = mark
     }
+    val odometerReadings = LinkedHashMap<String, OdometerReading>()
+    for (r in a.odometerReadings + b.odometerReadings) {
+        val cur = odometerReadings[r.id]
+        if (cur == null || r.updated >= cur.updated) odometerReadings[r.id] = r
+    }
     val reserveTxns = LinkedHashMap<String, ReserveTxn>()
     for (tx in a.reserveTxns + b.reserveTxns) {
         if (tx.id in deadIds) continue
@@ -92,6 +97,8 @@ fun mergeStores(
             // configured envelope/reserve just because the remote payload predates them.
             envelopeCarry = b.settings.envelopeCarry || a.settings.envelopeCarry,
             reserveTargets = a.settings.reserveTargets + b.settings.reserveTargets,
+            serviceOdoBase = b.settings.serviceOdoBase ?: a.settings.serviceOdoBase,
+            serviceOdoBaseOn = b.settings.serviceOdoBaseOn ?: a.settings.serviceOdoBaseOn,
         ),
         // bills merge by id (newest wins); a payment is unique per bill+period
         bills = (a.bills + b.bills)
@@ -105,6 +112,7 @@ fun mergeStores(
         statementMarks = statementMarks,
         envelopeMoves = envelopeMoves,
         reserveTxns = reserveTxns.values.toList(),
+        odometerReadings = odometerReadings.values.toList(),
         // keep the union, so a removal is never forgotten by a later merge
         tomb = Tomb(
             ids = (a.tomb.ids + b.tomb.ids).distinct(),

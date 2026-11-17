@@ -167,3 +167,44 @@ fun decryptBackup(text: String, passphrase: String): String? {
         RouteCrypto.open(passphrase, sealed).decodeToString()
     }.getOrNull()
 }
+
+/** Plain annual ledger CSV. No tax classification: tax handling lives outside Baki. */
+fun annualCsv(store: Store, year: Int): String {
+    val y = year.toString()
+    val sb = StringBuilder()
+    sb.appendLine("kind,date,time,category,note,amount_rm,hours,km,net_rm")
+    for (e in store.entries.filter { it.date.startsWith(y) }.sortedBy { it.date }) {
+        val sign = if (e.type == "income") "" else "-"
+        sb.appendLine(listOf("entry", e.date, "", e.cat, e.note.csv(), "$sign${e.amount / 100.0}", "", "", "").joinToString(","))
+    }
+    for (s in store.shifts.filter { it.date.startsWith(y) }.sortedBy { it.date }) {
+        val m = shiftMetrics(s, store.settings.profit)
+        sb.appendLine(
+            listOf("shift", s.date, s.start, "shift", s.note.csv(), s.gross / 100.0, s.hours, "%.1f".format(m.km), "%.2f".format(m.net)).joinToString(","),
+        )
+    }
+    return sb.toString()
+}
+
+/** Clean printable annual summary; deliberately no tax calculations or deductible claims. */
+fun annualSummaryHtml(store: Store, year: Int): String {
+    val y = year.toString()
+    val months = (1..12).map { "%04d-%02d".format(year, it) to monthTotals(store, "%04d-%02d".format(year, it)) }
+    val total = months.sumOf { it.second.net }
+    val shifts = store.shifts.filter { it.date.startsWith(y) }
+    val km = shifts.sumOf { shiftKm(it, store.settings.profit) }
+    val hours = shifts.sumOf { it.hours }
+    val rows = months.joinToString("") { (m, t) ->
+        "<tr><td>${m}</td><td class=n>RM ${rmRaw(t.income)}</td><td class=n>RM ${rmRaw(t.expense)}</td><td class=n>RM ${rmRaw(t.net)}</td></tr>"
+    }
+    return """<!doctype html><meta charset=utf-8><title>Baki annual summary $year</title>
+<style>body{font:13px/1.5 -apple-system,Segoe UI,sans-serif;max-width:760px;margin:40px auto;padding:0 24px;color:#1b2417}
+h1{font-size:22px;margin:0}.sub{color:#5c6657}.hero{font-size:40px;font-weight:800;margin:12px 0}
+table{width:100%;border-collapse:collapse;margin:16px 0}th,td{padding:6px 4px;border-bottom:1px solid #e2ddd0}th{text-align:left;font-size:10px;letter-spacing:.08em;color:#5c6657}.n{text-align:right}
+@media print{body{margin:0}@page{size:A4;margin:18mm}}</style>
+<h1>Baki annual summary $year</h1><div class=sub>Shift logbook and spending. Tax handling is external.</div>
+<div class=hero>RM ${rmRaw(total)}</div>
+<div class=sub>${months.sumOf { it.second.entryCount }} entries · ${shifts.size} shifts · ${"%.0f".format(km)} km · ${"%.1f".format(hours)}h</div>
+<table><thead><tr><th>Month</th><th class=n>In</th><th class=n>Out</th><th class=n>Net</th></tr></thead><tbody>$rows</tbody></table>
+<div class=sub>Generated ${todayIso()}. This is a record summary, not a tax return.</div>"""
+}

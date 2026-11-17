@@ -978,11 +978,36 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(emptyList())
     }
 
-    fun setServiceBaseline(km: Int?, date: String?) {
-        config = config.copy(serviceOdoBase = km?.takeIf { it > 0 }, serviceOdoBaseOn = date)
+    fun setDeskLedgerPrefs(query: String, category: String, sort: String) {
+        if (config.deskQuery == query && config.deskCategory == category && config.deskSort == sort) return
+        config = config.copy(deskQuery = query, deskCategory = category, deskSort = sort)
         saveConfig(config)
+    }
+
+    suspend fun setServiceBaseline(km: Int?, date: String?) = mutex.withLock {
+        if (blocked()) return@withLock
+        store = store.copy(
+            settings = store.settings.copy(
+                serviceOdoBase = km?.takeIf { it > 0 },
+                serviceOdoBaseOn = date,
+            ),
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
         PlatformEffects.tapFeedback()
         ActionFeedback.show(if (km != null) "Service baseline set" else "Service baseline cleared")
+    }
+
+    /** Add a manual dashboard reading; fuel and shift odometers remain automatic anchors. */
+    suspend fun addOdometerReading(date: String, km: Int, note: String = ""): Boolean = mutex.withLock {
+        if (blocked() || km <= 0 || !isValidIsoDate(date)) return@withLock false
+        val stamp = nowIso()
+        val reading = OdometerReading(id = newId("odo"), date = date, km = km, note = note.trim().take(80), updated = stamp)
+        store = store.copy(odometerReadings = store.odometerReadings + reading, updatedAt = stamp)
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
     }
 
     /** Set or clear (limit <= 0) a monthly cap for one category. */

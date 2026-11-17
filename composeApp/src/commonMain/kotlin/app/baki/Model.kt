@@ -117,6 +117,15 @@ data class Shift(
     val active: Boolean = true,
 )
 
+@Serializable
+data class OdometerReading(
+    val id: String,
+    val date: String,
+    val km: Int,
+    val note: String = "",
+    val updated: String = "",
+)
+
 @Serializable data class Cat(val id: String, val name: String, val icon: String)
 
 @Serializable
@@ -161,6 +170,9 @@ data class Settings(
     val envelopeCarry: Boolean = false,
     /** Explicit reserve target in RM, keyed by fuel/wear. Empty = one-month default. */
     val reserveTargets: Map<String, Double> = emptyMap(),
+    /** Service odometer baseline for a new car / reset; synced like the rest of the ledger. */
+    val serviceOdoBase: Int? = null,
+    val serviceOdoBaseOn: String? = null,
 )
 
 @Serializable
@@ -209,6 +221,8 @@ data class Store(
     val envelopeMoves: Map<String, Map<String, Double>> = emptyMap(),
     /** Virtual reserve top-ups and withdrawals. */
     val reserveTxns: List<ReserveTxn> = emptyList(),
+    /** Manual dashboard readings; fuel/shift odometers are derived automatically. */
+    val odometerReadings: List<OdometerReading> = emptyList(),
 )
 
 val BakiJson = Json {

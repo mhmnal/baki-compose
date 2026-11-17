@@ -731,6 +731,16 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.6 final data pass
+
+- Added synced manual odometer readings and service baseline fields, with server merge support.
+- Added passive Add odometer reading on the Vehicle card; removed the post-fuel modal.
+- Added annual CSV and printable annual summary without tax calculations.
+- Persisted Desk Ledger search, category and sort preferences.
+- Added total/work/personal wear per km and a data-health line.
+- Restarted the tracker server with the new schema.
+- 212 tests, 0 failures.
+
 ## 0.44.5 pendings
 
 - Removed the Wednesday statement reminder, notification permission request and WorkManager scheduling entirely.
