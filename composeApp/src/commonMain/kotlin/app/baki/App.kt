@@ -110,10 +110,6 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
             PlatformEffects.notice("Imported week of ${parsed.weekStart}")
         }
     }
-    // keep the Wednesday nudge in sync with the device setting
-    LaunchedEffect(repo.config.statementReminder) {
-        PlatformEffects.setStatementReminder(repo.config.statementReminder)
-    }
     BakiPrivacy.discreet = repo.config.discreet
     BakiTheme(
         mode = repo.config.themeMode,
@@ -1650,9 +1646,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var unlinkTarget by remember { mutableStateOf<Pair<Bill, String>?>(null) }
     var historyOpen by remember { mutableStateOf(false) }
     var statementHistoryOpen by remember { mutableStateOf(false) }
-    var notifRefresh by remember { mutableStateOf(0) }
     var diagnosticsOpen by remember { mutableStateOf(false) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
+    var serviceBaselineOpen by remember { mutableStateOf(false) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
@@ -1661,6 +1657,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
     var encryptedRestore by remember { mutableStateOf<String?>(null) }
     val moreScroll = rememberScrollState()
     val scope = rememberCoroutineScope()
+    val undoSnackbar = remember { SnackbarHostState() }
     LaunchedEffect(moreTab) { moreScroll.scrollTo(0) }
     LaunchedEffect(routeSaved) { if (routeSaved) { delay(1800); routeSaved = false } }
     // More is a settings page: keep the tabs reachable while its sections scroll.
@@ -1697,6 +1694,22 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         }
     }
 
+    fun autoBillPayment(bill: Bill, period: String): Boolean {
+        val p = Bills.payment(repo.store, bill, period) ?: return false
+        return repo.store.entries.firstOrNull { it.id == p.entryId }?.note == "${bill.name} · $period"
+    }
+
+    fun offerBillUndo(message: String, items: List<Triple<String, String, Boolean>>) {
+        if (items.isEmpty()) return
+        scope.launch {
+            val result = undoSnackbar.showSnackbar(message, actionLabel = "Undo", duration = SnackbarDuration.Long)
+            if (result == SnackbarResult.ActionPerformed) {
+                items.forEach { (billId, period, auto) -> repo.undoBillPayment(billId, period, auto) }
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
     Column(
         Modifier.fillMaxSize().padding(horizontal = Space.l),
     ) {
@@ -1713,7 +1726,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.l))
         SectionTitle("SERVICE")
         Spacer(Modifier.height(Space.s))
-        ServiceCard(repo, onSetTarget = { serviceTargetOpen = true })
+        ServiceCard(repo, onSetTarget = { serviceTargetOpen = true }, onResetBaseline = { serviceBaselineOpen = true })
         Spacer(Modifier.height(Space.l))
         SectionTitle("VEHICLE WEAR")
         Spacer(Modifier.height(Space.s))
@@ -1728,6 +1741,17 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     serviceTargetOpen = false
                     scope.launch { repo.setServiceTarget(km, date) }
                 },
+            )
+        }
+        if (serviceBaselineOpen) {
+            ServiceBaselineDialog(
+                initialKm = repo.config.serviceOdoBase,
+                initialDate = repo.config.serviceOdoBaseOn,
+                onSave = { km, date ->
+                    serviceBaselineOpen = false
+                    repo.setServiceBaseline(km, date)
+                },
+                onDismiss = { serviceBaselineOpen = false },
             )
         }
         }
@@ -1951,7 +1975,16 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                             FilledTonalButton(
-                                onClick = { scope.launch { repo.payBill(bill.id, period) } },
+                                onClick = {
+                                    scope.launch {
+                                        if (repo.payBill(bill.id, period)) {
+                                            offerBillUndo(
+                                                "Marked ${bill.name} paid",
+                                                listOf(Triple(bill.id, period, autoBillPayment(bill, period))),
+                                            )
+                                        }
+                                    }
+                                },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = scheme.primary,
@@ -1968,7 +2001,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             }
             Spacer(Modifier.height(Space.s))
             if (repo.store.bills.isNotEmpty()) FilledTonalButton(
-                onClick = { scope.launch { repo.settleBills(target) } },
+                onClick = {
+                    scope.launch {
+                        val pending = Bills.unpaid(repo.store, target).map { it.id to Bills.periodOf(it, target) }
+                        val n = repo.settleBills(target)
+                        if (n > 0) offerBillUndo("Settled $n bill${if (n == 1) "" else "s"}", pending.map { Triple(it.first, it.second, true) })
+                    }
+                },
                 enabled = Bills.unpaid(repo.store, target).isNotEmpty(),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = scheme.primaryContainer,
@@ -1989,7 +2028,14 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     Text("${bill.name} covered", color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     FilledTonalButton(
-                        onClick = { scope.launch { repo.payBill(bill.id, Bills.periodOf(bill, current)) } },
+                        onClick = {
+                            scope.launch {
+                                val period = Bills.periodOf(bill, current)
+                                if (repo.payBill(bill.id, period)) {
+                                    offerBillUndo("Marked ${bill.name} paid", listOf(Triple(bill.id, period, autoBillPayment(bill, period))))
+                                }
+                            }
+                        },
                         enabled = net >= bill.amount,
                     ) { Text("Pay ${bill.name} · RM ${rm(bill.amount / 100.0)}") }
                 }
@@ -2112,9 +2158,9 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         SectionTitle("WEEKLY STATEMENT")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
-            Text("Import the Wednesday PDF", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            Text("Import the weekly PDF", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             Text(
-                "Import the Wednesday PDF to reconcile income and insurance.",
+                "Import the weekly PDF to reconcile income and insurance.",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(Space.m))
@@ -2157,36 +2203,6 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             importMsg?.let {
                 Spacer(Modifier.height(Space.s))
                 Text(it, color = if (it.startsWith("Imported")) scheme.tertiary else scheme.error, style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Spacer(Modifier.height(Space.m))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Wednesday reminder", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
-                    Text("10:00 nudge to import last week's PDF", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                }
-                Switch(
-                    checked = repo.config.statementReminder,
-                    onCheckedChange = { repo.setStatementReminder(it) },
-                )
-            }
-            val notificationsBlocked = remember(repo.config.statementReminder, notifRefresh) {
-                repo.config.statementReminder && PlatformEffects.notificationsBlocked()
-            }
-            if (notificationsBlocked) {
-                Spacer(Modifier.height(Space.s))
-                Text(
-                    "Notifications are blocked, so the Wednesday reminder cannot fire.",
-                    color = scheme.error, style = MaterialTheme.typography.bodyMedium,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                    TextButton(onClick = { PlatformEffects.openNotificationSettings() }, contentPadding = PaddingValues(0.dp)) {
-                        Text("Open settings", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-                    }
-                    TextButton(onClick = { notifRefresh++ }, contentPadding = PaddingValues(0.dp)) {
-                        Text("Check again", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-                    }
-                }
             }
 
             val latest = repo.store.statements.values.maxByOrNull { it.weekStart }
@@ -2563,6 +2579,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         // keep the last card of every tab clear of the bottom bar / overlay
         Spacer(Modifier.height(140.dp))
         }
+    }
+    SnackbarHost(undoSnackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
     }
 
     if (statementHistoryOpen) {

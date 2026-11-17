@@ -21,9 +21,6 @@ private const val ACTION_OPEN_QR = "app.baki.OPEN_QR"
 
 class MainActivity : ComponentActivity() {
 
-    private val askNotifications =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* optional */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -32,7 +29,6 @@ class MainActivity : ComponentActivity() {
         installQrShortcut()
         drainIntent(intent)
         if (isFinishing) return
-        askNotificationPermission()
         askLocationPermission()
 
         setContent {
@@ -137,10 +133,4 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun askNotificationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        if (!granted) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
 }

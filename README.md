@@ -11,7 +11,7 @@ Two surfaces, one ledger:
 | Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.44.4** (`versionCode` 199+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.44.5** (`versionCode` 200+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
 Test suite: **212 JVM tests** (`:composeApp:desktopTest`).
@@ -35,7 +35,7 @@ Test suite: **212 JVM tests** (`:composeApp:desktopTest`).
 **Income proof**
 - import the weekly Grab statement PDF (Bahasa Malaysia or English labels): week, income, deductions,
   fare breakdown, insurance count, consistency check
-- bulk import, share a PDF straight into the app, Wednesday 10:00 reminder
+- bulk import and share a PDF straight into the app
 - reconcile statement income and insurance count against what was logged
 - per-shift payout reconciliation: recorded vs received vs still due, with visible Add payout/Edit actions
 - portable backup with last-backup health, merge-only restore confirmation, merge-conflict reporting, and optional passphrase encryption
@@ -71,7 +71,7 @@ Test suite: **212 JVM tests** (`:composeApp:desktopTest`).
 
 ```
 composeApp/src/commonMain/   model, money maths, cover rule, merge, sync, statement parser, vehicle wear, UI
-composeApp/src/androidMain/  activity, live service, GPS, widget, statement reminder, PDF picker
+composeApp/src/androidMain/  activity, live service, GPS, widget, PDF picker
 composeApp/src/desktopMain/  neumorphic shell, read-only views, PDF, printing
 ../grab-tracker/             sync server + PWA (still intact)
 scripts/                     release.sh, shots.sh (deterministic desk captures)
@@ -90,11 +90,11 @@ scripts/                     release.sh, shots.sh (deterministic desk captures)
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.44.4
+./scripts/release.sh 0.44.5
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.44.4.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.44.5.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync
@@ -102,7 +102,7 @@ committed.
 - One store per user; the phone and desk share it through `POST/GET /api/data`.
 - Writes merge by id, newest wins; deletions are tombstones; statements are keyed by week.
 - The desk cannot create, edit or delete — `ReadOnlyShellTest` enforces it.
-- Client config (server URL, theme, reminder flag, route key, **durable outbox bit**) is device-local.
+- Client config (server URL, theme, route key, **durable outbox bit**) is device-local.
 - A local save marks the outbox; the sync loop retries it after restarts and sends tombstones with the
   full-store push, so offline edits and deletes cannot sit silently on one device.
 - Local writes fsync the temp file, keep a `.bak`, and quarantine an unreadable store instead of

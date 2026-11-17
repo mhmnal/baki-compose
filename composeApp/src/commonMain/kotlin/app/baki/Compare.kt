@@ -8,6 +8,7 @@ package app.baki
 data class PeriodStats(
     val month: String,
     val net: Long,
+    val operatingNet: Long,
     val income: Long,
     val expense: Long,
     val hours: Double,
@@ -25,10 +26,12 @@ data class PeriodStats(
 /** Totals for one month, from the same primitives the rest of the app uses. */
 fun periodStats(store: Store, month: String): PeriodStats {
     val t = monthTotals(store, month)
+    val operating = monthOperating(store, month)
     val shifts = store.shifts.filter { it.date.startsWith(month) }
     return PeriodStats(
         month = month,
         net = t.net,
+        operatingNet = operating.net,
         income = t.income,
         expense = t.expense,
         hours = shifts.sumOf { it.hours },
@@ -124,7 +127,8 @@ fun compareMonths(store: Store, aMonth: String, bMonth: String): List<CompareRow
     }
 
     return listOf(
-        money("Net", a.net, b.net, true),
+        money("Recorded net", a.net, b.net, true),
+        money("Operating net", a.operatingNet, b.operatingNet, true),
         money("In", a.income, b.income, true),
         money("Out", a.expense, b.expense, false),
         CompareRow(

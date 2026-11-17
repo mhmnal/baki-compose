@@ -12,11 +12,13 @@ data class ServiceInfo(
         (targetOn != null && targetOn < todayIso())
 }
 
-fun serviceInfo(store: Store): ServiceInfo {
+fun serviceInfo(store: Store, baseOdo: Int? = null, baseOn: String? = null): ServiceInfo {
     val last = store.entries
         .filter { it.cat == "maintenance" }
         .maxWithOrNull(compareBy<Entry> { it.date }.thenBy { it.loggedAt.ifBlank { it.updated } })
-    val latestOdo = store.entries.mapNotNull { it.odo?.takeIf { o -> o > 0 } }.maxOrNull()
+    val latestOdo = (listOfNotNull(baseOdo?.takeIf { it > 0 }) + store.entries
+        .filter { baseOn == null || it.date >= baseOn }
+        .mapNotNull { it.odo?.takeIf { o -> o > 0 } }).maxOrNull()
     return ServiceInfo(
         last = last,
         latestOdo = latestOdo,

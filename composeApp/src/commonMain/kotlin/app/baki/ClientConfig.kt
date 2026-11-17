@@ -23,8 +23,6 @@ data class ClientConfig(
     val syncRoutes: Boolean = false,
     /** Shared passphrase for the sealed traces; blank disables route sync entirely. */
     val routeSecret: String = "",
-    /** Weekly Wednesday nudge to import the Grab statement. */
-    val statementReminder: Boolean = true,
     /** Device-only: mask ledger amounts until the eye is tapped again. */
     val discreet: Boolean = false,
     /** Prefer the standard motion scheme without expressive overshoot. */
@@ -37,6 +35,9 @@ data class ClientConfig(
     /** Last time a backup file was merged back into this device. */
     val lastRestoreAt: Long? = null,
     val lastRestoreAdded: Int = 0,
+    /** Device-local service odometer baseline, used after a car/odometer reset. */
+    val serviceOdoBase: Int? = null,
+    val serviceOdoBaseOn: String? = null,
     /**
      * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
      * launch after this field was introduced reconciles any pre-existing local-only edits.

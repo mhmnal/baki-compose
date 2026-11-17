@@ -55,11 +55,6 @@ actual object PlatformEffects {
         println("[scheme] $text")
     }
 
-    actual fun setStatementReminder(enabled: Boolean) {
-        // the desk has no notification channel; the phone owns the weekly nudge
-    }
-    actual fun notificationsBlocked(): Boolean = false
-    actual fun openNotificationSettings() {}
     actual fun haptic(kind: Haptic) {}
     actual fun liveChanged(startMs: Long?, totalCents: Long) = Unit
     actual fun log(msg: String) = println(msg)

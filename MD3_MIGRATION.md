@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.44.5 pendings
+
+- Removed the Wednesday statement reminder, notification permission request and WorkManager scheduling entirely.
+- Bill payments now offer an undo that removes auto-created expenses and unlinks manual ones.
+- Added a service odometer baseline for a new car or odometer reset.
+- Compare now shows recorded and operating net separately.
+- Desk Ledger has sorting and saveable search/category filters.
+- 212 tests, 0 failures.
+
 ## 0.44.4 cleanup
 
 - Removed the tax pack and Business/deductible tax controls entirely.

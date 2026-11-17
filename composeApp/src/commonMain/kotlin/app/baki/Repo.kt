@@ -228,6 +228,27 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun payBill(billId: String, period: String, date: String = todayIso(), note: String = ""): Boolean =
         mutex.withLock { payBillLocked(billId, period, date, note) }
 
+    /** Undo a bill payment. Auto-created expenses are removed; manually linked ones stay. */
+    suspend fun undoBillPayment(billId: String, period: String, removeEntry: Boolean): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return@withLock false
+        val link = store.billPayments.firstOrNull { it.active && it.billId == billId && it.period == period }
+            ?: return@withLock false
+        val entryId = link.entryId
+        val nextEntries = if (removeEntry) store.entries.filterNot { it.id == entryId } else store.entries
+        val nextTomb = if (removeEntry) store.tomb.copy(ids = (store.tomb.ids + entryId).distinct()) else store.tomb
+        store = store.copy(
+            entries = nextEntries,
+            billPayments = store.billPayments.map {
+                if (it.billId == billId && it.period == period) it.copy(active = false, updated = nowIso()) else it
+            },
+            tomb = nextTomb,
+            updatedAt = nowIso(),
+        )
+        saveLocal(store)
+        pushWithTombs(if (removeEntry) listOf(entryId) else emptyList())
+        true
+    }
+
     private fun payBillLocked(billId: String, period: String, date: String, note: String): Boolean {
         if (config.allowWrites.not()) return false
         val bill = store.bills.firstOrNull { it.id == billId } ?: return false
@@ -957,6 +978,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(emptyList())
     }
 
+    fun setServiceBaseline(km: Int?, date: String?) {
+        config = config.copy(serviceOdoBase = km?.takeIf { it > 0 }, serviceOdoBaseOn = date)
+        saveConfig(config)
+        PlatformEffects.tapFeedback()
+        ActionFeedback.show(if (km != null) "Service baseline set" else "Service baseline cleared")
+    }
+
     /** Set or clear (limit <= 0) a monthly cap for one category. */
     suspend fun setBudget(cat: String, limit: Double) = mutex.withLock {
         if (blocked()) return@withLock
@@ -1074,12 +1102,6 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         config = config.copy(syncRoutes = enabled, routeSecret = secret.trim())
         saveConfig(config)
         if (enabled && secret.isNotBlank()) scope.launch { runCatching { pushRoutes() } }
-    }
-
-    fun setStatementReminder(on: Boolean) {
-        config = config.copy(statementReminder = on)
-        saveConfig(config)
-        PlatformEffects.setStatementReminder(on)
     }
 
     /** A device-wide daily food guardrail; null clears it. */

@@ -31,9 +31,11 @@ import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
+fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
-    val info = remember(repo.store) { serviceInfo(repo.store) }
+    val info = remember(repo.store, repo.config.serviceOdoBase, repo.config.serviceOdoBaseOn) {
+        serviceInfo(repo.store, repo.config.serviceOdoBase, repo.config.serviceOdoBaseOn)
+    }
     val last = info.last
 
     Column(
@@ -44,6 +46,9 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onSetTarget, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                 Text("Set next", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
+            }
+            TextButton(onClick = onResetBaseline, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Reset baseline", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
             }
         }
         if (last == null) {
@@ -80,6 +85,12 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit) {
                 )
             }
             if (info.overdue) Text("Target reached or date passed", color = scheme.error, style = MaterialTheme.typography.bodyMedium )
+        }
+        if (repo.config.serviceOdoBase != null) {
+            Text(
+                "Baseline ${repo.config.serviceOdoBase} km · ${repo.config.serviceOdoBaseOn ?: "today"}",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+            )
         }
         Text("User-set target, not a guessed interval.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(Space.s))
@@ -155,5 +166,55 @@ fun ServiceTargetDialog(
             ) { Text("Save", color = scheme.primary) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = scheme.onSurfaceVariant) } },
+    )
+}
+
+@Composable
+fun ServiceBaselineDialog(
+    initialKm: Int?,
+    initialDate: String?,
+    onSave: (Int?, String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    var km by remember { mutableStateOf(initialKm?.toString() ?: "") }
+    var date by remember { mutableStateOf(initialDate ?: todayIso()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = scheme.surfaceContainerHigh,
+        title = { BakiDialogHeader("Service baseline", "new car or odometer reset", "◎") },
+        text = {
+            Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Space.s)) {
+                Text(
+                    "Set the current dashboard odometer and date. Older readings stay in history but stop driving the next target.",
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = km,
+                    onValueChange = { km = it.filter { c -> c.isDigit() }.take(9) },
+                    label = { Text("Current odometer (km)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it.filter { c -> c.isDigit() || c == '-' }.take(10) },
+                    label = { Text("Baseline date (YYYY-MM-DD)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColorsPublic(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = (km.toIntOrNull() ?: 0) > 0 && date.length == 10,
+                onClick = { onSave(km.toIntOrNull(), date) },
+            ) { Text("Save baseline", color = scheme.primary, fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

@@ -337,8 +337,9 @@ private fun DayBars(days: List<Pair<String, Totals>>) {
 internal fun DeskLedger(repo: BakiRepo, month: String) {
     val store = repo.store
     val scheme = MaterialTheme.colorScheme
-    var query by remember { mutableStateOf("") }
-    var cat by remember { mutableStateOf("all") }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var cat by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("all") }
+    var sort by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("Newest") }
     val cats = remember(store) { store.settings.cats.catsOut }
     val monthEntries = remember(store, month) { store.entries.filter { it.date.startsWith(month) } }
     val filtered = monthEntries
@@ -352,7 +353,13 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
                 e.id to running
             }
     }
-    val rows = filtered.sortedWith(compareByDescending<Entry> { it.date }.thenByDescending { it.loggedAt })
+    val rows = filtered.sortedWith(
+        when (sort) {
+            "Amount" -> compareByDescending<Entry> { it.amount }
+            "Category" -> compareBy<Entry> { it.cat }.thenByDescending { it.date }
+            else -> compareByDescending<Entry> { it.date }.thenByDescending { it.loggedAt }
+        },
+    )
     val out = filtered.filter { it.type != "income" }.sumOf { it.amount }
 
     Column(Modifier.fillMaxSize().padding(horizontal = Space.xl)) {
@@ -374,6 +381,13 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
             DeskFilter("All", cat == "all") { cat = "all" }
             cats.filter { c -> monthEntries.any { it.cat == c.id } }.forEach { c ->
                 DeskFilter(c.name, cat == c.id) { cat = c.id }
+            }
+        }
+        Spacer(Modifier.height(Space.xs))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs), verticalAlignment = Alignment.CenterVertically) {
+            Text("SORT", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+            listOf("Newest", "Amount", "Category").forEach { label ->
+                DeskFilter(label, sort == label) { sort = label }
             }
         }
         Spacer(Modifier.height(Space.s))

@@ -93,27 +93,6 @@ actual object PlatformEffects {
         }
     }
 
-    actual fun setStatementReminder(enabled: Boolean) {
-        AppCtx.ctx?.let { StatementReminder.setEnabled(it, enabled) }
-    }
-
-    actual fun notificationsBlocked(): Boolean {
-        val ctx = AppCtx.ctx ?: return false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
-        return ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-    }
-
-    actual fun openNotificationSettings() {
-        val ctx = AppCtx.ctx ?: return
-        runCatching {
-            ctx.startActivity(
-                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
-        }
-    }
 
     actual fun openPhonePreview() {}
 

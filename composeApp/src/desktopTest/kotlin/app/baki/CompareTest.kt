@@ -68,7 +68,7 @@ class CompareTest {
     @Test
     fun everyRowIsPresent() {
         val rows = compareMonths(store(), "2026-10", "2026-11")
-        assertEquals(8, rows.size)
+        assertEquals(9, rows.size)
         assertTrue(rows.all { it.changeLabel != null })
     }
 
