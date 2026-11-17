@@ -44,10 +44,18 @@ fun PhonePreviewControls(repo: BakiRepo) {
             Modifier.fillMaxSize().background(scheme.background).padding(Space.l).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
-            Column {
-                Text("PHONE PREVIEW", color = scheme.primary, letterSpacing = 1.6.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-                Spacer(Modifier.height(2.dp))
-                Text("interactive · isolated preview copy", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Column(Modifier.weight(1f)) {
+                    Text("PHONE PREVIEW", color = scheme.primary, letterSpacing = 1.6.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                    Spacer(Modifier.height(2.dp))
+                    Text("interactive · isolated preview copy", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
+                Text(
+                    "v$APP_VERSION",
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                    modifier = Modifier.padding(start = Space.s, top = 1.dp),
+                )
             }
             Surface(shape = MaterialTheme.shapes.large, color = scheme.tertiaryContainer) {
                 Text(
