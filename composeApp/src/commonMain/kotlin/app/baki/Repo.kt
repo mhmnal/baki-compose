@@ -205,11 +205,16 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Soft-deletes: the server keeps the record (with the flag) so the removal syncs. */
     suspend fun deleteBill(id: String): Boolean = mutex.withLock {
         if (config.allowWrites.not()) return false
-        if (store.billPayments.any { it.billId == id }) return false   // keep its history
         val existing = store.bills.firstOrNull { it.id == id } ?: return false
+        val stamp = nowIso()
+        // A soft-deleted bill keeps its payment history. Active links are unlinked, but their
+        // expenses stay in the ledger — deleting a commitment must not delete spent money.
         store = store.copy(
-            bills = store.bills.map { if (it.id == id) existing.copy(active = false, updated = nowIso()) else it },
-            updatedAt = nowIso(),
+            bills = store.bills.map { if (it.id == id) existing.copy(active = false, updated = stamp) else it },
+            billPayments = store.billPayments.map {
+                if (it.billId == id && it.active) it.copy(active = false, updated = stamp) else it
+            },
+            updatedAt = stamp,
         )
         saveLocal(store)
         runCatching { pushWithTombs(emptyList()) }

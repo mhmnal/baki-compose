@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.9 delete commitment
+
+- Bill Delete is enabled for any editable bill.
+- Deleting a commitment unlinks active payments but keeps their expenses and history.
+- Inactive payment rows no longer make a bill undeletable.
+- 226 tests.
+
 ## 0.47.8 visible/declared delete
 
 - Bill payments history has a visible Delete action for existing expenses.

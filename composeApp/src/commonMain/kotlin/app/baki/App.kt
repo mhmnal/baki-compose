@@ -2251,7 +2251,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     existing = existing,
                     categories = repo.store.settings.cats.catsOut,
                     scheme = scheme,
-                    canDelete = existing != null && repo.store.billPayments.none { it.billId == existing.id },
+                    canDelete = existing != null && !repo.readOnly,
                     onSave = { bill ->
                         scope.launch { repo.saveBill(bill) }
                         addingBill = false
