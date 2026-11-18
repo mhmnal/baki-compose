@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.8 visible/declared delete
+
+- Bill payments history has a visible Delete action for existing expenses.
+- Entry deletion returns a result; blocked writes show an explicit error.
+- Delete still unlinks the bill payment.
+- 226 tests.
+
 ## 0.47.7 unlink/re-pay state
 
 - Mark paid ignores inactive historical links; it reactivates/replaces the period link.

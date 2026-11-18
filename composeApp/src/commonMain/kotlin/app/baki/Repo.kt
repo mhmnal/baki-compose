@@ -1055,8 +1055,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         pushWithTombs(listOf(id, feeId))
     }
 
-    suspend fun deleteEntry(id: String) = mutex.withLock {
-        if (blocked()) return@withLock
+    suspend fun deleteEntry(id: String): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
         PlatformEffects.haptic(Haptic.Warn)
         val stamp = nowIso()
         val next = store.copy(
@@ -1072,6 +1072,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = next
         saveLocal(store)
         pushWithTombs(listOf(id))
+        true
     }
 
     /**

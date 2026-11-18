@@ -72,7 +72,7 @@ object Bills {
      * the bill's amount or its category, and are not already linked to any bill.
      */
     fun linkCandidates(store: Store, bill: Bill, period: String): List<Entry> {
-        val linked = store.billPayments.map { it.entryId }.toSet()
+        val linked = store.billPayments.filter { it.active }.map { it.entryId }.toSet()
         val month = if (bill.cadence == "annual") period.take(4) else period.take(7)
         return store.entries
             .filter { it.type != "income" && it.id !in linked }
@@ -88,6 +88,7 @@ object Bills {
         val period: String,
         val amount: Long,
         val paidAt: String,
+        val entryId: String,
         val entryExists: Boolean,
         val active: Boolean,
     )
@@ -105,6 +106,7 @@ object Bills {
                     period = p.period,
                     amount = p.amount,
                     paidAt = p.paidAt,
+                    entryId = p.entryId,
                     entryExists = p.entryId in entries,
                     active = p.active,
                 )

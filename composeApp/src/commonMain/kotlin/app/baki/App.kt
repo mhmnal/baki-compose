@@ -180,7 +180,10 @@ private fun AppContent(repo: BakiRepo) {
         scope.launch {
             try {
                 if (repo.store.entries.none { it.id == entry.id }) return@launch
-                repo.deleteEntry(entry.id)
+                if (!repo.deleteEntry(entry.id)) {
+                    ActionFeedback.show("Could not delete — enable Allow writes")
+                    return@launch
+                }
                 val res = snackbar.showSnackbar(
                     "Deleted ${entry.note.ifEmpty { entry.cat }} · RM ${rm(entry.amount)}",
                     actionLabel = "Undo", duration = SnackbarDuration.Short,
@@ -2199,6 +2202,21 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                         )
                                     }
                                     Text("RM ${rm(p.amount / 100.0)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+                                    if (p.entryExists) {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    if (repo.deleteEntry(p.entryId)) {
+                                                        historyOpen = false
+                                                        ActionFeedback.show("Deleted ${p.billName} expense")
+                                                    } else {
+                                                        ActionFeedback.show("Could not delete — enable Allow writes")
+                                                    }
+                                                }
+                                            },
+                                            contentPadding = PaddingValues(horizontal = Space.xs),
+                                        ) { Text("Delete", color = scheme.error, style = MaterialTheme.typography.labelMedium) }
+                                    }
                                 }
                             }
                         }
