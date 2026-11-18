@@ -2093,6 +2093,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     } else {
                         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                             FilledTonalButton(
+                                enabled = !repo.readOnly,
                                 onClick = {
                                     scope.launch {
                                         if (repo.payBill(bill.id, period)) {
@@ -2100,6 +2101,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                                 "Marked ${bill.name} paid",
                                                 listOf(Triple(bill.id, period, autoBillPayment(bill, period))),
                                             )
+                                        } else {
+                                            ActionFeedback.show("Could not mark paid — check writes and sync")
                                         }
                                     }
                                 },
@@ -2110,6 +2113,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                 ),
                             ) { Text("Mark paid") }
                             TextButton(
+                                enabled = !repo.readOnly,
                                 onClick = { linkTarget = bill to period },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                             ) { Text("Link") }
@@ -2118,6 +2122,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                 }
             }
             Spacer(Modifier.height(Space.s))
+            if (repo.readOnly) {
+                Text(
+                    "Read-only mode. Enable writes in More → App to mark bills paid.",
+                    color = scheme.secondary, style = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(Modifier.height(Space.s))
+            }
             if (repo.store.bills.isNotEmpty()) FilledTonalButton(
                 onClick = {
                     scope.launch {
@@ -2126,7 +2137,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                         if (n > 0) offerBillUndo("Settled $n bill${if (n == 1) "" else "s"}", pending.map { Triple(it.first, it.second, true) })
                     }
                 },
-                enabled = Bills.unpaid(repo.store, target).isNotEmpty(),
+                enabled = !repo.readOnly && Bills.unpaid(repo.store, target).isNotEmpty(),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = scheme.primaryContainer,
                     contentColor = scheme.onPrimaryContainer,
@@ -2154,7 +2165,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                 }
                             }
                         },
-                        enabled = net >= bill.amount,
+                        enabled = !repo.readOnly && net >= bill.amount,
                     ) { Text("Pay ${bill.name} · RM ${rm(bill.amount / 100.0)}") }
                 }
             }

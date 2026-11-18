@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.6 bill payment sync
+
+- Mark paid now pushes the updated store to the server immediately.
+- Fixes payments reverting on the next sync.
+- Bill actions are disabled in read-only mode with an explicit explanation.
+- Optional-bill payments obey read-only mode.
+- 226 tests and rebuilt APK.
+
 ## 0.47.5 audit clarity
 
 - Shifts hero is labelled all-time net.

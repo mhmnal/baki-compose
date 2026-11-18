@@ -237,7 +237,23 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     /** Pays one bill for a period: an expense entry dated today plus the link that marks it covered. */
     suspend fun payBill(billId: String, period: String, date: String = todayIso(), note: String = ""): Boolean =
-        mutex.withLock { payBillLocked(billId, period, date, note) }
+        mutex.withLock {
+            val ok = payBillLocked(billId, period, date, note)
+            if (ok) {
+                // payBillLocked only writes local state. Without this push the next sync would
+                // replace the payment with the server's still-uncovered copy.
+                try {
+                    pushWithTombs(emptyList())
+                    saveLocal(store, markDirty = false)
+                    pendingPush = false
+                    status = "synced"
+                } catch (e: Exception) {
+                    status = "cached"
+                    lastError = e.message
+                }
+            }
+            ok
+        }
 
     /** Undo a bill payment. Auto-created expenses are removed; manually linked ones stay. */
     suspend fun undoBillPayment(billId: String, period: String, removeEntry: Boolean): Boolean = mutex.withLock {
