@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.1 repeat entries
+
+- Spending shows up to three “Repeat last” expenses.
+- Repeat opens the entry form with amount, category and note prefilled.
+- Bill due days and cash-flow calendar retained.
+- 226 tests expected.
+
 ## 0.47.0 cash-flow calendar
 
 - Bills can carry an optional due day (1–31).

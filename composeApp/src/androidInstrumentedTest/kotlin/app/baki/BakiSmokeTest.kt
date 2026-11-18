@@ -33,8 +33,9 @@ class BakiSmokeTest {
         val fixture = app.activity.getExternalFilesDir(null)?.resolve("baki-restore-test.json") ?: java.io.File("/sdcard/Download/baki-restore-test.json")
         org.junit.Assume.assumeTrue("restore fixture not supplied", fixture.exists())
         val restored = loadLocal()
-        org.junit.Assert.assertEquals(106, restored.entries.size)
-        org.junit.Assert.assertEquals(16, restored.shifts.size)
+        val expected = summarizeBackup(fixture.readText()) ?: error("fixture was not a backup")
+        org.junit.Assert.assertEquals(expected.entries, restored.entries.size)
+        org.junit.Assert.assertEquals(expected.shifts, restored.shifts.size)
     }
 
     @Test

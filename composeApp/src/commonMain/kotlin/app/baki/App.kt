@@ -154,6 +154,8 @@ private fun AppContent(repo: BakiRepo) {
     var editingShift by remember { mutableStateOf<Shift?>(null) }
     var entryType by remember { mutableStateOf("expense") }
     var presetCat by remember { mutableStateOf<String?>(null) }
+    var presetAmount by remember { mutableStateOf<String?>(null) }
+    var presetNote by remember { mutableStateOf<String?>(null) }
     var editingBudgets by remember { mutableStateOf(false) }
     var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
     val scope = rememberCoroutineScope()
@@ -331,6 +333,14 @@ private fun AppContent(repo: BakiRepo) {
                     month = month,
                     onMonth = { month = it },
                     onEditEntry = { editingEntry = it; entryType = it.type; adding = 2 },
+                    onRepeatEntry = { entry ->
+                        editingEntry = null
+                        entryType = entry.type
+                        presetCat = entry.cat
+                        presetAmount = "%.2f".format(entry.amount / 100.0)
+                        presetNote = entry.note
+                        adding = 2
+                    },
                     onDeleteEntry = { entry -> deleteEntryWithUndo(entry) },
                     onHeaderCollapsed = { headerCollapsed = it },
                 )
@@ -548,11 +558,15 @@ private fun AppContent(repo: BakiRepo) {
             existing = editingEntry,
             initialType = entryType,
             initialCat = presetCat,
+            initialAmount = presetAmount,
+            initialNote = presetNote,
             settings = repo.store.settings,
             day = day,
-            onDismiss = { adding = 0; editingEntry = null; presetCat = null },
+            onDismiss = { adding = 0; editingEntry = null; presetCat = null; presetAmount = null; presetNote = null },
             onSave = { type, cents, cat, note, date, odoAtFill ->
                 presetCat = null
+                presetAmount = null
+                presetNote = null
                 val target = editingEntry
                 adding = 0; editingEntry = null
                 scope.launch {
@@ -1232,6 +1246,7 @@ private fun SpendingScreen(
     month: String,
     onMonth: (String) -> Unit,
     onEditEntry: (Entry) -> Unit,
+    onRepeatEntry: (Entry) -> Unit,
     onDeleteEntry: (Entry) -> Unit,
     onHeaderCollapsed: (Boolean) -> Unit = {},
 ) {
@@ -1338,6 +1353,29 @@ private fun SpendingScreen(
                             ),
                             modifier = Modifier.heightIn(min = Control.primary),
                         )
+                    }
+                }
+                Spacer(Modifier.height(Space.m))
+                val repeats = remember(all) {
+                    all.filter { it.type == "expense" }
+                        .distinctBy { it.cat to (it.note.trim().lowercase() to it.amount) }
+                        .sortedByDescending { it.loggedAt.ifBlank { it.updated } }
+                        .take(3)
+                }
+                if (repeats.isNotEmpty()) {
+                    Text("Repeat last", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+                    Spacer(Modifier.height(Space.xs))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                        repeats.forEach { entry ->
+                            val label = (entry.note.ifBlank { categoryLabel(repo.store, entry.cat) }) + " · RM " + rm(entry.amount)
+                            Surface(
+                                shape = MaterialTheme.shapes.large,
+                                color = scheme.surfaceContainerHigh,
+                                modifier = Modifier.clickable { onRepeatEntry(entry) },
+                            ) {
+                                Text(label, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = Space.m, vertical = Space.s))
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(Space.m))
@@ -2880,14 +2918,16 @@ private fun EntryDialog(
     settings: Settings,
     day: String,
     initialCat: String? = null,
+    initialAmount: String? = null,
+    initialNote: String? = null,
     onDismiss: () -> Unit,
     onSave: (String, Long, String, String, String, Int?) -> Unit,
     onDelete: (Entry) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     var type by remember { mutableStateOf(existing?.type ?: initialType) }
-    var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
-    var note by remember { mutableStateOf(existing?.note ?: "") }
+    var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: initialAmount ?: "") }
+    var note by remember { mutableStateOf(existing?.note ?: initialNote ?: "") }
     var date by remember { mutableStateOf(existing?.date ?: day) }
     val dateValid = remember(date) { isValidIsoDate(date) }
     var odo by remember { mutableStateOf(existing?.odo?.toString() ?: "") }
