@@ -186,6 +186,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             amount = bill.amount.coerceAtLeast(0),
             category = bill.category.ifBlank { "other" },
             anchorMonth = bill.anchorMonth?.takeIf { it in 1..12 },
+            dueDay = bill.dueDay?.takeIf { it in 1..31 },
             updated = nowIso(),
             active = true,
         )

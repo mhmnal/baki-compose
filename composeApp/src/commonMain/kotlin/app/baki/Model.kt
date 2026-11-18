@@ -99,6 +99,8 @@ data class Shift(
     val optional: Boolean = false,
     /** annual bills renew in this month (1..12) */
     val anchorMonth: Int? = null,
+    /** optional day of month the bill is due (1..31) */
+    val dueDay: Int? = null,
     val updated: String = "",
     /** soft delete: bills have no tombstone, so removal is a flag the server keeps */
     val active: Boolean = true,

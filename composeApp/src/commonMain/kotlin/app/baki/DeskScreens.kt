@@ -233,6 +233,17 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
             }
         }
         item {
+            DeskCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    DeskLabel("CASH FLOW · ${monthLabel(month).uppercase()}")
+                    Spacer(Modifier.weight(1f))
+                    Text("bills · payouts", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                }
+                Spacer(Modifier.height(Space.m))
+                CashFlowGrid(store, month)
+            }
+        }
+        item {
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 val funds = remember(store, month) { fundStats(store, month) }
                 val due = remember(store, month) { Bills.due(store, month) }

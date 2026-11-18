@@ -64,6 +64,8 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
             CalendarLegendDot(scheme.primary, "profit")
             CalendarLegendDot(scheme.error, "loss")
             CalendarLegendDot(scheme.surfaceContainerHigh, "not driven")
+            CalendarLegendDot(scheme.tertiary, "bill due")
+            CalendarLegendDot(scheme.primary, "payout")
         }
     }
 }
@@ -72,6 +74,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
 @Composable
 private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.compose.material3.ColorScheme, bestDay: String?) {
     val t = dayTotals(store, iso)
+    val flow = cashFlowDay(store, iso)
     val future = iso > today
     val magnitude = when {
         t.entryCount == 0 && t.shiftCount == 0 -> 0
@@ -98,6 +101,8 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
             t.entryCount == 0 && t.shiftCount == 0 -> append(", no entries")
             else -> append(", net RM ${rm(t.net)}")
         }
+        if (flow.bills.isNotEmpty()) append(", bills: ${flow.bills.joinToString { it.name }}")
+        if (flow.payoutCents > 0) append(", payout RM ${rm(flow.payoutCents)}")
     }
     Box(
         Modifier.fillMaxSize()
@@ -115,11 +120,16 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
                 else -> scheme.onSurface
             },
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal, style = MaterialTheme.typography.bodyMedium )
-        if (!future && !positive && magnitude > 0) {
-            Box(
-                Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp)
-                    .width(6.dp).height(2.dp).background(scheme.onSurface),
-            )
+        Row(
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (!future && !positive && magnitude > 0) {
+                Box(Modifier.width(5.dp).height(2.dp).background(scheme.onSurface))
+            }
+            if (flow.bills.isNotEmpty()) Box(Modifier.size(4.dp).clip(CircleShape).background(scheme.tertiary))
+            if (flow.payoutCents > 0) Box(Modifier.size(4.dp).clip(CircleShape).background(scheme.primary))
         }
     }
 }

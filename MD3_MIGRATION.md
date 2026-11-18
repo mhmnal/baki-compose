@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.0 cash-flow calendar
+
+- Bills can carry an optional due day (1–31).
+- Phone Stats calendar marks bill-due and payout days.
+- Desk Overview has a full cash-flow month grid.
+- Existing bills without due days remain valid; they appear only in commitments.
+- 226 tests base; calendar/golden check pending.
+
 ## 0.46.3 reliable end shift
 
 - In-app End no longer clears live state before the shift is written.

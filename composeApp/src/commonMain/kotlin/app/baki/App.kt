@@ -1506,6 +1506,7 @@ private fun BillEditorDialog(
     var category by remember { mutableStateOf(existing?.category ?: categories.firstOrNull()?.id ?: "other") }
     var optional by remember { mutableStateOf(existing?.optional ?: false) }
     var anchor by remember { mutableStateOf(existing?.anchorMonth?.toString() ?: "1") }
+    var dueDay by remember { mutableStateOf(existing?.dueDay?.toString() ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1539,6 +1540,13 @@ private fun BillEditorDialog(
                         modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
                     )
                 }
+                OutlinedTextField(
+                    value = dueDay,
+                    onValueChange = { dueDay = it.filter { c -> c.isDigit() }.take(2) },
+                    singleLine = true, label = { Text("Due day (optional, 1-31)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                )
                 Text("Category", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -1577,6 +1585,7 @@ private fun BillEditorDialog(
                             category = category,
                             optional = optional,
                             anchorMonth = if (annual) anchor.toIntOrNull()?.coerceIn(1, 12) ?: 1 else null,
+                            dueDay = dueDay.toIntOrNull()?.takeIf { it in 1..31 },
                         ),
                     )
                 },
