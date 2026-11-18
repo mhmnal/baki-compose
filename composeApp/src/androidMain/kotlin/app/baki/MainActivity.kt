@@ -7,6 +7,7 @@ import android.content.pm.ShortcutManager
 import android.content.pm.PackageManager
 import android.graphics.drawable.Icon
 import android.os.Build
+import java.lang.ref.WeakReference
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,7 +22,26 @@ private const val ACTION_OPEN_QR = "app.baki.OPEN_QR"
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private var current: WeakReference<MainActivity>? = null
+
+        /** Called when a live shift starts; the foreground-service notification needs this on 13+. */
+        fun requestLiveNotificationPermission() {
+            current?.get()?.requestNotificationPermission()
+        }
+    }
+
+    private var notificationRequested = false
+    private val askNotifications =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                val live = runCatching { loadLive() }.getOrNull()
+                if (live != null) LiveShiftService.update(this, live.start, liveTotalCents(live))
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        current = WeakReference(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         AppCtx.ctx = applicationContext
@@ -42,6 +62,11 @@ class MainActivity : ComponentActivity() {
             }
             App()
         }
+    }
+
+    override fun onDestroy() {
+        if (current?.get() === this) current = null
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -154,6 +179,16 @@ class MainActivity : ComponentActivity() {
             ),
         )
         saveLocal(current.copy(accounts = listOf(aeon, tng), importedTxns = rows, statementBatches = listOf(batch)))
+    }
+
+    /** Requested from the live-shift start path, not at launch. */
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || notificationRequested) return
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        notificationRequested = true
+        askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun askLocationPermission() {

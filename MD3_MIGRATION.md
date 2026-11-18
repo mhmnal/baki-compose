@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.46.2 live shift notifications
+
+- Restored POST_NOTIFICATIONS, removed accidentally with the old reminder feature.
+- Notification permission is requested when a live shift starts, not at app launch.
+- Granting refreshes the foreground notification immediately.
+- Live-shift service keeps GPS/distance persistence via its foreground notification.
+- 226 tests, desktop suite unchanged.
+
 ## 0.46.1 Stats and Desk clarity
 
 - Merged the duplicate This Week view into the 7D chart.

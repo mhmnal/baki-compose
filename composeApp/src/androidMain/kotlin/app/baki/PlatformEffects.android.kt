@@ -30,7 +30,10 @@ actual object PlatformEffects {
     actual fun liveChanged(startMs: Long?, totalCents: Long) {
         val ctx = AppCtx.ctx ?: return
         if (startMs == null) LiveShiftService.stop(ctx)
-        else LiveShiftService.update(ctx, startMs, totalCents)
+        else {
+            MainActivity.requestLiveNotificationPermission()
+            LiveShiftService.update(ctx, startMs, totalCents)
+        }
         // the live widget mirrors the shift: start, pause, payout and end all land here
         BakiLiveWidget.refresh(ctx)
         BakiWidget.refresh(ctx)
