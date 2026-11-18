@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.4 chart alignment
+
+- Best/lowest now use the visible 7D/30D window, not the whole month.
+- The week summary uses the same rolling window as the 7D chart.
+- Inactive days are hollow rings, not faint filled dots.
+- 226 tests and refreshed goldens.
+
 ## 0.47.3 chart gaps and ticks
 
 - 30D line/area breaks at days off instead of connecting across gaps.

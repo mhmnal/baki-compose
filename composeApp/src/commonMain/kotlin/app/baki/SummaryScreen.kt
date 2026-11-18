@@ -296,7 +296,7 @@ private fun MonthInkChart(store: Store, month: String) {
     val today = todayIso()
     val visibleDays = if (month == today.take(7)) allDays.filter { it.iso <= today } else allDays
     val shown = if (range == 7) visibleDays.takeLast(7) else visibleDays
-    val active = visibleDays.filter { it.active }
+    val active = shown.filter { it.active }
     val best = active.maxByOrNull { it.net }
     val worst = active.minByOrNull { it.net }
     val cfg = store.settings.profit
@@ -307,8 +307,11 @@ private fun MonthInkChart(store: Store, month: String) {
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
     val anyActive = shown.any { it.active }
-    val currentWeek = if (month == today.take(7)) weekTotals(store, weekStartOf(today)) else null
-    val lastWeek = if (month == today.take(7)) weekTotals(store, addDays(weekStartOf(today), -7)) else null
+    // Match the visible 7D window. Do not mix Mon–Sun totals with a rolling chart window.
+    val rollingWeek = shown.takeLast(7)
+    val rollingNet = rollingWeek.sumOf { it.net }
+    val priorStart = rollingWeek.firstOrNull()?.iso?.let { addDays(it, -7) }
+    val priorNet = if (priorStart == null) 0L else (0 until 7).sumOf { dayTotals(store, addDays(priorStart, it)).net }
     val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
         buildString {
             append("Daily net chart for ${monthLabel(month)}, ${range} day view. ")
@@ -454,7 +457,12 @@ private fun MonthInkChart(store: Store, month: String) {
                         drawLine(color, Offset(x, zeroY), Offset(x, y), 2.dp.toPx(), StrokeCap.Round)
                         drawCircle(color, radius = 5.dp.toPx(), center = Offset(x, y))
                     } else {
-                        drawCircle(scheme.outlineVariant.copy(alpha = 0.45f), radius = 2.5.dp.toPx(), center = Offset(x, zeroY))
+                        drawCircle(
+                            color = scheme.outlineVariant,
+                            radius = 3.5.dp.toPx(),
+                            center = Offset(x, zeroY),
+                            style = Stroke(width = 1.2.dp.toPx()),
+                        )
                     }
                 }
             } else {
@@ -561,10 +569,11 @@ private fun MonthInkChart(store: Store, month: String) {
                 )
             }
         }
-        currentWeek?.let { week ->
-            val delta = week.net - (lastWeek?.net ?: 0L)
+        if (rollingWeek.isNotEmpty()) {
+            val delta = rollingNet - priorNet
             Text(
-                "This week: ${if (delta >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(delta))} vs last · RM ${rm(week.net)} net",
+                (if (range == 7) "Last 7 days" else "Last 7 in view") +
+                    ": ${if (delta >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(delta))} vs previous 7 · RM ${rm(rollingNet)} net",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
             )
         }
