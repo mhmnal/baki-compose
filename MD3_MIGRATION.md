@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.3 chart gaps and ticks
+
+- 30D line/area breaks at days off instead of connecting across gaps.
+- Axis clamps at 2× target; selected-day detail still shows the real value.
+- 30D gets weekly date ticks.
+- Removed duplicate target-line legend; the chip remains.
+- 226 tests and refreshed goldens.
+
 ## 0.47.2 lollipop chart
 
 - Replace 7D bars with stems and dots.

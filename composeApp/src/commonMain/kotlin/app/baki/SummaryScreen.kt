@@ -415,7 +415,10 @@ private fun MonthInkChart(store: Store, month: String) {
             val topPad = 8.dp.toPx()
             val zeroY = size.height * 0.58f
             val usable = minOf(size.height * 0.40f, zeroY - topPad, size.height - zeroY - topPad)
-            val scaleMax = maxOf(1.0, targetPerDay, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
+            // Keep one-off purchases from flattening the month. Values beyond 2× target clip at
+            // the edge and remain readable in the selected-day detail.
+            val dataMax = shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0
+            val scaleMax = if (targetPerDay > 0.01) maxOf(1.0, targetPerDay * 2.0) else maxOf(1.0, dataMax)
             val targetY = (zeroY - (targetPerDay / scaleMax * usable).toFloat())
                 .coerceIn(topPad, size.height - topPad)
             val step = size.width / shown.size.coerceAtLeast(1)
@@ -455,27 +458,37 @@ private fun MonthInkChart(store: Store, month: String) {
                     }
                 }
             } else {
-                // 30D: sparse line through active days, with a soft area to zero.
+                // 30D: line only while consecutive active days continue. A day off breaks the
+                // line; it never implies travel across a gap.
                 val points = shown.mapIndexedNotNull { i, day ->
-                    if (!day.active) null else Offset((i + 0.5f) * step, (zeroY - (day.net / 100.0 / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad)) to day
+                    if (!day.active) null else Triple(i, Offset((i + 0.5f) * step, (zeroY - (day.net / 100.0 / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad)), day)
                 }
-                if (points.size >= 2) {
-                    val path = Path().apply {
-                        moveTo(points.first().first.x, points.first().first.y)
-                        for (j in 1 until points.size) lineTo(points[j].first.x, points[j].first.y)
-                    }
-                    val area = Path().apply {
-                        addPath(path)
-                        lineTo(points.last().first.x, zeroY)
-                        lineTo(points.first().first.x, zeroY)
-                        close()
-                    }
-                    drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.18f), Color.Transparent), startY = topPad, endY = zeroY))
-                    drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                val segments = mutableListOf<MutableList<Triple<Int, Offset, InkDay>>>()
+                for (point in points) {
+                    val current = segments.lastOrNull()
+                    if (current == null || point.first - current.last().first > 1) {
+                        segments += mutableListOf(point)
+                    } else current += point
                 }
-                points.forEach { (point, day) ->
+                segments.forEach { segment ->
+                    if (segment.size >= 2) {
+                        val path = Path().apply {
+                            moveTo(segment.first().second.x, segment.first().second.y)
+                            for (j in 1 until segment.size) lineTo(segment[j].second.x, segment[j].second.y)
+                        }
+                        val area = Path().apply {
+                            addPath(path)
+                            lineTo(segment.last().second.x, zeroY)
+                            lineTo(segment.first().second.x, zeroY)
+                            close()
+                        }
+                        drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.16f), Color.Transparent), startY = topPad, endY = zeroY))
+                        drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    }
+                }
+                points.forEach { (_, point, day) ->
                     val color = if (day.net < 0) scheme.error else scheme.primary
-                    drawCircle(color, radius = 3.5.dp.toPx(), center = point)
+                    drawCircle(color, radius = 4.dp.toPx(), center = point)
                 }
             }
         }
@@ -487,14 +500,6 @@ private fun MonthInkChart(store: Store, month: String) {
                 modifier = Modifier.align(Alignment.Center),
             )
         }
-        }
-        Spacer(Modifier.height(Space.xs))
-        if (targetPerDay > 0.01) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.width(18.dp).height(1.5.dp).background(scheme.tertiary))
-                Spacer(Modifier.width(Space.xs))
-                Text("Target line RM ${rm(targetPerDay)}/day", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall)
-            }
         }
         Spacer(Modifier.height(Space.s))
         selectedDay?.let { day ->
@@ -526,9 +531,11 @@ private fun MonthInkChart(store: Store, month: String) {
                 }
             }
         } else {
+            val ticks = listOf(0, 7, 14, 21, shown.lastIndex).distinct().filter { it in shown.indices }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(shown.firstOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                Text(shown.lastOrNull()?.iso?.takeLast(5) ?: "—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                ticks.forEach { index ->
+                    Text(shown[index].iso.takeLast(5), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
         if (active.size > 1) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
