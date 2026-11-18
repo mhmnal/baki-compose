@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.7 unlink/re-pay state
+
+- Mark paid ignores inactive historical links; it reactivates/replaces the period link.
+- Link and payment candidates ignore inactive links.
+- Deleting an entry deactivates any bill payment pointing at it.
+- Fixes repeat Mark paid failures after Unlink/Undo.
+- 226 tests.
+
 ## 0.47.6 bill payment sync
 
 - Mark paid now pushes the updated store to the server immediately.

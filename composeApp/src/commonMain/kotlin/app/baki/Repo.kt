@@ -279,16 +279,22 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     private fun payBillLocked(billId: String, period: String, date: String, note: String): Boolean {
         if (config.allowWrites.not()) return false
         val bill = store.bills.firstOrNull { it.id == billId } ?: return false
-        if (store.billPayments.any { it.billId == billId && it.period == period }) return false
+        // Only an ACTIVE link blocks a new payment. An unlinked/undone row stays in the store
+        // as a sync tombstone; it must not make the bill permanently unpayable.
+        if (store.billPayments.any { it.active && it.billId == billId && it.period == period }) return false
         val now = nowIso()
         val entry = Entry(
             id = newId("e"), date = date, type = "expense", cat = bill.category,
             amount = bill.amount, note = note.ifBlank { "${bill.name} · $period" },
             updated = now, loggedAt = now,
         )
+        val payment = BillPayment(billId, period, bill.amount, entry.id, date, now)
+        val existing = store.billPayments.any { it.billId == billId && it.period == period }
         store = store.copy(
             entries = store.entries + entry,
-            billPayments = store.billPayments + BillPayment(billId, period, bill.amount, entry.id, date, now),
+            billPayments = if (existing) {
+                store.billPayments.map { if (it.billId == billId && it.period == period) payment else it }
+            } else store.billPayments + payment,
             updatedAt = now,
         )
         saveLocal(store)
@@ -302,11 +308,15 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun linkBillPayment(billId: String, period: String, entryId: String): Boolean = mutex.withLock {
         if (config.allowWrites.not()) return false
         val bill = store.bills.firstOrNull { it.id == billId } ?: return false
-        if (store.billPayments.any { it.billId == billId && it.period == period }) return false
+        if (store.billPayments.any { it.active && it.billId == billId && it.period == period }) return false
         val entry = store.entries.firstOrNull { it.id == entryId && it.type != "income" } ?: return false
         val now = nowIso()
+        val link = BillPayment(billId, period, entry.amount, entry.id, entry.date, now)
+        val existing = store.billPayments.any { it.billId == billId && it.period == period }
         store = store.copy(
-            billPayments = store.billPayments + BillPayment(billId, period, entry.amount, entry.id, entry.date, now),
+            billPayments = if (existing) {
+                store.billPayments.map { if (it.billId == billId && it.period == period) link else it }
+            } else store.billPayments + link,
             updatedAt = now,
         )
         saveLocal(store)
@@ -1048,10 +1058,16 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     suspend fun deleteEntry(id: String) = mutex.withLock {
         if (blocked()) return@withLock
         PlatformEffects.haptic(Haptic.Warn)
+        val stamp = nowIso()
         val next = store.copy(
             entries = store.entries.filter { it.id != id },
+            // A bill payment must not survive its expense. Otherwise the bill looks uncovered
+            // and Mark paid keeps colliding with a stale active link.
+            billPayments = store.billPayments.map {
+                if (it.entryId == id && it.active) it.copy(active = false, updated = stamp) else it
+            },
             tomb = Tomb(ids = (store.tomb.ids + id).distinct(), cats = store.tomb.cats),
-            updatedAt = nowIso(),
+            updatedAt = stamp,
         )
         store = next
         saveLocal(store)
