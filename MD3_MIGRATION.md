@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.2 lollipop chart
+
+- Replace 7D bars with stems and dots.
+- Add dashed target line scaled into the chart.
+- Use a sparse line + soft area for 30D, with dots only on active days.
+- Inactive days are quiet baseline dots.
+- Goldens updated.
+
 ## 0.47.1 repeat entries
 
 - Spending shows up to three “Repeat last” expenses.

@@ -45,6 +45,11 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -367,7 +372,7 @@ private fun MonthInkChart(store: Store, month: String) {
                         modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                     )
                 }
-                Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text("Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -379,7 +384,7 @@ private fun MonthInkChart(store: Store, month: String) {
                         modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                     )
                 }
-                Text("Tap a bar for that day", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text("Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
         }
         Spacer(Modifier.height(Space.s))
@@ -407,52 +412,70 @@ private fun MonthInkChart(store: Store, month: String) {
                     }
                 },
         ) {
-            val topPad = 4.dp.toPx()
-            val zeroY = size.height * 0.62f
-            val usable = minOf(size.height * 0.50f, zeroY - topPad, size.height - zeroY - topPad)
-            val targetY = (zeroY - (targetPerDay / maxAbs * usable).toFloat())
-                .coerceIn(4.dp.toPx(), size.height - 4.dp.toPx())
-            // A single quiet baseline and one solid target line; no floating dashes.
+            val topPad = 8.dp.toPx()
+            val zeroY = size.height * 0.58f
+            val usable = minOf(size.height * 0.40f, zeroY - topPad, size.height - zeroY - topPad)
+            val scaleMax = maxOf(1.0, targetPerDay, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
+            val targetY = (zeroY - (targetPerDay / scaleMax * usable).toFloat())
+                .coerceIn(topPad, size.height - topPad)
+            val step = size.width / shown.size.coerceAtLeast(1)
+
+            // Selection is a quiet vertical wash, not a bar-shaped object.
+            if (selected != null && selected!! in shown.indices) {
+                val left = selected!! * step + step * 0.12f
+                drawRoundRect(
+                    color = scheme.primaryContainer.copy(alpha = 0.32f),
+                    topLeft = Offset(left, topPad),
+                    size = Size(step * 0.76f, size.height - topPad * 2),
+                    cornerRadius = CornerRadius(step * 0.38f, step * 0.38f),
+                )
+            }
             drawLine(scheme.outlineVariant, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
             if (targetPerDay > 0.01) {
-                drawLine(scheme.tertiary.copy(alpha = 0.7f), Offset(0f, targetY), Offset(size.width, targetY), 1.5.dp.toPx())
+                drawLine(
+                    color = scheme.tertiary.copy(alpha = 0.75f),
+                    start = Offset(0f, targetY), end = Offset(size.width, targetY),
+                    strokeWidth = 1.5.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())),
+                )
             }
-            val step = size.width / shown.size.coerceAtLeast(1)
-            val barW = (step * 0.54f).coerceAtLeast(4.dp.toPx())
-            shown.forEachIndexed { i, day ->
-                val value = day.net / 100.0
-                val h = (abs(value) / maxAbs * usable).toFloat()
-                    .coerceAtLeast(if (day.active) 3.dp.toPx() else 0f)
-                val left = i * step + (step - barW) / 2f
-                val top = if (value >= 0) zeroY - h else zeroY
-                // No permanent track: the card surface stays transparent behind the bars.
-                // Only the chosen day gets a soft backdrop, so selection is unmistakable.
-                if (i == selected) {
-                    val backdropInset = step * 0.10f
-                    drawRoundRect(
-                        color = scheme.primaryContainer.copy(alpha = 0.34f),
-                        topLeft = Offset(left - backdropInset, 4.dp.toPx()),
-                        size = Size(barW + backdropInset * 2, size.height - 8.dp.toPx()),
-                        cornerRadius = CornerRadius(barW / 2f, barW / 2f),
-                    )
-                }
-                if (day.active) {
-                    val color = if (value < 0) scheme.error else scheme.primary
-                    if (h < 8.dp.toPx()) {
-                        // A low value becomes a dot, not a horizontal pill that reads as a dash.
-                        drawCircle(
-                            color = color,
-                            radius = 3.dp.toPx(),
-                            center = Offset(left + barW / 2f, if (value >= 0) zeroY - 3.dp.toPx() else zeroY + 3.dp.toPx()),
-                        )
+
+            if (range == 7) {
+                // Lollipop: thin stem, solid dot. One active day still reads as one value.
+                shown.forEachIndexed { i, day ->
+                    val value = day.net / 100.0
+                    val x = (i + 0.5f) * step
+                    val y = (zeroY - (value / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad)
+                    if (day.active) {
+                        val color = if (value < 0) scheme.error else scheme.primary
+                        drawLine(color, Offset(x, zeroY), Offset(x, y), 2.dp.toPx(), StrokeCap.Round)
+                        drawCircle(color, radius = 5.dp.toPx(), center = Offset(x, y))
                     } else {
-                        drawRoundRect(
-                            color = color,
-                            topLeft = Offset(left, top),
-                            size = Size(barW, h),
-                            cornerRadius = CornerRadius(barW / 2f, barW / 2f),
-                        )
+                        drawCircle(scheme.outlineVariant.copy(alpha = 0.45f), radius = 2.5.dp.toPx(), center = Offset(x, zeroY))
                     }
+                }
+            } else {
+                // 30D: sparse line through active days, with a soft area to zero.
+                val points = shown.mapIndexedNotNull { i, day ->
+                    if (!day.active) null else Offset((i + 0.5f) * step, (zeroY - (day.net / 100.0 / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad)) to day
+                }
+                if (points.size >= 2) {
+                    val path = Path().apply {
+                        moveTo(points.first().first.x, points.first().first.y)
+                        for (j in 1 until points.size) lineTo(points[j].first.x, points[j].first.y)
+                    }
+                    val area = Path().apply {
+                        addPath(path)
+                        lineTo(points.last().first.x, zeroY)
+                        lineTo(points.first().first.x, zeroY)
+                        close()
+                    }
+                    drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.18f), Color.Transparent), startY = topPad, endY = zeroY))
+                    drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                }
+                points.forEach { (point, day) ->
+                    val color = if (day.net < 0) scheme.error else scheme.primary
+                    drawCircle(color, radius = 3.5.dp.toPx(), center = point)
                 }
             }
         }
