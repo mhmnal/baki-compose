@@ -996,6 +996,7 @@ private fun bakiFieldColors(): TextFieldColors {
 fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: () -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
     var now by remember { mutableStateOf(nowMillis()) }
+    var ending by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(live.start) {
@@ -1136,14 +1137,20 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                     modifier = Modifier.weight(1f),
                 ) { Text(if (onBreak) "Resume" else "Pause", style = MaterialTheme.typography.labelLargeEmphasized) }
                 Button(
-                    enabled = !repo.readOnly,
-                    onClick = { scope.launch { repo.endLive() } },
+                    enabled = !repo.readOnly && !ending,
+                    onClick = {
+                        if (ending) return@Button
+                        ending = true
+                        scope.launch {
+                            try { repo.endLive() } finally { ending = false }
+                        }
+                    },
                     modifier = Modifier.weight(0.82f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
                         contentColor = MaterialTheme.colorScheme.onErrorContainer,
                     ),
-                ) { Text("End", style = MaterialTheme.typography.labelLargeEmphasized) }
+                ) { Text(if (ending) "Ending…" else "End", style = MaterialTheme.typography.labelLargeEmphasized) }
             }
             }
         }

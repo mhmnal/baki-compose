@@ -803,12 +803,15 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         // The correction makes up for chords cutting corners on a curving route.
         val measuredKm = current.km * store.settings.gpsCorrection
 
-        live = null
-        saveLive(null)
-        clearLiveCover(current.id)
-        PlatformEffects.liveChanged(null, 0)
-        PlatformEffects.successFeedback()
-        if (total <= 0) return@withLock       // nothing earned: nothing to write
+        if (total <= 0) {                     // nothing earned: nothing to write
+            live = null
+            saveLive(null)
+            clearLiveCover(current.id)
+            saveLocal(store)
+            PlatformEffects.liveChanged(null, 0)
+            PlatformEffects.successFeedback()
+            return@withLock
+        }
 
         val charge = draftCoverCharge(store, date, start)
         // The path is filed under the live shift key while driving; on completion it moves onto the
@@ -828,6 +831,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             payouts = current.payouts,
         )
         store = recomputeCover(store.copy(shifts = store.shifts + shift, updatedAt = nowIso())).first
+        clearLiveCover(current.id)
         saveLocal(store)
         // move the path onto the shift id, simplify it, then enforce retention
         runCatching {
@@ -835,6 +839,12 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             RouteStore.finalize(shiftId)
             RouteStore.pruneOrphans(routeKeysInUse())
         }
+        // Clear the live state only after the shift is safely written. Clearing earlier disposes
+        // LiveCard, which cancels the UI scope that called endLive().
+        live = null
+        saveLive(null)
+        PlatformEffects.liveChanged(null, 0)
+        PlatformEffects.successFeedback()
         try {
             pushWithAllTombs()
             saveLocal(store, markDirty = false)

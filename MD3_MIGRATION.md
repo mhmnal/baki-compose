@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.46.3 reliable end shift
+
+- In-app End no longer clears live state before the shift is written.
+- The UI coroutine is not cancelled when the live card is removed.
+- End button disables and shows “Ending…” while the write completes.
+- Notification End path remains unchanged.
+- 226 tests.
+
 ## 0.46.2 live shift notifications
 
 - Restored POST_NOTIFICATIONS, removed accidentally with the old reminder feature.
