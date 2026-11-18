@@ -45,7 +45,14 @@ trap 'stop_emulator' EXIT
 
 ./scripts/gradle-capped.sh :composeApp:assembleDebug -PbakiVerify=true --offline >"$OUT/build.log" 2>&1
 APK="$ROOT/composeApp/build/outputs/apk/debug/composeApp-debug.apk"
+adb_cmd shell pm clear "$APP_ID" >/dev/null 2>&1 || true
 adb_cmd install -r "$APK" >"$OUT/install.log"
+if [ -n "${BAKI_RESTORE_BACKUP:-}" ] && [ -f "$BAKI_RESTORE_BACKUP" ]; then
+  adb_cmd shell mkdir -p "/sdcard/Android/data/$APP_ID/files" >/dev/null 2>&1 || true
+  adb_cmd push "$BAKI_RESTORE_BACKUP" "/sdcard/Android/data/$APP_ID/files/baki-restore-test.json" >/dev/null
+else
+  adb_cmd shell rm -f "/sdcard/Android/data/$APP_ID/files/baki-restore-test.json" /sdcard/Download/baki-restore-test.json >/dev/null 2>&1 || true
+fi
 adb_cmd shell pm grant "$APP_ID" android.permission.ACCESS_FINE_LOCATION || true
 adb_cmd shell pm grant "$APP_ID" android.permission.ACCESS_COARSE_LOCATION || true
 adb_cmd shell am force-stop "$APP_ID"

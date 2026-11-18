@@ -29,7 +29,17 @@ class BakiSmokeTest {
     val app = createAndroidComposeRule<MainActivity>()
 
     @Test
+    fun restoredBackupCountsArePresent() {
+        val fixture = app.activity.getExternalFilesDir(null)?.resolve("baki-restore-test.json") ?: java.io.File("/sdcard/Download/baki-restore-test.json")
+        org.junit.Assume.assumeTrue("restore fixture not supplied", fixture.exists())
+        val restored = loadLocal()
+        org.junit.Assert.assertEquals(106, restored.entries.size)
+        org.junit.Assert.assertEquals(16, restored.shifts.size)
+    }
+
+    @Test
     fun prefilledStatementEntrySavesOnPhone() {
+        org.junit.Assume.assumeTrue("restore fixture loaded; prefill fixture is separate", !(app.activity.getExternalFilesDir(null)?.resolve("baki-restore-test.json")?.exists() ?: false))
         app.onNodeWithContentDescription("More").performClick()
         app.waitForIdle()
         app.onNodeWithTag("statement-prefill").performClick()

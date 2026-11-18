@@ -28,7 +28,9 @@ http://baki.lan:8787
 http://baki.lan:8787/dl
 ```
 
-`.local` is the fallback, not the primary, because Android browser/OS mDNS support varies.
+`.local` is the fallback, not the primary, because Android cannot resolve it here.
+Tested on the API 36 emulator: `ping baki.local` returns **unknown host**, while the IP works.
+Android needs router-provided `baki.lan` DNS (or the IP).
 
 ## Tailscale (only if away-from-home access is needed)
 

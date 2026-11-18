@@ -154,6 +154,16 @@ class MainActivity : ComponentActivity() {
     /** Test-only seed for the isolated .verify package; never present in the normal app. */
     private fun seedVerifyStatements() {
         if (packageName.endsWith(".verify").not()) return
+        // A clean-restore fixture, if supplied by the Android test harness.
+        val fixture = getExternalFilesDir(null)?.resolve("baki-restore-test.json") ?: java.io.File("/sdcard/Download/baki-restore-test.json")
+        if (fixture.exists()) {
+            runCatching {
+                val text = fixture.readText()
+                val bundle = BakiJson.decodeFromString<BakiBackupBundle>(text)
+                saveLocal(bundle.store)
+            }
+            return
+        }
         val current = runCatching { loadLocal() }.getOrNull() ?: return
         if (current.importedTxns.isNotEmpty()) return
         val stamp = nowIso()

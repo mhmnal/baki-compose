@@ -104,18 +104,20 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 delay(4_000)
             }
         }
-        scope.launch {
-            while (true) {
-                runCatching { sync(showProgress = false) }
-                delay(if (status == "offline") 5_000 else 20_000)
-            }
-        }
-        scope.launch {
-            while (true) {
-                runCatching {
-                    client.events().collect { sync(showProgress = false) }
+        if (config.serverUrl.isNotBlank()) {
+            scope.launch {
+                while (true) {
+                    runCatching { sync(showProgress = false) }
+                    delay(if (status == "offline") 5_000 else 20_000)
                 }
-                delay(3_000)          // server restarts / network blips: retry the stream
+            }
+            scope.launch {
+                while (true) {
+                    runCatching {
+                        client.events().collect { sync(showProgress = false) }
+                    }
+                    delay(3_000)          // server restarts / network blips: retry the stream
+                }
             }
         }
     }
