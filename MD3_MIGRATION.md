@@ -731,6 +731,17 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.47.5 audit clarity
+
+- Shifts hero is labelled all-time net.
+- Spend running balance removed; entries grouped by day with day totals.
+- Spend summary separates purchases from income/shift counts.
+- Shift amounts are neutral; quality stays on the dot.
+- Payout action moved inside the shift card.
+- Shift rows show weekday, hours and RM/hr.
+- Today adds target progress, clear day labels and food-cap period.
+- 226 tests expected; goldens refreshed.
+
 ## 0.47.4 chart alignment
 
 - Best/lowest now use the visible 7D/30D window, not the whole month.

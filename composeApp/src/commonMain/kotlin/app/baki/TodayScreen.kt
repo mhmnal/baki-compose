@@ -39,6 +39,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -176,7 +177,7 @@ fun TodayScreen(
                         cents = t.net, reducedMotion = repo.config.reducedMotion,
                         fontFamily = archivoDisplayFontFamily(),
                         background = scheme.primary, ink = scheme.onPrimary,
-                        decimalInk = scheme.tertiaryContainer, largeText = true,
+                        decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = true,
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -193,7 +194,7 @@ fun TodayScreen(
                             cents = t.net, reducedMotion = repo.config.reducedMotion,
                             fontFamily = archivoDisplayFontFamily(),
                             background = scheme.primary, ink = scheme.onPrimary,
-                            decimalInk = scheme.tertiaryContainer, largeText = false,
+                            decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = false,
                             description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                             modifier = Modifier.weight(0.6f).fillMaxHeight(),
                         )
@@ -205,6 +206,27 @@ fun TodayScreen(
                             DayCard(store, today, day, onDay, Modifier.fillMaxWidth().weight(1f))
                         }
                     }
+                }
+                val targetCents = ((shift?.hours ?: 0.0) * cfg.targetRate * 100).roundToLong()
+                if (targetCents > 0) {
+                    Spacer(Modifier.height(Space.s))
+                    val progress = (t.net.toDouble() / targetCents).coerceIn(0.0, 1.0)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Target RM ${rm(targetCents)} · ${(progress * 100).toInt()}%",
+                            color = if (progress >= 1.0) scheme.tertiary else scheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text("${"%.1f".format(shift?.hours ?: 0.0)}h", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.height(Space.xs))
+                    LinearProgressIndicator(
+                        progress = { progress.toFloat() },
+                        modifier = Modifier.fillMaxWidth().height(5.dp).clip(CircleShape),
+                        color = if (progress >= 1.0) scheme.tertiary else scheme.primary,
+                        trackColor = scheme.surfaceContainerHigh,
+                    )
                 }
                 if (operating.shiftCount > 0) {
                     Spacer(Modifier.height(Space.xs))
@@ -803,6 +825,7 @@ private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, ani
                         CoverMark(cover != null, paidUntil)
                     }
                     Text(status, color = if (food?.over == true) scheme.error else scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text("today's cap", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 }
             }
         } else {
@@ -813,7 +836,8 @@ private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, ani
                     CoverMark(cover != null, paidUntil)
                 }
                 Spacer(Modifier.height(2.dp))
-                FoodRing(food, Modifier.size(70.dp), animate = animate)
+                FoodRing(food, Modifier.size(64.dp), animate = animate)
+                Text("today", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
         }
     }
@@ -951,15 +975,16 @@ private fun MiniDay(store: Store, iso: String, selected: Boolean, onDay: (String
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            iso.takeLast(2),
+            if (iso == todayIso()) "TODAY" else weekdayShort(iso).uppercase(),
             color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            maxLines = 1,
         )
         Spacer(Modifier.height(2.dp))
         Text(
-            if (empty) "–" else (t.net / 100).toInt().toString(),
+            if (empty) "no data" else "RM ${(t.net / 100).toInt()}",
             color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
             maxLines = 1,
         )
     }

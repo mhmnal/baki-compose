@@ -836,6 +836,7 @@ fun RowCard(
     sub: String,
     amount: String,
     amountTint: Color = Color.Unspecified,
+    dotTint: Color = Color.Unspecified,
     icon: ImageVector? = null,
     onLongPress: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -846,6 +847,7 @@ fun RowCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val ink = if (amountTint == Color.Unspecified) scheme.onSurface else amountTint
+    val dot = if (dotTint == Color.Unspecified) ink else dotTint
     val gestureScope = rememberCoroutineScope()
     var acted by remember { mutableStateOf(false) }
     val swipe = rememberSwipeToDismissBoxState(
@@ -930,9 +932,9 @@ fun RowCard(
                     Modifier
                         .size(30.dp)
                         .clip(CircleShape)
-                        .background(ink.copy(alpha = 0.14f)),
+                        .background(dot.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center,
-                ) { Box(Modifier.size(7.dp).clip(CircleShape).background(ink)) }
+                ) { Box(Modifier.size(7.dp).clip(CircleShape).background(dot)) }
                 Spacer(Modifier.width(Space.m))
             }
             Column(Modifier.weight(1f)) {
@@ -942,23 +944,17 @@ fun RowCard(
             Column(horizontalAlignment = Alignment.End) {
                 Text(amount, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
                 if (running != null) Text(running, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            }
-        }
-        if (actionLabel != null && onAction != null) {
-            Row(
-                Modifier.fillMaxWidth().padding(start = Space.l, end = Space.m, bottom = Space.xs),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    onClick = onAction,
-                    modifier = Modifier.heightIn(min = Control.primary),
-                    contentPadding = PaddingValues(horizontal = Space.m),
-                ) {
-                    Text(
-                        actionLabel,
-                        color = scheme.primary,
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    )
+                if (actionLabel != null && onAction != null) {
+                    TextButton(
+                        onClick = onAction,
+                        contentPadding = PaddingValues(horizontal = Space.xs),
+                    ) {
+                        Text(
+                            actionLabel,
+                            color = scheme.primary,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
                 }
             }
         }
@@ -1280,17 +1276,12 @@ private fun SpendingScreen(
         query.isNotBlank() -> "SPENT · ${entries.size} MATCH(ES)"
         else -> "MONEY OUT"
     }
+    val expenseCount = all.count { it.type != "income" }
+    val entriesByDay = remember(entries) {
+        entries.groupBy { it.date }.toSortedMap(compareByDescending { it })
+    }
 
     val envelopes = remember(repo.store, month) { budgetUsage(repo.store, month) }
-    val runningById = remember(entries) {
-        var balance = 0L
-        entries.sortedWith(
-            compareBy<Entry> { it.date }.thenBy { it.loggedAt.ifBlank { it.updated } },
-        ).associate { e ->
-            balance += if (e.type == "income") e.amount else -e.amount
-            e.id to balance
-        }
-    }
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
@@ -1307,7 +1298,7 @@ private fun SpendingScreen(
                     (if (filtering) {
                         "${entries.size} ${if (entries.size == 1) "purchase" else "purchases"}${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
                     } else {
-                        "${t.entryCount} ${if (t.entryCount == 1) "purchase" else "purchases"} · ${t.shiftCount} ${if (t.shiftCount == 1) "shift" else "shifts"} · in RM ${rm(t.income)} · no judgement"
+                        "$expenseCount ${if (expenseCount == 1) "purchase" else "purchases"} this month · no judgement"
                     }),
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
@@ -1327,9 +1318,9 @@ private fun SpendingScreen(
                     ),
                 )
                 Spacer(Modifier.height(Space.s))
-                FlowRow(
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    verticalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
                     val usedCats = all.map { it.cat }.toSet()
                     val chips = listOf("all" to "All") +
@@ -1429,21 +1420,29 @@ private fun SpendingScreen(
                     }
                 }
             }
-            items(entries, key = { it.id }) { e ->
-                RowCard(
-                    e.note.ifEmpty { categoryLabel(repo.store, e.cat) },
-                    buildString {
-                        append(prettyDate(e.date))
-                        e.odo?.takeIf { it > 0 }?.let { append(" · ${it} km") }
-                        loggedTime(e.loggedAt)?.let { append(" · logged $it") }
-                    },
-                    (if (e.type == "income") "+" else "−") + rm(e.amount),
-                    if (e.type == "income") scheme.tertiary else scheme.error,
-                    icon = categoryIcon(e.cat),
-                    onLongPress = { onEditEntry(e) },
-                    onDelete = { onDeleteEntry(e) },
-                    running = runningById[e.id]?.let { "entry bal RM ${rm(it)}" },
-                )
+            entriesByDay.forEach { (date, dayEntries) ->
+                item(key = "day-$date") {
+                    val out = dayEntries.filter { it.type != "income" }.sumOf { it.amount }
+                    Row(Modifier.fillMaxWidth().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${weekdayShort(date)} ${prettyDate(date)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Spacer(Modifier.weight(1f))
+                        Text("RM ${rm(out)} out", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"))
+                    }
+                }
+                items(dayEntries, key = { it.id }) { e ->
+                    RowCard(
+                        e.note.ifEmpty { categoryLabel(repo.store, e.cat) },
+                        buildString {
+                            e.odo?.takeIf { it > 0 }?.let { append("${it} km") }
+                            loggedTime(e.loggedAt)?.let { if (isNotEmpty()) append(" · "); append("logged $it") }
+                        },
+                        (if (e.type == "income") "+" else "−") + rm(e.amount),
+                        if (e.type == "income") scheme.tertiary else scheme.error,
+                        icon = categoryIcon(e.cat),
+                        onLongPress = { onEditEntry(e) },
+                        onDelete = { onDeleteEntry(e) },
+                    )
+                }
             }
             if (entries.isEmpty()) item {
                 if (query.isNotBlank() || catFilter != "all") {
@@ -1489,9 +1488,9 @@ private fun ShiftsScreen(
         item {
             Column {
                 Spacer(Modifier.height(Space.l))
-                Hero("WHAT YOU ACTUALLY MADE", cents(net), scheme.onSurface, 40)
+                Hero("ALL-TIME SHIFT NET", cents(net), scheme.onSurface, 40)
                 Text(
-                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · tap a shift to edit",
+                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · all time · tap a shift to edit",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(Space.m))
                 FilledTonalButton(
@@ -1512,12 +1511,13 @@ private fun ShiftsScreen(
             val sh = row.first
             val m = row.second
             RowCard(
-                "${prettyDate(sh.date)} · ${sh.start}".trim().trimEnd('·'),
-                "${"%.1f".format(m.km)} km" +
-                    (m.grossPerKm?.let { " · RM ${rm(it)}/km" } ?: "") +
+                "${weekdayShort(sh.date)} ${prettyDate(sh.date)} · ${sh.start}",
+                "${"%.1f".format(m.km)} km · ${"%.1f".format(m.hrs)}h" +
+                    (m.netHr?.let { " · RM ${rm(it)}/hr" } ?: "") +
                     " · ${m.band}",
                 "RM ${rm(m.net)}",
-                if (m.net < 0) scheme.error else bandColor(m.band, scheme),
+                scheme.onSurface,
+                dotTint = bandColor(m.band, scheme),
                 onClick = { onEditShift(sh) },
                 onLongPress = { onEditShift(sh) },
                 onDelete = { onDeleteShift(sh) },

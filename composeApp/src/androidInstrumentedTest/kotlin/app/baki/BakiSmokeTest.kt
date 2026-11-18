@@ -56,7 +56,7 @@ class BakiSmokeTest {
         app.onNodeWithText("Baki").assertIsDisplayed()
 
         app.onNodeWithContentDescription("Shifts").performClick()
-        app.onNodeWithText("WHAT YOU ACTUALLY MADE").assertIsDisplayed()
+        app.onNodeWithText("ALL-TIME SHIFT NET").assertIsDisplayed()
 
         app.onNodeWithContentDescription("More").performClick()
         app.onNodeWithText("Money").assertIsDisplayed()
