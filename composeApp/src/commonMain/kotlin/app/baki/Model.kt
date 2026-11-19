@@ -47,6 +47,16 @@ data class StatementMark(
     val updated: String = "",
 )
 
+/** Review state for one Monday–Sunday week. Not a ledger lock. */
+@Serializable
+data class WeekClose(
+    @SerialName("week_start") val weekStart: String,
+    @SerialName("received_cents") val receivedCents: Long = 0,
+    @SerialName("closed_at") val closedAt: String = "",
+    val updated: String = "",
+    val note: String = "",
+)
+
 /** A virtual movement in or out of a reserve. Positive is a top-up; negative is a withdrawal. */
 @Serializable
 data class ReserveTxn(
@@ -262,6 +272,8 @@ data class Store(
     val dayNotes: Map<String, DayNote> = emptyMap(),
     /** Reviewed/closed day pages; absent from older stores. */
     val dayCloses: Map<String, DayClose> = emptyMap(),
+    /** Weekly close/reopen state keyed by Monday. */
+    val weekCloses: Map<String, WeekClose> = emptyMap(),
     /** Reconciliation marks keyed by statement week. */
     val statementMarks: Map<String, StatementMark> = emptyMap(),
     /** Per-month envelope transfers: month -> category -> signed RM adjustment. */

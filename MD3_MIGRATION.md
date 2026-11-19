@@ -731,6 +731,19 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.49.1 week close header
+
+- Removed the date/status collision on 360dp.
+
+## 0.49.0 week close
+
+- Monday–Sunday Week Close card on Stats.
+- Manual received payout, prefilled from recorded shift payouts.
+- Gross, payouts and statement weekly variance.
+- Close/reopen without locking shifts.
+- Week closes sync through the client merge and server.
+- New WeekCloseTest.
+
 ## 0.48.0 statement reconciliation copy
 
 - Weekly history now shows gross − deductions = weekly explicitly.

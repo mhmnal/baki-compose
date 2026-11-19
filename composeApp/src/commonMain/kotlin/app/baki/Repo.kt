@@ -261,6 +261,37 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
 
     /** Undo a bill payment. Auto-created expenses are removed; manually linked ones stay. */
+    /** Close a Monday–Sunday week with the payout actually received. Never locks shifts. */
+    suspend fun closeWeek(weekStart: String, receivedCents: Long): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return@withLock false
+        if (!isValidIsoDate(weekStart) || weekStartOf(weekStart) != weekStart) return@withLock false
+        val stamp = nowIso()
+        val close = WeekClose(
+            weekStart = weekStart,
+            receivedCents = receivedCents.coerceAtLeast(0),
+            closedAt = stamp,
+            updated = stamp,
+        )
+        store = store.copy(weekCloses = store.weekCloses + (weekStart to close), updatedAt = stamp)
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
+    /** Reopen a closed week; the entered amount is retained for the next close. */
+    suspend fun reopenWeek(weekStart: String): Boolean = mutex.withLock {
+        if (config.allowWrites.not()) return@withLock false
+        val existing = store.weekCloses[weekStart] ?: return@withLock false
+        val stamp = nowIso()
+        store = store.copy(
+            weekCloses = store.weekCloses + (weekStart to existing.copy(closedAt = "", updated = stamp)),
+            updatedAt = stamp,
+        )
+        saveLocal(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     suspend fun undoBillPayment(billId: String, period: String, removeEntry: Boolean): Boolean = mutex.withLock {
         if (config.allowWrites.not()) return@withLock false
         val link = store.billPayments.firstOrNull { it.active && it.billId == billId && it.period == period }

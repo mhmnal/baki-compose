@@ -46,6 +46,11 @@ fun mergeStores(
         val cur = dayNotes[date]
         if (cur == null || note.updated >= cur.updated) dayNotes[date] = note
     }
+    val weekCloses = LinkedHashMap<String, WeekClose>()
+    for ((week, close) in a.weekCloses + b.weekCloses) {
+        val cur = weekCloses[week]
+        if (cur == null || close.updated >= cur.updated) weekCloses[week] = close
+    }
     val dayCloses = LinkedHashMap<String, DayClose>()
     for ((date, close) in a.dayCloses + b.dayCloses) {
         val cur = dayCloses[date]
@@ -116,6 +121,7 @@ fun mergeStores(
             .map { (_, list) -> list.maxByOrNull { it.updated }!! },
         dayNotes = dayNotes,
         dayCloses = dayCloses,
+        weekCloses = weekCloses,
         statementMarks = statementMarks,
         envelopeMoves = envelopeMoves,
         reserveTxns = reserveTxns.values.toList(),

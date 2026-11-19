@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
@@ -68,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+import kotlin.math.roundToLong
 import kotlinx.coroutines.launch
 
 /** Month at a glance: statement cover, month-in-ink, week strip, spend, calendar, reserves. */
@@ -118,6 +120,7 @@ fun SummaryScreen(
             }
         }
         item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
+        item { Md3Card { WeekCloseCard(repo = repo, store = store) } }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }
@@ -136,6 +139,156 @@ fun SummaryScreen(
     }
     managingFund?.let { fund ->
         ReserveSheet(repo = repo, fund = fund, onDismiss = { managingFund = null })
+    }
+}
+
+@Composable
+private fun WeekCloseCard(repo: BakiRepo, store: Store) {
+    val scheme = MaterialTheme.colorScheme
+    val weekStart = weekStartOf(todayIso())
+    val view = remember(store, weekStart) { weekCloseView(store, weekStart) }
+    var open by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SectionMark(if (view.isClosed) scheme.tertiary else scheme.secondary, 14.dp)
+        Spacer(Modifier.width(Space.s))
+        Column(Modifier.weight(1f)) {
+            Text("WEEK CLOSE", color = scheme.onSurfaceVariant, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Text("${prettyDate(view.weekStart)} – ${prettyDate(view.weekEnd)}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall)
+        }
+        Text(
+            if (view.isClosed) "CLOSED" else "OPEN",
+            color = if (view.isClosed) scheme.tertiary else scheme.secondary,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+        )
+    }
+    Spacer(Modifier.height(Space.s))
+    Row(verticalAlignment = Alignment.Bottom) {
+        Column(Modifier.weight(1f)) {
+            Text("Recorded shift net", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text("RM ${rm(view.recordedNet)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text("Received", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text("RM ${rm(view.received)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
+        }
+    }
+    Spacer(Modifier.height(Space.xs))
+    Text(
+        when {
+            view.isClosed -> "Closed ${view.closeDate?.take(10) ?: "—"} · review or reopen"
+            view.statement == null -> "No statement imported · enter what you actually received"
+            !view.statementReconciled -> "Statement is not reconciled"
+            else -> "Ready to close"
+        },
+        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+    )
+    Spacer(Modifier.height(Space.s))
+    FilledTonalButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth(), enabled = view.hasActivity) {
+        Text(if (view.isClosed) "Review closed week" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
+    }
+    if (open) WeekCloseSheet(repo = repo, weekStart = weekStart, initial = view, onDismiss = { open = false })
+}
+
+@Composable
+private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekCloseView, onDismiss: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
+    var received by remember(initial.received) { mutableStateOf("%.2f".format(initial.received / 100.0)) }
+    var saving by remember { mutableStateOf(false) }
+    val cents = parseMoneyCents(received)
+    val view = remember(repo.store, weekStart) { weekCloseView(repo.store, weekStart) }
+    BakiSheet(
+        onDismiss = onDismiss,
+        footer = {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                if (view.isClosed) {
+                    TextButton(
+                        enabled = !repo.readOnly && !saving,
+                        onClick = {
+                            scope.launch {
+                                saving = true
+                                repo.reopenWeek(weekStart)
+                                saving = false
+                                onDismiss()
+                            }
+                        },
+                    ) { Text("Reopen", color = scheme.onSurfaceVariant) }
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") }
+                Spacer(Modifier.width(Space.s))
+                Button(
+                    enabled = !repo.readOnly && !saving && view.hasActivity,
+                    onClick = {
+                        scope.launch {
+                            saving = true
+                            if (repo.closeWeek(weekStart, cents ?: view.received)) onDismiss()
+                            saving = false
+                        }
+                    },
+                ) { Text(if (view.isClosed) "Save close" else "Close week") }
+            }
+        },
+    ) {
+        Text("WEEK CLOSE", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        Text("${prettyDate(view.weekStart)} – ${prettyDate(view.weekEnd)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+        Text("Monday–Sunday · no ledger lock", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        WeekCloseRow("Shifts", "${view.shiftCount} · ${"%.1f".format(view.hours)}h")
+        WeekCloseRow("Recorded shift net", "RM ${rm(view.recordedNet)}")
+        WeekCloseRow("Recorded gross", "RM ${rm(view.recordedGross)}")
+        WeekCloseRow("Payouts already recorded", "RM ${rm(view.recordedPayouts)}")
+        view.statement?.let { st ->
+            Spacer(Modifier.height(Space.xs))
+            Text("STATEMENT", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+            WeekCloseRow("Gross", "RM ${rm((st.income * 100).roundToLong())}")
+            WeekCloseRow("Deductions", "− RM ${rm((kotlin.math.abs(st.deductions) * 100).roundToLong())}")
+            WeekCloseRow("Weekly payout", "RM ${rm((st.weekly * 100).roundToLong())}")
+            WeekCloseRow("Reconciled", if (view.statementReconciled) "yes" else "no")
+        } ?: Text("No statement imported for this week.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(Space.s))
+        Text("ACTUAL PAYOUT RECEIVED", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+        OutlinedTextField(
+            value = received,
+            onValueChange = { received = it.filter { c -> c.isDigit() || c == '.' } },
+            label = { Text("Received RM") },
+            singleLine = true,
+            enabled = !repo.readOnly && !view.isClosed,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (view.statement != null) {
+            WeeklyVarianceRow("Statement weekly vs received", (cents ?: view.received) - (view.statement.weekly * 100).roundToLong())
+        }
+        WeeklyVarianceRow("Recorded payouts vs received", (cents ?: view.received) - view.recordedPayouts)
+        view.grossGap?.let { WeeklyVarianceRow("Logged gross vs statement gross", it) }
+        Text(
+            if (repo.readOnly) "Read-only: enable Allow writes in More → App."
+            else if (view.isClosed) "Closed ${view.closeDate?.take(16)?.replace('T', ' ') ?: "—"}. Reopen to edit."
+            else "Enter the amount that actually landed, then close.",
+            color = if (repo.readOnly) scheme.secondary else scheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+@Composable
+private fun WeekCloseRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(value, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+    }
+}
+
+@Composable
+private fun WeeklyVarianceRow(label: String, cents: Long) {
+    val scheme = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(
+            (if (cents > 0) "+" else if (cents < 0) "−" else "") + "RM ${rm(kotlin.math.abs(cents))}",
+            color = if (cents == 0L) scheme.tertiary else scheme.secondary,
+            style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
+        )
     }
 }
 
