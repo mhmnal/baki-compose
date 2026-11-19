@@ -55,3 +55,31 @@ fun weekCloseView(store: Store, weekStart: String): WeekCloseView {
         cashVariance = statementWeekly?.let { received - it },
     )
 }
+
+/** A selectable week for the close/history picker. */
+data class WeekOption(
+    val weekStart: String,
+    val weekEnd: String,
+    val shiftCount: Int,
+    val hasStatement: Boolean,
+    val isClosed: Boolean,
+)
+
+fun weekOptions(store: Store, today: String): List<WeekOption> {
+    val weeks = linkedSetOf(weekStartOf(today))
+    for (sh in store.shifts) weeks += weekStartOf(sh.date)
+    for (week in store.statements.keys) weeks += week
+    for (week in store.weekCloses.keys) weeks += week
+    return weeks
+        .filter { isValidIsoDate(it) && weekStartOf(it) == it }
+        .sortedDescending()
+        .map { week ->
+            WeekOption(
+                weekStart = week,
+                weekEnd = addDays(week, 6),
+                shiftCount = store.shifts.count { it.date >= week && it.date < addDays(week, 7) },
+                hasStatement = store.statements.containsKey(week),
+                isClosed = store.weekCloses[week]?.closedAt?.isNotBlank() == true,
+            )
+        }
+}

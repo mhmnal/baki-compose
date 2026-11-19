@@ -145,9 +145,13 @@ fun SummaryScreen(
 @Composable
 private fun WeekCloseCard(repo: BakiRepo, store: Store) {
     val scheme = MaterialTheme.colorScheme
-    val weekStart = weekStartOf(todayIso())
+    val currentWeek = weekStartOf(todayIso())
+    val options = remember(store, currentWeek) { weekOptions(store, todayIso()) }
+    var selectedWeek by remember { mutableStateOf(currentWeek) }
+    val weekStart = selectedWeek
     val view = remember(store, weekStart) { weekCloseView(store, weekStart) }
     var open by remember { mutableStateOf(false) }
+    var pickerOpen by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
         SectionMark(if (view.isClosed) scheme.tertiary else scheme.secondary, 14.dp)
         Spacer(Modifier.width(Space.s))
@@ -183,10 +187,71 @@ private fun WeekCloseCard(repo: BakiRepo, store: Store) {
         color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
     )
     Spacer(Modifier.height(Space.s))
-    FilledTonalButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth(), enabled = view.hasActivity) {
-        Text(if (view.isClosed) "Review closed week" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.CenterVertically) {
+        FilledTonalButton(onClick = { open = true }, modifier = Modifier.weight(1f), enabled = view.hasActivity) {
+            Text(if (view.isClosed) "Review" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
+        }
+        TextButton(onClick = { pickerOpen = true }, modifier = Modifier.heightIn(min = Control.primary)) {
+            Text("Weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        }
+    }
+    if (weekStart != currentWeek) {
+        TextButton(onClick = { selectedWeek = currentWeek }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+            Text("Back to this week", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+        }
     }
     if (open) WeekCloseSheet(repo = repo, weekStart = weekStart, initial = view, onDismiss = { open = false })
+    if (pickerOpen) WeekPickerSheet(
+        options = options,
+        selectedWeek = weekStart,
+        currentWeek = currentWeek,
+        onSelect = { selectedWeek = it; pickerOpen = false },
+        onDismiss = { pickerOpen = false },
+    )
+}
+
+@Composable
+private fun WeekPickerSheet(
+    options: List<WeekOption>,
+    selectedWeek: String,
+    currentWeek: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    BakiSheet(onDismiss = onDismiss) {
+        Text("WEEK HISTORY", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+        Text("Choose a week", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold))
+        Text("Weeks with shifts, statements or a saved close.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        options.forEach { option ->
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = if (option.weekStart == selectedWeek) scheme.primaryContainer else scheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth().clickable { onSelect(option.weekStart) },
+            ) {
+                Row(Modifier.padding(horizontal = Space.m, vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${prettyDate(option.weekStart)} – ${prettyDate(option.weekEnd)}" + if (option.weekStart == currentWeek) " · this week" else "",
+                            color = if (option.weekStart == selectedWeek) scheme.onPrimaryContainer else scheme.onSurface,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        )
+                        Text(
+                            "${option.shiftCount} shift${if (option.shiftCount == 1) "" else "s"}" +
+                                if (option.hasStatement) " · statement" else "",
+                            color = if (option.weekStart == selectedWeek) scheme.onPrimaryContainer.copy(alpha = 0.75f) else scheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Text(
+                        if (option.isClosed) "CLOSED" else "OPEN",
+                        color = if (option.weekStart == selectedWeek) scheme.onPrimaryContainer else if (option.isClosed) scheme.tertiary else scheme.secondary,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

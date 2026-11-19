@@ -39,5 +39,9 @@ class WeekCloseTest {
         assertEquals(5_000 - 9_000, view.cashVariance)
         assertTrue(view.hasActivity)
         assertTrue(!view.isClosed)
+
+        val options = weekOptions(store, "2026-11-20")
+        assertTrue(options.any { it.weekStart == "2026-11-16" && it.shiftCount == 1 && it.hasStatement })
+        assertTrue(options.any { it.weekStart == weekStartOf("2026-11-20") })
     }
 }

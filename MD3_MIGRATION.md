@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.49.2 week picker
+
+- Week Close can select any week with shifts, a statement or a saved close.
+- Current week is always available.
+- Week list shows open/closed and statement presence.
+- 227 tests.
+
 ## 0.49.1 week close header
 
 - Removed the date/status collision on 360dp.
