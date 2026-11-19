@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -188,10 +189,10 @@ private fun WeekCloseCard(repo: BakiRepo, store: Store) {
     )
     Spacer(Modifier.height(Space.s))
     Row(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.CenterVertically) {
-        FilledTonalButton(onClick = { open = true }, modifier = Modifier.weight(1f), enabled = view.hasActivity) {
+        FilledTonalButton(onClick = { open = true }, modifier = Modifier.weight(1f).testTag("week-close-review"), enabled = view.hasActivity) {
             Text(if (view.isClosed) "Review" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
         }
-        TextButton(onClick = { pickerOpen = true }, modifier = Modifier.heightIn(min = Control.primary)) {
+        TextButton(onClick = { pickerOpen = true }, modifier = Modifier.heightIn(min = Control.primary).testTag("week-close-picker")) {
             Text("Weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }
     }
@@ -227,7 +228,7 @@ private fun WeekPickerSheet(
             Surface(
                 shape = MaterialTheme.shapes.medium,
                 color = if (option.weekStart == selectedWeek) scheme.primaryContainer else scheme.surfaceContainerHigh,
-                modifier = Modifier.fillMaxWidth().clickable { onSelect(option.weekStart) },
+                modifier = Modifier.fillMaxWidth().testTag("week-option-${option.weekStart}").clickable { onSelect(option.weekStart) },
             ) {
                 Row(Modifier.padding(horizontal = Space.m, vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -268,6 +269,7 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 if (view.isClosed) {
                     TextButton(
+                        modifier = Modifier.testTag("week-close-reopen"),
                         enabled = !repo.readOnly && !saving,
                         onClick = {
                             scope.launch {
@@ -283,6 +285,7 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
                 TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") }
                 Spacer(Modifier.width(Space.s))
                 Button(
+                    modifier = Modifier.testTag("week-close-confirm"),
                     enabled = !repo.readOnly && !saving && view.hasActivity,
                     onClick = {
                         scope.launch {

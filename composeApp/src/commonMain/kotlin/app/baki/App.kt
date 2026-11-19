@@ -2110,6 +2110,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                                     }
                                 },
                                 contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
+                                modifier = Modifier.testTag("bill-mark-paid-${bill.id}"),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = scheme.primary,
                                     contentColor = scheme.onPrimary,
