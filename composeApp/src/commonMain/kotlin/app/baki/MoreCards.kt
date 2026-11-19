@@ -34,7 +34,11 @@ fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
         Spacer(Modifier.height(Space.s))
         Text("RM ${rm(st.income)} gross", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
         Text(
-            "${st.insuranceCount} insurance charge(s) · RM ${rm(st.deductions)} deducted",
+            "RM ${rm(kotlin.math.abs(st.deductions))} deductions · RM ${rm(st.weekly)} weekly payout",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
+        Text(
+            st.insuranceCount?.let { "$it insurance charge(s) on the statement" }
+                ?: "insurance count not recorded in this old import",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
         if (st.rangeText.isNotEmpty()) {
             Text(st.rangeText, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
@@ -89,20 +93,23 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 }
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    "deductions RM ${rm(st.deductions)} · weekly RM ${rm(st.weekly)}",
+                    "gross RM ${rm(st.income)} − deductions RM ${rm(kotlin.math.abs(st.deductions))} = weekly RM ${rm(st.weekly)}",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
                 Text(
-                    "insurance: app ${check.appInsurance} vs statement ${st.insuranceCount}" +
-                        if (check.insuranceMatches) " ✓" else " — check the cover rule",
-                    color = if (check.insuranceMatches) scheme.tertiary else scheme.error,
+                    when {
+                        !check.insuranceKnown -> "insurance: app ${check.appInsurance} charges · statement count not recorded"
+                        check.insuranceMatches -> "insurance: app ${check.appInsurance} · statement ${check.statementInsurance} ✓"
+                        else -> "insurance: app ${check.appInsurance} vs statement ${check.statementInsurance} — check the cover rule"
+                    },
+                    color = if (check.insuranceKnown && check.insuranceMatches) scheme.tertiary else scheme.secondary,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (check.loggedShifts == 0) {
                     Text("no shifts logged for this week", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 } else {
                     Text(
-                        "logged ${check.loggedShifts} shifts · RM ${rm(check.loggedGross / 100.0)} · gap RM ${rm(gap)}",
+                        "gross logged RM ${rm(check.loggedGross / 100.0)} · statement RM ${rm(st.income)} · gap RM ${rm(gap)}",
                         color = if (kotlin.math.abs(gap) < 1.0) scheme.tertiary else scheme.secondary,
                         style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                     )
@@ -111,9 +118,10 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                 val matches = check.loggedShifts > 0 && kotlin.math.abs(gap) < 1.0 && check.insuranceMatches
                 Text(
                     when {
-                        matches -> "MATCHED · gross and insurance agree"
+                        matches -> "MATCHED · gross and insurance counts agree"
                         check.loggedShifts == 0 -> "NOT LOGGED · import has no matching shifts yet"
-                        else -> "DIFFERENCE · review gross and insurance in the margin"
+                        !check.insuranceKnown -> "DIFFERENCE · compare gross above; re-import for insurance count"
+                        else -> "DIFFERENCE · compare the gross and insurance lines above"
                     },
                     color = if (matches) scheme.tertiary else scheme.secondary,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),

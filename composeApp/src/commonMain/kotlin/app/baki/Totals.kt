@@ -618,9 +618,11 @@ data class StatementCheck(
     val loggedShifts: Int,
     /** insurance windows the app derives for shifts that start in the week */
     val appInsurance: Int,
-    val statementInsurance: Int,
+    /** Null when the import predates insurance-count capture. */
+    val statementInsurance: Int?,
 ) {
-    val insuranceMatches: Boolean get() = appInsurance == statementInsurance
+    val insuranceKnown: Boolean get() = statementInsurance != null
+    val insuranceMatches: Boolean get() = insuranceKnown && appInsurance == statementInsurance
 }
 
 fun statementCheck(store: Store, statement: Statement): StatementCheck {

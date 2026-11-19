@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.48.0 statement reconciliation copy
+
+- Weekly history now shows gross − deductions = weekly explicitly.
+- Gross comparison is labelled logged vs statement vs gap.
+- Removed the misleading “margin” wording.
+- Old imports show insurance count unavailable instead of a false zero.
+- Server preserves a missing insurance count as null.
+
 ## 0.47.9 delete commitment
 
 - Bill Delete is enabled for any editable bill.

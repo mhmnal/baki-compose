@@ -2378,9 +2378,12 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
                     )
                 }
                 Text(
-                    if (check.insuranceMatches) "insurance: ${latest.insuranceCount} charges match"
-                    else "insurance: app ${check.appInsurance} vs statement ${latest.insuranceCount} — check the cover rule",
-                    color = if (check.insuranceMatches) scheme.tertiary else scheme.error,
+                    when {
+                        !check.insuranceKnown -> "insurance: statement count not recorded — re-import the PDF"
+                        check.insuranceMatches -> "insurance: ${check.statementInsurance} charges match"
+                        else -> "insurance: app ${check.appInsurance} vs statement ${check.statementInsurance} — check the cover rule"
+                    },
+                    color = if (check.insuranceKnown && check.insuranceMatches) scheme.tertiary else scheme.secondary,
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(

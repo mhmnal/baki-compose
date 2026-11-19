@@ -240,7 +240,8 @@ data class Statement(
     @SerialName("other_income") val otherIncome: Double = 0.0,
     val incentives: Double = 0.0,
     val tips: Double = 0.0,
-    @SerialName("insurance_count") val insuranceCount: Int = 0,
+    /** Null for old imports that predate insurance-count capture. */
+    @SerialName("insurance_count") val insuranceCount: Int? = null,
     val consistent: Boolean = false,
     @SerialName("imported_at") val importedAt: String = "",
 )
