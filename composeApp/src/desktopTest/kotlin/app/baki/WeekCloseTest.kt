@@ -43,5 +43,13 @@ class WeekCloseTest {
         val options = weekOptions(store, "2026-11-20")
         assertTrue(options.any { it.weekStart == "2026-11-16" && it.shiftCount == 1 && it.hasStatement })
         assertTrue(options.any { it.weekStart == weekStartOf("2026-11-20") })
+
+        // Week closes must survive the backup JSON round-trip.
+        val closed = store.copy(
+            weekCloses = mapOf("2026-11-16" to WeekClose("2026-11-16", 5_000, "2026-11-20T10:00:00Z", "2026-11-20T10:00:00Z")),
+        )
+        val encoded = BakiJson.encodeToString(Store.serializer(), closed)
+        val decoded = BakiJson.decodeFromString(Store.serializer(), encoded)
+        assertEquals(5_000, decoded.weekCloses["2026-11-16"]?.receivedCents)
     }
 }
