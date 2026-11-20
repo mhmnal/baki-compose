@@ -1519,7 +1519,6 @@ private fun ShiftsScreen(
                     (m.netHr?.let { " · RM ${rm(it)}/hr" } ?: ""),
                 "RM ${rm(m.net)}",
                 scheme.onSurface,
-                dotTint = bandColor(m.band, scheme),
                 onClick = { onEditShift(sh) },
                 onLongPress = { onEditShift(sh) },
                 onDelete = { onDeleteShift(sh) },

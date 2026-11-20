@@ -69,15 +69,15 @@ class UiContractTest {
     }
 
     @Test
-    fun dayStripHasSpokenSummaries() = runSkikoComposeUiTest(
+    fun todayHeroHasSpokenSummary() = runSkikoComposeUiTest(
         size = Size(720f, 1600f), density = Density(2f),
     ) {
         PhonePreview.active = true
         try {
             setContent { BakiTheme("light") { App(app()) } }
             waitForIdle()
-            // The strip merges each cell into one announcement instead of reading four fragments.
-            onNodeWithContentDescription(prettyDate(todayIso()), substring = true).assertExists()
+            // The hero remains the one announcement for today's net.
+            onNodeWithContentDescription("Today's take, RM", substring = true).assertExists()
         } finally {
             PhonePreview.active = false
         }

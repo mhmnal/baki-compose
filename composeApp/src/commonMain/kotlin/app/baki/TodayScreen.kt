@@ -61,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
@@ -90,18 +91,6 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToLong
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-private val BANDS = mapOf(
-    "quiet" to "Quiet", "slow" to "Slow", "steady" to "Steady", "good" to "Good", "peak" to "Peak",
-)
-
-@Composable
-fun bandColor(band: String, scheme: androidx.compose.material3.ColorScheme): Color = when (band) {
-    "quiet" -> scheme.error
-    "slow", "steady" -> scheme.secondary
-    "good" -> scheme.tertiary
-    else -> scheme.primary
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -183,42 +172,43 @@ fun TodayScreen(
                     )
                     Spacer(Modifier.height(Space.s))
                     FoodCard(food, paidUntil, largeText = true, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(Space.s))
-                    DayCard(store, today, day, onDay, Modifier.fillMaxWidth().height(132.dp))
                 } else {
-                    Row(
-                        Modifier.fillMaxWidth().height(206.dp),
-                        horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    ) {
-                        HeroAmount(
-                            cents = t.net, reducedMotion = repo.config.reducedMotion,
-                            fontFamily = archivoDisplayFontFamily(),
-                            background = scheme.primary, ink = scheme.onPrimary,
-                            decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = false,
-                            description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
-                            modifier = Modifier.weight(0.6f).fillMaxHeight(),
-                        )
-                        Column(
-                            Modifier.weight(0.4f).fillMaxHeight(),
-                            verticalArrangement = Arrangement.spacedBy(Space.s),
-                        ) {
-                            FoodCard(food, paidUntil, largeText = false, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth().height(120.dp))
-                            DayCard(store, today, day, onDay, Modifier.fillMaxWidth().weight(1f))
-                        }
-                    }
+                    HeroAmount(
+                        cents = t.net, reducedMotion = repo.config.reducedMotion,
+                        fontFamily = archivoDisplayFontFamily(),
+                        background = scheme.primary, ink = scheme.onPrimary,
+                        decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = false,
+                        height = 180.dp,
+                        description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(Space.s))
+                    FoodCard(
+                        food, paidUntil, largeText = true, animate = !repo.config.reducedMotion,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
                 val targetCents = ((shift?.hours ?: 0.0) * cfg.targetRate * 100).roundToLong()
                 if (targetCents > 0) {
                     Spacer(Modifier.height(Space.s))
                     val progress = (t.net.toDouble() / targetCents).coerceIn(0.0, 1.0)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (largeText) {
                         Text(
                             "Target RM ${rm(targetCents)} · ${(progress * 100).toInt()}%",
-                            color = if (progress >= 1.0) scheme.tertiary else scheme.onSurfaceVariant,
+                            color = scheme.onSurfaceVariant,
                             style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
                         )
-                        Spacer(Modifier.weight(1f))
                         Text("${"%.1f".format(shift?.hours ?: 0.0)}h", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "Target RM ${rm(targetCents)} · ${(progress * 100).toInt()}%",
+                                color = scheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text("${"%.1f".format(shift?.hours ?: 0.0)}h", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                     Spacer(Modifier.height(Space.xs))
                     LinearProgressIndicator(
@@ -659,13 +649,20 @@ private fun HeroAmount(
     decimalInk: Color,
     largeText: Boolean,
     description: String,
+    height: androidx.compose.ui.unit.Dp? = null,
     modifier: Modifier = Modifier,
 ) {
     val motion = MaterialTheme.motionScheme
     val shown = remember { Animatable(0f) }
+    val appear = remember { Animatable(0.97f) }
     LaunchedEffect(cents, reducedMotion) {
-        if (reducedMotion) shown.snapTo(cents.toFloat())
-        else shown.animateTo(cents.toFloat(), motion.defaultSpatialSpec())
+        if (reducedMotion) {
+            shown.snapTo(cents.toFloat())
+            appear.snapTo(1f)
+        } else {
+            shown.animateTo(cents.toFloat(), motion.defaultSpatialSpec())
+            appear.animateTo(1f, motion.defaultSpatialSpec())
+        }
     }
     val raw = rm(shown.value.roundToLong())
     val negative = raw.startsWith("-")
@@ -692,17 +689,33 @@ private fun HeroAmount(
         letterSpacing = 0.sp,
         fontWeight = FontWeight.SemiBold,
     )
-    val cardHeight = if (largeText) 175.dp else 206.dp
+    val cardHeight = height ?: if (largeText) 175.dp else 206.dp
     val measurer = rememberTextMeasurer()
     Box(
         modifier
             .fillMaxWidth()
             .height(cardHeight)
+            .graphicsLayer {
+                alpha = 1f
+                scaleX = appear.value
+                scaleY = appear.value
+            }
             .clip(BakiHeroShape)
             .drawBehind { drawRect(background) }
             .semantics { contentDescription = "$description, RM ${rm(cents)}" },
     ) {
         Canvas(Modifier.fillMaxSize()) {
+            // One restrained tonal shape, clipped by the hero; no extra information.
+            drawCircle(
+                color = ink.copy(alpha = 0.055f),
+                radius = size.height * 0.82f,
+                center = Offset(size.width * 0.94f, size.height * 0.12f),
+            )
+            drawCircle(
+                color = ink.copy(alpha = 0.035f),
+                radius = size.height * 0.54f,
+                center = Offset(size.width * 0.80f, size.height * 0.72f),
+            )
             val edge = 10.dp.toPx()
             val available = (size.width - edge * 2f).coerceAtLeast(1f)
             val gap = 3.dp.toPx()
@@ -725,8 +738,8 @@ private fun HeroAmount(
             // the minus and does not consume number width.
             val maxScale = if (negative) 1.18f else 1f
             val scaleX = (numberAvailable / numberWidth).coerceIn(0.20f, maxScale)
-            val targetHeight = size.height * 1.16f
-            val scaleY = (targetHeight / int.size.height.toFloat()).coerceIn(1f, 2.6f)
+            val targetHeight = size.height * 0.90f
+            val scaleY = (targetHeight / int.size.height.toFloat()).coerceIn(0.35f, 2.6f)
             val left = if (negative) {
                 edge + signWidth + gap + (numberAvailable - numberWidth * scaleX).coerceAtLeast(0f) / 2f
             } else {
@@ -765,13 +778,14 @@ private fun HeroAmount(
 @Composable
 private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    val largeText = LocalDensity.current.fontScale >= 1.6f
     Surface(
         shape = MaterialTheme.shapes.large,
         color = scheme.primaryContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(Modifier.padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+        val title: @Composable (Modifier) -> Unit = { titleMod ->
+            Column(titleMod) {
                 Text(
                     "LIVE SHIFT",
                     color = scheme.onPrimaryContainer.copy(alpha = 0.7f),
@@ -784,6 +798,8 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
+        }
+        val action: @Composable () -> Unit = {
             FilledTonalButton(
                 onClick = onStart,
                 modifier = Modifier.height(48.dp),
@@ -793,6 +809,26 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
                 ),
             ) {
                 Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+        }
+        if (largeText) {
+            Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                title(Modifier.fillMaxWidth())
+                FilledTonalButton(
+                    onClick = onStart,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                        containerColor = scheme.primary,
+                        contentColor = scheme.onPrimary,
+                    ),
+                ) {
+                    Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
+                }
+            }
+        } else {
+            Row(Modifier.padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
+                title(Modifier.weight(1f))
+                action()
             }
         }
     }
@@ -917,82 +953,6 @@ private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun DayCard(
-    store: Store,
-    today: String,
-    selectedDay: String,
-    onDay: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val previous = addDays(today, -1)
-    Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
-        Row(
-            Modifier.fillMaxSize().padding(Space.s),
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
-        ) {
-            MiniDay(store, previous, selectedDay == previous, { onDay(previous) }, Modifier.weight(1f).fillMaxHeight())
-            MiniDay(store, today, selectedDay == today, { onDay(today) }, Modifier.weight(1f).fillMaxHeight())
-        }
-    }
-}
-
-@Composable
-private fun MiniDay(store: Store, iso: String, selected: Boolean, onDay: (String) -> Unit, modifier: Modifier = Modifier) {
-    val scheme = MaterialTheme.colorScheme
-    val t = dayTotals(store, iso)
-    val shape = MaterialTheme.shapes.medium
-    val empty = t.entryCount == 0 && t.shiftCount == 0
-    val description = buildString {
-        append(prettyDate(iso))
-        if (empty) append(", no entries") else append(", net RM ${rm(t.net)}")
-        if (selected) append(", selected")
-    }
-    Column(
-        modifier
-            .clip(shape)
-            .background(if (selected) scheme.primaryContainer else Color.Transparent)
-            .clickable { onDay(iso) }
-            .semantics {
-                role = Role.Button
-                contentDescription = description
-            }
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            if (iso == todayIso()) "TODAY" else weekdayShort(iso).uppercase(),
-            color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-            maxLines = 1,
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            if (empty) "no data" else "RM ${(t.net / 100).toInt()}",
-            color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
-            maxLines = 1,
-        )
-    }
-}
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun ShiftBand(band: String, scheme: androidx.compose.material3.ColorScheme) {
-    Box(
-        Modifier.clip(MaterialShapes.Cookie9Sided.toShape())
-            .background(bandColor(band, scheme).copy(alpha = 0.18f))
-            .padding(horizontal = Space.m, vertical = 2.dp),
-    ) {
-        Text(
-            BANDS[band] ?: "—",
-            color = bandColor(band, scheme),
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-        )
     }
 }
 

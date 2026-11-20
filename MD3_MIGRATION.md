@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.2 Today hero rebalance
+
+- Removed the redundant two-day strip.
+- Full-width Today hero with unchanged contents.
+- Subtle clipped tonal shape accent and scale-in motion.
+- Full-width horizontal food strip below the hero.
+- Removed DayCard, MiniDay, ShiftBand and quality-dot UI.
+- 232 tests plus refreshed Today goldens.
+
 ## 0.50.1 no-judgement pass
 
 - Removed best/worst and rolling-comparison copy from charts.
