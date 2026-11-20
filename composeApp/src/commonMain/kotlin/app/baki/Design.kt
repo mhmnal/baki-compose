@@ -53,11 +53,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import baki_compose.composeapp.generated.resources.Res
 import baki_compose.composeapp.generated.resources.archivo_expanded_800
+import baki_compose.composeapp.generated.resources.archivo_variable
 import org.jetbrains.compose.resources.Font
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -349,6 +351,19 @@ fun BakiDialogHeader(
 @Composable
 fun archivoDisplayFontFamily(): FontFamily = FontFamily(
     Font(Res.font.archivo_expanded_800, weight = FontWeight.ExtraBold),
+)
+
+/** Archivo variable: real width/weight contrast for the hero composition. */
+@Composable
+fun archivoVariableFontFamily(weight: Int, width: Float): FontFamily = FontFamily(
+    Font(
+        Res.font.archivo_variable,
+        weight = FontWeight(weight),
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(weight),
+            FontVariation.width(width),
+        ),
+    ),
 )
 
 /** Hero display size; relative roles are derived in the amount composition. */

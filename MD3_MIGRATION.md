@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.3 variable type and wavy food
+
+- Archivo variable font with real weight/width axes for RM, integer and decimal.
+- Variable face tested at 360dp and 200% font scale.
+- Food ring replaced by a full-width wavy linear progress strip.
+- 232 tests, refreshed goldens.
+
 ## 0.50.2 Today hero rebalance
 
 - Removed the redundant two-day strip.

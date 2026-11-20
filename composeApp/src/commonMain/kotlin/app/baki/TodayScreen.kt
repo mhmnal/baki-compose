@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -164,18 +165,22 @@ fun TodayScreen(
                 if (largeText) {
                     HeroAmount(
                         cents = t.net, reducedMotion = repo.config.reducedMotion,
-                        fontFamily = archivoDisplayFontFamily(),
+                        fontFamily = archivoVariableFontFamily(800, 75f),
+                        currencyFontFamily = archivoVariableFontFamily(350, 112f),
+                        decimalFontFamily = archivoVariableFontFamily(550, 92f),
                         background = scheme.primary, ink = scheme.onPrimary,
                         decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = true,
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(Space.s))
-                    FoodCard(food, paidUntil, largeText = true, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
+                    FoodStrip(food, paidUntil, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
                 } else {
                     HeroAmount(
                         cents = t.net, reducedMotion = repo.config.reducedMotion,
-                        fontFamily = archivoDisplayFontFamily(),
+                        fontFamily = archivoVariableFontFamily(800, 75f),
+                        currencyFontFamily = archivoVariableFontFamily(350, 112f),
+                        decimalFontFamily = archivoVariableFontFamily(550, 92f),
                         background = scheme.primary, ink = scheme.onPrimary,
                         decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = false,
                         height = 180.dp,
@@ -183,8 +188,8 @@ fun TodayScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(Space.s))
-                    FoodCard(
-                        food, paidUntil, largeText = true, animate = !repo.config.reducedMotion,
+                    FoodStrip(
+                        food, paidUntil, animate = !repo.config.reducedMotion,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -644,6 +649,8 @@ private fun HeroAmount(
     cents: Long,
     reducedMotion: Boolean,
     fontFamily: FontFamily,
+    currencyFontFamily: FontFamily = fontFamily,
+    decimalFontFamily: FontFamily = fontFamily,
     background: Color,
     ink: Color,
     decimalInk: Color,
@@ -678,6 +685,7 @@ private fun HeroAmount(
         letterSpacing = (-4).sp,
     )
     val decimalStyle = style.copy(
+        fontFamily = decimalFontFamily,
         fontSize = (BakiHeroFontSize.value * 0.33f).sp,
         letterSpacing = (-1).sp,
     )
@@ -685,6 +693,7 @@ private fun HeroAmount(
     // A negative hero keeps the drawn minus as the sign and tucks RM underneath it, so the
     // number itself keeps the same left edge as a positive value.
     val currencyStyle = style.copy(
+        fontFamily = currencyFontFamily,
         fontSize = (BakiHeroFontSize.value * 0.11f).sp,
         letterSpacing = 0.sp,
         fontWeight = FontWeight.SemiBold,
@@ -835,36 +844,42 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
 }
 
 @Composable
-private fun FoodCard(food: DailyFood?, paidUntil: Long?, largeText: Boolean, animate: Boolean = true, modifier: Modifier = Modifier) {
+private fun FoodStrip(food: DailyFood?, paidUntil: Long?, animate: Boolean = true, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val cover = paidUntil?.takeIf { it > nowMillis() }
     val status = food?.let { if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left" } ?: "no cap set"
+    val target = if (food != null && food.cap > 0) (food.spent.toFloat() / food.cap).coerceIn(0f, 1f) else 0f
+    val fraction by animateFloatAsState(
+        targetValue = target,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        label = "food cap progress",
+    )
     Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
-        if (largeText) {
-            Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-                FoodRing(food, Modifier.size(88.dp), showCenter = false, animate = animate)
-                Spacer(Modifier.width(Space.m))
+        Column(Modifier.fillMaxWidth().padding(horizontal = Space.ml, vertical = Space.m)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("FOOD FUND", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                        Spacer(Modifier.weight(1f))
-                        CoverMark(cover != null, paidUntil)
-                    }
-                    Text(status, color = if (food?.over == true) scheme.error else scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(
+                        "FOOD FUND",
+                        color = scheme.onSurfaceVariant,
+                        letterSpacing = 1.2.sp,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        status,
+                        color = if (food?.over == true) scheme.error else scheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
                     Text("today's cap", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 }
+                CoverMark(cover != null, paidUntil)
             }
-        } else {
-            Column(Modifier.fillMaxSize().padding(horizontal = Space.m, vertical = Space.s), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("FOOD", color = scheme.onSurfaceVariant, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                    Spacer(Modifier.weight(1f))
-                    CoverMark(cover != null, paidUntil)
-                }
-                Spacer(Modifier.height(2.dp))
-                FoodRing(food, Modifier.size(64.dp), animate = animate)
-                Text("today", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            }
+            Spacer(Modifier.height(Space.s))
+            LinearWavyProgressIndicator(
+                progress = { if (animate || target == 0f) fraction else target },
+                modifier = Modifier.fillMaxWidth().height(10.dp),
+                color = if (food?.over == true) scheme.error else scheme.primary,
+                trackColor = scheme.surfaceContainerHigh,
+            )
         }
     }
 }
@@ -882,78 +897,6 @@ private fun CoverMark(active: Boolean, paidUntil: Long?) {
             } else "Cover not active"
         },
     )
-}
-
-@Composable
-private fun FoodRing(food: DailyFood?, modifier: Modifier = Modifier, showCenter: Boolean = true, animate: Boolean = true) {
-    val scheme = MaterialTheme.colorScheme
-    val targetFraction = if (food != null && food.cap > 0) (food.spent.toFloat() / food.cap).coerceIn(0f, 1f) else 0f
-    val fraction = if (animate) {
-        animateFloatAsState(
-            targetValue = targetFraction,
-            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-            label = "foodProgress",
-        ).value
-    } else targetFraction
-    val over = food?.over == true
-    val color = if (over) scheme.error else scheme.tertiary
-    val description = food?.let {
-        "Food fund, RM ${rm(it.spent)} spent of RM ${rm(it.cap)}, " +
-            if (it.over) "RM ${rm(-it.remaining)} over" else "RM ${rm(it.remaining)} left"
-    } ?: "Food fund not set"
-    Box(modifier.semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = 3.4.dp.toPx()
-            val amplitude = 0.9.dp.toPx()
-            val baseR = size.minDimension / 2f - stroke - amplitude
-            // Crisp tonal track, wavy gold progress. The wave is on the data, not the container.
-            drawArc(
-                color = scheme.surfaceContainerHigh,
-                startAngle = -90f, sweepAngle = 360f, useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(stroke / 2f, stroke / 2f),
-                size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
-            )
-            if (fraction > 0f) {
-                fun point(angle: Double): androidx.compose.ui.geometry.Offset {
-                    val r = baseR + amplitude * kotlin.math.sin(angle * 12.0).toFloat()
-                    return androidx.compose.ui.geometry.Offset(
-                        center.x + (r * kotlin.math.cos(angle)).toFloat(),
-                        center.y + (r * kotlin.math.sin(angle)).toFloat(),
-                    )
-                }
-                val steps = (96 * fraction).toInt().coerceAtLeast(2)
-                val progressPath = Path().apply {
-                    val p0 = point(Math.toRadians(-90.0))
-                    moveTo(p0.x, p0.y)
-                    for (i in 1..steps) {
-                        val p = point(Math.toRadians(-90.0 + 360.0 * fraction * i / steps))
-                        lineTo(p.x, p.y)
-                    }
-                }
-                drawPath(
-                    progressPath, color,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round),
-                )
-                val end = point(Math.toRadians(-90.0 + 360.0 * fraction))
-                drawCircle(color, radius = 3.2.dp.toPx(), center = end)
-            }
-        }
-        if (showCenter) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clearAndSetSemantics {}) {
-                Text(
-                    food?.let { "RM ${rm(kotlin.math.abs(it.remaining))}" } ?: "—",
-                    color = if (over) scheme.error else scheme.onSurface,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                )
-                Text(
-                    if (over) "over" else "left",
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-        }
-    }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
