@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.0 running totals
+
+- Phone 30D is now cumulative running net, ending at the current month total.
+- Phone 7D lollipop is unchanged.
+- Desktop Overview replaces daily bars with a running-net chart.
+- Desktop has Month / All-time modes; all-time uses monthly cumulative recorded net.
+- Added running-total tests.
+- 232 tests expected.
+
 ## 0.49.2 week picker
 
 - Week Close can select any week with shifts, a statement or a saved close.

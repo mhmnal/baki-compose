@@ -41,6 +41,10 @@ class WeekCloseUiTest {
             onNodeWithText("WEEK CLOSE").assertExists()
             onNodeWithTag("week-close-review").performScrollTo().assertIsEnabled()
             onNodeWithTag("week-close-picker").assertExists()
+
+            onNodeWithText("30D").performClick()
+            waitForIdle()
+            onNodeWithText("Running net", substring = true).assertExists()
         } finally {
             previous?.let { saveLocal(it, markDirty = false) }
             PhonePreview.active = false

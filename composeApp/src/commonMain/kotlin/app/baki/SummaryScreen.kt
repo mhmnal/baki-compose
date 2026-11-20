@@ -517,6 +517,11 @@ private fun MonthInkChart(store: Store, month: String) {
     val today = todayIso()
     val visibleDays = if (month == today.take(7)) allDays.filter { it.iso <= today } else allDays
     val shown = if (range == 7) visibleDays.takeLast(7) else visibleDays
+    val runningPoints = remember(shown) {
+        var total = 0L
+        shown.map { day -> total += day.net; total }
+    }
+    val runningTotal = runningPoints.lastOrNull() ?: 0L
     val active = shown.filter { it.active }
     val best = active.maxByOrNull { it.net }
     val worst = active.minByOrNull { it.net }
@@ -524,7 +529,7 @@ private fun MonthInkChart(store: Store, month: String) {
     val hours = remember(store, month) {
         store.shifts.filter { it.date.startsWith(month) }.sumOf { it.hours }
     }
-    val targetPerDay = if (active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
+    val targetPerDay = if (range == 7 && active.isNotEmpty()) cfg.targetRate * hours / active.size else 0.0
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
     val anyActive = shown.any { it.active }
@@ -535,7 +540,10 @@ private fun MonthInkChart(store: Store, month: String) {
     val priorNet = if (priorStart == null) 0L else (0 until 7).sumOf { dayTotals(store, addDays(priorStart, it)).net }
     val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
         buildString {
-            append("Daily net chart for ${monthLabel(month)}, ${range} day view. ")
+            append(
+                if (range == 7) "Daily net chart for ${monthLabel(month)}, 7 day view. "
+                else "Cumulative running net for ${monthLabel(month)}, ${shown.size} days. Current total RM ${rm(runningTotal)}. "
+            )
             if (targetPerDay > 0.01) append("Target RM ${rm(targetPerDay)} per day. ")
             append("Data points: ")
             append(shown.joinToString("; ") { day ->
@@ -588,27 +596,27 @@ private fun MonthInkChart(store: Store, month: String) {
         Spacer(Modifier.height(Space.xs))
         if (largeText) {
             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
+                Surface(shape = RoundedCornerShape(50), color = if (range == 30) scheme.primaryContainer else scheme.tertiaryContainer) {
                     Text(
-                        "Target RM ${rm(targetPerDay)}/day",
-                        color = scheme.onTertiaryContainer,
+                        if (range == 30) "Running net · RM ${rm(runningTotal)}" else "Target RM ${rm(targetPerDay)}/day",
+                        color = if (range == 30) scheme.onPrimaryContainer else scheme.onTertiaryContainer,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                     )
                 }
-                Text("Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text(if (range == 30) "Total to date" else "Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Surface(shape = RoundedCornerShape(50), color = scheme.tertiaryContainer) {
+                Surface(shape = RoundedCornerShape(50), color = if (range == 30) scheme.primaryContainer else scheme.tertiaryContainer) {
                     Text(
-                        "Target RM ${rm(targetPerDay)}/day",
-                        color = scheme.onTertiaryContainer,
+                        if (range == 30) "Running net · RM ${rm(runningTotal)}" else "Target RM ${rm(targetPerDay)}/day",
+                        color = if (range == 30) scheme.onPrimaryContainer else scheme.onTertiaryContainer,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                     )
                 }
-                Text("Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text(if (range == 30) "Total to date" else "Tap a day for details", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
         }
         Spacer(Modifier.height(Space.s))
@@ -641,8 +649,14 @@ private fun MonthInkChart(store: Store, month: String) {
             val usable = minOf(size.height * 0.40f, zeroY - topPad, size.height - zeroY - topPad)
             // Keep one-off purchases from flattening the month. Values beyond 2× target clip at
             // the edge and remain readable in the selected-day detail.
-            val dataMax = shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0
-            val scaleMax = if (targetPerDay > 0.01) maxOf(1.0, targetPerDay * 2.0) else maxOf(1.0, dataMax)
+            val dataMax = if (range == 7) {
+                shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0
+            } else {
+                runningPoints.maxOfOrNull { abs(it) / 100.0 } ?: 1.0
+            }
+            val scaleMax = if (range == 7) {
+                if (targetPerDay > 0.01) maxOf(1.0, targetPerDay * 2.0) else maxOf(1.0, dataMax)
+            } else maxOf(1.0, dataMax * 1.06)
             val targetY = (zeroY - (targetPerDay / scaleMax * usable).toFloat())
                 .coerceIn(topPad, size.height - topPad)
             val step = size.width / shown.size.coerceAtLeast(1)
@@ -658,7 +672,7 @@ private fun MonthInkChart(store: Store, month: String) {
                 )
             }
             drawLine(scheme.outlineVariant, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
-            if (targetPerDay > 0.01) {
+            if (range == 7 && targetPerDay > 0.01) {
                 drawLine(
                     color = scheme.tertiary.copy(alpha = 0.75f),
                     start = Offset(0f, targetY), end = Offset(size.width, targetY),
@@ -687,37 +701,32 @@ private fun MonthInkChart(store: Store, month: String) {
                     }
                 }
             } else {
-                // 30D: line only while consecutive active days continue. A day off breaks the
-                // line; it never implies travel across a gap.
-                val points = shown.mapIndexedNotNull { i, day ->
-                    if (!day.active) null else Triple(i, Offset((i + 0.5f) * step, (zeroY - (day.net / 100.0 / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad)), day)
+                // 30D: cumulative running net. The final point is the current month total;
+                // days off hold the line flat rather than inventing a zero-value gap.
+                val points = runningPoints.mapIndexed { i, total ->
+                    Offset((i + 0.5f) * step, (zeroY - (total / 100.0 / scaleMax * usable).toFloat()).coerceIn(topPad, size.height - topPad))
                 }
-                val segments = mutableListOf<MutableList<Triple<Int, Offset, InkDay>>>()
-                for (point in points) {
-                    val current = segments.lastOrNull()
-                    if (current == null || point.first - current.last().first > 1) {
-                        segments += mutableListOf(point)
-                    } else current += point
-                }
-                segments.forEach { segment ->
-                    if (segment.size >= 2) {
-                        val path = Path().apply {
-                            moveTo(segment.first().second.x, segment.first().second.y)
-                            for (j in 1 until segment.size) lineTo(segment[j].second.x, segment[j].second.y)
-                        }
-                        val area = Path().apply {
-                            addPath(path)
-                            lineTo(segment.last().second.x, zeroY)
-                            lineTo(segment.first().second.x, zeroY)
-                            close()
-                        }
-                        drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.16f), Color.Transparent), startY = topPad, endY = zeroY))
-                        drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                if (points.isNotEmpty()) {
+                    val path = Path().apply {
+                        moveTo(0f, zeroY)
+                        points.forEach { lineTo(it.x, it.y) }
                     }
-                }
-                points.forEach { (_, point, day) ->
-                    val color = if (day.net < 0) scheme.error else scheme.primary
-                    drawCircle(color, radius = 4.dp.toPx(), center = point)
+                    val area = Path().apply {
+                        addPath(path)
+                        lineTo(points.last().x, zeroY)
+                        lineTo(0f, zeroY)
+                        close()
+                    }
+                    drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.18f), Color.Transparent), startY = topPad, endY = zeroY))
+                    drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    val end = points.last()
+                    drawCircle(
+                        color = if (runningTotal < 0) scheme.error else scheme.primary,
+                        radius = 6.dp.toPx(), center = end,
+                    )
+                    drawCircle(
+                        color = scheme.surface, radius = 2.dp.toPx(), center = end,
+                    )
                 }
             }
         }

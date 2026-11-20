@@ -1,5 +1,6 @@
 package app.baki
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +43,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -219,13 +227,7 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 DeskCard(Modifier.weight(1.35f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        DeskLabel("DAILY NET · ${monthLabel(month).uppercase()}")
-                        Spacer(Modifier.weight(1f))
-                        Text("${days.size} active days", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                    }
-                    Spacer(Modifier.height(Space.m))
-                    DayBars(days)
+                    DeskRunningCard(store, month)
                 }
                 if (remember(store) { hourHeatmap(store).isNotEmpty() }) {
                     DeskCard(Modifier.weight(1f)) { HoursHeatmap(store) }
@@ -314,6 +316,80 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DeskRunningCard(store: Store, month: String) {
+    val scheme = MaterialTheme.colorScheme
+    var allTime by remember(month) { mutableStateOf(false) }
+    val points = remember(store, month, allTime) {
+        if (allTime) allTimeRunningPoints(store) else monthRunningPoints(store, month)
+    }
+    val total = points.lastOrNull()?.total ?: 0L
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        DeskLabel(if (allTime) "ALL-TIME RECORDED NET" else "RUNNING NET · ${monthLabel(month).uppercase()}")
+        Spacer(Modifier.weight(1f))
+        DeskFilter("Month", !allTime) { allTime = false }
+        Spacer(Modifier.width(Space.xs))
+        DeskFilter("All time", allTime) { allTime = true }
+    }
+    Spacer(Modifier.height(Space.s))
+    Row(verticalAlignment = Alignment.Bottom) {
+        DeskMoney(
+            "RM ${rm(total)}",
+            if (total < 0) scheme.error else scheme.onSurface,
+            MaterialTheme.typography.headlineLarge,
+        )
+        Spacer(Modifier.weight(1f))
+        Text(
+            if (allTime) "${points.size} month${if (points.size == 1) "" else "s"} · cumulative"
+            else "${points.size} day${if (points.size == 1) "" else "s"} · to date",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+        )
+    }
+    Spacer(Modifier.height(Space.s))
+    if (points.isEmpty()) {
+        Text("No activity yet.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        return
+    }
+    Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+        val topPad = 8.dp.toPx()
+        val zeroY = size.height * 0.78f
+        val usable = zeroY - topPad
+        val maxAbs = maxOf(1.0, points.maxOfOrNull { kotlin.math.abs(it.total) / 100.0 } ?: 1.0) * 1.06
+        val step = size.width / points.size.coerceAtLeast(1)
+        fun yFor(cents: Long): Float =
+            (zeroY - (cents / 100.0 / maxAbs * usable).toFloat()).coerceIn(topPad, zeroY)
+        val offsets = points.mapIndexed { i, p -> Offset((i + 0.5f) * step, yFor(p.total)) }
+        drawLine(scheme.outlineVariant, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
+        val path = Path().apply {
+            moveTo(0f, zeroY)
+            offsets.forEach { lineTo(it.x, it.y) }
+        }
+        val area = Path().apply {
+            addPath(path)
+            lineTo(offsets.last().x, zeroY)
+            lineTo(0f, zeroY)
+            close()
+        }
+        drawPath(area, Brush.verticalGradient(listOf(scheme.primary.copy(alpha = 0.18f), Color.Transparent), startY = topPad, endY = zeroY))
+        drawPath(path, scheme.primary, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        val end = offsets.last()
+        drawCircle(scheme.primary, radius = 6.dp.toPx(), center = end)
+        drawCircle(scheme.surface, radius = 2.dp.toPx(), center = end)
+        // Highlight the current total as the one meaningful point on the line.
+        drawCircle(if (total < 0) scheme.error else scheme.primary, radius = 8.dp.toPx(), center = end, style = Stroke(width = 1.dp.toPx()))
+    }
+    Spacer(Modifier.height(Space.xs))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        val labels = if (points.size <= 2) points.map { it.label } else listOf(points.first().label, points[points.size / 2].label, points.last().label)
+        labels.forEach { label ->
+            Text(
+                if (allTime) monthLabel(label).split(" ").first() else label.takeLast(5),
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+            )
         }
     }
 }
