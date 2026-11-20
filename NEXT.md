@@ -1,5 +1,24 @@
 # State & next
 
+As of **0.50.3** (2026-11-21).
+
+## Current direction
+
+- **Phone Today**: full-width Archivo variable hero, shape accent, full-width wavy food strip.
+- **Charts**: 7D daily lollipop; 30D cumulative running net; desktop Month/All-time running net.
+- **No-judgement pass**: best/worst, streaks, quality bands, best-hours callouts and best-day highlights removed. Targets and truthful loss colours remain.
+- **Week Close**: Monday–Sunday close/reopen with week picker and manual received payout.
+- **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
+
+## Next
+
+1. Fix the remaining Android empty-state sentence under the bottom navigation.
+2. Add Android instrumentation coverage for the Week Close modal sheet if the semantics tree allows it.
+3. Re-import old weekly statement PDFs so insurance counts are populated.
+4. Real-device long live-shift test: screen-off tracking, notification, distance, end from both surfaces.
+5. Then choose vehicle economy/service or Android quick capture.
+6. Backlog: holiday/no-work neutral state and streak-gap behavior; variable typography polish.
+
 As of **0.37.3** (2026-11-08).
 
 ## Current direction

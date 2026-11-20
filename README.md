@@ -14,7 +14,7 @@ Two surfaces, one ledger:
 Current version: **0.50.3** (`versionCode` 233+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **212 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **232 JVM tests** (`:composeApp:desktopTest`).
 
 ## What it does
 
@@ -92,7 +92,13 @@ See [ANDROID_TESTING.md](ANDROID_TESTING.md).
 ## Running
 
 ```bash
-# tests (JVM)
+# fast loop: targeted test, warm daemon, no release build
+./scripts/fastcheck.sh app.baki.PhoneShot
+
+# complete gate: full JVM suite + Android lane + release build
+./scripts/gate.sh
+
+# all tests under the capped build wrapper
 ./scripts/gradle-capped.sh :composeApp:desktopTest
 
 # desktop app
@@ -123,6 +129,7 @@ committed.
 
 ## Docs
 
+- [WORKFLOW.md](WORKFLOW.md) — fast loop vs release gate
 - [DESIGN.md](DESIGN.md) — material doctrine, Surface depth, desktop layout, statement decisions
 - [ACCESSIBILITY.md](ACCESSIBILITY.md) — enforced contrast/behaviour and current gaps
 - [BUGS.md](BUGS.md) — known issues and parked work

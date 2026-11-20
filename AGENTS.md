@@ -54,6 +54,16 @@ bug in the app.
   permissions and sync on the phone. State which checks were actually done.
 - **Sign/install only after explicit instruction.** Build, test and commit first.
 
+## Build workflow
+
+Use the two-speed workflow in [WORKFLOW.md](WORKFLOW.md).
+
+- Fast iteration: `./scripts/fastcheck.sh <test class>`
+- Complete gate: `./scripts/gate.sh`
+- Signing/publishing only after explicit instruction: `./scripts/release.sh <version>`
+
+The fast loop uses the warm Gradle daemon and build cache. Do not use `--no-daemon`, clear build caches, or build/sign a release APK during UI iterations. Clean only after a genuine incremental-compilation failure.
+
 ## Environment
 
 This sandbox has no network. Use the checked-in toolchain:
