@@ -605,7 +605,7 @@ private fun DeskShiftDetail(repo: BakiRepo, shift: Shift, modifier: Modifier) {
                 DeskMetric("RM / H", "RM ${rm(if (shift.hours > 0) metrics.net / shift.hours else 0.0)}")
             }
             Spacer(Modifier.height(Space.s))
-            Text("Started ${shift.start} · ${metrics.band} · read-only on the desk", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text("Started ${shift.start} · read-only on the desk", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("PAYOUTS")

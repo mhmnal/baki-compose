@@ -410,7 +410,7 @@ fun TodayScreen(
                 RowCardIcon(
                     icon = BakiIcons.Car,
                     title = "Shift ${sh.start.ifEmpty { sh.date }}",
-                    sub = "${m.band} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
+                    sub = "${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
                     amount = "RM ${rm(m.net)}",
                     tint = scheme.tertiary,
                     onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
@@ -437,7 +437,7 @@ fun TodayScreen(
         }
         if (shifts.isEmpty() && entries.isEmpty()) item {
             Column(
-                Modifier.fillMaxWidth().padding(top = 26.dp),
+                Modifier.fillMaxWidth().padding(top = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(

@@ -51,6 +51,7 @@ Only on a real incremental-compilation failure, for example:
 - `Storage corrupted`
 - `Could not delete ... classes`
 - `NoSuchFileException ... in-progress-results`
+- `EOFException` while writing `build/test-results`
 
 Stop the daemon, remove the single failed cache directory, and retry. Do not clean the whole project by habit.
 

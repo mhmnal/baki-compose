@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.4 small workflow cleanup
+
+- Today empty-state hint no longer sits under the bottom navigation.
+- Removed the remaining shift band label from Today and Desk.
+- Documented EOFException as a fast-loop cache retry case.
+- 232 tests; gate passed.
+
 ## 0.50.3 variable type and wavy food
 
 - Archivo variable font with real weight/width axes for RM, integer and decimal.
