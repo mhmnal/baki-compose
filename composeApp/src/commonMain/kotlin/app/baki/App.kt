@@ -1217,7 +1217,7 @@ private fun MonthHeader(month: String, onChange: (String) -> Unit) {
                     color = scheme.onSurface,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 )
-                Text("the damage, monthly", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Text("spending, monthly", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
             ShapeNavButton(
                 label = "›",
@@ -1516,8 +1516,7 @@ private fun ShiftsScreen(
             RowCard(
                 "${weekdayShort(sh.date)} ${prettyDate(sh.date)} · ${sh.start}",
                 "${"%.1f".format(m.km)} km · ${"%.1f".format(m.hrs)}h" +
-                    (m.netHr?.let { " · RM ${rm(it)}/hr" } ?: "") +
-                    " · ${m.band}",
+                    (m.netHr?.let { " · RM ${rm(it)}/hr" } ?: ""),
                 "RM ${rm(m.net)}",
                 scheme.onSurface,
                 dotTint = bandColor(m.band, scheme),

@@ -33,7 +33,6 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
     val cells = monthGrid(month)
     val today = todayIso()
-    val bestDay = monthDays(store, month).maxByOrNull { it.second.net }?.first
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
@@ -53,7 +52,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
                     Box(
                         Modifier.weight(1f).then(if (compact) Modifier.height(30.dp) else Modifier.aspectRatio(1f)),
                     ) {
-                        if (iso != null) DayCell(iso, store, today, scheme, bestDay)
+                        if (iso != null) DayCell(iso, store, today, scheme)
                     }
                 }
                 repeat(7 - week.size) { Spacer(Modifier.weight(1f)) }
@@ -72,7 +71,7 @@ fun CalendarHeat(store: Store, month: String, compact: Boolean = false) {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.compose.material3.ColorScheme, bestDay: String?) {
+private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.compose.material3.ColorScheme) {
     val t = dayTotals(store, iso)
     val flow = cashFlowDay(store, iso)
     val future = iso > today
@@ -86,7 +85,6 @@ private fun DayCell(iso: String, store: Store, today: String, scheme: androidx.c
     val base = if (positive) scheme.primary else scheme.error
     val fill = when {
         iso == today -> scheme.primaryContainer
-        iso == bestDay -> scheme.secondary.copy(alpha = 0.22f)
         magnitude == 0 -> scheme.surfaceContainerHigh
         magnitude == 1 -> base.copy(alpha = 0.22f)
         magnitude == 2 -> base.copy(alpha = 0.45f)

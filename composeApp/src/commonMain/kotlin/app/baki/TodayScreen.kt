@@ -290,9 +290,8 @@ fun TodayScreen(
                                 style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                             )
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                                ShiftBand(m.band, scheme)
                                 m.netHr?.let {
-                                    Text("RM ${rm(it)}/hr", color = bandColor(m.band, scheme), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                    Text("RM ${rm(it)}/hr", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Text(if (shiftExpanded) "−" else "+", color = scheme.primary, style = MaterialTheme.typography.titleMedium)
@@ -312,9 +311,8 @@ fun TodayScreen(
                                     )
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
-                                    ShiftBand(m.band, scheme)
                                     m.netHr?.let {
-                                        Text("RM ${rm(it)}/hr", color = bandColor(m.band, scheme), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                        Text("RM ${rm(it)}/hr", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                                     }
                                 }
                                 Spacer(Modifier.width(Space.s))
@@ -332,19 +330,11 @@ fun TodayScreen(
                             )
                             m.netHr?.let { rate ->
                                 val delta = rate - cfg.targetRate
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        if (delta >= 0) "✓" else "✗",
-                                        color = if (delta >= 0) scheme.tertiary else scheme.error,
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    )
-                                    Spacer(Modifier.width(Space.xs))
-                                    Text(
-                                        if (delta >= 0) "RM ${rm(delta)} above target" else "RM ${rm(-delta)} short of target",
-                                        color = if (delta >= 0) scheme.tertiary else scheme.error,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                }
+                                Text(
+                                    "Target delta: ${if (delta >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(delta))}/hr",
+                                    color = scheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
                             }
                         }
                     }

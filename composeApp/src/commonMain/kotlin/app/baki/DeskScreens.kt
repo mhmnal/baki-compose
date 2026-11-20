@@ -169,7 +169,6 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
     val days = remember(store, month) { monthDays(store, month) }
     val hours = shifts.sumOf { it.hours }
     val km = shifts.sumOf { shiftKm(it, store.settings.profit) }
-    val best = days.maxByOrNull { it.second.net }
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = Space.xl),
@@ -202,8 +201,8 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                     }
                     Spacer(Modifier.height(Space.m))
                     Text(
-                        if (best != null) "Best day ${prettyDate(best.first)} · RM ${rm(best.second.net)}"
-                        else "No shifts recorded this month.",
+                        if (shifts.isEmpty()) "No shifts recorded this month."
+                        else "${days.size} active ${if (days.size == 1) "day" else "days"} recorded.",
                         color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                     )
                 }

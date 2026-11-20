@@ -731,6 +731,17 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.1 no-judgement pass
+
+- Removed best/worst and rolling-comparison copy from charts.
+- Removed target streak badge and streak commentary.
+- Removed shift quality bands and colour-coded judgement.
+- Renamed Best Hours to Net by Hour; removed the best-block callout.
+- Removed best-day highlighting from Calendar and Desk Overview.
+- Neutralised month commentary and Spend's "damage" subtitle.
+- Kept targets and truthful loss colours.
+- 232 tests plus refreshed goldens.
+
 ## 0.50.0 running totals
 
 - Phone 30D is now cumulative running net, ending at the current month total.

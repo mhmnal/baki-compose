@@ -73,8 +73,8 @@ android {
         minSdk = 24
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 230
-        versionName = "0.50.0"
+        versionCode = 231
+        versionName = "0.50.1"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -117,7 +117,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.AppImage)
             packageName = "Baki"
-            packageVersion = "0.50.0"
+            packageVersion = "0.50.1"
             description = "What your shift really pays"
             vendor = "Baki"
             linux { iconFile.set(project.file("icons/baki.png")) }

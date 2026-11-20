@@ -91,15 +91,12 @@ fun SummaryScreen(
     val t = remember(store, month) { monthTotals(store, month) }
     val cash = remember(store, month) { cashTruth(store, month) }
     val days = remember(store, month) { monthDays(store, month) }
-    val best = days.maxByOrNull { it.second.net }
-    val worst = days.minByOrNull { it.second.net }
     val funds = remember(store, month) { fundStats(store, month) }
     val cats = remember(store, month) { expensesByCategory(store, month) }
     val cost = remember(store, month) { monthCost(store, month) }
     val prevMonth = addDays("$month-01", -1).take(7)
     val prevNet = remember(store, prevMonth) { monthTotals(store, prevMonth).net }
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
-    val streak = remember(store) { targetStreak(store, todayIso()) }
     var managingFund by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
@@ -114,8 +111,8 @@ fun SummaryScreen(
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 StatementCover(
-                    month = month, t = t, days = days, best = best, worst = worst,
-                    cost = cost, prevNet = prevNet, streak = streak,
+                    month = month, t = t, days = days,
+                    cost = cost, prevNet = prevNet,
                     onMonth = onMonth,
                 )
             }
@@ -135,7 +132,7 @@ fun SummaryScreen(
         }
         item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerLow) { CashTruthCard(cash, month, compact = true) } }
         if (cats.isEmpty()) item {
-            EmptyState("A quiet month.", "Your spending stories will show up here.")
+            EmptyState("No activity yet.", "Your spending will show up here.")
         }
     }
     managingFund?.let { fund ->
@@ -406,11 +403,8 @@ private fun StatementCover(
     month: String,
     t: Totals,
     days: List<Pair<String, Totals>>,
-    best: Pair<String, Totals>?,
-    worst: Pair<String, Totals>?,
     cost: MonthCost,
     prevNet: Long,
-    streak: Int,
     onMonth: (String) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -454,30 +448,9 @@ private fun StatementCover(
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(1f),
             )
-            if (streak > 1) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(MaterialShapes.Cookie9Sided.toShape())
-                        .background(scheme.tertiaryContainer)
-                        .semantics { contentDescription = "$streak-day target streak" },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "${streak}d",
-                        color = scheme.onTertiaryContainer,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-            }
         }
         Spacer(Modifier.height(Space.xs))
         EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
-        Text(
-            if (t.net >= 0) "The month is behaving." else "A character-building month.",
-            color = scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-        )
         Text(
             if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
             color = if (delta >= 0) scheme.onSurface else scheme.error,
@@ -487,9 +460,6 @@ private fun StatementCover(
             "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge,
         )
-        if (streak >= 2) {
-            Text("$streak days in a row above target", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        }
         Text(
             if (cost.km > 0.01) "running RM ${rm(cost.running / cost.km)}/km · upkeep RM ${rm(cost.upkeep / cost.km)}/km"
             else "No distance recorded this month.",
@@ -523,8 +493,6 @@ private fun MonthInkChart(store: Store, month: String) {
     }
     val runningTotal = runningPoints.lastOrNull() ?: 0L
     val active = shown.filter { it.active }
-    val best = active.maxByOrNull { it.net }
-    val worst = active.minByOrNull { it.net }
     val cfg = store.settings.profit
     val hours = remember(store, month) {
         store.shifts.filter { it.date.startsWith(month) }.sumOf { it.hours }
@@ -533,12 +501,7 @@ private fun MonthInkChart(store: Store, month: String) {
     val maxAbs = maxOf(1.0, shown.maxOfOrNull { abs(it.net) / 100.0 } ?: 1.0)
     val selectedDay = selected?.let { shown.getOrNull(it) }
     val anyActive = shown.any { it.active }
-    // Match the visible 7D window. Do not mix Mon–Sun totals with a rolling chart window.
-    val rollingWeek = shown.takeLast(7)
-    val rollingNet = rollingWeek.sumOf { it.net }
-    val priorStart = rollingWeek.firstOrNull()?.iso?.let { addDays(it, -7) }
-    val priorNet = if (priorStart == null) 0L else (0 until 7).sumOf { dayTotals(store, addDays(priorStart, it)).net }
-    val chartSummary = remember(month, range, shown, targetPerDay, best, worst) {
+    val chartSummary = remember(month, range, shown, targetPerDay, runningTotal) {
         buildString {
             append(
                 if (range == 7) "Daily net chart for ${monthLabel(month)}, 7 day view. "
@@ -549,8 +512,6 @@ private fun MonthInkChart(store: Store, month: String) {
             append(shown.joinToString("; ") { day ->
                 "${day.iso.takeLast(5)} ${if (day.active) "net RM ${rm(day.net)}" else "no entries"}"
             })
-            best?.let { append(". Best ${it.iso.takeLast(5)} RM ${rm(it.net)}") }
-            worst?.let { append(". Lowest ${it.iso.takeLast(5)} RM ${rm(it.net)}") }
             append(". Activate to select the next day.")
         }
     }
@@ -775,37 +736,6 @@ private fun MonthInkChart(store: Store, month: String) {
                     Text(shown[index].iso.takeLast(5), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 }
             }
-        }
-        if (active.size > 1) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            best?.let {
-                Text(
-                    "Best · +RM ${rm(it.net)} · ${it.iso.takeLast(5)}",
-                    color = scheme.tertiary,
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            worst?.let {
-                Text(
-                    "Lowest · ${rm(it.net)} · ${it.iso.takeLast(5)}",
-                    color = if (it.net < 0) scheme.error else scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        if (rollingWeek.isNotEmpty()) {
-            val delta = rollingNet - priorNet
-            Text(
-                (if (range == 7) "Last 7 days" else "Last 7 in view") +
-                    ": ${if (delta >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(delta))} vs previous 7 · RM ${rm(rollingNet)} net",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
-            )
         }
     }
 }

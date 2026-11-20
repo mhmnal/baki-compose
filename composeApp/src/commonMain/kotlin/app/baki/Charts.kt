@@ -92,7 +92,7 @@ fun HoursHeatmap(store: Store) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             Box(Modifier.size(14.dp).clip(CircleShape).background(scheme.primary))
-            Text("BEST HOURS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Text("NET BY HOUR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -132,14 +132,7 @@ fun HoursHeatmap(store: Store) {
             }
         }
         Spacer(Modifier.height(Space.s))
-        bestHourBlock(store)?.let { best ->
-            val start = "%02d:00".format(best.block * 4)
-            val end = "%02d:00".format((best.block + 1) * 4)
-            Text(
-                "best: ${listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun")[best.day]} $start–$end · RM ${"%.0f".format(best.rate)}/hr over ${"%.1f".format(best.hours)}h",
-                color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium )
-        }
-        Text("darker = better rate · empty = not driven", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
+        Text("darker = higher net · empty = not driven", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
     }
 }
 
