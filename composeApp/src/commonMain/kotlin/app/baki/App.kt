@@ -16,6 +16,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.animateColorAsState
 import kotlin.math.abs
+import kotlin.math.roundToLong
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.graphicsLayer
@@ -1540,7 +1541,7 @@ private fun BillEditorDialog(
     onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf(existing?.name ?: "") }
-    var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: "") }
+    var amountDigits by remember { mutableStateOf(existing?.amount?.let(::centsDigits).orEmpty()) }
     var annual by remember { mutableStateOf(existing?.cadence == "annual") }
     var category by remember { mutableStateOf(existing?.category ?: categories.firstOrNull()?.id ?: "other") }
     var optional by remember { mutableStateOf(existing?.optional ?: false) }
@@ -1558,12 +1559,12 @@ private fun BillEditorDialog(
                     value = name, onValueChange = { name = it }, singleLine = true,
                     label = { Text("Name") }, modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
                 )
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { amount = cleanMoneyInput(it) },
-                    singleLine = true, label = { Text("Amount RM") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColorsPublic(),
+                CentsField(
+                    digits = amountDigits,
+                    onDigitsChange = { amountDigits = it },
+                    label = "Amount RM",
+                    prefix = "",
+                    colors = bakiFieldColorsPublic(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Monthly", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
@@ -1614,7 +1615,7 @@ private fun BillEditorDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val cents = parseMoneyCents(amount) ?: 0L
+                    val cents = centsFromDigits(amountDigits)
                     onSave(
                         Bill(
                             id = existing?.id ?: "",
@@ -1628,7 +1629,7 @@ private fun BillEditorDialog(
                         ),
                     )
                 },
-                enabled = name.isNotBlank() && (parseMoneyCents(amount) ?: 0L) > 0L,
+                enabled = name.isNotBlank() && centsFromDigits(amountDigits) > 0L,
             ) { Text("Save") }
         },
         dismissButton = {
@@ -2739,7 +2740,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
 
     prefillStatement?.let { row ->
         val account = repo.store.accounts.firstOrNull { it.id == row.accountId }?.name ?: "Statement"
-        var amount by remember(row.id) { mutableStateOf((row.amount / 100.0).toString()) }
+        var amount by remember(row.id) { mutableStateOf(centsDigits(row.amount)) }
         var date by remember(row.id) { mutableStateOf(row.date) }
         var category by remember(row.id) { mutableStateOf(statementCategoryHint(row.description)) }
         var note by remember(row.id) { mutableStateOf("$account · ${row.description}".take(160)) }
@@ -2748,7 +2749,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             title = { Text(if (row.direction == "in") "Add statement income" else "Add statement expense") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    OutlinedTextField(amount, { amount = it }, label = { Text("Amount (RM)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    CentsField(amount, { amount = it }, label = "Amount (RM)", prefix = "", modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(date, { date = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(category, { category = it }, label = { Text("Category") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(note, { note = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth())
@@ -2756,7 +2757,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    val cents = centsFromDigits(amount)
                     if (cents > 0) {
                         scope.launch {
                             val entryId = repo.addEntry(if (row.direction == "in") "income" else "expense", cents, category, note, date)
@@ -2957,7 +2958,7 @@ private fun EntryDialog(
 ) {
     val scheme = MaterialTheme.colorScheme
     var type by remember { mutableStateOf(existing?.type ?: initialType) }
-    var amount by remember { mutableStateOf(existing?.let { "%.2f".format(it.amount / 100.0) } ?: initialAmount ?: "") }
+    var amountDigits by remember { mutableStateOf(existing?.amount?.let(::centsDigits) ?: initialCentsDigits(initialAmount)) }
     var note by remember { mutableStateOf(existing?.note ?: initialNote ?: "") }
     var date by remember { mutableStateOf(existing?.date ?: day) }
     val dateValid = remember(date) { isValidIsoDate(date) }
@@ -2966,7 +2967,7 @@ private fun EntryDialog(
     val cats = (if (type == "income") settings.cats.catsIn else settings.cats.catsOut)
         .filterNot { isDerivedCategory(it.id) }
     var cat by remember(type) { mutableStateOf(existing?.cat ?: initialCat ?: cats.firstOrNull()?.id ?: "other") }
-    val cents = parseMoneyCents(amount) ?: 0L
+    val cents = centsFromDigits(amountDigits)
 
     // the sheet header shares its bounds with the row that opened it
     val sharedScope = LocalSharedTransition.current
@@ -3025,35 +3026,16 @@ private fun EntryDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TextField(
-                    value = amount,
-                    onValueChange = { amount = cleanMoneyInput(it) },
-                    isError = amount.isNotBlank() && cents <= 0,
-                    supportingText = if (amount.isNotBlank() && cents <= 0) {
-                        { Text("Enter an amount greater than zero", color = scheme.error) }
-                    } else null,
-                    leadingIcon = {
-                        Text(
-                            "RM",
-                            color = scheme.onSecondaryContainer.copy(alpha = 0.72f),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        )
-                    },
-                    placeholder = {
-                        Text(
-                            "0.00",
-                            color = scheme.onSecondaryContainer.copy(alpha = 0.30f),
-                            style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
-                        )
-                    },
-                    label = { Text("HOW MUCH?") },
-                    singleLine = true,
+                CentsField(
+                    digits = amountDigits,
+                    onDigitsChange = { amountDigits = it },
+                    label = "HOW MUCH?",
+                    isError = amountDigits.isNotBlank() && cents <= 0,
+                    supportingText = if (amountDigits.isNotBlank() && cents <= 0) "Enter an amount greater than zero" else null,
                     textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     shape = MaterialTheme.shapes.extraLarge,
-                    modifier = Modifier.fillMaxWidth().semantics {
-                        contentDescription = "Amount in Malaysian ringgit"
-                    },
+                    filled = true,
+                    contentDescription = "Amount in Malaysian ringgit",
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = scheme.secondaryContainer,
                         unfocusedContainerColor = scheme.secondaryContainer,
@@ -3204,8 +3186,8 @@ private fun ShiftDialog(
     var start by remember { mutableStateOf(existing?.start ?: "") }
     var hours by remember { mutableStateOf(existing?.hours?.takeIf { it > 0 }?.let { "%.1f".format(it) } ?: "") }
     var km by remember { mutableStateOf(existing?.km?.takeIf { it > 0 }?.let { "%.1f".format(it) } ?: "") }
-    var gross by remember { mutableStateOf(existing?.gross?.takeIf { it > 0 }?.let { "%.2f".format(it / 100.0) } ?: "") }
-    var extra by remember { mutableStateOf(existing?.extra?.takeIf { it > 0 }?.let { "%.2f".format(it / 100.0) } ?: "") }
+    var gross by remember { mutableStateOf(existing?.gross?.takeIf { it > 0 }?.let(::centsDigits).orEmpty()) }
+    var extra by remember { mutableStateOf(existing?.extra?.takeIf { it > 0 }?.let(::centsDigits).orEmpty()) }
     var reimbursed by remember { mutableStateOf(existing?.reimbursedTolls ?: false) }
     var kml by remember { mutableStateOf(existing?.kmPerLitre?.let { "%.1f".format(it) } ?: "") }
     var odoA by remember { mutableStateOf(existing?.odoStart?.let { "%.0f".format(it) } ?: "") }
@@ -3215,7 +3197,7 @@ private fun ShiftDialog(
     val dateValid = remember(date) { isValidIsoDate(date) }
     val startValid = remember(start) { isValidClock(start) }
 
-    val grossCents = parseMoneyCents(gross) ?: 0L
+    val grossCents = centsFromDigits(gross)
     val hoursValue = hours.toDoubleOrNull() ?: 0.0
     val kmValue = km.toDoubleOrNull() ?: 0.0
     val kmlValue = kml.toDoubleOrNull()?.takeIf { it > 0 }
@@ -3224,7 +3206,7 @@ private fun ShiftDialog(
         val charge = existing?.grabFee ?: draftCoverCharge(store, date, start)
         val probe = Shift(
             id = "__preview", date = date, start = start, hours = hoursValue, km = kmValue,
-            gross = grossCents, extra = parseMoneyCents(extra) ?: 0L,
+            gross = grossCents, extra = centsFromDigits(extra),
             reimbursedTolls = reimbursed,
             grabFee = charge, kmPerLitre = kmlValue, odoStart = odoStart, odoEnd = odoEnd,
         )
@@ -3284,12 +3266,10 @@ private fun ShiftDialog(
                 PairFields(
                     first = { m -> OutlinedTextField(value = km, onValueChange = { km = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("Km") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
-                    second = { m -> OutlinedTextField(value = gross, onValueChange = { gross = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Payout (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
+                    second = { m -> CentsField(digits = gross, onDigitsChange = { gross = it }, label = "Payout (RM)", prefix = "", modifier = m, colors = bakiFieldColors()) },
                 )
                 PairFields(
-                    first = { m -> OutlinedTextField(value = extra, onValueChange = { extra = it.filter { c -> c.isDigit() || c == '.' } },
-                        label = { Text("Tolls (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
+                    first = { m -> CentsField(digits = extra, onDigitsChange = { extra = it }, label = "Tolls (RM)", prefix = "", modifier = m, colors = bakiFieldColors()) },
                     second = { m -> OutlinedTextField(value = kml, onValueChange = { kml = it.filter { c -> c.isDigit() || c == '.' } },
                         label = { Text("km/L (opt)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = m, colors = bakiFieldColors()) },
                 )
@@ -3385,7 +3365,7 @@ private fun ShiftDialog(
             }
             Button(
                 enabled = grossCents > 0 && hoursValue > 0 && dateValid && startValid,
-                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, parseMoneyCents(extra) ?: 0L, kmlValue, odoStart, odoEnd, reimbursed) },
+                onClick = { onSave(date, start, hoursValue, kmValue, grossCents, centsFromDigits(extra), kmlValue, odoStart, odoEnd, reimbursed) },
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
                 shape = CircleShape,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -3464,8 +3444,8 @@ private fun ProfitField(label: String, state: androidx.compose.runtime.MutableSt
 @Composable
 private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    var amount by remember { mutableStateOf("") }
-    val cents = parseMoneyCents(amount) ?: 0L
+    var amountDigits by remember { mutableStateOf("") }
+    val cents = centsFromDigits(amountDigits)
     BakiSheet(onDismiss = onDismiss) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -3483,19 +3463,15 @@ private fun AddPayoutDialog(onDismiss: () -> Unit, onAdd: (Long) -> Unit) {
                     Text("log the cash.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            TextField(
-                value = amount, onValueChange = { amount = cleanMoneyInput(it) },
-                isError = amount.isNotBlank() && cents <= 0,
-                supportingText = if (amount.isNotBlank() && cents <= 0) {
-                    { Text("Enter an amount greater than zero", color = scheme.error) }
-                } else null,
-                leadingIcon = { Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) },
-                placeholder = { Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum")) },
-                label = { Text("HOW MUCH?") }, singleLine = true,
+            CentsField(
+                digits = amountDigits,
+                onDigitsChange = { amountDigits = it },
+                label = "HOW MUCH?",
+                isError = amountDigits.isNotBlank() && cents <= 0,
+                supportingText = if (amountDigits.isNotBlank() && cents <= 0) "Enter an amount greater than zero" else null,
                 textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 shape = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier.fillMaxWidth(),
+                filled = true,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = scheme.secondaryContainer,
                     unfocusedContainerColor = scheme.secondaryContainer,
@@ -3530,11 +3506,11 @@ private fun BudgetSheet(
     val cats = remember(repo.store) { repo.store.settings.cats.catsOut }.filter { it.id != "grabfee" }
     val draft = remember {
         mutableStateMapOf<String, String>().apply {
-            repo.store.settings.budgets.forEach { (k, v) -> this[k] = "%.0f".format(v) }
+            repo.store.settings.budgets.forEach { (k, v) -> this[k] = centsDigits((v * 100).roundToLong()) }
         }
     }
     var foodCap by remember {
-        mutableStateOf(repo.store.settings.dailyFoodCapCents?.let { "%.2f".format(it / 100.0) } ?: "")
+        mutableStateOf(repo.store.settings.dailyFoodCapCents?.let(::centsDigits) ?: "")
     }
     var carry by remember { mutableStateOf(repo.store.settings.envelopeCarry) }
     var moveOpen by remember { mutableStateOf(false) }
@@ -3548,8 +3524,10 @@ private fun BudgetSheet(
                 enabled = canWrite && !saving,
                 onClick = {
                     if (saving) return@Button
-                    val limits = draft.mapNotNull { (k, v) -> v.toDoubleOrNull()?.takeIf { it > 0 }?.let { k to it } }.toMap()
-                    val cap = foodCap.toDoubleOrNull()?.takeIf { it > 0 }?.let { (it * 100).toLong() }
+                    val limits = draft.mapNotNull { (k, v) ->
+                        centsFromDigits(v).takeIf { it > 0L }?.let { k to it / 100.0 }
+                    }.toMap()
+                    val cap = centsFromDigits(foodCap).takeIf { it > 0L }
                     saving = true
                     onSave(cap, limits, carry)
                 },
@@ -3572,12 +3550,11 @@ private fun BudgetSheet(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Daily food fund", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-            OutlinedTextField(
-                value = foodCap,
-                onValueChange = { v -> foodCap = v.filter { it.isDigit() || it == '.' } },
-                placeholder = { Text("—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge ) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            CentsField(
+                digits = foodCap,
+                onDigitsChange = { foodCap = it },
+                placeholder = "—",
+                prefix = "",
                 modifier = Modifier.width(110.dp),
                 colors = bakiFieldColors(),
             )
@@ -3594,12 +3571,11 @@ private fun BudgetSheet(
                 Icon(categoryIcon(c.id, c.name), contentDescription = null, tint = scheme.primary, modifier = Modifier.size(IconSize.inline))
                 Spacer(Modifier.width(Space.s))
                 Text(c.name, color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge )
-                OutlinedTextField(
-                    value = draft[c.id] ?: "",
-                    onValueChange = { v -> draft[c.id] = v.filter { it.isDigit() || it == '.' } },
-                    placeholder = { Text("—", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge ) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                CentsField(
+                    digits = draft[c.id] ?: "",
+                    onDigitsChange = { draft[c.id] = it },
+                    placeholder = "—",
+                    prefix = "",
                     modifier = Modifier.width(96.dp),
                     colors = bakiFieldColors(),
                 )
@@ -3629,7 +3605,7 @@ private fun EnvelopeMoveDialog(
     var from by remember { mutableStateOf(cats.firstOrNull()?.first ?: "") }
     var to by remember { mutableStateOf(cats.getOrNull(1)?.first ?: "") }
     var amount by remember { mutableStateOf("") }
-    val value = amount.toDoubleOrNull() ?: 0.0
+    val value = centsFromDigits(amount) / 100.0
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -3659,11 +3635,13 @@ private fun EnvelopeMoveDialog(
                         )
                     }
                 }
-                OutlinedTextField(
-                    value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Amount (RM)") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
+                CentsField(
+                    digits = amount,
+                    onDigitsChange = { amount = it },
+                    label = "Amount (RM)",
+                    prefix = "",
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = bakiFieldColors(),
                 )
             }
         },

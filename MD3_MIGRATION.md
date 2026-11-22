@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.5 cents-first money input
+
+- Shared `CentsField`: numeric keypad, fixed two decimals, digits are cents.
+- Applied to entries, bills, shifts, payouts, reserves, envelope moves, budgets, food cap, Week Close and opening balances.
+- Paste with a decimal still converts exactly to cents.
+- 234 tests; gate and Android lane passed.
+
 ## 0.50.4 small workflow cleanup
 
 - Today empty-state hint no longer sits under the bottom navigation.

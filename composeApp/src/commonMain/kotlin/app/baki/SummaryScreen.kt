@@ -27,6 +27,7 @@ import androidx.compose.material3.toShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextField
@@ -256,9 +257,9 @@ private fun WeekPickerSheet(
 private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekCloseView, onDismiss: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
-    var received by remember(initial.received) { mutableStateOf("%.2f".format(initial.received / 100.0)) }
+    var received by remember(initial.received) { mutableStateOf(centsDigits(initial.received)) }
     var saving by remember { mutableStateOf(false) }
-    val cents = parseMoneyCents(received)
+    val cents = centsFromDigits(received)
     val view = remember(repo.store, weekStart) { weekCloseView(repo.store, weekStart) }
     BakiSheet(
         onDismiss = onDismiss,
@@ -287,7 +288,7 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
                     onClick = {
                         scope.launch {
                             saving = true
-                            if (repo.closeWeek(weekStart, cents ?: view.received)) onDismiss()
+                            if (repo.closeWeek(weekStart, if (received.isBlank()) view.received else cents)) onDismiss()
                             saving = false
                         }
                     },
@@ -312,13 +313,13 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
         } ?: Text("No statement imported for this week.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.s))
         Text("ACTUAL PAYOUT RECEIVED", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-        OutlinedTextField(
-            value = received,
-            onValueChange = { received = it.filter { c -> c.isDigit() || c == '.' } },
-            label = { Text("Received RM") },
-            singleLine = true,
+        CentsField(
+            digits = received,
+            onDigitsChange = { received = it },
+            label = "Received RM",
+            prefix = "",
+            colors = OutlinedTextFieldDefaults.colors(),
             enabled = !repo.readOnly && !view.isClosed,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
         if (view.statement != null) {
@@ -930,7 +931,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val canWrite = !repo.readOnly
     val state = if (fund == "fuel") repo.store.settings.reserveTargets["fuel"] ?: 0.0 else repo.store.settings.reserveTargets["wear"] ?: 0.0
-    var target by remember(fund) { mutableStateOf(if (state > 0) "%.2f".format(state) else "") }
+    var target by remember(fund) { mutableStateOf(centsDigits((state * 100).roundToLong())) }
     var amount by remember(fund) { mutableStateOf("") }
     var status by remember(fund) { mutableStateOf("") }
     val fundName = if (fund == "fuel") "Fuel" else "Wear & tear"
@@ -973,32 +974,23 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Target RM", color = scheme.onSurface, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
-            OutlinedTextField(
-                value = target,
-                onValueChange = { target = it.filter { c -> c.isDigit() || c == '.' } },
-                placeholder = { Text("auto", color = scheme.onSurfaceVariant) },
-                singleLine = true,
+            CentsField(
+                digits = target,
+                onDigitsChange = { target = it },
+                placeholder = "auto",
+                prefix = "",
                 modifier = Modifier.width(120.dp),
                 colors = bakiFieldColorsPublic(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
         }
         Text("Leave blank for the one-month default.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-        TextField(
-            value = amount,
-            onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-            leadingIcon = {
-                Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-            },
-            placeholder = {
-                Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.headlineMediumEmphasized.copy(fontFeatureSettings = "tnum"))
-            },
-            label = { Text("MOVE MONEY") },
-            singleLine = true,
+        CentsField(
+            digits = amount,
+            onDigitsChange = { amount = it },
+            label = "MOVE MONEY",
             textStyle = MaterialTheme.typography.headlineMediumEmphasized.copy(fontFeatureSettings = "tnum"),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth(),
+            filled = true,
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = scheme.secondaryContainer,
                 unfocusedContainerColor = scheme.secondaryContainer,
@@ -1013,9 +1005,9 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
         )
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
             Button(
-                enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                enabled = canWrite && centsFromDigits(amount) > 0L,
                 onClick = {
-                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    val cents = centsFromDigits(amount)
                     scope.launch {
                         val ok = repo.addReserveTxn(fund, cents)
                         status = if (ok) "Added RM ${rm(cents)} to reserve" else "Could not add"
@@ -1027,9 +1019,9 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f),
             ) { Text("Top up") }
             TextButton(
-                enabled = canWrite && (amount.toDoubleOrNull() ?: 0.0) > 0.0,
+                enabled = canWrite && centsFromDigits(amount) > 0L,
                 onClick = {
-                    val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    val cents = centsFromDigits(amount)
                     scope.launch {
                         val ok = repo.addReserveTxn(fund, -cents)
                         status = if (ok) "Withdrew RM ${rm(cents)} from reserve" else "Could not withdraw"
@@ -1042,7 +1034,7 @@ private fun ReserveSheet(repo: BakiRepo, fund: String, onDismiss: () -> Unit) {
         TextButton(
             enabled = canWrite,
             onClick = {
-                val value = target.toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
+                val value = centsFromDigits(target) / 100.0
                 scope.launch {
                     repo.setReserveTarget(fund, value)
                     status = if (value > 0) "Target saved" else "Using one-month default"

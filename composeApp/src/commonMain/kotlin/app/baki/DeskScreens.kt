@@ -1433,7 +1433,7 @@ private fun AccountEditDialog(
     onSave: (String, Long, String, Boolean) -> Unit,
 ) {
     var name by remember { mutableStateOf(account.name) }
-    var opening by remember { mutableStateOf(if (account.openingBalance == 0L) "" else (account.openingBalance / 100.0).toString()) }
+    var opening by remember { mutableStateOf(centsDigits(account.openingBalance)) }
     var date by remember { mutableStateOf(account.openingDate) }
     var archived by remember { mutableStateOf(account.archived) }
     androidx.compose.material3.AlertDialog(
@@ -1442,7 +1442,7 @@ private fun AccountEditDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
                 OutlinedTextField(name, { name = it }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(opening, { opening = it }, label = { Text("Opening balance (RM)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+                CentsField(opening, { opening = it }, label = "Opening balance (RM)", prefix = "", modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(date, { date = it }, label = { Text("Opening date (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Archived", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
@@ -1452,7 +1452,7 @@ private fun AccountEditDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val cents = ((opening.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                val cents = centsFromDigits(opening)
                 onSave(name, cents, date, archived)
             }) { Text("Save") }
         },

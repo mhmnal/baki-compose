@@ -247,8 +247,8 @@ private fun PayoutAmountDialog(
     onDismiss: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    var text by remember { mutableStateOf(if (initialCents > 0) "%.2f".format(initialCents / 100.0) else "") }
-    val amount = parseMoneyCents(text) ?: 0L
+    var text by remember { mutableStateOf(centsDigits(initialCents)) }
+    val amount = centsFromDigits(text)
     BakiSheet(onDismiss = onDismiss) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -266,27 +266,16 @@ private fun PayoutAmountDialog(
                 Text("log the cash.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
         }
-        TextField(
-            value = text,
-            onValueChange = { raw -> text = cleanMoneyInput(raw) },
+        CentsField(
+            digits = text,
+            onDigitsChange = { text = it },
+            label = "HOW MUCH?",
             isError = text.isNotBlank() && amount <= 0,
-            supportingText = if (text.isNotBlank() && amount <= 0) {
-                { Text("Enter an amount greater than zero", color = scheme.error) }
-            } else null,
-            leadingIcon = {
-                Text("RM", color = scheme.onSecondaryContainer.copy(alpha = 0.72f), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
-            },
-            placeholder = {
-                Text("0.00", color = scheme.onSecondaryContainer.copy(alpha = 0.30f), style = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
-            },
-            label = { Text("HOW MUCH?") },
-            singleLine = true,
+            supportingText = if (text.isNotBlank() && amount <= 0) "Enter an amount greater than zero" else null,
             textStyle = MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             shape = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth().semantics {
-                contentDescription = "Payout amount in Malaysian ringgit"
-            },
+            filled = true,
+            contentDescription = "Payout amount in Malaysian ringgit",
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = scheme.secondaryContainer,
                 unfocusedContainerColor = scheme.secondaryContainer,
