@@ -25,6 +25,12 @@ import kotlinx.serialization.Serializable
 private data class DataEnvelope(val ok: Boolean = true, val data: Store? = null, val version: String? = null)
 
 @Serializable
+private data class OpsBody(val ops: List<LedgerOperation>)
+
+@Serializable
+private data class OpsResponse(val ok: Boolean = true, val accepted: List<String> = emptyList())
+
+@Serializable
 private data class PushBody(
     val data: Store,
     @SerialName("deletedIds") val deletedIds: List<String> = emptyList(),
@@ -81,6 +87,19 @@ class TrackerClient(
         res.headers[HttpHeaders.ETag]?.let { etag = it }
         val env = BakiJson.decodeFromString<DataEnvelope>(res.bodyAsText())
         return env.data ?: throw IllegalStateException("server returned no data")
+    }
+
+    /** Send durable operations in order. Old servers return 404; callers fall back to a full push. */
+    suspend fun pushOps(ops: List<LedgerOperation>): List<String> {
+        if (ops.isEmpty()) return emptyList()
+        val res = http.post("$baseUrl/api/ops") {
+            auth()
+            contentType(ContentType.Application.Json)
+            setBody(BakiJson.encodeToString(OpsBody.serializer(), OpsBody(ops)))
+        }
+        if (res.status == HttpStatusCode.NotFound) throw UnsupportedOperationException("operation endpoint not available")
+        if (res.status != HttpStatusCode.OK) throw IllegalStateException("operation push failed: ${res.status}")
+        return BakiJson.decodeFromString<OpsResponse>(res.bodyAsText()).accepted
     }
 
     suspend fun push(store: Store, deletedIds: List<String> = emptyList(), undeleteIds: List<String> = emptyList()): Store {

@@ -105,6 +105,25 @@ class OperationLog(
         if (seq > current.snapshotSeq) writeMeta(current.copy(snapshotSeq = seq))
     }
 
+    /** A server accepted operations through [seq]; keep anything newer for the next batch. */
+    fun acknowledgeThrough(seq: Long) {
+        if (seq <= 0) return
+        val current = meta()
+        val remaining = runCatching { readAll().filter { it.seq > seq } }.getOrDefault(emptyList())
+        if (remaining.isEmpty()) {
+            runCatching { LocalStore.deleteBytes(fileName) }
+        } else {
+            val rebuilt = ByteArrayOutputStream()
+            rebuilt.write(MAGIC)
+            remaining.forEach { rebuilt.write(encodeRecord(it)) }
+            LocalStore.writeBytes(fileName, rebuilt.toByteArray())
+        }
+        writeMeta(current.copy(
+            snapshotSeq = maxOf(current.snapshotSeq, seq),
+            ackedSeq = maxOf(current.ackedSeq, seq),
+        ))
+    }
+
     /** The full-store push succeeded; every current operation is covered by that snapshot. */
     fun acknowledgeAll() {
         val current = meta()

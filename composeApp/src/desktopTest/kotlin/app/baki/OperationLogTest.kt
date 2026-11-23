@@ -51,6 +51,19 @@ class OperationLogTest {
     }
 
     @Test
+    fun partialAcknowledgementKeepsLaterOperations() {
+        val (log, file) = log()
+        val first = log.append("entry", "e1", "delete")
+        val second = log.append("entry", "e2", "delete")
+        log.acknowledgeThrough(first!!)
+        assertEquals(1, log.pendingCount())
+        assertEquals(second, log.pendingOutbox().single().seq)
+        log.acknowledgeAll()
+        assertEquals(0, log.pendingCount())
+        LocalStore.deleteBytes(file)
+    }
+
+    @Test
     fun crashBetweenOperationAndSnapshotIsReplayedExactlyOnce() {
         val previous = loadLocal()
         val tag = Random.nextLong().toString().takeLast(10)

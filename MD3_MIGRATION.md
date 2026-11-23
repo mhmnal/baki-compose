@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.54.0 incremental operation sync
+
+- `POST /api/ops` with durable dedupe journal.
+- Client batch push before pull; contiguous accepted prefix compaction.
+- Full-store push remains the fallback for old servers.
+- Server-derived statement/normalization saves no longer pollute the outbox.
+- 247 tests and Android lane passed.
+
 ## 0.53.0 full local outbox
 
 - Every Store mutation now writes a durable encrypted operation: compact entry operations plus generic store replacements.

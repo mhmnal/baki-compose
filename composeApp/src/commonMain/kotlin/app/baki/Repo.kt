@@ -138,6 +138,29 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     suspend fun sync(showProgress: Boolean = true) {
         if (showProgress) status = "syncing"
+        // Push the durable operation outbox first. The full-store push below remains the fallback.
+        if (config.allowWrites) {
+            val pending = operationLog.pendingOutbox()
+            if (pending.isNotEmpty()) {
+                try {
+                    val accepted = client.pushOps(pending.take(100)).toSet()
+                    // Only compact a contiguous accepted prefix; a gap must stay for retry.
+                    var acked: Long? = null
+                    for (op in pending.sortedBy { it.seq }) {
+                        if (op.id !in accepted) break
+                        acked = op.seq
+                    }
+                    if (acked != null) {
+                        operationLog.acknowledgeThrough(acked)
+                        if (operationLog.pendingCount() == 0) pendingPush = false
+                    }
+                } catch (_: UnsupportedOperationException) {
+                    // Old server: fall through to the existing whole-store push.
+                } catch (e: Exception) {
+                    lastError = e.message
+                }
+            }
+        }
         // Pull outside the state mutex: an unreachable server must not freeze local writes.
         val remote = try {
             client.pull()
@@ -403,13 +426,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     ) {
         val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds, removedMonths) }.getOrNull() ?: return
         store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        saveLocal(store)
+        saveLocal(store, markDirty = false, recordOutbox = false)
     }
 
     private suspend fun pullStatementsNow() {
         val remote = runCatching { client.pullStatements() }.getOrNull() ?: return
         store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        saveLocal(store)
+        saveLocal(store, markDirty = false, recordOutbox = false)
     }
 
     /** Reclassify sub-account moves already in the queue: hide, but retain for audit. */
@@ -423,7 +446,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         if (changed) {
             store = store.copy(importedTxns = rows, updatedAt = nowIso())
-            saveLocal(store)
+            saveLocal(store, markDirty = false, recordOutbox = false)
         }
     }
 
