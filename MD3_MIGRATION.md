@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.51.0 data health
+
+- Data Health card and sheet: payout gaps, bills missing due days, inactive bill links, odometer coverage, backup age, open week and week-close/statement variance.
+- Direct actions: payout review, bill edit, odometer reading, backup and open week.
+- Odometer prompt now explicitly says two fill-up readings unlock measured km/L.
+- Report tests added; no scoring or judgement copy.
+- 237 tests and Android lane passed.
+
 ## 0.50.9 local-first entry writes
 
 - Add and delete entry return after local persistence; the durable outbox uploads later.

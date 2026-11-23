@@ -374,6 +374,8 @@ private fun AppContent(repo: BakiRepo) {
                 else -> MoreScreen(
                     repo,
                     onHeaderCollapsed = { headerCollapsed = it },
+                    onOpenWeek = { tab = 3 },
+                    onPayouts = { payoutsTarget = PayoutsTarget.Stored(it.id) },
                     onEditBudgets = { editingBudgets = true; adding = 5 },
                     onAddService = {
                         editingEntry = null
@@ -1696,7 +1698,14 @@ private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: () -> Unit = {}, onHeaderCollapsed: (Boolean) -> Unit = {}) {
+private fun MoreScreen(
+    repo: BakiRepo,
+    onEditBudgets: () -> Unit,
+    onAddService: () -> Unit = {},
+    onOpenWeek: () -> Unit = {},
+    onPayouts: (Shift) -> Unit = {},
+    onHeaderCollapsed: (Boolean) -> Unit = {},
+) {
     val scheme = MaterialTheme.colorScheme
     var url by remember { mutableStateOf(repo.config.serverUrl) }
     var token by remember { mutableStateOf(repo.config.serverToken) }
@@ -1715,6 +1724,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
     var historyOpen by remember { mutableStateOf(false) }
     var statementHistoryOpen by remember { mutableStateOf(false) }
     var diagnosticsOpen by remember { mutableStateOf(false) }
+    var dataHealthOpen by remember { mutableStateOf(false) }
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var serviceBaselineOpen by remember { mutableStateOf(false) }
     var manualOdometerOpen by remember { mutableStateOf(false) }
@@ -2008,6 +2018,22 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
         }
 
         if (moreTab == MoreTab.MONEY) {
+        val healthReport = remember(repo.store, repo.config.lastBackupAt, repo.config.lastBackupEntries) {
+            dataHealth(repo.store, repo.config.lastBackupAt, repo.config.lastBackupEntries)
+        }
+        DataHealthCard(healthReport, onOpen = { dataHealthOpen = true })
+        if (healthReport.hasIssues) Spacer(Modifier.height(Space.l))
+        if (dataHealthOpen) {
+            DataHealthSheet(
+                report = healthReport,
+                onPayout = { dataHealthOpen = false; onPayouts(it) },
+                onEditBill = { dataHealthOpen = false; editingBill = it },
+                onOdometer = { dataHealthOpen = false; manualOdometerOpen = true },
+                onBackup = { dataHealthOpen = false; createBackup() },
+                onOpenWeek = { dataHealthOpen = false; onOpenWeek() },
+                onDismiss = { dataHealthOpen = false },
+            )
+        }
         val statementRows = repo.store.importedTxns
         val matchedRows = statementRows.count { it.status == "matched" }
         val pendingRows = statementRows.count { it.status == "pending" }
@@ -3127,14 +3153,14 @@ private fun EntryDialog(
                         value = odo,
                         onValueChange = { odo = it.filter { c -> c.isDigit() } },
                         label = {
-                            Text(if (service) "Odometer at service (optional)" else "Odometer at fill-up (optional)")
+                            Text(if (service) "Odometer at service (optional)" else "Odometer at fill-up (unlocks km/L)")
                         }, singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(), colors = bakiFieldColors(),
                         supportingText = {
                             Text(
                                 if (service) "Keeps the service tied to the car's mileage"
-                                else "Add this and the app measures your real km/L",
+                                else "Two fill-up readings unlock measured km/L",
                                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                             )
                         },
