@@ -89,7 +89,12 @@ fun rmRaw(ringgit: Double): String = rmRaw(Math.round(ringgit * 100).toLong())
 /** Human label for a category id, falling back to the stored id only when unknown. */
 fun categoryLabel(store: Store, id: String): String =
     (store.settings.cats.catsOut + store.settings.cats.catsIn)
-        .firstOrNull { it.id == id }?.name ?: id
+        .firstOrNull { it.id == id }?.name
+        ?: when (id) {
+            "grabfee" -> "Grab fee"
+            "cover" -> "Insurance"
+            else -> id
+        }
 
 /** RM formatting without locale surprises; masked when discreet mode is on. */
 fun rm(cents: Long): String = if (BakiPrivacy.discreet) "••••" else rmRaw(cents)
@@ -215,6 +220,12 @@ fun prettyDate(iso: String): String {
     val d = runCatching { LocalDate.parse(iso) }.getOrNull() ?: return iso
     val month = d.month.name.lowercase().replaceFirstChar { it.uppercase() }
     return "${d.dayOfMonth} $month"
+}
+
+/** "24 Nov" — compact companion date for dense rows. */
+fun prettyDateShort(iso: String): String {
+    val parts = prettyDate(iso).split(" ")
+    return if (parts.size >= 2) "${parts[0]} ${parts[1].take(3)}" else prettyDate(iso)
 }
 
 /** Local HH:mm for a creation timestamp; null for rows that predate the field. */

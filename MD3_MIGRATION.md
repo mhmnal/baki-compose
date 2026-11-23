@@ -731,6 +731,17 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.58.0 visual clarity pass
+
+- Recovery snapshot is automatic after Week Close.
+- Statement-funded payouts are labelled allocated.
+- Data Health uses a neutral surface and a 48 dp Review action.
+- More section headings are stronger; neutral cached/offline status.
+- Shift rows use time-first titles, bold amounts and payout pills.
+- Desktop ledger uses right-aligned numerics, `24 Nov` dates and ink outflows.
+- Hero carries a recorded-net basis label; unentered payouts read `Not entered`.
+- Preview harness clears transient feedback; 264 tests pass.
+
 ## 0.57.0 recovery guard and payout allocation
 
 - Explicit SQLite recovery mode; stale JSON fallback is no longer silent.

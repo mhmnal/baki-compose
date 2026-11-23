@@ -773,8 +773,8 @@ fun Header(repo: BakiRepo) {
     val status = repo.status
     val ink = when (status) {
         "synced" -> MaterialTheme.colorScheme.tertiary
-        "offline" -> MaterialTheme.colorScheme.error
-        "cached" -> MaterialTheme.colorScheme.secondary
+        "offline" -> MaterialTheme.colorScheme.onSurfaceVariant
+        "cached" -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.primary
     }
     Row(
@@ -991,11 +991,11 @@ fun RowCard(
             } else {
                 Box(
                     Modifier
-                        .size(30.dp)
+                        .width(3.dp)
+                        .height(22.dp)
                         .clip(CircleShape)
-                        .background(dot.copy(alpha = 0.14f)),
-                    contentAlignment = Alignment.Center,
-                ) { Box(Modifier.size(7.dp).clip(CircleShape).background(dot)) }
+                        .background(dot.copy(alpha = 0.65f)),
+                )
                 Spacer(Modifier.width(Space.m))
             }
             Column(Modifier.weight(1f)) {
@@ -1003,12 +1003,17 @@ fun RowCard(
                 if (sub.isNotEmpty()) Text(sub, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(amount, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
+                Text(amount, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum"))
                 if (running != null) Text(running, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 if (actionLabel != null && onAction != null) {
-                    TextButton(
-                        onClick = onAction,
-                        contentPadding = PaddingValues(horizontal = Space.xs),
+                    Box(
+                        Modifier
+                            .heightIn(min = 40.dp)
+                            .clip(CircleShape)
+                            .background(scheme.primary.copy(alpha = 0.11f))
+                            .clickable(onClick = onAction)
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             actionLabel,
@@ -1037,8 +1042,8 @@ private fun SectionTitle(text: String, trailing: String = "") {
                         .background(scheme.primary),
                 )
                 Text(
-                    text.lowercase().replaceFirstChar { it.titlecase() }, color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.titleSmallEmphasized,
+                    text.lowercase().replaceFirstChar { it.titlecase() }, color = scheme.onSurface,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.semantics { heading() },
                 )
             }
@@ -1347,19 +1352,19 @@ private fun SpendingScreen(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 148.dp),
+        contentPadding = PaddingValues(bottom = 188.dp),
     ) {
         item {
             Column {
                 Spacer(Modifier.height(Space.m))
                 MonthHeader(month, onMonth)
                 Spacer(Modifier.height(Space.s))
-                Hero(shownLabel, shown, scheme.secondary, 40)
+                Hero(shownLabel, shown, scheme.onSurface, 40)
                 Text(
                     (if (filtering) {
                         "${entries.size} ${if (entries.size == 1) "purchase" else "purchases"}${catName?.let { " · $it" } ?: ""} of ${t.entryCount} this month"
                     } else {
-                        "$expenseCount ${if (expenseCount == 1) "purchase" else "purchases"} this month · no judgement"
+                        "$expenseCount ${if (expenseCount == 1) "purchase" else "purchases"} this month"
                     }),
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
@@ -1498,7 +1503,7 @@ private fun SpendingScreen(
                             loggedTime(e.loggedAt)?.let { if (isNotEmpty()) append(" · "); append("logged $it") }
                         },
                         (if (e.type == "income") "+" else "−") + rm(e.amount),
-                        if (e.type == "income") scheme.tertiary else scheme.error,
+                        if (e.type == "income") scheme.tertiary else scheme.onSurface,
                         icon = categoryIcon(e.cat),
                         onLongPress = { onEditEntry(e) },
                         onDelete = { onDeleteEntry(e) },
@@ -1544,7 +1549,7 @@ private fun ShiftsScreen(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 148.dp),
+        contentPadding = PaddingValues(bottom = 188.dp),
     ) {
         item {
             Column {
@@ -1572,9 +1577,8 @@ private fun ShiftsScreen(
             val sh = row.first
             val m = row.second
             RowCard(
-                "${weekdayShort(sh.date)} ${prettyDate(sh.date)} · ${sh.start}",
-                "${"%.1f".format(m.km)} km · ${"%.1f".format(m.hrs)}h" +
-                    (m.netHr?.let { " · RM ${rm(it)}/hr" } ?: ""),
+                sh.start.ifBlank { "Shift" },
+                "${weekdayShort(sh.date)} ${prettyDateShort(sh.date)} · ${"%.0f".format(m.km)} km · ${"%.1f".format(m.hrs)}h",
                 "RM ${rm(m.net)}",
                 scheme.onSurface,
                 onClick = { onEditShift(sh) },
@@ -2838,7 +2842,7 @@ private fun MoreScreen(
         RowCard("Status", repo.status, "", scheme.onSurfaceVariant)
         }
         // keep the last card of every tab clear of the bottom bar / overlay
-        Spacer(Modifier.height(140.dp))
+        Spacer(Modifier.height(188.dp))
         }
     }
     SnackbarHost(undoSnackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))

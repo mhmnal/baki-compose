@@ -173,6 +173,11 @@ fun TodayScreen(
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Text(
+                        "recorded net · running costs and payouts are separate",
+                        color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                     Spacer(Modifier.height(Space.s))
                     FoodStrip(food, paidUntil, animate = !repo.config.reducedMotion, modifier = Modifier.fillMaxWidth())
                 } else {
@@ -186,6 +191,11 @@ fun TodayScreen(
                         height = 180.dp,
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "recorded net · running costs and payouts are separate",
+                        color = scheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelSmall,
                     )
                     Spacer(Modifier.height(Space.s))
                     FoodStrip(

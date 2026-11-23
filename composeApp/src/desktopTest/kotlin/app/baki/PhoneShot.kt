@@ -68,6 +68,7 @@ class PhoneShot {
             PhonePreview.active = true
             for ((index, name) in phoneTabs) {
                 PhonePreview.initialTab = index
+                ActionFeedback.clear()
                 render(File(phoneDir, "$name.png"), 780, 1688, 2f) { App(repo) }
             }
 
@@ -76,6 +77,7 @@ class PhoneShot {
             PhonePreview.initialTab = 0
             for (view in desktopViews) {
                 PhonePreview.desktopView = view
+                ActionFeedback.clear()
                 render(File(deskDir, "$view.png"), 1440, 900, 1f) { App(repo) }
             }
         }

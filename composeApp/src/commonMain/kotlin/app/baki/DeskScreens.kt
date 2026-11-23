@@ -57,6 +57,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,7 +121,8 @@ private fun DeskTableHead(vararg cells: Pair<String, Float>) {
                 label,
                 color = scheme.onSurfaceVariant,
                 letterSpacing = 0.8.sp,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                textAlign = if (label == "AMOUNT" || label == "RUNNING") TextAlign.End else TextAlign.Start,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(weight),
             )
         }
@@ -132,6 +134,7 @@ private fun DeskTableHead(vararg cells: Pair<String, Float>) {
 private fun DeskTableRow(
     values: List<Pair<String, Float>>,
     colors: List<Color> = emptyList(),
+    alignments: List<TextAlign> = emptyList(),
     onClick: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -147,6 +150,7 @@ private fun DeskTableRow(
                 color = colors.getOrNull(index) ?: scheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = alignments.getOrNull(index) ?: TextAlign.Start,
                 style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 modifier = Modifier.weight(weight),
             )
@@ -508,9 +512,10 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
                             ),
                             colors = listOf(
                                 scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface,
-                                if (e.type == "income") scheme.tertiary else scheme.secondary,
+                                if (e.type == "income") scheme.tertiary else scheme.onSurface,
                                 scheme.onSurfaceVariant,
                             ),
+                            alignments = listOf(TextAlign.Start, TextAlign.Start, TextAlign.Start, TextAlign.End, TextAlign.End),
                         )
                     }
                 }
@@ -530,7 +535,7 @@ private fun DeskFilter(label: String, selected: Boolean, onClick: () -> Unit) {
             .clip(CircleShape)
             .background(if (selected) scheme.primary else scheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
-            .padding(horizontal = Space.m, vertical = 7.dp),
+            .padding(horizontal = Space.m, vertical = 9.dp),
     )
 }
 
@@ -1236,7 +1241,16 @@ internal fun DeskSettings(repo: BakiRepo) {
     }
 }
 
-private fun shortDate(iso: String): String = if (iso.length >= 10) iso.substring(5).replace('-', '/') else iso
+private fun shortDate(iso: String): String {
+    if (iso.length < 10) return iso
+    val day = iso.substring(8, 10).trimStart('0').ifBlank { "0" }
+    val month = when (iso.substring(5, 7)) {
+        "01" -> "Jan"; "02" -> "Feb"; "03" -> "Mar"; "04" -> "Apr"
+        "05" -> "May"; "06" -> "Jun"; "07" -> "Jul"; "08" -> "Aug"
+        "09" -> "Sep"; "10" -> "Oct"; "11" -> "Nov"; else -> "Dec"
+    }
+    return "$day $month"
+}
 
 // ---------------------------------------------------------------------------
 // Statement reconciliation (Desk-only writer; never touches ledger entries)

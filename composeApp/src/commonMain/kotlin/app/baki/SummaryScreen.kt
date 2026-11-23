@@ -104,7 +104,7 @@ fun SummaryScreen(
         state = listState,
         modifier = Modifier.fillMaxSize().padding(horizontal = Space.l),
         verticalArrangement = Arrangement.spacedBy(Space.s),
-        contentPadding = PaddingValues(top = 0.dp, bottom = 148.dp),
+        contentPadding = PaddingValues(top = 0.dp, bottom = 188.dp),
     ) {
         item {
             Md3Card(
@@ -172,7 +172,14 @@ private fun WeekCloseCard(repo: BakiRepo, store: Store) {
         }
         Column(horizontalAlignment = Alignment.End) {
             Text("Received", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            Text("RM ${rm(view.received)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"))
+            Text(
+                if (!view.isClosed && view.received == 0L) "Not entered" else "RM ${rm(view.received)}",
+                color = if (!view.isClosed && view.received == 0L) scheme.onSurfaceVariant else scheme.onSurface,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = if (!view.isClosed && view.received == 0L) FontWeight.Normal else FontWeight.Bold,
+                ),
+            )
         }
     }
     Spacer(Modifier.height(Space.xs))

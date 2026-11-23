@@ -111,28 +111,28 @@ fun DataHealthCard(report: DataHealthReport, onOpen: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = scheme.secondaryContainer,
+        color = scheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "DATA HEALTH",
-                    color = scheme.onSecondaryContainer,
+                    color = scheme.primary,
                     letterSpacing = 1.2.sp,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     "${report.issueCount} open",
-                    color = scheme.onSecondaryContainer.copy(alpha = 0.74f),
+                    color = scheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
             if (report.payoutGaps.isNotEmpty()) {
                 Text(
                     "Payout gap · RM ${rm(report.payoutGapTotal)}",
-                    color = scheme.onSecondaryContainer,
+                    color = scheme.onSurface,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 )
             }
@@ -144,11 +144,14 @@ fun DataHealthCard(report: DataHealthReport, onOpen: () -> Unit) {
                 if (report.weekVariances.isNotEmpty()) add("week close differs from statement")
             }
             if (detail.isNotEmpty()) {
-                Text(detail.joinToString(" · "), color = scheme.onSecondaryContainer.copy(alpha = 0.78f), style = MaterialTheme.typography.bodySmall)
+                Text(detail.joinToString(" · "), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
-            TextButton(onClick = onOpen, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text("Review", color = scheme.onSecondaryContainer, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            }
+            Button(
+                onClick = onOpen,
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+                shape = CircleShape,
+                modifier = Modifier.height(48.dp),
+            ) { Text("Review", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
         }
     }
 }
@@ -268,7 +271,7 @@ private fun HealthRow(title: String, sub: String, action: String?, onAction: () 
             Text(sub, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         if (action != null) {
-            TextButton(onClick = onAction, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Space.s)) {
+            TextButton(onClick = onAction, modifier = Modifier.height(48.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Space.s)) {
                 Text(action, color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
         }
