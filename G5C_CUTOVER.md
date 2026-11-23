@@ -28,8 +28,9 @@ Status: **G5c tooling passed. Production cutover not enabled.**
 - direct JSON import with no G5a database
 - G5a snapshot import
 - row counts and outbox
-- **260 JVM tests, 0 failures** target
-- Android build target
+- **260 JVM tests, 0 failures**
+- Android build passed
+- Android instrumentation imported 131 entries into normalized SQLite and exported them back
 
 ## Rollback runbook
 
@@ -43,8 +44,8 @@ The JSON snapshot from before cutover is also retained on the device.
 
 ## Cutover gate still required
 
-- [ ] real phone import test with production-sized data
-- [ ] backup from SQLite and restore into JSON build
+- [x] real phone import test with production-sized data (131 entries)
+- [ ] backup from SQLite and restore into JSON build on device
 - [ ] dual-read run for one release
 - [ ] explicit cutover release that flips `storageEngine` default
 - [ ] post-cutover diagnostics show engine and migration status
