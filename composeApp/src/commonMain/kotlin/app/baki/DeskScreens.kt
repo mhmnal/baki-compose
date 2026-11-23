@@ -224,6 +224,9 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
             VehicleWearCard(store)
         }
         item {
+            VehicleEconomyCard(store)
+        }
+        item {
             Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
                 DeskCard(Modifier.weight(1.35f)) {
                     DeskRunningCard(store, month)

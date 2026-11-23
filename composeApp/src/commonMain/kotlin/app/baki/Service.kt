@@ -12,6 +12,13 @@ data class ServiceInfo(
         (targetOn != null && targetOn < todayIso())
 }
 
+/** Maintenance/repair history, newest first. There is no inferred service interval here. */
+fun serviceHistory(store: Store, limit: Int = 5): List<Entry> =
+    store.entries
+        .filter { it.cat == "maintenance" }
+        .sortedWith(compareByDescending<Entry> { it.date }.thenByDescending { it.loggedAt.ifBlank { it.updated } })
+        .take(limit)
+
 fun serviceInfo(store: Store, baseOdo: Int? = null, baseOn: String? = null): ServiceInfo {
     val last = store.entries
         .filter { it.cat == "maintenance" }

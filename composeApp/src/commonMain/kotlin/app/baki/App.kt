@@ -371,7 +371,19 @@ private fun AppContent(repo: BakiRepo) {
                     },
                 )
                 3 -> SummaryScreen(repo = repo, store = repo.store, month = month, onMonth = { month = it }, onHeaderCollapsed = { headerCollapsed = it })
-                else -> MoreScreen(repo, onHeaderCollapsed = { headerCollapsed = it }, onEditBudgets = { editingBudgets = true; adding = 5 })
+                else -> MoreScreen(
+                    repo,
+                    onHeaderCollapsed = { headerCollapsed = it },
+                    onEditBudgets = { editingBudgets = true; adding = 5 },
+                    onAddService = {
+                        editingEntry = null
+                        entryType = "expense"
+                        presetCat = "maintenance"
+                        presetAmount = null
+                        presetNote = null
+                        adding = 2
+                    },
+                )
             }
             }
             }
@@ -1684,7 +1696,7 @@ private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollapsed: (Boolean) -> Unit = {}) {
+private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: () -> Unit = {}, onHeaderCollapsed: (Boolean) -> Unit = {}) {
     val scheme = MaterialTheme.colorScheme
     var url by remember { mutableStateOf(repo.config.serverUrl) }
     var token by remember { mutableStateOf(repo.config.serverToken) }
@@ -1784,7 +1796,16 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onHeaderCollap
         Spacer(Modifier.height(Space.l))
         SectionTitle("SERVICE")
         Spacer(Modifier.height(Space.s))
-        ServiceCard(repo, onSetTarget = { serviceTargetOpen = true }, onResetBaseline = { serviceBaselineOpen = true })
+        ServiceCard(
+            repo,
+            onSetTarget = { serviceTargetOpen = true },
+            onResetBaseline = { serviceBaselineOpen = true },
+            onAddService = onAddService,
+        )
+        Spacer(Modifier.height(Space.l))
+        SectionTitle("VEHICLE ECONOMY")
+        Spacer(Modifier.height(Space.s))
+        VehicleEconomyCard(repo.store)
         Spacer(Modifier.height(Space.l))
         SectionTitle("VEHICLE WEAR")
         Spacer(Modifier.height(Space.s))

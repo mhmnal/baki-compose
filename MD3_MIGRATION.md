@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.6 vehicle economy
+
+- Vehicle Economy card: measured km/L with odometer-fill guidance.
+- Cost-per-km trend using recorded fuel, wear and upkeep.
+- Service/repair history from maintenance entries.
+- Add-service shortcut opens a prefilled Maintenance entry.
+- Brings service, economy and cost data together with existing wear/work-personal split.
+- 235 tests and Android lane passed.
+
 ## 0.50.5 cents-first money input
 
 - Shared `CentsField`: numeric keypad, fixed two decimals, digits are cents.

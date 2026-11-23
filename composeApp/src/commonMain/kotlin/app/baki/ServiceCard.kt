@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.datetime.LocalDate
 
 @Composable
-fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> Unit = {}) {
+fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> Unit = {}, onAddService: (() -> Unit)? = null) {
     val scheme = MaterialTheme.colorScheme
     val info = remember(repo.store) {
         serviceInfo(repo.store, repo.store.settings.serviceOdoBase, repo.store.settings.serviceOdoBaseOn)
@@ -47,8 +47,10 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> 
             TextButton(onClick = onSetTarget, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                 Text("Set next", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
             }
-            TextButton(onClick = onResetBaseline, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                Text("Reset baseline", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+            if (onAddService != null) {
+                TextButton(onClick = onAddService, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                    Text("Add", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                }
             }
         }
         if (last == null) {
@@ -87,12 +89,35 @@ fun ServiceCard(repo: BakiRepo, onSetTarget: () -> Unit, onResetBaseline: () -> 
             if (info.overdue) Text("Target reached or date passed", color = scheme.error, style = MaterialTheme.typography.bodyMedium )
         }
         if (repo.store.settings.serviceOdoBase != null) {
+            TextButton(onClick = onResetBaseline, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Reset baseline", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+            }
             Text(
                 "Baseline ${repo.store.settings.serviceOdoBase} km · ${repo.store.settings.serviceOdoBaseOn ?: "today"}",
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
             )
         }
         Text("User-set target, not a guessed interval.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+
+        val history = remember(repo.store) { serviceHistory(repo.store) }
+        if (history.size > 1) {
+            Spacer(Modifier.height(Space.s))
+            Text("SERVICE LOG", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+            history.drop(1).forEach { entry ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        prettyDate(entry.date) + (entry.odo?.takeIf { it > 0 }?.let { " · $it km" } ?: ""),
+                        color = scheme.onSurface, style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "RM ${rm(entry.amount / 100.0)}",
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    )
+                }
+            }
+        }
+        Text("Add a Maintenance entry in Spend to extend this log.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(Space.s))
     }
 }

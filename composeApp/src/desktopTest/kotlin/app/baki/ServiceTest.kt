@@ -42,4 +42,16 @@ class ServiceTest {
         assertEquals(5_000, s.remainingKm)
         assertTrue(!s.overdue)
     }
+
+    @Test
+    fun historyKeepsNewestMaintenanceRows() {
+        val entries = listOf(
+            Entry(id = "old", date = "2026-10-01", type = "expense", cat = "maintenance", amount = 10000, updated = "a"),
+            Entry(id = "new", date = "2026-11-10", type = "expense", cat = "maintenance", amount = 45800, odo = 42_000, updated = "b"),
+            Entry(id = "food", date = "2026-11-11", type = "expense", cat = "food", amount = 1200, updated = "c"),
+        )
+        val history = serviceHistory(Store(entries = entries))
+        assertEquals(listOf("new", "old"), history.map { it.id })
+        assertEquals(42_000, history.first().odo)
+    }
 }
