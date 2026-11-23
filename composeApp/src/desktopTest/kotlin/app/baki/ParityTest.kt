@@ -12,7 +12,7 @@ class ParityTest {
 
     private suspend fun repo(): BakiRepo? {
         val client = TrackerClient(base)
-        return try { client.pull()!!; BakiRepo(ClientConfig(serverUrl = base, allowWrites = true)) } catch (e: Exception) {
+        return try { client.pull()!!; BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true)) } catch (e: Exception) {
             println("[parity] no server at $base — skipping (${e.message})"); null
         }
     }

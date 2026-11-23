@@ -20,7 +20,7 @@ class StorageSeamTest {
         try {
             val memory = MemoryStorage()
             val repo = BakiRepo(
-                ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true),
+                ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:1", allowWrites = true),
                 customStorage = memory,
             )
             val id = repo.addEntry("expense", 111, "food", "seam", "2026-11-23")!!

@@ -19,7 +19,7 @@ class DeskStatementUiTest {
         val dir = java.io.File(LocalStore.path()).parentFile
         listOf("store.json", "store.json.bak").forEach { java.io.File(dir, it).delete() }
         val suffix = System.nanoTime().toString().takeLast(6)
-        val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:9", allowWrites = true, themeMode = "light"))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:9", allowWrites = true, themeMode = "light"))
         repo.addEntry("expense", 1000, "food", "UIMATCH$suffix", "2026-10-05")
         repo.stageStatementText("""
             AEON Bank (M) Berhad

@@ -17,7 +17,7 @@ class WeekCloseFlowTest {
             println("[week-close-flow] no test server at $base — skipping (${e.message})")
             return@runBlocking
         }
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         repo.sync()
         val week = "2026-12-07"
         assertTrue(repo.closeWeek(week, 45_600))
@@ -25,7 +25,7 @@ class WeekCloseFlowTest {
         assertEquals(45_600, remote?.receivedCents)
         assertTrue(remote?.closedAt?.isNotBlank() == true)
 
-        val second = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val second = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         second.sync()
         assertTrue(second.store.weekCloses[week]?.closedAt?.isNotBlank() == true)
 

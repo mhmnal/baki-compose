@@ -43,7 +43,7 @@ class PhoneShot {
         // seed once; every mode reloads the same persisted store
         seed(
             BakiRepo(
-                ClientConfig(
+                ClientConfig(storageEngine = "json", 
                     serverUrl = "http://127.0.0.1:1",
                     allowWrites = true,
                     themeMode = "dark",
@@ -55,7 +55,7 @@ class PhoneShot {
         for (mode in modes) {
             // a fixture server that refuses immediately: rendering must not depend on a network
             val repo = BakiRepo(
-                ClientConfig(
+                ClientConfig(storageEngine = "json", 
                     serverUrl = "http://127.0.0.1:1",
                     allowWrites = true,
                     themeMode = mode,

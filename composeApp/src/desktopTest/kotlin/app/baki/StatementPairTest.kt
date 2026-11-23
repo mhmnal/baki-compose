@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class StatementPairTest {
-    private fun repo() = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true))
+    private fun repo() = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:1", allowWrites = true))
 
     @Test
     fun suggestedPairRequiresConfirmation() = runBlocking {

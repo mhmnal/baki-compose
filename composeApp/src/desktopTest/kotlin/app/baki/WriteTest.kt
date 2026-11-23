@@ -21,7 +21,7 @@ class WriteTest {
             return@runBlocking
         }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         repo.sync()
         assertEquals(before.entries.size, repo.store.entries.size, "pull matches the server")
 

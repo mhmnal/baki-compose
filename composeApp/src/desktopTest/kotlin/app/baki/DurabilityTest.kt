@@ -22,8 +22,8 @@ class DurabilityTest {
 
     @Test
     fun theOutboxBitIsPersistedInTheDeviceConfig() {
-        assertEquals(true, ClientConfig().pendingPush)
-        val encoded = BakiJson.encodeToString(ClientConfig.serializer(), ClientConfig(pendingPush = false))
+        assertEquals(true, ClientConfig(storageEngine = "json", ).pendingPush)
+        val encoded = BakiJson.encodeToString(ClientConfig.serializer(), ClientConfig(storageEngine = "json", pendingPush = false))
         assertTrue(encoded.contains("\"pendingPush\":false"))
         val r = repo()
         assertTrue(r.contains("get() = config.pendingPush"), "pendingPush must read from persisted config")

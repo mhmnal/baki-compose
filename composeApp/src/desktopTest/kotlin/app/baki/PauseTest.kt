@@ -38,7 +38,7 @@ class PauseTest {
     @Test
     fun endingUsesWorkedHoursNotWallClock() = runBlocking {
         // no server needed: endLive writes locally and the push simply fails quietly
-        val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:9", allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:9", allowWrites = true))
         repo.startLive()
         val start = repo.live!!.start
         // simulate a 1h break in a 4h shift

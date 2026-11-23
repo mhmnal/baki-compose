@@ -18,7 +18,7 @@ class BillPaymentFlowTest {
             println("[bill-flow] no test server at $base — skipping (${e.message})")
             return@runBlocking
         }
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         repo.sync()
         val billId = "test-bill-" + kotlin.random.Random.nextLong().toString().takeLast(8)
         assertTrue(repo.saveBill(Bill(billId, "Test commitment", 12_300, "monthly", "other")))

@@ -18,7 +18,7 @@ class DeleteTest {
             return@runBlocking
         }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         repo.sync()
 
         repo.addShift("2026-12-02", "09:00", hours = 2.0, km = 20.0, grossCents = 5000)
@@ -44,7 +44,7 @@ class DeleteTest {
         val client = TrackerClient(base)
         val before = try { client.pull()!! } catch (e: Exception) { return@runBlocking }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
         repo.sync()
         repo.addExpense(420, "food", "delete-me", "2026-12-03")
         val e = repo.store.entries.first { it.note == "delete-me" }
@@ -61,7 +61,7 @@ class DeleteTest {
 
     @Test
     fun writesAreBlockedWhenReadOnly() = runBlocking {
-        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = false))
+        val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = false))
         val startCount = repo.store.entries.size
         repo.addExpense(999, "food", "should-not-exist", "2026-12-04")
         assertEquals(startCount, repo.store.entries.size, "read-only mode refused the write")

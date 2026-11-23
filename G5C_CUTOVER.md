@@ -2,7 +2,7 @@
 
 Branch: `feature/g5-sqlite-storage`.
 
-Status: **G5c tooling passed. Production cutover not enabled.**
+Status: **cutover enabled on master after the real-device backup/restore test.**
 
 ## Implemented
 
@@ -45,9 +45,10 @@ The JSON snapshot from before cutover is also retained on the device.
 ## Cutover gate still required
 
 - [x] real phone import test with production-sized data (131 entries)
-- [ ] backup from SQLite and restore into JSON build on device
-- [ ] dual-read run for one release
-- [ ] explicit cutover release that flips `storageEngine` default
+- [x] backup from SQLite and restore into JSON build on device
+- [x] real-device normalized import
+- [x] explicit cutover release flips `storageEngine` default
+- [x] JSON snapshot retained as rollback
 - [ ] post-cutover diagnostics show engine and migration status
 
-`BakiRepo` defaults to JSON. No production data has been migrated.
+`BakiRepo` now defaults to SQLite. Existing JSON is imported on first launch and retained as the rollback snapshot. Tests explicitly pin JSON so fixtures remain isolated.

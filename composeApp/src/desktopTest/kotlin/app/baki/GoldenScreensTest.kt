@@ -53,7 +53,7 @@ class GoldenScreensTest {
             storeBackup.delete()
             LocalStore.write(BakiJson.encodeToString(Store.serializer(), Store()))
             val fixture = BakiRepo(
-                ClientConfig(
+                ClientConfig(storageEngine = "json", 
                     serverUrl = "http://127.0.0.1:1",
                     allowWrites = true,
                     themeMode = "light",

@@ -12,7 +12,7 @@ class OutboxRepoTest {
         LocalStore.deleteBytes("operations.log")
         LocalStore.deleteBytes("operations.meta")
         try {
-            val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true))
+            val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:1", allowWrites = true))
             val id = repo.addEntry("expense", 123, "food", "outbox-test", todayIso())
             assertTrue(id != null)
             assertEquals(1, repo.outboxDepth())

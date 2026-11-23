@@ -25,7 +25,7 @@ class UiContractTest {
         val live = File(LocalStore.path()).parentFile?.let { File(it, "live.json") }
         live?.delete()
         return BakiRepo(
-            ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"),
+            ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"),
         )
     }
 

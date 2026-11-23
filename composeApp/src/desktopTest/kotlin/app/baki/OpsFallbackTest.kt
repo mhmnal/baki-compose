@@ -20,7 +20,7 @@ class OpsFallbackTest {
         LocalStore.deleteBytes("operations.log")
         LocalStore.deleteBytes("operations.meta")
         try {
-            val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
+            val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = base, allowWrites = true))
             repo.sync()
             val id = repo.addEntry("expense", 654, "food", "fallback-test", "2026-11-23")!!
             assertTrue(repo.outboxDepth() > 0)

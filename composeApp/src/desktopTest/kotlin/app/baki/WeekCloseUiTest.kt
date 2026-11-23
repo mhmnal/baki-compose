@@ -32,7 +32,7 @@ class WeekCloseUiTest {
             markDirty = false,
         )
         try {
-            val repo = BakiRepo(ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"))
+            val repo = BakiRepo(ClientConfig(storageEngine = "json", serverUrl = "http://127.0.0.1:1", allowWrites = true, themeMode = "light"))
             setContent { BakiTheme("light") { App(repo) } }
             waitForIdle()
 
