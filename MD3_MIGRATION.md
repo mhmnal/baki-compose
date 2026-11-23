@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.53.0 full local outbox
+
+- Every Store mutation now writes a durable encrypted operation: compact entry operations plus generic store replacements.
+- Snapshot vs server-ack sequences, crash replay, torn-tail repair.
+- 10k operation test and generic non-entry replay test.
+- 244 tests and Android lane passed.
+
 ## 0.52.0 entry operation outbox
 
 - Encrypted append-only operation log beside the JSON snapshot.

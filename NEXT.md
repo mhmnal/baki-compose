@@ -1,6 +1,6 @@
 # State & next
 
-As of **0.52.0** (2026-11-23).
+As of **0.53.0** (2026-11-23).
 
 ## Current direction
 
@@ -9,14 +9,13 @@ As of **0.52.0** (2026-11-23).
 - **Reliability**: live notification shows worked time, distance and net/hour; foreground service is location-only, avoiding the Android 15 dataSync timeout.
 - **Responsiveness**: entry add/delete are local-first; sync pull no longer holds the store mutex.
 - **Data Health**: payout gaps, missing due days, inactive links, odometer coverage, backup age, open week and week-close variance with direct actions.
-- **G1 outbox**: encrypted append-only entry operation log, snapshot/ack sequences, crash replay and 10k-operation test. Entry mutations only; full mutation coverage is the next slice.
+- **G1 outbox**: encrypted append-only operation log for every Store mutation, snapshot/ack sequences, crash replay and 10k-operation test. Local durability gate complete; G2 sync endpoint remains.
 - **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Next
 
-1. Finish G1 mutation coverage: shifts/payouts, bill payments, week closes, reserves, settings; then rerun the G1 gate.
-2. Build G2 incremental sync endpoint, operation batching and acknowledgement.
-3. G3 storage seam; G4 SQLDelight + SQLCipher spike; G5 import/cutover. See [G0_BASELINE.md](G0_BASELINE.md), [G1_OUTBOX.md](G1_OUTBOX.md), [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
+1. Build G2 incremental sync endpoint, operation batching, dedupe and acknowledgement.
+2. G3 storage seam; G4 SQLDelight + SQLCipher spike; G5 import/cutover. See [G0_BASELINE.md](G0_BASELINE.md), [G1_OUTBOX.md](G1_OUTBOX.md), [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
 4. Real long-shift test: screen-off GPS, >6-hour service survival, notification persistence and battery state.
 5. Fresh portable backup and payout/statement reconciliation; the newest local backup predates current data.
 6. Android Week Close modal instrumentation if semantics permits.

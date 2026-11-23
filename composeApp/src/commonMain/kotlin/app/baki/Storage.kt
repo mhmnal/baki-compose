@@ -30,6 +30,8 @@ object StoreHealth {
 /** Lets the repository mark the durable outbox bit after any local store save. */
 object StoreWrite {
     var onLocalSave: (() -> Unit)? = null
+    /** Set by BakiRepo; saveLocal uses it for the generic non-entry operation record. */
+    var operationLog: OperationLog? = null
 }
 
 /** Load the local copy, or an empty store on first run. */
@@ -79,20 +81,31 @@ fun loadLocalWithOperations(log: OperationLog): Store {
     val base = loadLocal()
     val pending = log.pendingAfterSnapshot()
     if (pending.isEmpty()) return base
-    val replayed = applyEntryOperations(base, pending)
-    if (replayed != base) saveLocal(replayed)
+    val replayed = applyOperations(base, pending)
+    if (replayed != base) saveLocal(replayed, recordOutbox = false)
     if (replayed == base || StoreHealth.saveError == null) {
         log.markSnapshot(pending.maxOf { it.seq })
     }
     return replayed
 }
 
-fun saveLocal(store: Store, markDirty: Boolean = true) {
+fun saveLocal(store: Store, markDirty: Boolean = true, recordOutbox: Boolean = true) {
+    val log = StoreWrite.operationLog
+    val opSeq = if (markDirty && recordOutbox && log != null) {
+        log.append(
+            entity = "store",
+            entityId = "store",
+            kind = "replace",
+            payload = BakiJson.encodeToString(Store.serializer(), store),
+            updated = store.updatedAt,
+        )
+    } else null
     runCatching {
         LocalStore.write(BakiJson.encodeToString(Store.serializer(), store))
     }.onSuccess {
         StoreHealth.saveError = null
         if (markDirty) StoreWrite.onLocalSave?.invoke()   // durable outbox bit
+        if (opSeq != null && log != null && StoreHealth.saveError == null) log.markSnapshot(opSeq)
         PlatformEffects.dataChanged()                     // keep the home-screen widget in step
     }.onFailure {
         // The data still exists in memory: mark the outbox so sync can push it even if disk failed.

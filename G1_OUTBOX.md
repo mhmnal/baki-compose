@@ -1,14 +1,16 @@
 # G1 — entry operation outbox
 
-Completed slice: **entry upserts/deletes** on top of the JSON snapshot.
+Completed: **all Store mutations** on top of the JSON snapshot.
 
 ## What is durable now
 
-Every entry add, multi-add, edit and delete writes:
+Every Store mutation writes:
 
 1. an encrypted operation record to `operations.log`
 2. the JSON snapshot
 3. the snapshot sequence in `operations.meta`
+
+Entry add/edit/delete use a compact entry operation. All other mutations (shifts, payouts, bills, payments, week closes, reserves, settings, statements, categories, notes, receipts) use a generic encrypted store replacement. This is intentionally coarse for now; G2 can add entity-specific operations.
 
 The log is separate from the snapshot. On launch:
 
@@ -44,19 +46,12 @@ A successful full-store push clears the log and advances both sequences.
 - `OperationLogTest.kt`
 - `OutboxRepoTest.kt`
 
-## Known limits / next G1 slice
+## Known limits
 
-Only `entry` operations are logged. These still use snapshot + `pendingPush` only:
-
-- shifts and shift payouts
-- bill payments and links
-- week closes
-- reserve movements
-- settings/category edits
-- statement mutations
-- receipts
-
-The next G1 slice should add a generic operation payload for those entities, or one operation type at a time, before G2 incremental sync.
+- non-entry operations carry a full Store payload; this is durable but larger than entity-specific operations.
+- entry operations are compact.
+- server acknowledgement is still a full-store push; G2 adds an operation endpoint.
+- routes, calibration, live shift and client config are separate files and are not part of the Store outbox.
 
 ## G1 gate status
 
@@ -67,7 +62,7 @@ The next G1 slice should add a generic operation payload for those entities, or 
 - [x] encrypted at rest
 - [x] diagnostics outbox depth
 - [x] no UI behavior change
-- [ ] all mutations covered
+- [x] all Store mutations covered (entry compact; others generic store replacement)
 - [ ] server operation endpoint (G2)
 
-**G1 is an entry-slice pass, not the full mutation coverage gate.**
+**G1 is complete for local durability. G2 is the sync endpoint.**

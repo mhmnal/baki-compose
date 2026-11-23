@@ -170,6 +170,21 @@ class OperationLog(
     }
 }
 
+/** Apply operations in sequence. Store replacements carry every non-entry mutation. */
+fun applyOperations(store: Store, ops: List<LedgerOperation>): Store {
+    if (ops.isEmpty()) return store
+    var current = store
+    for (op in ops.sortedBy { it.seq }) {
+        when (op.entity) {
+            "store" -> if (op.kind == "replace") {
+                current = runCatching { BakiJson.decodeFromString<Store>(op.payload) }.getOrDefault(current)
+            }
+            "entry" -> current = applyEntryOperations(current, listOf(op))
+        }
+    }
+    return current
+}
+
 /** Apply entry operations in order. Upserts/deletes are idempotent against a newer snapshot. */
 fun applyEntryOperations(store: Store, ops: List<LedgerOperation>): Store {
     if (ops.isEmpty()) return store

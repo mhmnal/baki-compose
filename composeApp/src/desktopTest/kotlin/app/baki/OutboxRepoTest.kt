@@ -18,6 +18,8 @@ class OutboxRepoTest {
             assertEquals(1, repo.outboxDepth())
             assertTrue(repo.deleteEntry(id!!))
             assertEquals(2, repo.outboxDepth(), "delete is a second durable operation")
+            repo.setDayNote(todayIso(), "outbox note")
+            assertEquals(3, repo.outboxDepth(), "a non-entry mutation uses the generic store operation")
         } finally {
             saveLocal(previous, markDirty = false)
             LocalStore.deleteBytes("operations.log")

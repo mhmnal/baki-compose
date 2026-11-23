@@ -75,6 +75,18 @@ class OperationLogTest {
     }
 
     @Test
+    fun genericStoreOperationCoversNonEntryMutations() {
+        val base = Store()
+        val next = Store(
+            bills = listOf(Bill(id = "b1", name = "Phone", amount = 5000, category = "phone")),
+            settings = base.settings.copy(nextServiceKm = 50_000),
+        )
+        val payload = BakiJson.encodeToString(Store.serializer(), next)
+        val op = LedgerOperation("op-store", 1, "store", "store", "replace", payload, "b")
+        assertEquals(next, applyOperations(base, listOf(op)))
+    }
+
+    @Test
     fun tenThousandOperationsRemainReadable() {
         val (log, file) = log()
         try {

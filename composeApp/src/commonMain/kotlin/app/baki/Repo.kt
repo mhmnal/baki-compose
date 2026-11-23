@@ -636,7 +636,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             )
             store = store.copy(entries = store.entries + entry, updatedAt = stamp)
             val opSeq = recordEntry(entry, "upsert")
-            saveLocal(store)                       // never lose a tap, even offline
+            saveLocal(store, recordOutbox = false)  // entry op was appended above
             markEntrySnapshot(opSeq)
             entry.id
         }
@@ -660,7 +660,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         store = store.copy(entries = store.entries + made, updatedAt = stamp)
         val opSeqs = made.mapNotNull { recordEntry(it, "upsert") }
-        saveLocal(store)
+        saveLocal(store, recordOutbox = false)
         opSeqs.maxOrNull()?.let { markEntrySnapshot(it) }
         try {
             pushWithAllTombs()
@@ -974,7 +974,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 updatedAt = opStamp,
             )
             val opSeq = recordEntry(edited, "upsert")
-            saveLocal(store)
+            saveLocal(store, recordOutbox = false)
             markEntrySnapshot(opSeq)
             pushWithTombs(emptyList())
         }
@@ -1132,7 +1132,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         store = next
         val opSeq = operationLog.append("entry", id, "delete", updated = stamp)
-        saveLocal(store)
+        saveLocal(store, recordOutbox = false)
         markEntrySnapshot(opSeq)
         // Local deletion is immediate; the tombstone/outbox upload happens on the sync loop.
         true
@@ -1152,6 +1152,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     init {
         StoreWrite.onLocalSave = { markDirty() }
+        StoreWrite.operationLog = operationLog
         StoreHealth.loadError?.let { lastError = it }
         // A replayed operation or a crash before the snapshot save must still reach the server.
         if (operationLog.pendingCount() > 0) markDirty()
