@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.9 local-first entry writes
+
+- Add and delete entry return after local persistence; the durable outbox uploads later.
+- Background sync pulls outside the store mutex, so an unreachable server cannot stall local entry writes.
+- Bill/week/payout mutations retain their explicit immediate-sync behavior.
+- 235 tests and Android lane passed.
+
 ## 0.50.8 long-shift reliability
 
 - Live service foreground type is now `location` only; removed the Android 15 `dataSync` 6-hour timeout risk.

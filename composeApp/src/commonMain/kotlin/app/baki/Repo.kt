@@ -122,13 +122,44 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
     }
 
-    suspend fun sync(showProgress: Boolean = true) = mutex.withLock {
+    suspend fun sync(showProgress: Boolean = true) {
         if (showProgress) status = "syncing"
-        try {
-            val remote = client.pull()
-            if (remote == null) {
-                // 304: the server has nothing new, but our outbox may still hold local edits.
-                // Keep the last conflict count; a 304 is not a new pull to clear it with.
+        // Pull outside the state mutex: an unreachable server must not freeze local writes.
+        val remote = try {
+            client.pull()
+        } catch (e: Exception) {
+            status = if (store.entries.isEmpty() && store.shifts.isEmpty()) "offline" else "cached"
+            lastError = e.message
+            return
+        }
+        mutex.withLock {
+            try {
+                if (remote == null) {
+                    // 304: the server has nothing new, but our outbox may still hold local edits.
+                    // Keep the last conflict count; a 304 is not a new pull to clear it with.
+                    if (config.allowWrites && pendingPush) pushAll()
+                    runCatching { pullStatementsNow() }
+                    normalizeInternalTransfers()
+                    runCatching { pushStatementsNow() }
+                    runCatching { pushRoutes() }
+                    runCatching { pullRoutes(addDays(todayIso(), -45)) }
+                    status = "synced"
+                    lastError = null
+                    lastSyncAt = nowMillis()
+                    return@withLock
+                }
+                lastMergeConflicts = mergeReport(store, remote).total
+                val merged = mergeStores(store, remote, keepLocalSettings = pendingPush)
+                // no change means no disk write: serialising + encrypting the store is not free
+                // compare the whole store: a change that only touched bills, payments, statements or
+                // settings used to be merged and then discarded because the old test looked at four fields
+                val changed = merged != store
+                if (changed) {
+                    store = merged
+                    // A server merge is not a local edit; marking it dirty creates a push/SSE loop.
+                    saveLocal(store, markDirty = false)
+                }
+                // upload only when we hold something the server did not get last time
                 if (config.allowWrites && pendingPush) pushAll()
                 runCatching { pullStatementsNow() }
                 normalizeInternalTransfers()
@@ -138,32 +169,10 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 status = "synced"
                 lastError = null
                 lastSyncAt = nowMillis()
-                return@withLock
+            } catch (e: Exception) {
+                status = if (store.entries.isEmpty() && store.shifts.isEmpty()) "offline" else "cached"
+                lastError = e.message
             }
-            lastMergeConflicts = mergeReport(store, remote).total
-            val merged = mergeStores(store, remote, keepLocalSettings = pendingPush)
-            // no change means no disk write: serialising + encrypting the store is not free
-            // compare the whole store: a change that only touched bills, payments, statements or
-            // settings used to be merged and then discarded because the old test looked at four fields
-            val changed = merged != store
-            if (changed) {
-                store = merged
-                // A server merge is not a local edit; marking it dirty creates a push/SSE loop.
-                saveLocal(store, markDirty = false)
-            }
-            // upload only when we hold something the server did not get last time
-            if (config.allowWrites && pendingPush) pushAll()
-            runCatching { pullStatementsNow() }
-            normalizeInternalTransfers()
-            runCatching { pushStatementsNow() }
-            runCatching { pushRoutes() }
-            runCatching { pullRoutes(addDays(todayIso(), -45)) }
-            status = "synced"
-            lastError = null
-            lastSyncAt = nowMillis()
-        } catch (e: Exception) {
-            status = if (store.entries.isEmpty() && store.shifts.isEmpty()) "offline" else "cached"
-            lastError = e.message
         }
     }
 
@@ -600,28 +609,23 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Returns the new entry's id so a quick-add can offer undo. */
     suspend fun addEntry(
         type: String, amountCents: Long, cat: String, note: String, date: String, odo: Int? = null,
-    ): String? = mutex.withLock {
-        if (blocked()) return@withLock null
-        if (!isValidIsoDate(date)) return@withLock null
-        // Grab insurance is derived from the shift timeline. A manual duplicate would double the fee.
-        if (isDerivedCategory(cat)) return@withLock null
-        val stamp = nowIso()
-        val entry = Entry(
-            id = newId(), date = date, type = type, cat = cat, amount = amountCents,
-            note = note, updated = stamp, loggedAt = stamp, odo = odo,
-        )
-        store = store.copy(entries = store.entries + entry, updatedAt = stamp)
-        saveLocal(store)                       // never lose a tap, even offline
-        try {
-            pushWithAllTombs()
-            saveLocal(store, markDirty = false)
-            pendingPush = false
-            status = "synced"
-        } catch (e: Exception) {
-            status = "cached"
-            lastError = e.message
+    ): String? {
+        val id = mutex.withLock {
+            if (blocked()) return@withLock null
+            if (!isValidIsoDate(date)) return@withLock null
+            // Grab insurance is derived from the shift timeline. A manual duplicate would double the fee.
+            if (isDerivedCategory(cat)) return@withLock null
+            val stamp = nowIso()
+            val entry = Entry(
+                id = newId(), date = date, type = type, cat = cat, amount = amountCents,
+                note = note, updated = stamp, loggedAt = stamp, odo = odo,
+            )
+            store = store.copy(entries = store.entries + entry, updatedAt = stamp)
+            saveLocal(store)                       // never lose a tap, even offline
+            entry.id
         }
-        entry.id
+        // The durable outbox owns the upload. Do not make the user wait for a network round-trip.
+        return id
     }
 
     /**
@@ -1107,7 +1111,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         store = next
         saveLocal(store)
-        pushWithTombs(listOf(id))
+        // Local deletion is immediate; the tombstone/outbox upload happens on the sync loop.
         true
     }
 
