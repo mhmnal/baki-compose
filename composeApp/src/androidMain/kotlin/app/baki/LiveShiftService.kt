@@ -22,7 +22,7 @@ class LiveShiftService : Service() {
 
     companion object {
         private const val CHANNEL = "live_shift"
-        private const val NOTIF_ID = 4211
+        const val NOTIF_ID = 4211
         const val EXTRA_START = "start"
         const val EXTRA_TOTAL = "total"
 

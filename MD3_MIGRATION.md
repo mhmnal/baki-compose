@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.8 long-shift reliability
+
+- Live service foreground type is now `location` only; removed the Android 15 `dataSync` 6-hour timeout risk.
+- Service explicitly survives task removal.
+- Diagnostics show notifications allowed/active and battery optimization status.
+- Battery settings shortcut.
+- 235 tests and Android lane passed.
+
 ## 0.50.7 live notification detail
 
 - Live-shift notification now shows worked time, distance and net/hour.

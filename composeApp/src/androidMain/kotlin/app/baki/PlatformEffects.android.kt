@@ -6,12 +6,33 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 
 actual object PlatformEffects {
+    actual fun reliabilityStatus(): ReliabilityStatus {
+        val ctx = AppCtx.ctx ?: return ReliabilityStatus(true, false, true)
+        val nm = ctx.getSystemService(android.app.NotificationManager::class.java)
+        val active = runCatching { nm.activeNotifications.any { it.id == LiveShiftService.NOTIF_ID } }.getOrDefault(false)
+        val allowed = NotificationManagerCompat.from(ctx).areNotificationsEnabled()
+        val power = ctx.getSystemService(android.os.PowerManager::class.java)
+        val unrestricted = runCatching { power.isIgnoringBatteryOptimizations(ctx.packageName) }.getOrDefault(false)
+        return ReliabilityStatus(allowed, active, unrestricted)
+    }
+
+    actual fun openBatterySettings() {
+        val ctx = AppCtx.ctx ?: return
+        runCatching {
+            ctx.startActivity(
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
+
 
     @Suppress("unused")
     private fun vibrate(ms: Long, amplitude: Int) {

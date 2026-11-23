@@ -18,7 +18,15 @@ enum class Haptic {
     Warn,
 }
 
+data class ReliabilityStatus(
+    val notificationsAllowed: Boolean,
+    val notificationActive: Boolean,
+    val batteryUnrestricted: Boolean,
+)
+
 expect object PlatformEffects {
+    fun reliabilityStatus(): ReliabilityStatus
+    fun openBatterySettings()
     /** Fire one of the vocabulary haptics; a device without a vibrator simply does nothing. */
     fun haptic(kind: Haptic)
     /** startMs = null means "no live shift": tear the notification down. */

@@ -2572,6 +2572,7 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
             val h = healthOf(repo)
+            val reliability = remember(diagnosticsOpen) { PlatformEffects.reliabilityStatus() }
             var routeStats by remember { mutableStateOf<Pair<Int, Int>?>(null) }
             LaunchedEffect(h.entries, h.shifts) {
                 routeStats = runCatching { RouteStore.stats() }.getOrNull()
@@ -2591,6 +2592,13 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
                 })
                 StoreHealth.loadError?.let { add("Local store" to it) }
                 StoreHealth.saveError?.let { add("Local save" to it) }
+                add("Notifications" to when {
+                    !reliability.notificationsAllowed -> "blocked — enable Baki notifications"
+                    reliability.notificationActive -> "allowed · live notification active"
+                    else -> "allowed · no live notification"
+                })
+                add("Battery" to if (reliability.batteryUnrestricted) "unrestricted"
+                    else "restricted — long shifts may be killed")
                 add("GPS" to when {
                     h.tracker.provider.contains("desktop") -> "unavailable on desktop"
                     h.tracker.provider == "—" || h.tracker.fixes == 0 ->
@@ -2616,6 +2624,11 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
                     Text(v, color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f).padding(start = Space.m), textAlign = TextAlign.End)
                 }
             }
+            if (!reliability.batteryUnrestricted) {
+                TextButton(onClick = { PlatformEffects.openBatterySettings() }, contentPadding = PaddingValues(0.dp)) {
+                    Text("Open battery settings", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                }
+            }
             h.lastError?.let { err ->
                 Spacer(Modifier.height(Space.s))
                 Text("last error: $err", color = scheme.error, style = MaterialTheme.typography.bodyMedium, maxLines = 3)
@@ -2629,6 +2642,8 @@ private fun MoreScreen(repo: BakiRepo, onEditBudgets: () -> Unit, onAddService: 
                             appendLine("Baki $APP_VERSION diagnostics")
                             appendLine("status: ${h.status}")
                             appendLine("sync: ${ago(now, h.lastSyncAt)}  upload: ${ago(now, h.lastPushAt)} pending=${h.pendingPush}")
+                            appendLine("notifications: allowed=${reliability.notificationsAllowed} active=${reliability.notificationActive}")
+                            appendLine("battery unrestricted=${reliability.batteryUnrestricted}")
                             appendLine("gps: ${h.tracker.provider} fixes=${h.tracker.fixes} rejected=${h.tracker.rejected}")
                             appendLine("live: ${if (h.live != null) "yes" else "no"}  correction=${h.gpsCorrection}")
                             appendLine("records: ${h.entries} entries, ${h.shifts} shifts, readOnly=${h.readOnly}")
