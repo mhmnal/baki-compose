@@ -1,0 +1,15 @@
+CREATE TABLE probe (
+    id TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated TEXT NOT NULL,
+    marker TEXT NOT NULL DEFAULT ''
+);
+
+insertProbe:
+INSERT OR REPLACE INTO probe(id, value, updated) VALUES (?, ?, ?);
+
+selectProbe:
+SELECT id, value, updated FROM probe WHERE id = ?;
+
+countProbe:
+SELECT count(*) FROM probe;

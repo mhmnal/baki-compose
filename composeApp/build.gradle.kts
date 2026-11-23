@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("app.cash.sqldelight")
 }
 
 kotlin {
@@ -22,6 +23,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+                implementation("app.cash.sqldelight:runtime:2.4.1")
                 implementation("io.ktor:ktor-client-core:3.0.3")
                 implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
@@ -47,6 +49,8 @@ kotlin {
                 implementation("androidx.core:core-ktx:1.13.1")
                 implementation("com.google.android.gms:play-services-location:21.3.0")
                 implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+                implementation("app.cash.sqldelight:android-driver:2.4.1")
+                implementation("net.zetetic:sqlcipher-android:4.20.0")
                 implementation("io.ktor:ktor-client-okhttp:3.0.3")
             }
         }
@@ -54,6 +58,8 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.apache.pdfbox:pdfbox:2.0.32")
+                implementation("app.cash.sqldelight:sqlite-driver:2.4.1")
+                implementation("io.github.willena:sqlite-jdbc:3.53.4.0")
                 // KMP soft-shadow library: the neumorphic material lives on the desktop only
                 implementation("io.ktor:ktor-client-cio:3.0.3")
             }
@@ -111,6 +117,15 @@ android {
     }
 }
 
+sqldelight {
+    databases {
+        create("BakiDatabase") {
+            packageName.set("app.baki.db")
+            srcDirs.setFrom("src/commonMain/sqldelight")
+        }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "app.baki.MainKt"
@@ -135,6 +150,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("user.home", System.getProperty("java.io.tmpdir"))
     // pass the golden-update switch into the test JVM (Gradle -D does not do that automatically)
     systemProperty("baki.golden.update", System.getProperty("baki.golden.update") ?: "false")
+    systemProperty("baki.androidDb", System.getProperty("baki.androidDb") ?: "")
     // benchmarks print their numbers; keep them visible
     testLogging { showStandardStreams = true }
 }
