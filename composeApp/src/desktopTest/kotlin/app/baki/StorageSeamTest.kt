@@ -10,6 +10,7 @@ class StorageSeamTest {
         override fun loadWithOperations(log: OperationLog): Store = value
         override fun save(store: Store, markDirty: Boolean, recordOutbox: Boolean) { value = store }
         override fun path(): String = "memory"
+        override fun exportJson(): String? = BakiJson.encodeToString(Store.serializer(), value)
     }
 
     @Test
@@ -20,7 +21,7 @@ class StorageSeamTest {
             val memory = MemoryStorage()
             val repo = BakiRepo(
                 ClientConfig(serverUrl = "http://127.0.0.1:1", allowWrites = true),
-                storage = memory,
+                customStorage = memory,
             )
             val id = repo.addEntry("expense", 111, "food", "seam", "2026-11-23")!!
             assertEquals("memory", repo.storagePath)

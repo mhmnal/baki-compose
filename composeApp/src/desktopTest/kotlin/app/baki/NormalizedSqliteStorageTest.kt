@@ -8,6 +8,25 @@ import java.io.File
 
 class NormalizedSqliteStorageTest {
     @Test
+    fun importsTheJsonSnapshotDirectlyWhenNoG5aDatabaseExists() {
+        val previous = loadLocal()
+        val tag = Random.nextLong().toString().takeLast(10)
+        val dbName = "g5b-json-$tag.db"
+        val dbFile = File(System.getProperty("user.home") ?: ".", ".local/share/baki/$dbName")
+        dbFile.delete()
+        val store = Store(entries = listOf(Entry(id = "json-direct", date = "2026-11-01", amount = 99, updated = "a")))
+        try {
+            saveLocal(store, markDirty = false)
+            val imported = NormalizedSqliteStorage(dbName, "g5b-json-key")
+                .loadWithOperations(OperationLog("g5b-json-$tag.log", "g5b-json-$tag.meta"))
+            assertEquals(store, imported)
+        } finally {
+            saveLocal(previous, markDirty = false)
+            dbFile.delete()
+        }
+    }
+
+    @Test
     fun importsCoreTablesAndMigratesTheG5aSnapshot() {
         val previous = loadLocal()
         val tag = Random.nextLong().toString().takeLast(10)
@@ -36,6 +55,8 @@ class NormalizedSqliteStorageTest {
             val normalized = NormalizedSqliteStorage(dbName, key)
             val imported = normalized.loadWithOperations(OperationLog("g5b-empty-$tag.log", "g5b-empty-$tag.meta"))
             assertEquals(store, imported, "normalized import must preserve the whole Store")
+            val exported = normalized.exportJson()!!
+            assertEquals(store, BakiJson.decodeFromString<Store>(exported), "SQLite export must reconstruct the Store")
 
             val next = store.copy(entries = store.entries + Entry(id = "e3", date = "2026-11-03", amount = 789, updated = "i"))
             val log = OperationLog("g5b-$tag.log", "g5b-$tag.meta")

@@ -199,4 +199,11 @@ class NormalizedSqliteStorage(
     }
 
     override fun path(): String = "sqlite:$dbName"
+
+    override fun exportJson(): String? = runCatching {
+        val handle = open()
+        try {
+            read(handle.db)?.let { BakiJson.encodeToString(Store.serializer(), it) }
+        } finally { handle.close() }
+    }.getOrNull()
 }

@@ -6,6 +6,8 @@ interface LedgerStorage {
     fun loadWithOperations(log: OperationLog): Store
     fun save(store: Store, markDirty: Boolean = true, recordOutbox: Boolean = true)
     fun path(): String
+    /** Rollback/export path; null when the implementation cannot read its own snapshot. */
+    fun exportJson(): String?
 }
 
 object JsonLedgerStorage : LedgerStorage {
@@ -14,6 +16,9 @@ object JsonLedgerStorage : LedgerStorage {
         saveLocal(store, markDirty = markDirty, recordOutbox = recordOutbox)
     }
     override fun path(): String = LocalStore.path()
+    override fun exportJson(): String? = runCatching {
+        LocalStore.read()?.let { BakiJson.decodeFromString<Store>(it) }
+    }.getOrNull()?.let { BakiJson.encodeToString(Store.serializer(), it) }
 }
 /** Where the local copy of the store lives. Mirrors localStorage in the web app. */
 expect object LocalStore {

@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClientConfig(
     val serverUrl: String = defaultServerUrl,
+    /** "json" or "sqlite". SQLite is opt-in until the G5 cutover gate. */
+    val storageEngine: String = "json",
     /** Shared API token; blank works only when the server is unsecured. */
     val serverToken: String = "",
     /**

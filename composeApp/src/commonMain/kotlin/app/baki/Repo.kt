@@ -30,8 +30,12 @@ fun newId(prefix: String = "c"): String {
  */
 class BakiRepo(
     initial: ClientConfig = loadConfig(),
-    private val storage: LedgerStorage = JsonLedgerStorage,
+    customStorage: LedgerStorage? = null,
 ) {
+    private val storage: LedgerStorage = customStorage ?: when (initial.storageEngine) {
+        "sqlite" -> NormalizedSqliteStorage()
+        else -> JsonLedgerStorage
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
     private var client = TrackerClient(initial.serverUrl, initial.serverToken)
