@@ -50,6 +50,8 @@ class DeleteTest {
         val e = repo.store.entries.first { it.note == "delete-me" }
 
         repo.deleteEntry(e.id)
+        assertTrue(repo.pendingPush, "the tombstone is queued locally")
+        repo.sync()
 
         val after = client.pull()!!
         assertTrue(after.entries.none { it.id == e.id }, "entry gone from the server")

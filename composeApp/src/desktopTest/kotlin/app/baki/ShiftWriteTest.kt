@@ -18,7 +18,7 @@ class ShiftWriteTest {
             return@runBlocking
         }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base))
+        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
         repo.sync()
 
         val date = "2026-12-01"

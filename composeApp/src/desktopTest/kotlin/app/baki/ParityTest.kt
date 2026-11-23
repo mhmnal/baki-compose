@@ -32,9 +32,10 @@ class ParityTest {
         assertEquals(beforeTotals.income + 2500, after.income, "income raised income")
         assertEquals(beforeTotals.expense, after.expense, "and did not touch expense")
 
-        val saved = client.pull()!!.entries.firstOrNull { it.note == "tip run" }
+        val withTip = client.pull()!!
+        val saved = withTip.entries.firstOrNull { it.note == "tip run" }
         assertTrue(saved != null && saved.type == "income", "server has it as income")
-        client.push(client.pull()!!, deletedIds = listOf(saved!!.id))
+        client.push(withTip, deletedIds = listOf(saved!!.id))
         assertEquals(before.entries.size, client.pull()!!.entries.size, "cleaned up")
     }
 
@@ -49,13 +50,14 @@ class ParityTest {
         repo.updateEntry(created, "expense", 1750, "toll", "edited", "2026-12-11")
         repo.sync()
 
-        val saved = client.pull()!!.entries.first { it.id == created.id }
+        val withEdit = client.pull()!!
+        val saved = withEdit.entries.first { it.id == created.id }
         assertEquals(1750L, saved.amount, "amount changed")
         assertEquals("toll", saved.cat, "category changed")
         assertEquals("edited", saved.note, "note changed")
         assertTrue(saved.updated > created.updated, "newer timestamp so it wins the merge")
 
-        client.push(client.pull()!!, deletedIds = listOf(saved.id))
+        client.push(withEdit, deletedIds = listOf(saved.id))
         assertTrue(client.pull()!!.entries.none { it.id == saved.id }, "cleaned up")
     }
 
@@ -71,7 +73,8 @@ class ParityTest {
         repo.updateShift(shift, "2026-12-12", "08:00", hours = 5.0, km = 90.0, grossCents = 12000, extraCents = 300, note = "longer", kmPerLitre = 14.0)
         repo.sync()
 
-        val saved = client.pull()!!.shifts.first { it.id == shift.id }
+        val withShift = client.pull()!!
+        val saved = withShift.shifts.first { it.id == shift.id }
         assertEquals(12000L, saved.gross)
         assertEquals(5.0, saved.hours)
         assertEquals(90.0, saved.km)
@@ -80,7 +83,7 @@ class ParityTest {
         assertTrue(m.fuel < 90.0 * 1.99 / 11.0, "14 km/L uses less fuel than 11 km/L")
 
         val feeId = "fee-${saved.id}"
-        client.push(client.pull()!!, deletedIds = listOf(saved.id, feeId))
+        client.push(withShift, deletedIds = listOf(saved.id, feeId))
         assertTrue(client.pull()!!.shifts.none { it.id == saved.id }, "cleaned up")
     }
 

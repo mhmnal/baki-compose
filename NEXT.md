@@ -1,23 +1,31 @@
 # State & next
 
-As of **0.50.3** (2026-11-21).
+As of **0.50.9** (2026-11-23).
 
 ## Current direction
 
-- **Phone Today**: full-width Archivo variable hero, shape accent, full-width wavy food strip.
-- **Charts**: 7D daily lollipop; 30D cumulative running net; desktop Month/All-time running net.
-- **No-judgement pass**: best/worst, streaks, quality bands, best-hours callouts and best-day highlights removed. Targets and truthful loss colours remain.
-- **Week Close**: Monday–Sunday close/reopen with week picker and manual received payout.
+- **Money**: cents-first entry across entries, bills, shifts, payouts, reserves, budgets, Week Close and opening balances.
+- **Vehicle**: measured km/L, cost-per-km trend, service history and work/personal distance.
+- **Reliability**: live notification shows worked time, distance and net/hour; foreground service is location-only, avoiding the Android 15 dataSync timeout.
+- **Responsiveness**: entry add/delete are local-first; sync pull no longer holds the store mutex.
 - **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Next
 
-1. Fix the remaining Android empty-state sentence under the bottom navigation.
-2. Add Android instrumentation coverage for the Week Close modal sheet if the semantics tree allows it.
-3. Re-import old weekly statement PDFs so insurance counts are populated.
-4. Real-device long live-shift test: screen-off tracking, notification, distance, end from both surfaces.
-5. Then choose vehicle economy/service or Android quick capture.
-6. Backlog: holiday/no-work neutral state and streak-gap behavior; variable typography polish.
+1. Real long-shift test: screen-off GPS, >6-hour service survival, notification persistence and battery state.
+2. Fresh portable backup and payout/statement reconciliation; the newest local backup predates current data.
+3. Add Android instrumentation coverage for the Week Close modal sheet if semantics permits.
+4. Finish the vehicle economy surface: rate settings still use decimal input while money amounts use cents-first.
+5. Then choose Android quick capture or vehicle service reminders.
+6. Backlog: holiday/no-work neutral state, streak-gap behavior, variable typography polish.
+
+## Recently completed
+
+- Android empty-state hint no longer sits under the navigation bar.
+- Old statement insurance counts are populated.
+- Live-service `dataSync` type removed; diagnostics show notification/battery status.
+- Integration tests now cover local-first outbox semantics and 304-safe cleanup.
+- Android test lane wakes the device and keeps the screen on during verification.
 
 As of **0.37.3** (2026-11-08).
 

@@ -21,12 +21,14 @@ class WriteTest {
             return@runBlocking
         }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base))
+        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
         repo.sync()
         assertEquals(before.entries.size, repo.store.entries.size, "pull matches the server")
 
         val marker = "compose-write-test"
         repo.addExpense(350, "food", marker, todayIso())
+        assertTrue(repo.pendingPush, "the local write is queued before the network")
+        repo.sync()
 
         val after = client.pull()!!
         val saved = after.entries.firstOrNull { it.note == marker }

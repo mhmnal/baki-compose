@@ -18,7 +18,7 @@ class LiveShiftTest {
             return@runBlocking
         }
 
-        val repo = BakiRepo(ClientConfig(serverUrl = base))
+        val repo = BakiRepo(ClientConfig(serverUrl = base, allowWrites = true))
         repo.sync()
 
         repo.startLive()

@@ -3,6 +3,7 @@ package app.baki
 import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -53,6 +54,11 @@ class BakiSmokeTest {
 
     @Test
     fun phoneShellNavigationAndMoreTabsWork() {
+        // Seeding the restore fixture happens on the main thread before setContent.
+        app.waitUntil(15_000) {
+            runCatching { app.onAllNodesWithText("Baki").fetchSemanticsNodes().isNotEmpty() }
+                .getOrDefault(false)
+        }
         app.onNodeWithText("Baki").assertIsDisplayed()
 
         app.onNodeWithContentDescription("Shifts").performClick()

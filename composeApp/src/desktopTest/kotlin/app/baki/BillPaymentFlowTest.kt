@@ -41,6 +41,7 @@ class BillPaymentFlowTest {
         val secondEntry = repo.store.billPayments.first { it.billId == billId && it.period == period }.entryId
 
         assertTrue(repo.deleteEntry(secondEntry))
+        repo.sync()
         val deleted = client.pull()!!
         assertFalse(deleted.entries.any { it.id == secondEntry })
         assertFalse(deleted.billPayments.first { it.billId == billId && it.period == period }.active)

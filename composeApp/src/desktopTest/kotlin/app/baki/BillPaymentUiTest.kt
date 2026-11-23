@@ -1,10 +1,13 @@
 package app.baki
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.runSkikoComposeUiTest
 import androidx.compose.ui.unit.Density
@@ -28,7 +31,10 @@ class BillPaymentUiTest {
 
             onNodeWithContentDescription("More").performClick()
             waitForIdle()
-            onNodeWithTag("bill-mark-paid-ui-bill").performScrollTo().performClick()
+            val paidButton = onNodeWithTag("bill-mark-paid-ui-bill").performScrollTo()
+            paidButton.assertIsEnabled()
+            // coordinate clicks can land under the floating dock in the test viewport; invoke the action
+            paidButton.performSemanticsAction(SemanticsActions.OnClick)
             waitUntil(timeoutMillis = 5_000) { repo.store.billPayments.isNotEmpty() }
             waitForIdle()
             onNodeWithText("1 of 1 covered", substring = true).assertExists()

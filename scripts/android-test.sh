@@ -41,7 +41,18 @@ stop_emulator() {
 
 cd "$ROOT"
 start_emulator
-trap 'stop_emulator' EXIT
+ORIG_SCREEN_TIMEOUT="$(adb_cmd shell settings get system screen_off_timeout 2>/dev/null | tr -d '\r')"
+trap 'stop_emulator; [ -n "${ORIG_SCREEN_TIMEOUT:-}" ] && adb_cmd shell settings put system screen_off_timeout "$ORIG_SCREEN_TIMEOUT" >/dev/null 2>&1 || true' EXIT
+
+wake_device() {
+    adb_cmd shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+    adb_cmd shell wm dismiss-keyguard >/dev/null 2>&1 || true
+    adb_cmd shell svc power stayon true >/dev/null 2>&1 || true
+}
+# A locked/dozing phone cannot attach a Compose hierarchy, even though the app process starts.
+wake_device
+# Wireless ADB is not charging, so `stayon` alone does not prevent the screen timing out.
+adb_cmd shell settings put system screen_off_timeout 1800000 >/dev/null 2>&1 || true
 
 ./scripts/gradle-capped.sh :composeApp:assembleDebug -PbakiVerify=true --offline >"$OUT/build.log" 2>&1
 APK="$ROOT/composeApp/build/outputs/apk/debug/composeApp-debug.apk"
@@ -56,11 +67,13 @@ fi
 adb_cmd shell pm grant "$APP_ID" android.permission.ACCESS_FINE_LOCATION || true
 adb_cmd shell pm grant "$APP_ID" android.permission.ACCESS_COARSE_LOCATION || true
 adb_cmd shell am force-stop "$APP_ID"
+wake_device
 adb_cmd shell am start -n "$APP_ID/app.baki.MainActivity" >/dev/null
 sleep 9
 adb_cmd exec-out screencap -p >"$OUT/smoke-launch.png"
 adb_cmd logcat -d -v time >"$OUT/logcat.txt"
 
+wake_device
 ANDROID_SERIAL="$SERIAL" ./scripts/gradle-capped.sh :composeApp:connectedDebugAndroidTest -PbakiVerify=true >"$OUT/instrumentation.log" 2>&1
 echo "Android lane passed. Artifacts: $OUT"
 echo "  smoke: $OUT/smoke-launch.png"
