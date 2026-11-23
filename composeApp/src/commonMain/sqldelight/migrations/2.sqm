@@ -1,0 +1,5 @@
+CREATE TABLE store_snapshot (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    json TEXT NOT NULL,
+    updated TEXT NOT NULL
+);

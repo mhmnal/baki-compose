@@ -1,0 +1,11 @@
+CREATE TABLE store_snapshot (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    json TEXT NOT NULL,
+    updated TEXT NOT NULL
+);
+
+selectSnapshot:
+SELECT json FROM store_snapshot WHERE id = 1;
+
+replaceSnapshot:
+INSERT OR REPLACE INTO store_snapshot(id, json, updated) VALUES (1, ?, ?);

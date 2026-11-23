@@ -5,3 +5,9 @@ import java.time.Instant
 actual fun nowMillis(): Long =
     System.getProperty("baki.testNowMillis")?.toLongOrNull() ?: System.currentTimeMillis()
 actual fun nowIso(): String = Instant.now().toString()
+
+actual fun secureRandomHex(bytes: Int): String {
+    val data = ByteArray(bytes)
+    java.security.SecureRandom().nextBytes(data)
+    return data.joinToString("") { "%02x".format(it) }
+}

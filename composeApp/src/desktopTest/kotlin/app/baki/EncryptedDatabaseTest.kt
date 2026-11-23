@@ -67,6 +67,31 @@ class EncryptedDatabaseTest {
     }
 
     @Test
+    fun schemaV2ToV3AddsTheSnapshotTable() {
+        dbFile.delete()
+        Class.forName("org.sqlite.JDBC")
+        val props = SQLiteMCSqlCipherConfig.getV4Defaults().withKey("migration-key").build().toProperties()
+        val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}", props)
+        try {
+            driver.execute(null, "CREATE TABLE probe (id TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL, updated TEXT NOT NULL, marker TEXT NOT NULL DEFAULT '')", 0)
+            driver.execute(null, "PRAGMA user_version = 2", 0)
+            app.baki.db.BakiDatabase.Schema.migrate(driver, 2, 3).value
+            driver.close()
+            val conn = java.sql.DriverManager.getConnection("jdbc:sqlite:${dbFile.absolutePath}", props)
+            val table = conn.createStatement().use { st ->
+                st.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='store_snapshot'").use { rs ->
+                    rs.next()
+                }
+            }
+            conn.close()
+            assertTrue(table)
+        } finally {
+            runCatching { driver.close() }
+            dbFile.delete()
+        }
+    }
+
+    @Test
     fun tenThousandRowEncryptedDatabaseRemainsQueryable() {
         dbFile.delete()
         val passphrase = "scale-key"
