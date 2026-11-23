@@ -333,8 +333,26 @@ class BakiRepo(
         )
         store = store.copy(weekCloses = store.weekCloses + (weekStart to close), updatedAt = stamp)
         storage.save(store)
+        // The close is the natural recovery checkpoint; verify a local encrypted copy before upload.
+        RecoverySnapshot.save(store)
         pushWithTombs(emptyList())
         true
+    }
+
+    /**
+     * Allocate a statement payout across the week's unpaid shift gaps. The payouts are labelled
+     * as statement-funded, never as observed cash.
+     */
+    suspend fun allocateStatementPayout(weekStart: String, amountCents: Long): Int = mutex.withLock {
+        if (blocked()) return@withLock 0
+        if (amountCents <= 0L) return@withLock 0
+        val before = store.shifts
+        val after = allocateStatementPayouts(before, weekStart, amountCents)
+        val added = after.zip(before).count { (a, b) -> a.payouts.size != b.payouts.size }
+        if (added == 0) return@withLock 0
+        store = store.copy(shifts = after, updatedAt = nowIso())
+        storage.save(store)
+        added
     }
 
     /** Reopen a closed week; the entered amount is retained for the next close. */

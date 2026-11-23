@@ -159,6 +159,7 @@ private fun AppContent(repo: BakiRepo) {
     var presetNote by remember { mutableStateOf<String?>(null) }
     var editingBudgets by remember { mutableStateOf(false) }
     var payoutsTarget by remember { mutableStateOf<PayoutsTarget?>(null) }
+    var allocation by remember { mutableStateOf<Pair<String, Long>?>(null) }
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     suspend fun announceAdded(id: String, label: String, cents: Long) {
@@ -285,6 +286,7 @@ private fun AppContent(repo: BakiRepo) {
                 .widthIn(max = 960.dp),
         ) {
             Header(repo)
+            StoreHealth.recoveryWarning?.let { RecoveryBanner(it) }
             if (repo.store.entries.isEmpty() && repo.store.shifts.isEmpty() && repo.status == "offline") {
                 FirstRunCard(onOpenMore = { tab = 4 })
             }
@@ -523,11 +525,23 @@ private fun AppContent(repo: BakiRepo) {
             PayoutsTarget.Live -> "Shift payouts"
             is PayoutsTarget.Stored -> "Payouts · ${prettyDate(stored?.date.orEmpty())}"
         }
+        val allocationWeek = stored?.let { weekStartOf(it.date) }
+        val statementCents = allocationWeek?.let { week ->
+            repo.store.statements[week]?.let { (it.weekly * 100).roundToLong() }
+        } ?: 0L
+        val allocationCapacity = allocationWeek?.let { statementAllocationCapacity(repo.store, it) } ?: 0L
+        val alreadyAllocated = allocationWeek?.let { week ->
+            repo.store.shifts.any { shift -> shift.payouts.any { it.source == "statement:$week" } }
+        } == true
+        val canAllocate = stored != null && !repo.readOnly && statementCents > 0 && allocationCapacity > 0 && !alreadyAllocated
         PayoutsSheet(
             title = title,
             payouts = payouts,
             recordedCents = stored?.let { (it.gross + it.incentive).coerceAtLeast(0L) },
             editable = !repo.readOnly,
+            onAllocateStatement = if (canAllocate && allocationWeek != null) {
+                { allocation = allocationWeek to minOf(statementCents, allocationCapacity) }
+            } else null,
             onEdit = { index, cents ->
                 scope.launch {
                     when (target) {
@@ -568,6 +582,35 @@ private fun AppContent(repo: BakiRepo) {
                 }
             },
             onDismiss = { payoutsTarget = null },
+        )
+    }
+
+    allocation?.let { (week, cents) ->
+        AlertDialog(
+            onDismissRequest = { allocation = null },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            title = { Text("Allocate statement payout") },
+            text = {
+                Text(
+                    "Allocate RM ${rm(cents)} from the week of $week across the unpaid shift gaps. " +
+                        "These payouts will be labelled as statement-funded, not observed cash.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    allocation = null
+                    scope.launch {
+                        val n = repo.allocateStatementPayout(week, cents)
+                        payoutsTarget = null
+                        ActionFeedback.show(
+                            if (n > 0) "Allocated RM ${rm(cents)} across $n shift${if (n == 1) "" else "s"}"
+                            else "Nothing to allocate"
+                        )
+                    }
+                }) { Text("Allocate", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { allocation = null }) { Text("Cancel") } },
         )
     }
 
@@ -3755,6 +3798,30 @@ private fun ActionFeedbackOverlay(modifier: Modifier = Modifier) {
                 Text("✓", color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                 Text(message.orEmpty(), color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
             }
+        }
+    }
+}
+
+
+@Composable
+private fun RecoveryBanner(message: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.s),
+    ) {
+        Column(Modifier.padding(horizontal = Space.m, vertical = Space.s)) {
+            Text(
+                "STORAGE RECOVERY MODE",
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                letterSpacing = 1.sp,
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            )
+            Text(
+                message,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }

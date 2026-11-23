@@ -70,7 +70,12 @@ data class ReserveTxn(
 )
 
 @Serializable
-data class Payout(val c: Long, val at: Long)
+data class Payout(
+    val c: Long,
+    val at: Long,
+    /** Empty for observed payouts; "statement:YYYY-MM-DD" for an allocation from a statement. */
+    val source: String = "",
+)
 
 @Serializable
 data class Shift(

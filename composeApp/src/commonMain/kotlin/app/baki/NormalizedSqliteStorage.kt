@@ -226,6 +226,7 @@ class NormalizedSqliteStorage(
         log.repairTornTail()
         try {
             val database = db()
+            StoreHealth.recoveryWarning = null
             var base = read(database)
             if (base == null) {
                 base = readSnapshot(database) ?: loadLocal()
@@ -245,8 +246,17 @@ class NormalizedSqliteStorage(
             return base
         } catch (e: Exception) {
             close()
-            StoreHealth.loadError = "SQLite load failed; using JSON fallback: ${e.message}"
-            return loadLocalWithOperations(log)
+            val recovery = RecoverySnapshot.load()
+            StoreHealth.loadError = "SQLite load failed: ${e.message}"
+            return if (recovery != null) {
+                StoreHealth.recoveryWarning =
+                    "SQLite unavailable — using local recovery snapshot from ${recovery.second}. Do not add data until recovery is resolved."
+                recovery.first
+            } else {
+                StoreHealth.recoveryWarning =
+                    "SQLite unavailable — using the old JSON fallback. Recent changes may be missing."
+                loadLocalWithOperations(log)
+            }
         }
     }
 

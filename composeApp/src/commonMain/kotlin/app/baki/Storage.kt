@@ -45,6 +45,8 @@ expect object LocalStore {
 object StoreHealth {
     var loadError: String? = null
     var saveError: String? = null
+    /** Set when SQLite failed and a stale recovery/JSON copy was loaded instead. */
+    var recoveryWarning: String? = null
 }
 
 /** Lets the repository mark the durable outbox bit after any local store save. */

@@ -69,6 +69,7 @@ fun PayoutsSheet(
     onEdit: (index: Int, cents: Long) -> Unit,
     onDelete: (index: Int) -> Unit,
     onAdd: (cents: Long) -> Unit,
+    onAllocateStatement: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -143,6 +144,11 @@ fun PayoutsSheet(
                 }
             }
         }
+        if (onAllocateStatement != null) {
+            TextButton(onClick = onAllocateStatement, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                Text("Allocate statement payout…", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
+        }
         if (editable) Text("Tap a payout to edit it · swipe left to delete", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(Space.s))
 
@@ -205,7 +211,9 @@ fun PayoutsSheet(
                         style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                         modifier = Modifier.weight(1f),
                     )
-                    if (editable) {
+                    if (payout.source.isNotBlank()) {
+                        Text("allocated", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                    } else if (editable) {
                         Text("Edit", color = scheme.primary, style = MaterialTheme.typography.bodyMedium)
                     }
                 }

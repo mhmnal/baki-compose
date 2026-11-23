@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.57.0 recovery guard and payout allocation
+
+- Explicit SQLite recovery mode; stale JSON fallback is no longer silent.
+- Verified local recovery snapshot after Week Close.
+- Statement-funded payout allocation with `source` labels; no observed/allocated confusion.
+- 264 tests and Android lane target.
+
 ## 0.56.1 SQLite write latency
 
 - One persistent SQLCipher handle per storage instance.

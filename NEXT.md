@@ -1,220 +1,1175 @@
-# State & next
-
-As of **0.56.0** (2026-11-23).
-
-## Current direction
-
-- **Money**: cents-first entry across entries, bills, shifts, payouts, reserves, budgets, Week Close and opening balances.
-- **Vehicle**: measured km/L, cost-per-km trend, service history and work/personal distance.
-- **Reliability**: live notification shows worked time, distance and net/hour; foreground service is location-only, avoiding the Android 15 dataSync timeout.
-- **Responsiveness**: entry add/delete are local-first; sync pull no longer holds the store mutex.
-- **Data Health**: payout gaps, missing due days, inactive links, odometer coverage, backup age, open week and week-close variance with direct actions.
-- **G1 outbox**: encrypted append-only operation log for every Store mutation, snapshot/ack sequences, crash replay and 10k-operation test.
-- **G2 sync**: server `/api/ops`, dedupe journal, batch client push, contiguous ack compaction, full-store fallback and conflict/fallback matrix.
-- **G3 seam**: `LedgerStorage` + JSON adapter + repository injection; no UI storage internals.
-- **G5 cutover**: normalized encrypted SQLite is the default; JSON is rollback.
-- **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
-
-## Next
-
-1. G5 soak: real phone backups, restore, and weekly use on SQLite.
-2. G6 cleanup: retire JSON write path after stable soak.
-3. Long-shift and background reliability re-check. See [G0_BASELINE.md](G0_BASELINE.md), [G1_OUTBOX.md](G1_OUTBOX.md), [G2_SYNC.md](G2_SYNC.md), [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
-4. Real long-shift test: screen-off GPS, >6-hour service survival, notification persistence and battery state.
-5. Fresh portable backup and payout/statement reconciliation; the newest local backup predates current data.
-6. Android Week Close modal instrumentation if semantics permits.
-7. Backlog: holiday/no-work neutral state, streak-gap behavior, variable typography polish.
-
-## Recently completed
-
-- Android empty-state hint no longer sits under the navigation bar.
-- Old statement insurance counts are populated.
-- Live-service `dataSync` type removed; diagnostics show notification/battery status.
-- Integration tests now cover local-first outbox semantics and 304-safe cleanup.
-- Android test lane wakes the device and keeps the screen on during verification.
-
-As of **0.37.3** (2026-11-08).
-
-## Current direction
-
-- **Phone**: Material 3 + liquid glass. The minimal "less, but better" pass was rejected and is archived
-  at tag `v0.35.4`; do not resume it without an explicit request.
-- **Desk**: neumorphic Soft UI 2.0 / Obsidian Slate, read-only. Frozen unless a bug appears.
-- Statement import (share, bulk, Wednesday reminder) is live.
-
-## Order of work
-
-1. **Phone glass polish** — the user's active design thread.
-2. **Statement usability** — list imported weeks (currently only the latest is shown), accept more share
-   MIME types, show reminder permission state.
-3. **Server hardening** — token auth for `/api/data` and an off-machine backup.
-4. **Desk accessibility** — OS font scaling, reduced motion, focus order, hover-only scrollbar if wanted.
-5. **Odometer prompts** — ask for a reading on every fuel fill; improves km/L, wear and the tax pack.
-6. **Best-hours nudge** — use the existing heatmap data for a daily suggestion.
-7. **Maintenance by distance** — only after the first service, starting from zero.
-
-## Available from the archive
-
-`v0.35.4` contains the M3/WCAG phone pass (48 dp targets, selected-tab semantics, custom
-Edit/Delete actions, Mist contrast fix). Cherry-pick individual fixes without the rejected layout.
-
-## Do not redo
-
-- Minimalist phone reskin (rejected).
-- Quick-entry sentence parser UI + voice (removed as unused; parser kept).
-- Desktop visual churn: material, depth, charts and scrollbar decisions are settled.
-
-## 0.37.3 gates
-
-1. Cash truth — model + summary + tests done (Gate 1; transfers still open).
-2. Service card + weekly review — done (Gate 2).
-3. Discreet amounts (tap-to-toggle) + accessibility/type pass — done (Gate 3).
-4. Desktop parity; final sign — next.
-
-### 0.37.3 candidate
-
-- Live yield + daily food cap (committed checkpoint ad58611)
-- More Money/Shift/App restructure (this gate)
-- Final review before signing; no sign yet.
-
-## 0.37.4 candidate
-
-- Reliability contract in AGENTS.md.
-- Hard manual-grabfee rejection and hidden category.
-- Wall-clock cover end with break minutes + boundary tests.
-- Live preflight script. Ready for review/sign; phone remains 0.37.3.
-
-## 0.37.5 candidate
-
-- Paper Ledger phone UI, both light and dark; liquid-glass nav/+ preserved.
-- One-time migration from Sage default to Paper (a later Sage choice sticks).
-- Animated list placement and sync stamp; 203 tests.
-- Ready for sign/install after explicit instruction; phone remains 0.37.3.
-
-## 0.37.6 candidate
-
-- Paper Ledger refinement: Source Serif 4, M3 type mapping, static grain, adaptive hero/layouts.
-- 205 tests; viewport sweep at 360/390/412 and 1.3x type.
-- No sign yet; phone remains 0.37.3. Nav labels at 360/large type are intentionally untouched.
-
-## Paper Sheet v2
-
-- Continuous ledger rows and inset hairlines across Today, Spending, Shifts and simple More rows.
-- Flat paper panels retained only where actions/state require them.
-- 360/390/412 and 1.3x viewport sweep still green; 205 tests.
-- Ready for sign/install; phone remains 0.37.3.
-
-### Highest-value paper controls
-
-- Ruled metrics/actions/filters, linear budget bars, ledger sparkline, ruled categories/diagnostics, flat snackbar and empty states.
-- 205 tests; nav/+ untouched.
-- Next review: live card, forms, charts, payout/statement sheets (no code yet).
-
-### Paper Sheet ordered pass
-
-- Live ticket, payout rows, flat sheets, entry/shift/budget forms, ledger charts, statement rows and dialogs.
-- 205 tests; live start/end smoke-tested on device.
-- No sign; phone remains 0.37.3.
-
-### Completed-shift ticket
-
-- Flattened the latest completed shift on Today into the ruled ledger ticket.
-- 205 tests; no sign yet.
-
-### Paper Sheet broad pass
-
-- QR screen, flat Summary/More, responsive forms and final polish.
-- 205 tests. QR activity is non-exported and was compile-verified, not shell-launched.
-- No sign; phone remains 0.37.3.
-
-### Accessibility gate
-
-- 48dp controls, paper contrast regression test, tab/heading/chart semantics.
-- 207 tests. Residual: no Android-tablet max-width container; loading/error banners unchanged.
-- No sign yet.
-
-### 0.37.4 signed
-
-- versionCode 109, signed release installed over 0.37.3 with data retained.
-- 207 tests. Signed smoke test passed (Today, Add, Shift form, Shifts, More).
-- Residual: tablet max width, QR in-app verification, widgets, TalkBack traversal.
-
-### Collapsing header
-
-- Large header scrolls with every tab; compact glass header appears after 56dp.
-- Tested on device: Today collapse/expand, More collapse, Spending collapse.
-- 207 tests; no sign yet for this header build.
-
-### 0.37.5 signed
-
-- Collapsing header with compact glass state; 207 tests.
-- Signed versionCode 110; installed over 0.37.4.
-- Pending: frame-time profiling of the second glass surface; More tabs intentionally scroll with header.
-
-### Header glass refraction
-
-- Full-width glass header, stronger shared lens/blur, reduced tint.
-- 207 tests; build to sign next.
-
-### 0.37.6 signed
-
-- Full-width glass header with stronger shared refraction; versionCode 111.
-- 207 tests; signed collapse/expand verified.
-- Pending: frame-time profile for the heavier blur/lens.
-
-### Rolling funds
-
-- Rolling fuel/wear provision across months; monthly contribution/withdrawal shown underneath.
-- Latest server snapshot: 12 shifts, 82 entries, 22:09 update.
-- 210 tests; release to sign next.
-
-### 0.37.7 signed
-
-- Rolling fuel/wear reserves; 210 tests. Signed versionCode 112.
-- Not installed: wireless debugging port refused authentication; needs fresh pairing.
-
-### 0.37.8
-
-- Rolling fund rows split for narrow layouts; 210 tests.
-
-### 0.37.8 signed
-
-- Rolling fuel/wear reserves; 210 tests; installed on signed package.
-- Latest: fuel −RM115.45, wear −RM345.76.
-
-### 0.37.9 signed
-
-- Full Summary statement redesign; 210 tests; installed.
-- Assumptions: target line is target rate × monthly hours / active days; reserve target is one month of actual/accrued cost.
-
-### Phase 1 complete
-
-- Day page, running margins, day notes and receipt attachments.
-- 216 tests; server restarted with receipt/day-note preservation.
-- Next: Phase 2, daily close/seal and statement reconciliation.
-
-### 0.38.0 Phase 1 signed
-
-- Day page, running margin, day notes, receipt attachments and server preservation.
-- 216 tests; installed.
-- Phase 2 not started: daily close/seal + statement reconciliation.
-
-### Phase 2
-
-- Daily close/seal and statement reconciliation implemented; 220 tests.
-- Read-only guards added.
-
-### 0.38.2 Phase 2 signed
-
-- Daily close/seal and statement reconciliation installed; 220 tests.
-- Next: Phase 3 envelope budgets and reserve targets/top-ups.
-
-### Phase 3
-
-- Envelope carry/moves and reserve targets/top-ups implemented; 223 tests.
-- Signed next.
-
-### 0.38.4 Phase 3 signed
-
-- Envelope carry/moves and reserve targets/top-ups installed; 224 tests.
-- Next: Phase 4 export/print.
+# Baki — Material Design 3 Migration
+
+Version: **0.40.6 / code 127 — signed and installed**
+
+## Design direction
+
+Baki now uses Material Design 3 as its visual and interaction foundation. The financial model,
+ledger data, shift tracking, budgets, reserves, reconciliation and sync are unchanged. This was a
+presentation and interaction migration, not a data migration.
+
+The design system is now:
+
+- **Dynamic Material You colour** on Android 12+, with Material baseline light/dark fallback.
+- **Tonal surfaces** through `surface`, `surfaceContainerLow`, `surfaceContainer`,
+  `surfaceContainerHigh`, `primaryContainer` and `onSurfaceVariant`.
+- **MD3 shape scale**: 4dp extra-small, 8dp small, 12dp medium, 16dp large, 28dp extra-large.
+- **Material type roles**: display/headline/title/body/label, all using the Inter sans family.
+  Money uses tabular sans figures, not a serif override. No Source Serif, Space Grotesk or
+  JetBrains Mono is loaded by the phone UI.
+- **Standard MD3 components**: TopAppBar, NavigationBar, NavigationRail, morphing FAB, Cards,
+  PrimaryTabRow, SegmentedButtons, filled search, FilterChips, tonal buttons, dialogs and bottom sheets.
+- **Expressive containers**: primaryContainer statement cover, secondaryContainer week card,
+  tertiaryContainer reserve card, surfaceContainerHigh chart and cash cards.
+- **Interactive charts**: rounded tonal bars, solid target line, no dashed floating rules, 7D/30D
+  FilterChips and tap-to-inspect day details.
+
+## Features removed or simplified
+
+These were Paper-Ledger presentation features that clashed with MD3:
+
+| Removed / simplified | Reasoning |
+|---|---|
+| Liquid-glass navigation bar and floating `+` | Replaced by standard NavigationBar and FAB with proper state layers and tonal roles. |
+| Glass compact header overlay | Replaced by one stable MD3 TopAppBar. Avoids double-overlay hierarchy and contrast drift. |
+| Paper grain canvas | Removed. MD3 hierarchy comes from tonal surfaces, not texture. |
+| Hairline-only page architecture | Cards and tonal containers now group content; dividers remain only as separators inside cards/lists. |
+| Paper Ledger / Sage / Night colour-pack selector | Removed from Appearance. Dynamic colour plus light/dark is the system. |
+| Liquid-glass preference | Removed from Appearance; glass is no longer an active surface. |
+| Match-wallpaper switch | Dynamic colour is now the default; no separate opt-in is necessary. |
+| Old More underline tabs | Replaced with MD3 PrimaryTabRow. |
+| Old custom bottom-bar geometry | Replaced with NavigationBar on phones and NavigationRail on tablets. |
+| Paper-specific section abbreviations and all-caps labels | Section titles now normalise to sentence case and use MD3 title roles. |
+
+No financial feature was removed.
+
+## Features added or redesigned
+
+### Theme and colour
+- Dynamic light/dark schemes from the wallpaper on Android 12+.
+- Material baseline schemes as the desktop/preview and unsupported-Android fallback.
+- Semantic income/expense colours come from `tertiary`/`error` inside the active scheme.
+- Dialog surfaces use `surfaceContainerHigh`; cards use `surfaceContainerLow`;
+  navigation uses `surfaceContainer`.
+- Dark mode checked in preview and on-device.
+
+### Navigation and shell
+- One MD3 TopAppBar with brand, privacy action and sync status.
+- NavigationBar on compact screens with five destinations and one-line labels at large type.
+- NavigationRail at ≥600dp, with its own primary FAB and a 960dp content max width.
+- Standard 56dp FAB on Today for adding entries.
+- Modal surfaces hide navigation and FAB while open.
+
+### Typography and shape
+- MD3 shape scale wired through `MaterialTheme.shapes` and `Radius`.
+- Cards use 12dp medium shapes; sheets/dialogs 28dp; chips/buttons 20dp.
+- Monetary hero figures keep an expressive serif face; controls and body use Inter.
+- Type hierarchy uses title/body/label roles rather than paper-specific display labels.
+
+### Content and data visualisation
+- Summary converted to tonal cards: statement cover, month-in-ink chart, week review,
+  category breakdown, calendar, reserves, cash truth and best-hours evidence.
+- Category names now resolve through the configured category catalogue instead of showing raw IDs.
+- Month-in-ink opens at 7D to reduce sparse empty chart space.
+- Week review, category shares, calendar cells and reserve meters use the same MD3 colour roles.
+- Day Page entries and shifts are individual tonal cards with an overflow action menu; attaching,
+  replacing or removing a receipt no longer consumes two permanent text lines per row.
+- Running balance is explicitly labelled **entry balance**.
+
+### Forms, sheets and dialogs
+- Bottom sheets use 28dp top corners and `surfaceContainerLow`.
+- Dialog containers use `surfaceContainerHigh`.
+- Search uses an OutlinedTextField with a leading search affordance.
+- Appearance uses a Material SegmentedButton row.
+- Destructive and primary actions use tonal buttons rather than heavy dark pills.
+- Day Page, reserve history and statement history use the same dialog/sheet language.
+
+## Screen-by-screen
+
+### Today
+- Fixed TopAppBar; date pager card; net hero; operating block; in/out chips.
+- Seven-day food strip uses tonal containers with semantic positive/negative colours.
+- Shift and live cards are tonal MD3 cards.
+- Quick Add chips remain; entry list uses cards.
+- FAB opens the add-entry flow.
+- Empty state remains a proper MD3 empty page.
+
+### Spending
+- Month header, large spent hero, MD3 OutlinedTextField search and FilterChips.
+- Envelope and entry rows are tonal cards with consistent 8dp separation.
+- Swipe/long-press actions retained; overflow and accessibility actions preserved.
+- Entry titles use category display names.
+
+### Shifts
+- Net hero, tonal Add shift action and individually spaced shift cards.
+- Cards show date, km, RM/km and band; long-press edit and swipe delete preserved.
+- Empty state explains the page purpose.
+
+### Summary
+- Statement cover, month chart, week strip, category breakdown, calendar, reserves,
+  cash truth and best hours are now MD3 cards on `surface` with tonal panels.
+- Charts use dynamic `primary` and semantic negative colours.
+- Reserve Manage opens a 28dp dialog with target and transaction history.
+- Chart default is 7D; 30D remains available.
+
+### More
+- TopAppBar and PrimaryTabRow are fixed; only the settings body scrolls.
+- Bills, statements, vehicle, categories, safety and device sections remain.
+- Appearance now contains only Auto/Light/Dark and a dynamic-colour explanation.
+- Standard SegmentedButtons, switches, outlined actions and tonal CTAs.
+- Statement history is a Material dialog, not a sheet behind the navigation bar.
+
+### Day Page
+- Full-screen MD3 page with tonal entry and shift cards.
+- Per-row overflow menu contains attach/replace/view/remove receipt and delete.
+- Day note, running balances, close/reopen and shift editing remain.
+- Receipt preview stays a full-screen image surface.
+
+### Add entry / shift / budget / reserve flows
+- Standard MD3 sheet geometry; OutlinedTextFields; segmented choices; tonal primary action.
+- Budget envelope carry and monthly move remain.
+- Reserve target, top-up, withdrawal and history remain.
+- Read-only guards remain visible and actionable.
+
+
+## Expressive pass (0.40.0)
+
+- Removed the remaining divider/rule shim; all separation now comes from tonal surfaces.
+- Deleted the unused glass and paper-texture source files and removed the QR paper grain.
+- Statement cover now uses `primaryContainer` / `onPrimaryContainer`.
+- Week summary uses `secondaryContainer`; reserves use `tertiaryContainer`; chart/cash use
+  `surfaceContainerHigh`.
+- Month-in-ink selectors are MD3 FilterChips; 7D now ends at today instead of showing future days.
+- Extended Add entry FAB morphs into a compact FAB as the page scrolls.
+- Spending search is a filled `TextField` on `surfaceContainerHighest`; category filters are
+  FilterChips with state-layer ripple.
+- Day entry rows support long-press actions and a receipt thumbnail badge.
+- Screen transitions use the emphasized cubic-bezier `(0.2, 0, 0, 1.0)` with short critically
+  damped fades.
+- All hardcoded palette hex was removed from common source. Legacy palette names now alias Material
+  baseline roles for persisted-config compatibility; the active scheme is dynamic/baseline MD3.
+- All custom `BorderStroke` card outlines were removed. Cards use single 16dp tonal surfaces.
+- Both charts sit inside explicit `surfaceContainerHigh` cards with **24dp** corners and
+  24dp content padding, with tonal tracks and rounded `primary`/`primaryContainer` bars. Bars sit in tonal tracks; active positive bars are `primary`, weekly
+  non-today bars use `primaryContainer`, and negatives use `error`. The target is a solid line.
+- Chart range selector and category chips have no outline: they are filled tonal FilterChips.
+- Spend/Shift rows use roomier 20dp vertical card padding, 16dp single surfaces and 12dp gaps.
+- Verbose bills/statement/vehicle helper copy was shortened.
+- Live-start and add-shift actions are tonal rather than high-contrast dark pills.
+
+## Data integrity
+
+- No schema changes were introduced by this migration.
+- Existing Phase 1–3 fields, server merge logic and tombstones are untouched.
+- Theme packs remain in persisted config for backward compatibility but no longer control the active
+  scheme.
+- No live ledger data was edited during verification.
+
+## Verification
+
+- **225 desktop tests, 0 failures.**
+- Dynamic light/dark previews rendered.
+- Phone: 360dp at 1.3× font scale checked; nav labels are single-line.
+- Tablet: 800dp logical width checked with NavigationRail and 960dp content cap.
+- Signed 0.40.0 release installed and launched without fatal errors.
+- Expanded and collapsed FAB states verified on-device.
+- Release signed with the existing certificate.
+
+## Known residuals
+
+- Legacy Paper/Glass composables and palette data remain in source for compatibility but are no
+  longer on active screens.
+- Some outline text-field shapes still inherit Material3's default extra-small shape; the main
+  forms use MD3 shape roles, and a full per-field shape sweep remains desirable.
+- The month chart is still a custom Canvas inside a Material card; a future pass could replace it
+  with a dedicated chart component with accessible data table semantics.
+- Widgets and a desktop Material shell were not part of this migration.
+
+## Hard cleanup (0.40.2)
+
+- Deleted `Glass.kt` and `PaperTexture.kt`; removed QR paper grain.
+- Removed every custom `BorderStroke` and `.border(...)` from cards, buttons and calendar cells.
+- All cards now use the single-surface 16dp `MaterialTheme.shapes.large` treatment. The
+  swipe-to-delete background is transparent when settled, removing the last card rim.
+- Calendar today/best markers use tonal fills, not outlines.
+- Removed the forced serif source for display and money. All text is sans; money remains tabular.
+- Rebuilt Month in Ink with rounded primary/error bars, a solid target line, FilterChip ranges,
+  tap-to-select state and a selected-day detail card.
+- Rebuilt weekly bars with rounded tonal bars and baseline dots for empty days.
+- NavigationBar keeps explicit 80dp geometry, standard active indicator, tonal container and
+  one-line labels. NavigationRail/FAB remain adaptive.
+- Shortened explanatory copy and removed dead layout hacks.
+- 225 tests pass; signed 0.40.4, code 125.
+
+## Live Shift and sheets (0.40.5)
+
+- Live Shift is now a single `surfaceContainerHigh` card with 24dp corners and 20dp padding.
+- The dashed animated live trace and all ledger rules were deleted from the card.
+- Net-so-far uses a sans `headlineLarge` tabular figure; status is a tonal dot + label.
+- Payout and Pause are `FilledTonalButton`/`Button`; End is a destructive `Button` using
+  `errorContainer` / `onErrorContainer`.
+- `BakiSheet` was rewritten as the standard Material 3 `ModalBottomSheet`: 28dp top corners,
+  standard drag handle, standard scrim, tonal container. The app-level 18dp background blur was
+  removed entirely.
+- Deleted the dead glass bottom-bar code and the animated dashed LiveTrace file.
+- The Add chooser uses tonal surfaces; its primary choice is primaryContainer, not a stark white tile.
+- 225 tests pass; signed 0.40.6, code 127.
+
+## Material 3 Expressive upgrade (0.41.0)
+
+### Verified APIs and versions
+
+- Compose plugin: `org.jetbrains.compose` **1.12.2**
+- Material 3 artifact: **`org.jetbrains.compose.material3:material3:1.12.0-alpha03`**
+- Previous resolved artifact `1.9.0` contains `MotionScheme` and Expressive tokens but **not** the
+  public ButtonGroup/SplitButton/FABMenu/FloatingToolbar/LoadingIndicator composables.
+- `1.12.0-alpha03` ships `ExperimentalMaterial3ExpressiveApi`, `MotionScheme.expressive()`,
+  `ButtonGroup`, `ButtonGroupDefaults`, `SplitButtonLayout`, `FloatingActionButtonMenu`,
+  `LoadingIndicator`, `ContainedLoadingIndicator` and all `MaterialShapes`.
+- Its Compose dependencies are 1.12.0-beta01; the project’s 1.12.2 Compose artifacts supersede them.
+
+### Five Expressive pillars applied
+
+1. **Real components**
+   - Month-in-ink 7D/30D range: `ButtonGroup` with toggleable items and overflow indicator.
+   - More Money/Shift/App: full-width `ButtonGroup`.
+   - Primary add action: `FloatingActionButtonMenu` with tonal spending/income/shift items.
+   - Sync state: morphing `LoadingIndicator`.
+2. **Spring physics**
+   - `MaterialTheme(..., motionScheme = MotionScheme.expressive())`.
+   - Screen transitions read `defaultSpatialSpec` / `defaultEffectsSpec` from the active scheme.
+   - Expressive ButtonGroup/FABMenu components own their width/shape springs.
+3. **Shape tension**
+   - Live Shift status badge uses `MaterialShapes.Cookie9Sided.toShape()` with secondary/tertiary
+     container roles.
+   - Rounded 16/24/28 containers remain for hierarchy; the cookie badge is the focal exception.
+4. **Editorial typography**
+   - Display figures now install at bold weight; money remains tabular sans.
+   - Monthly Statement, Today net and Live Shift net are the three editorial hero moments.
+5. **Multi-role colour**
+   - Statement cover primaryContainer; week secondaryContainer; reserves tertiaryContainer.
+   - FABMenu items use primary/secondary/tertiary container roles.
+   - Live badge uses secondaryContainer when active and tertiaryContainer when paused.
+
+### Verification
+
+- Compile: Android + desktop.
+- 225 tests, 0 failures.
+- Signed and installed 0.41.0, code 128.
+
+## Unified M3 Expressive architecture (0.42.0)
+
+### P0 — token purge
+- Deleted `BakiPalette`, `LocalBaki`, all legacy palette packs and the theme-pack config.
+- Deleted `BakiType`, all font assets and the custom font installer. Every screen now uses
+  `MaterialTheme.typography` roles, including tabular numeric styles.
+- Deleted `BakiMotion`; all custom animation now reads `MaterialTheme.motionScheme`.
+- Deleted `Radius`; all shapes use `MaterialTheme.shapes`.
+- Deleted `baki.paper` branches and `LedgerRule`; no constant-false UI branches remain.
+- Deleted the separate desktop shell, Neumorphism, glass, paper texture and DeviceTier code.
+  Desktop now renders the same adaptive Compose UI as phones/tablets.
+- Removed the backdrop/glass dependency and all custom font resources.
+
+### P1 — system chrome
+- Phone: `ShortNavigationBar` with five Expressive items.
+- Tablet/desktop: stateful `WideNavigationRail` with collapse/expand; the content offset tracks
+  the measured rail width and the 960dp reading width is centred.
+- A FAB in the rail header provides the primary add action on wide screens.
+- `ModalBottomSheet` remains the only sheet implementation.
+
+### P2 — expressive controls
+- Transaction type is a connected `ButtonGroup` (Spending / Income).
+- Appearance is a `ButtonGroup` (Auto / Light / Dark).
+- Chart range and More tabs remain Expressive ButtonGroups.
+- Add action is a `FloatingActionButtonMenu` driven by a morphing
+  `ToggleFloatingActionButton`.
+
+### P3 — state and motion
+- Sync and server discovery use the morphing `LoadingIndicator`.
+- All custom animation uses MotionScheme specs.
+- MaterialShapes Cookie9 focal badges appear on Live Shift and the Statement streak.
+- EasedMoney uses the theme’s spatial spring.
+- Hero figures are bold and tabular.
+
+### P4 — screen polish
+- Live Shift is a 24dp `surfaceContainerHigh` card with expressive tonal actions.
+- Summary chart cards use 24dp containers, tonal tracks and primary/error bars.
+- FABMenu hides during a live shift so Pause/End remain reachable.
+- Charts do not override `surfaceContainerHighest`, keeping tracks visible.
+- Spend, Shifts, Today, Summary and More were rendered in light/dark, phone/desktop.
+- The desktop preview is now the unified app rather than a separate shell.
+
+### Verification
+- Android + desktop compile clean.
+- 194 tests, 0 failures.
+- No `BakiPalette`, `BakiType`, `BakiMotion`, `Radius`, `LocalBaki`, `LedgerRule` or
+  constant-paper branches remain.
+- Signed 0.42.0, code 129.
+
+### Deliberate omissions
+- `FlexibleTopAppBar` is not present in the pinned Material3 artifact; a standard TopAppBar remains.
+- `FloatingToolbar` is not forced because no multi-select/contextual-action flow exists.
+- `SplitButton` is not duplicated because FABMenu already owns the quick-add action.
+
+## 0.42.1 recovery
+
+- The unified release exposed an existing local-encryption edge case during first launch:
+  `loadLive()` did not handle an invalid Keystore/GCM live snapshot. The app now quarantines that
+  snapshot, records the error in StoreHealth and continues; `loadLocal()` already had this recovery.
+- Both home-screen widgets now catch local decrypt/render failures and show a safe fallback instead
+  of crashing the app process.
+- Verified on-device: the signed app launches to Today instead of the crash dialog.
+- Desktop/phone unified UI, 194 tests, Material3 1.12.0-alpha03 pinned.
+
+## 0.43.0 final gates
+
+- Gate 3: verified spring-driven shape morphs for categories, live/paused status, reserve badges and receipt press; upgraded shared and Day Page headers to scroll-aware MediumTopAppBars.
+- Gate 4: added structured chart/map semantics, tab role/selected state, explicit navigation labels, system-respecting reduced-motion toggle, 360dp/1.3x auto-fitting hero text, and full semantic contrast coverage.
+- Final checks: 194 tests, Android debug, desktop tests and R8 release compile all pass.
+- Known verification limits: varied wallpaper-seed contrast and true 120fps were not reproducible in this device session; see Gate 4 report.
+
+## 0.43.1 UX refinement
+
+- Collapsed the main header to a single-line TopAppBar; removed the tagline and scroll-height split.
+- Painted the transparent status-bar inset with the same surface as the app bar.
+- Removed persistent MonthInk bar tracks; the chart surface stays clean and only the selected day gets a soft primary-container backdrop.
+- Kept the official M3 Expressive ShortNavigationBar instead of a custom floating pill nav.
+
+## 0.43.2 spacing pass
+
+- Single-line compact header with a matching status-bar surface.
+- FAB gap over the short navigation bar reduced from 16dp to 8dp.
+- Summary card padding normalized from 24dp to the shared 20dp step.
+- MonthInk tracks removed; selected bars now receive a soft primary-container backdrop.
+- Bottom navigation remains the official M3E ShortNavigationBar.
+
+## 0.43.3 live trace
+
+- Restored the earlier live-shift route trace: moving dashed line and travelling head dot, frozen when paused or when reduced motion is enabled.
+- Hid the target-streak badge for a one-day streak; it now appears only from two consecutive days.
+- Centered the Today “day page” action inside its 48dp target so it aligns with the entry-count label.
+
+## 0.43.4 dynamic colour
+
+- The Monet scheme was cached by light/dark alone, so wallpaper palette changes while the app remained alive were ignored. Added a WallpaperManager colour listener and wallpaper-change receiver to recompute the Material scheme in place.
+
+## 0.43.5 contrast and validation
+
+- Tinted cards now use their content colour for streak/positive/reserve text instead of unsafe outer-scheme accents.
+- Entry and shift dates must parse as real ISO dates; shift starts must be valid 24-hour HH:MM.
+- Save is gated on validation, with inline errors, and the repository rejects invalid dates defensively.
+- 196 tests, including validation coverage.
+
+## 0.43.6 portability and empty states
+
+- JSON backup now carries the ledger, device config, calibration and local routes in a versioned bundle; legacy store-only backups still import.
+- Restores force writes off and merge non-destructively.
+- MonthInk draws low positive values as dots instead of dash-like pills, and shows “No activity in this range” when empty.
+- Empty offline installs get a first-run server/write setup card.
+- Added card-scheme contrast regression coverage, backup round-trip coverage, and render-size/blank-image guards.
+- 198 tests, 0 failures.
+
+## 0.43.7 security and map discoverability
+
+- Optional server token: run the tracker with `BAKI_TOKEN=...`; enter the same token in More → App. Without a token, the original open-LAN mode still works.
+- Token is sent on data, route and SSE requests.
+- Server logs a warning when the ledger API is open.
+- Backups include the token (private data warning in the UI).
+- Today shows a “No movement recorded” card when a day has shifts but no route, instead of silently omitting the map.
+
+## 0.43.8 golden suite
+
+- Added deterministic, date-pinned golden screenshots for Today and Stats at 360dp light and 390dp×1.3 dark.
+- Added pixel-tolerance comparison, with a documented update switch (`-Dbaki.golden.update=true`).
+- Goldens immediately exposed and fixed a wrapped “+ Payout” label at 360dp, a stale live-shift fixture, and a positive worst-day shown in error red.
+- 199 tests, 0 failures.
+
+## 0.43.9 geometry and motion tests
+
+- Added Compose UI contract tests using `runSkikoComposeUiTest`:
+  - FAB sits 0–12dp above the measured ShortNavigationBar.
+  - Connected button segments meet 48dp dimensions.
+  - Wide rail starts expanded and compact nav is absent.
+- Added a clock-controlled connected-group shape-morph test.
+- The geometry test exposed a real 40dp FAB gap caused by a hard-coded 80dp nav height; the FAB now anchors to the measured bar height.
+- 203 tests, 0 failures.
+
+## 0.43.10 Day Page removal
+
+- Removed the separate Day Page and its Today link.
+- Removed the receipt picker/preview UI and platform receipt helpers.
+- Day notes, closes and receipt fields remain in the schema so existing servers/backups stay compatible; they are no longer exposed in the UI.
+- Today keeps the compact entry-count header only.
+
+## 0.43.11 expressive art direction
+
+- Added Baki’s soft-burst shape motif across the logo, hero backdrop, target sticker, Stats marker and live card.
+- Today is now a colour-blocked take stage with a huge net, target-beaten sticker, integrated in/out stats and playful copy.
+- Food is a wavy “FOOD FUND” meter with snack-left copy.
+- Live shift is a bolder on-the-clock card with a larger trace, status pill and a running-meter line.
+- Stats opens with a rotating burst, editorial statement line and best/worst copy.
+- Spend/Shifts use the same shape marker and human labels.
+- Goldens now freeze motion and cover a seeded live shift.
+- 203 tests, 0 failures.
+
+## 0.43.12 final expressive copy
+
+- Shift card now reads “WHAT THE SHIFT PAID”, target delta is human copy, and the live action is “Start the meter”.
+- Fixed singular/plural copy in shifts, payouts, purchases and week totals.
+- Regenerated the full golden set, including the seeded live-shift state.
+- 203 tests, 0 failures.
+
+## 0.43.13 sheets and stats
+
+- Entry sheet: soft-burst header, huge amount stage, icon category chips and “Log it” action.
+- Shift sheet: soft-burst header and a colour-blocked “ESTIMATED TAKE” preview card.
+- Stats: star markers on week/spending/funds/cash sections; wavy category and reserve meters.
+- Empty Stats copy is now “A quiet month.”
+- 203 tests, 0 failures.
+
+## 0.43.14 global expressive pass
+
+- Entry sheet amount stage now shows RM and a 0.00 placeholder before typing.
+- Form section labels use the burst marker.
+- Empty states have a burst mark.
+- Bottom sheets use a larger 36dp top shape and tinted drag handle.
+- 203 tests, 0 failures.
+
+## 0.43.15 section sweep
+
+- Every More/settings section heading now carries the burst marker.
+- Calendar and Best Hours get the motif too.
+- Empty states and form section labels carry the mark.
+- The major sheets now use the expressive 36dp top shape and tinted handle.
+- Primary screens, sheets, charts, empty states and section headings share one visual language.
+- 203 tests, 0 failures.
+
+## 0.43.16 ledger and payouts
+
+- Ledger row icons now use the burst motif and carry the entry tint; shift rows get a shaped marker.
+- Today’s selected day uses a tonal pill with a burst dot.
+- Payouts sheet has a shaped header, coin rows and a giant amount field; quick payout dialog matches.
+- First-run and map-empty cards now carry the motif and playful copy.
+- Tab change gets a slight scale in/out.
+- 203 tests, 0 failures.
+
+## 0.43.17 navigation
+
+- Replaced the stock compact bar with a floating Baki dock: shaped active burst, bold labels, spring scale.
+- Replaced the stock wide rail with a floating shaped panel, same active burst, animated width and labelled collapse toggle.
+- Preserved tab semantics, 48dp targets and the FAB-to-nav geometry contract.
+- 203 tests, 0 failures.
+
+## 0.43.18 navigation finish
+
+- Removed the duplicate Baki wordmark from the wide rail; the logo + collapse control remain.
+- Compact floating dock and wide rail share the same burst selection language.
+- Navigation geometry contracts remain green.
+- 203 tests, 0 failures.
+
+## 0.43.19 last dialog shells
+
+- Odometer prompt is now a Baki sheet: burst header, giant dashboard-km field, “Save reading”.
+- Reserves sheet is now a Baki sheet: burst header, large move-money field, wavy reserve bars, shaped movement rows.
+- Remaining conventional shells are settings dialogs; non-settings flows now share the language.
+- 203 tests, 0 failures.
+
+## 0.43.20 header and date chrome
+
+- Header is now a custom row: burst logo, bold Baki, coloured status pill, burst discreet control.
+- Day navigator is a shaped stage with burst arrows, TODAY marker, large date and playful subtitle.
+- Spend month navigator and Stats statement month navigation use the same shaped arrows.
+- Quick-hit icons sit in burst bubbles; ledger count has a burst marker.
+- All 203 tests and goldens green.
+
+## 0.43.21 max layer
+
+- Target-beaten badge fires a one-shot mini-burst celebration (suppressed by reduced motion).
+- FAB menu action icons sit in burst bubbles.
+- Calendar heat cells are circles; today is a soft burst.
+- Final 203 tests, 0 failures.
+
+## 0.43.22 complete chrome
+
+- Custom quick-action popover with shaped items and icons.
+- Settings dialogs now use the burst header language.
+- Switch rows carry the motif; hours heatmap cells are shaped.
+- 203 tests, 0 failures.
+
+## 0.43.23 hero typeface
+
+- Bundled Barlow Condensed Bold (SIL OFL) for the Today amount only.
+- Condensed skeleton, tabular figures, tight tracking; RM and body remain plain Roboto.
+- Font is a Compose resource; no runtime download.
+- 203 tests, 0 failures.
+
+## 0.43.24 budget save race
+
+- Fixed monthly-limits save being cancelled when the sheet dismissed.
+- BudgetSheet and EnvelopeMoveDialog now dismiss only after their writes complete.
+- Clarified that the Daily food fund (Today) is separate from the monthly Food envelope.
+- 203 tests, 0 failures.
+
+## 0.43.25 app-scope limits
+
+- Limit writes now run in the app scope, not the sheet scope, so dismissing the sheet cannot cancel them.
+- 203 tests, 0 failures.
+
+## 0.43.26 route sync
+
+- Sync now pulls sealed routes from the server as well as uploading them.
+- Ending a live shift triggers an immediate route upload after finalization.
+- Stopping the tracker flushes buffered points before dropping the provider.
+- 203 tests, 0 failures.
+
+## 0.43.27 cleanup
+
+- Removed dead Chip, DayHeader, PillButton and tactileClickable code.
+- Removed the unused Source Serif license resource.
+- 203 tests, 0 failures.
+
+## 0.43.28 sync loop
+
+- Server merges no longer mark the durable outbox dirty.
+- Post-push saves no longer trigger another upload.
+- Removed dead UI/helpers and the unused Source Serif license.
+- 203 tests, 0 failures.
+
+## 0.43.29 fixed themes
+
+- Added Fig Milk (light) and Midnight Fig (dark) fixed schemes.
+- Added Colour source Wallpaper / Baki; Wallpaper remains default where dynamic colour is available.
+- Android below 12 and desktop automatically use the fixed Baki palette.
+- Added fixed-palette contrast test; 204 tests, 0 failures.
+
+## 0.43.30 outlined icons
+
+- Replaced filled Material Round glyphs with Material Icons Outlined.
+- Kept Baki's custom toll barrier and all category mappings.
+- Removed unused Settings/Mic/ArrowRight/Trend vectors.
+- 204 tests, 0 failures.
+
+## 0.43.31 burst launcher icon
+
+- Replaced the old sage check launcher with a fig/gold ten-lobe burst.
+- Added a cut-out centre and check, matching the in-app soft-burst motif.
+- Updated adaptive foreground, monochrome layer, legacy PNGs and desktop icon.
+- 204 tests, 0 failures.
+
+## 0.43.32 calmer hierarchy
+
+- Removed the normal-state burst backdrop from the Today hero.
+- Food Fund is now a neutral surface with a gold wavy data line.
+- Date arrows are round, not soft-bursts; the date stage is shallower.
+- Week strip highlights the day being viewed with a thin outline, not a tinted burst cell.
+- 204 tests, 0 failures; capped build peak 3.8 GB.
+
+## 0.43.33 neutral summary
+
+- Monthly statement header is a neutral surface; the chart is the only coloured focal point.
+- Summary month arrows are quiet tonal circles.
+- ExpressiveBurst is now static everywhere; motion is reserved for state changes/celebrations.
+- 204 tests, 0 failures; capped peak 4.1 GB.
+
+## 0.43.34 accessibility/motion
+
+- Removed the last decorative burst backdrops from live/estimated-take cards.
+- ExpressiveBurst was fully removed; no decorative continuous rotation remains.
+- Day strip now exposes one merged spoken summary per day.
+- Added a 200% font-scale Today golden; date/food/IN-OUT layouts adapt.
+- 205 tests, 0 failures; capped peak 4.2 GB.
+
+## 0.43.35 calendar/heatmap a11y
+
+- Calendar days and heatmap blocks announce their own date/hours and net/rate.
+- Added a 200% Summary golden and responsive month/chart header layouts.
+- Golden fixtures now clear the main and backup stores, preventing real data bleed.
+- 205 tests, 0 failures; capped peak 3.8 GB.
+
+## 0.43.36 hero emphasis
+
+- Today hero now devotes almost the whole tile to the take-home amount.
+- RM moved above the figure; the amount uses auto-sized Barlow Condensed up to 132sp.
+- IN/OUT/operating moved to a quiet facts card below the hero.
+- 205 tests, 0 failures; capped peak 4.2 GB.
+
+## 0.43.37 split ink
+
+- Today hero now uses Archivo Expanded 800, auto-sized to fill the tile.
+- Hero card contains only the amount; RM/label/badge and facts live outside it.
+- Horizontal split ink: white numeral on fig above, fig numeral on lavender below, gold seam.
+- Removed the old Barlow font and license; added Archivo Expanded 800 + OFL.
+- 205 tests, 0 failures.
+
+## 0.43.38 compact Today
+
+- Date stage compressed to a single short row.
+- Hero number now sits in a 60% left tile; field split remains horizontal.
+- Food Fund is a ring in the right rail with remaining ringgit.
+- Right rail ends in selected + previous day cards; the 7-day strip is gone.
+- Removed IN/OUT facts and the DAMAGE REPORT title; operating is one caption.
+- 200% font scale stacks the mosaic cleanly.
+- 205 tests, 0 failures.
+
+## 0.43.39 aligned Today grid
+
+- Hero, Food and day cards now share a 206dp grid with 8dp gutters and 28dp corners.
+- Food is a real card again with ring + remaining + cover footer.
+- Day card is one tappable card containing previous + selected days.
+- Removed BEATEN, RM, IN/OUT and the separate cover row.
+- Hero numerals get a 1.48 vertical stretch.
+- Shift card defaults to a compact summary and expands for details.
+- 205 tests, 0 failures.
+
+## 0.43.40 8dp grid spacing
+
+- Day card cells now use the same 8dp inner gutter as the grid.
+- All Today cards share 8dp outer gutters and 28dp corners.
+- 205 tests, 0 failures.
+
+## 0.43.41 tall hero/start action
+
+- Hero amount vertical stretch increased to 2.05× (1.8× at 200% font).
+- Start live shift is always visible inside the collapsed shift card.
+- Explicit no-shift start card added.
+- 205 tests, 0 failures.
+
+## 0.43.42 auto-fill hero
+
+- Hero numeral now measures its line height and scales vertically to fill the card.
+- No fixed stretch factors.
+- Start live shift is always visible; explicit no-shift start card.
+- 205 tests, 0 failures.
+
+## 0.43.43 P0/P1 fixes
+
+- Start live shift is a standalone card, independent of shift history.
+- Quick Add More now opens the entry sheet instead of hiding the nav.
+- Latest two-day strip is fixed and locally selectable; it no longer walks backwards.
+- Removed the chart zero label and clipped negative bars to the plot area.
+- Day header matches the Spending month-header pattern.
+- Cover status is now a check/x mark only.
+- FAB and quick-action icons are bare.
+- Shift band uses a Cookie9Sided status shape; route key save shows confirmation.
+- 205 tests, 0 failures.
+
+## 0.43.44 second batch
+
+- Payout rows no longer show the SwipeToDismissBox rim (the "legacy ledger" edges).
+- Standalone Start card remains above shift history.
+- Save feedback added for Theme/Colour/Reduced motion/Budgets/Food cap, plus payouts.
+- Food ring changed to a segmented gauge.
+- Day cards default to today and only switch local selection.
+- 205 tests, 0 failures.
+
+## 0.43.45 wavy food ring/shape roles
+
+- Food ring is now a smooth track with a wavy gold progress and head dot.
+- Payout rows have the SwipeToDismissBox rim removed.
+- Global save feedback overlay for theme/color/motion/budgets/food cap/payouts.
+- Section/day/heatmap markers use circles; Cookie9Sided is the status shape; SoftBurst remains brand/selection.
+- 205 tests, 0 failures.
+
+## 0.43.46 shape/motion/contrast
+
+- Corner scale extraLarge moved 28 -> 32dp.
+- SoftBurst reduced to brand/header and selected navigation only.
+- Hero card gets one asymmetric 8dp corner for tension.
+- Food progress spring now respects reduced motion.
+- Bottom sheets use 28dp top radius and 640dp max width.
+- Added Baki high-contrast light/dark palettes with an Appearance switch.
+- 205 tests, 0 failures.
+
+## 0.43.47 FAB/menu and More
+
+- FAB is 96dp, menu actions 56dp with larger type/icons.
+- Quick Hits is one horizontally scrollable row.
+- More has a tonal mode hero (Money/Shift/App).
+- Spending's normal hero moved from error red to secondary.
+- 205 tests, 0 failures.
+
+## 0.43.48 hero hierarchy
+
+- Hero amount uses measured canvas text: integer dominant, decimal smaller, sign separate.
+- Width is solved before drawing; vertical fill is clamped to the card.
+- Split seam and Archivo Expanded unchanged.
+- 205 tests, 0 failures.
+
+## 0.43.49 seam-free hero
+
+- Removed the split seam; hero is one solid primary field.
+- Integer fills the card with fixed font size and transform fit; decimal stays small and gold.
+- Longer values compress horizontally instead of shrinking the type role.
+- 205 tests, 0 failures.
+
+## 0.43.50 solid hero/minus bar
+
+- Split seam removed; hero is a single primary field.
+- Integer fills the card; decimal is small gold.
+- Negative values use a drawn minus bar, not a tiny glyph.
+- 205 tests, 0 failures.
+
+## 0.43.51 Roast & Pine
+
+- Replaced Fig Milk/Midnight Fig with Oat & Pine and Roast & Pine.
+- Light hero: deep pine card, matcha numerals, amber decimal.
+- Dark hero: soft mint card, dark roast numerals, deep gold decimal.
+- Terracotta secondary, amber tertiary; signature is default, System/dynamic optional.
+- 205 tests, 0 failures.
+
+## 0.43.52 two-day strip
+
+- Selecting the previous day in the Today strip now drives the whole page: date, hero, operating, food, shift and entries.
+- Past-day view becomes read-only; quick add and FAB are hidden.
+- 205 tests, 0 failures.
+
+## 0.43.55 Desk shell
+
+- Desktop now renders a separate read-only Desk surface instead of the phone UI.
+- Overview, Ledger table, Shifts master-detail, Routes, Compare, Year, Settings.
+- Statement preview/tax/print, CSV/JSON/GPX export, route pull and sync.
+- No phone add/edit controls, FAB, bottom navigation or financial forms.
+- 205 tests, 0 failures.
+
+## 0.57.0 recovery guard and payout allocation
+
+- Explicit SQLite recovery mode; stale JSON fallback is no longer silent.
+- Verified local recovery snapshot after Week Close.
+- Statement-funded payout allocation with `source` labels; no observed/allocated confusion.
+- 264 tests and Android lane target.
+
+## 0.56.1 SQLite write latency
+
+- One persistent SQLCipher handle per storage instance.
+- Diff-only row writes; no delete-all/insert-all per tap.
+- Entry persistence moved off the UI dispatcher.
+- Add/update/delete parity tests pass; full suite 260.
+
+## 0.56.0 SQLite cutover
+
+- Production storage default is normalized encrypted SQLite.
+- JSON snapshot is imported on first launch and retained for rollback.
+- SQLCipher V4 mixed stack: Zetetic Android, SQLite3MultipleCiphers desktop.
+- Portable backup/restore remains JSON.
+- 260 tests and Android lane target.
+
+## 0.55.0 storage seam
+
+- LedgerStorage interface with JSON adapter and repository injection.
+- All repository snapshot writes go through storage; UI uses repo.storagePath.
+- G2 old-server fallback and two-client conflict matrix passed.
+- 250 tests and Android lane passed.
+
+## 0.54.0 incremental operation sync
+
+- `POST /api/ops` with durable dedupe journal.
+- Client batch push before pull; contiguous accepted prefix compaction.
+- Full-store push remains the fallback for old servers.
+- Server-derived statement/normalization saves no longer pollute the outbox.
+- 247 tests and Android lane passed.
+
+## 0.53.0 full local outbox
+
+- Every Store mutation now writes a durable encrypted operation: compact entry operations plus generic store replacements.
+- Snapshot vs server-ack sequences, crash replay, torn-tail repair.
+- 10k operation test and generic non-entry replay test.
+- 244 tests and Android lane passed.
+
+## 0.52.0 entry operation outbox
+
+- Encrypted append-only operation log beside the JSON snapshot.
+- Snapshot sequence vs server-acknowledged sequence.
+- Idempotent entry replay after a crash; torn-tail repair.
+- 10k-operation test; outbox depth in Diagnostics.
+- Entries only; other entities remain on snapshot + pendingPush.
+- 243 tests and Android lane passed.
+
+## 0.51.1 data health polish
+
+- Optional goal bills no longer appear as missing due-day bills.
+- Payout action from Data Health verified on the phone.
+- 237 tests and Android lane passed.
+
+## 0.51.0 data health
+
+- Data Health card and sheet: payout gaps, bills missing due days, inactive bill links, odometer coverage, backup age, open week and week-close/statement variance.
+- Direct actions: payout review, bill edit, odometer reading, backup and open week.
+- Odometer prompt now explicitly says two fill-up readings unlock measured km/L.
+- Report tests added; no scoring or judgement copy.
+- 237 tests and Android lane passed.
+
+## 0.50.9 local-first entry writes
+
+- Add and delete entry return after local persistence; the durable outbox uploads later.
+- Background sync pulls outside the store mutex, so an unreachable server cannot stall local entry writes.
+- Bill/week/payout mutations retain their explicit immediate-sync behavior.
+- 235 tests and Android lane passed.
+
+## 0.50.8 long-shift reliability
+
+- Live service foreground type is now `location` only; removed the Android 15 `dataSync` 6-hour timeout risk.
+- Service explicitly survives task removal.
+- Diagnostics show notifications allowed/active and battery optimization status.
+- Battery settings shortcut.
+- 235 tests and Android lane passed.
+
+## 0.50.7 live notification detail
+
+- Live-shift notification now shows worked time, distance and net/hour.
+- Refreshes every 15 seconds while the shift runs.
+- Payout, Pause and End actions retained.
+- No Android Auto UI.
+- 235 tests and Android lane passed.
+
+## 0.50.6 vehicle economy
+
+- Vehicle Economy card: measured km/L with odometer-fill guidance.
+- Cost-per-km trend using recorded fuel, wear and upkeep.
+- Service/repair history from maintenance entries.
+- Add-service shortcut opens a prefilled Maintenance entry.
+- Brings service, economy and cost data together with existing wear/work-personal split.
+- 235 tests and Android lane passed.
+
+## 0.50.5 cents-first money input
+
+- Shared `CentsField`: numeric keypad, fixed two decimals, digits are cents.
+- Applied to entries, bills, shifts, payouts, reserves, envelope moves, budgets, food cap, Week Close and opening balances.
+- Paste with a decimal still converts exactly to cents.
+- 234 tests; gate and Android lane passed.
+
+## 0.50.4 small workflow cleanup
+
+- Today empty-state hint no longer sits under the bottom navigation.
+- Removed the remaining shift band label from Today and Desk.
+- Documented EOFException as a fast-loop cache retry case.
+- 232 tests; gate passed.
+
+## 0.50.3 variable type and wavy food
+
+- Archivo variable font with real weight/width axes for RM, integer and decimal.
+- Variable face tested at 360dp and 200% font scale.
+- Food ring replaced by a full-width wavy linear progress strip.
+- 232 tests, refreshed goldens.
+
+## 0.50.2 Today hero rebalance
+
+- Removed the redundant two-day strip.
+- Full-width Today hero with unchanged contents.
+- Subtle clipped tonal shape accent and scale-in motion.
+- Full-width horizontal food strip below the hero.
+- Removed DayCard, MiniDay, ShiftBand and quality-dot UI.
+- 232 tests plus refreshed Today goldens.
+
+## 0.50.1 no-judgement pass
+
+- Removed best/worst and rolling-comparison copy from charts.
+- Removed target streak badge and streak commentary.
+- Removed shift quality bands and colour-coded judgement.
+- Renamed Best Hours to Net by Hour; removed the best-block callout.
+- Removed best-day highlighting from Calendar and Desk Overview.
+- Neutralised month commentary and Spend's "damage" subtitle.
+- Kept targets and truthful loss colours.
+- 232 tests plus refreshed goldens.
+
+## 0.50.0 running totals
+
+- Phone 30D is now cumulative running net, ending at the current month total.
+- Phone 7D lollipop is unchanged.
+- Desktop Overview replaces daily bars with a running-net chart.
+- Desktop has Month / All-time modes; all-time uses monthly cumulative recorded net.
+- Added running-total tests.
+- 232 tests expected.
+
+## 0.49.2 week picker
+
+- Week Close can select any week with shifts, a statement or a saved close.
+- Current week is always available.
+- Week list shows open/closed and statement presence.
+- 227 tests.
+
+## 0.49.1 week close header
+
+- Removed the date/status collision on 360dp.
+
+## 0.49.0 week close
+
+- Monday–Sunday Week Close card on Stats.
+- Manual received payout, prefilled from recorded shift payouts.
+- Gross, payouts and statement weekly variance.
+- Close/reopen without locking shifts.
+- Week closes sync through the client merge and server.
+- New WeekCloseTest.
+
+## 0.48.0 statement reconciliation copy
+
+- Weekly history now shows gross − deductions = weekly explicitly.
+- Gross comparison is labelled logged vs statement vs gap.
+- Removed the misleading “margin” wording.
+- Old imports show insurance count unavailable instead of a false zero.
+- Server preserves a missing insurance count as null.
+
+## 0.47.9 delete commitment
+
+- Bill Delete is enabled for any editable bill.
+- Deleting a commitment unlinks active payments but keeps their expenses and history.
+- Inactive payment rows no longer make a bill undeletable.
+- 226 tests.
+
+## 0.47.8 visible/declared delete
+
+- Bill payments history has a visible Delete action for existing expenses.
+- Entry deletion returns a result; blocked writes show an explicit error.
+- Delete still unlinks the bill payment.
+- 226 tests.
+
+## 0.47.7 unlink/re-pay state
+
+- Mark paid ignores inactive historical links; it reactivates/replaces the period link.
+- Link and payment candidates ignore inactive links.
+- Deleting an entry deactivates any bill payment pointing at it.
+- Fixes repeat Mark paid failures after Unlink/Undo.
+- 226 tests.
+
+## 0.47.6 bill payment sync
+
+- Mark paid now pushes the updated store to the server immediately.
+- Fixes payments reverting on the next sync.
+- Bill actions are disabled in read-only mode with an explicit explanation.
+- Optional-bill payments obey read-only mode.
+- 226 tests and rebuilt APK.
+
+## 0.47.5 audit clarity
+
+- Shifts hero is labelled all-time net.
+- Spend running balance removed; entries grouped by day with day totals.
+- Spend summary separates purchases from income/shift counts.
+- Shift amounts are neutral; quality stays on the dot.
+- Payout action moved inside the shift card.
+- Shift rows show weekday, hours and RM/hr.
+- Today adds target progress, clear day labels and food-cap period.
+- 226 tests expected; goldens refreshed.
+
+## 0.47.4 chart alignment
+
+- Best/lowest now use the visible 7D/30D window, not the whole month.
+- The week summary uses the same rolling window as the 7D chart.
+- Inactive days are hollow rings, not faint filled dots.
+- 226 tests and refreshed goldens.
+
+## 0.47.3 chart gaps and ticks
+
+- 30D line/area breaks at days off instead of connecting across gaps.
+- Axis clamps at 2× target; selected-day detail still shows the real value.
+- 30D gets weekly date ticks.
+- Removed duplicate target-line legend; the chip remains.
+- 226 tests and refreshed goldens.
+
+## 0.47.2 lollipop chart
+
+- Replace 7D bars with stems and dots.
+- Add dashed target line scaled into the chart.
+- Use a sparse line + soft area for 30D, with dots only on active days.
+- Inactive days are quiet baseline dots.
+- Goldens updated.
+
+## 0.47.1 repeat entries
+
+- Spending shows up to three “Repeat last” expenses.
+- Repeat opens the entry form with amount, category and note prefilled.
+- Bill due days and cash-flow calendar retained.
+- 226 tests expected.
+
+## 0.47.0 cash-flow calendar
+
+- Bills can carry an optional due day (1–31).
+- Phone Stats calendar marks bill-due and payout days.
+- Desk Overview has a full cash-flow month grid.
+- Existing bills without due days remain valid; they appear only in commitments.
+- 226 tests base; calendar/golden check pending.
+
+## 0.46.3 reliable end shift
+
+- In-app End no longer clears live state before the shift is written.
+- The UI coroutine is not cancelled when the live card is removed.
+- End button disables and shows “Ending…” while the write completes.
+- Notification End path remains unchanged.
+- 226 tests.
+
+## 0.46.2 live shift notifications
+
+- Restored POST_NOTIFICATIONS, removed accidentally with the old reminder feature.
+- Notification permission is requested when a live shift starts, not at app launch.
+- Granting refreshes the foreground notification immediately.
+- Live-shift service keeps GPS/distance persistence via its foreground notification.
+- 226 tests, desktop suite unchanged.
+
+## 0.46.1 Stats and Desk clarity
+
+- Merged the duplicate This Week view into the 7D chart.
+- Added day labels, target-line legend, explicit best/lowest labels and current-week delta.
+- Moved heatmap above diagnostics and Cash/Funds to the end of Stats.
+- Fixed Funds contrast and enlarged shortfall emphasis.
+- Added calendar legend and a shape cue for loss days.
+- Distinct icons for Other and Deepseek categories.
+- Desk Overview puts daily net and best hours side by side.
+- 226 tests, 0 failures.
+
+## 0.46.0 month close
+
+- Close Month screen with statement, bills, payout and reconciliation checks.
+- Month close stamp syncs through the statement sidecar; Desk writes it, phone reads it.
+- Reopening removes the server stamp via removedMonths tombstones.
+- Server backfills missing statement batches from row batch ids.
+- Phone prefill now auto-matches the statement row.
+- 226 tests, 0 failures; Android lane passed.
+
+## 0.45.9 month close
+
+- Close Month screen with statement, bills, payout and reconciliation checks.
+- Month close stamp syncs through the statement sidecar; Desk writes it, phone reads it.
+- Phone prefill now auto-matches the statement row.
+- Server backfills missing statement batches from row batch ids.
+- 226 tests, 0 failures; Android lane passed.
+
+## 0.45.8 own-account hints
+
+- Desk-local name/account-suffix hints classify own DuitNow transfers as internal.
+- Third-party names/accounts remain spending.
+- Identity editor in Desk Settings.
+- Existing pending rows reclassify on restart/sync.
+- 226 tests, 0 failures.
+
+## 0.45.7 internal transfers
+
+- AEON Pot transfers and TNG GO+/reload/cash-out moves are classified as internal.
+- Internal moves are hidden from review and spending, retained for audit.
+- Existing pending rows are reclassified on startup/sync.
+- Third-party DuitNow remains expense/review.
+- Cashback/rewards remain income.
+- 222 tests, 0 failures.
+
+## 0.45.6 conflict/Desk tests
+
+- Newest-write-wins conflict test for statement rows.
+- Desk Compose test covers confirm pair, match without ledger write, and batch delete.
+- Server audit test retained.
+- 221 tests, 0 failures.
+
+## 0.45.5 test-complete
+
+- Server stamps deletion audit on `/api/statements` batch delete.
+- Real API round-trip test covers push/pull/delete/audit.
+- Pair suggestion Confirm/Reject covered by tests.
+- Android instrumentation covers prefilled statement save and summary.
+- 219 tests, 0 failures.
+
+## 0.45.4 pairing/tests
+
+- Transfer pairs now require Confirm/Reject; auto-pairing removed.
+- Test-only `.verify` seed exercises phone summary and synthetic rows.
+- Android instrumentation verifies matched/unrecorded counts.
+- Quoted CSV fields supported.
+- Dedicated statement API and batch audit retained.
+- 216 tests, 0 failures.
+
+## 0.45.3 statement transport
+
+- Dedicated `/api/statements` GET/POST; `/api/data` no longer carries sidecar rows.
+- Statement batches with period/row/duplicate metadata and delete-with-audit.
+- Transfer pair suggestions (opposite direction, exact amount, ±1 day).
+- Phone unrecorded rows open a prefilled entry form.
+- Ledger push strips statement fields.
+- Known gaps: Android synthetic import/match test, quoted CSV fields.
+- 215 tests, 0 failures.
+
+## 0.45.2 statement hardening
+
+- Duplicate fingerprints skip re-imports and report counts.
+- Generic CSV parser and CSV picker support.
+- Merchant-aware statement suggestions.
+- Account rename, archive, opening balance and date.
+- Phone statement summary hides archived accounts.
+- Known gap: statements still travel in the synced store as a sidecar namespace, not a dedicated API.
+- 215 tests, 0 failures.
+
+## 0.45.1 statement sidecar
+
+- Statements moved to a sidecar reconciliation layer; matching never creates ledger entries.
+- Import/review screen is Desk-only; phone only shows matched/open counts.
+- Auto-suggested matches by amount and date window; Match/Unignore actions only.
+- Accounts/transfers remain sidecar data; phone ledger remains phone-written.
+- Known gaps: no CSV, no duplicate detection, no account management, no separate statement API.
+- 214 tests, 0 failures.
+
+## 0.45.0 statement import
+
+- AEON Bank and TNG eWallet PDF importers built from real statement layouts.
+- Staged review queue; imported rows do not enter totals until accepted.
+- Auto-created AEON/TNG accounts; transfers are recorded separately from spending.
+- Manual reading, annual export and persistent ledger filters retained.
+- 214 tests, 0 failures.
+
+## 0.44.6 final data pass
+
+- Added synced manual odometer readings and service baseline fields, with server merge support.
+- Added passive Add odometer reading on the Vehicle card; removed the post-fuel modal.
+- Added annual CSV and printable annual summary without tax calculations.
+- Persisted Desk Ledger search, category and sort preferences.
+- Added total/work/personal wear per km and a data-health line.
+- Restarted the tracker server with the new schema.
+- 212 tests, 0 failures.
+
+## 0.44.5 pendings
+
+- Removed the Wednesday statement reminder, notification permission request and WorkManager scheduling entirely.
+- Bill payments now offer an undo that removes auto-created expenses and unlinks manual ones.
+- Added a service odometer baseline for a new car or odometer reset.
+- Compare now shows recorded and operating net separately.
+- Desk Ledger has sorting and saveable search/category filters.
+- 212 tests, 0 failures.
+
+## 0.44.4 cleanup
+
+- Removed the tax pack and Business/deductible tax controls entirely.
+- Pending local settings now survive a pull until they are uploaded.
+- Fixed shift-only active days, live discard fee cleanup, and odometer-aware km across Compare/Desk/weekly review.
+- Added optional passphrase-encrypted backups and moved diagnostics under About/Developer.
+- Vehicle wear is now visible on Desk Overview and Year.
+- 212 tests, 0 failures.
+
+## 0.44.3 odometer wear
+
+- Derived vehicle-wear layer uses existing shift odometer endpoints and fuel odometer anchors.
+- Work wear stays per shift; total and personal wear use odometer intervals without inventing missing distance.
+- No daily input; fuel-fill odometers improve coverage. Sparse or inconsistent intervals are reported.
+- 213 tests, 0 failures.
+
+## 0.44.2 smaller hero currency
+
+- The hero RM mark is reduced to a quiet 11% mark, freeing more width for the digits.
+- 209 tests, 0 failures.
+
+## 0.44.1 hero currency
+
+- Small RM now sits inside the Today hero, before the number; negative heroes tuck it beneath the drawn minus on the same baseline.
+- Fixed number fitting so the decimal never clips when the currency mark is present.
+- 209 tests, 0 failures.
+
+## 0.44.0 Backup, reconciliation, Work
+
+- Backup health (last backup, size, counts) with a restore summary and explicit merge confirmation.
+- Restore works in read-only mode; it never turns writes on and never deletes existing records.
+- Sync health shows pending upload, last pull/push, and overlapping edits; newest edit wins, tombstones win.
+- Payout reconciliation is visible on every shift and in the payout sheet: recorded, received, still due.
+- Shift payouts no longer overwrite recorded gross; outstanding cash stays honest.
+- More tabs are Money / Work / App; the home-screen widget moved to App.
+- Constructive actions use primary pine; terracotta/red stay for caution and destruction.
+- Money fields use exact cents parsing, decimal keyboards and visible validation; ledger tap targets and semantics improved.
+- 209 tests, 0 failures.
+
+## 0.43.63 Phone Preview/Motion Lab
+
+- Desktop can launch the real phone shell in an isolated preview home with `BAKI_SHELL=phone`.
+- Side panel: appearance, palette, high contrast, expressive/standard/slow motion, reduced motion.
+- No phone, server, or real ledger writes required.
+- 205 tests, 0 failures.
