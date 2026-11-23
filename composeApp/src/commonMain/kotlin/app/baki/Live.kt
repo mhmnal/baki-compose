@@ -52,6 +52,14 @@ fun saveLive(l: LiveShift?) {
         LocalStore.writeText(LIVE_FILE, BakiJson.encodeToString(LiveShift.serializer(), l))
 }
 
+/** One compact line for the live-shift notification: worked time, distance and net rate. */
+fun liveNotificationLine(store: Store?, live: LiveShift, now: Long = nowMillis()): String {
+    val worked = liveClock(liveWorkedMs(live, now))
+    val distance = "%.1f".format(live.km)
+    val rate = store?.let { liveBreakEven(it, live, now).netPerHour }
+    return "$worked worked · $distance km" + (rate?.let { " · RM ${rm(it)}/h net" } ?: "")
+}
+
 fun liveTotalCents(l: LiveShift): Long = l.payouts.sumOf { it.c }
 /** Wall-clock time since the shift started, breaks included. */
 fun liveElapsedMs(l: LiveShift, now: Long = nowMillis()): Long = max(0L, now - l.start)

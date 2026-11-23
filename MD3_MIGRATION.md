@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.50.7 live notification detail
+
+- Live-shift notification now shows worked time, distance and net/hour.
+- Refreshes every 15 seconds while the shift runs.
+- Payout, Pause and End actions retained.
+- No Android Auto UI.
+- 235 tests and Android lane passed.
+
 ## 0.50.6 vehicle economy
 
 - Vehicle Economy card: measured km/L with odometer-fill guidance.

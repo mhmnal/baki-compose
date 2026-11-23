@@ -8,7 +8,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 
@@ -40,6 +42,20 @@ class LiveShiftService : Service() {
         }
     }
 
+    private val refreshHandler = Handler(Looper.getMainLooper())
+    private val refresh = object : Runnable {
+        override fun run() {
+            val live = runCatching { loadLive() }.getOrNull() ?: return
+            runCatching { startForeground(NOTIF_ID, build(live.start, liveTotalCents(live))) }
+            refreshHandler.postDelayed(this, 15_000L)
+        }
+    }
+
+    private fun startRefresh() {
+        refreshHandler.removeCallbacks(refresh)
+        refreshHandler.postDelayed(refresh, 15_000L)
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -52,6 +68,7 @@ class LiveShiftService : Service() {
         ensureChannel()
         // a location-typed FGS needs the permission at this moment, or the start is refused
         runCatching { startForeground(NOTIF_ID, build(start, total)) }
+        startRefresh()
         if (DistanceTracker.hasPermission(this)) {
             DistanceTracker.start(this)
         }
@@ -59,6 +76,7 @@ class LiveShiftService : Service() {
     }
 
     override fun onDestroy() {
+        refreshHandler.removeCallbacks(refresh)
         DistanceTracker.stop()
         super.onDestroy()
     }
@@ -90,11 +108,14 @@ class LiveShiftService : Service() {
 
     private fun build(startMs: Long, totalCents: Long): Notification {
         val open = action("open")
-        val paused = loadLive()?.let { isPaused(it) } ?: false
+        val live = runCatching { loadLive() }.getOrNull()
+        val paused = live?.let { isPaused(it) } ?: false
+        val store = runCatching { loadLocal() }.getOrNull()
+        val detail = live?.let { liveNotificationLine(store, it) } ?: "since ${startClock(startMs)} — tap to open Baki"
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_myplaces)
             .setContentTitle("RM ${rm(totalCents)} · live shift")
-            .setContentText("since ${startClock(startMs)} — tap to open Baki")
+            .setContentText(detail)
             .setWhen(startMs)
             .setUsesChronometer(true)
             .setOngoing(true)

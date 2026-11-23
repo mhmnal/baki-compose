@@ -3,6 +3,7 @@ package app.baki
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class LiveYieldTest {
     @Test
@@ -23,5 +24,10 @@ class LiveYieldTest {
         assertEquals(25.0, be.netPerHour!!, 0.0001)
         assertNotNull(be.grossPerKm)
         assertEquals(1.0, be.grossPerKm!!, 0.0001)
+
+        val line = liveNotificationLine(store, live, now)
+        assertTrue(line.contains("4h 00m worked"))
+        assertTrue(line.contains("100.0 km"))
+        assertTrue(line.contains("RM 25.00/h net"))
     }
 }
