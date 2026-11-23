@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.56.0 SQLite cutover
+
+- Production storage default is normalized encrypted SQLite.
+- JSON snapshot is imported on first launch and retained for rollback.
+- SQLCipher V4 mixed stack: Zetetic Android, SQLite3MultipleCiphers desktop.
+- Portable backup/restore remains JSON.
+- 260 tests and Android lane target.
+
 ## 0.55.0 storage seam
 
 - LedgerStorage interface with JSON adapter and repository injection.
