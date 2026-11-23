@@ -1,6 +1,6 @@
 # State & next
 
-As of **0.50.9** (2026-11-23).
+As of **0.51.0** (2026-11-23).
 
 ## Current direction
 
@@ -8,6 +8,7 @@ As of **0.50.9** (2026-11-23).
 - **Vehicle**: measured km/L, cost-per-km trend, service history and work/personal distance.
 - **Reliability**: live notification shows worked time, distance and net/hour; foreground service is location-only, avoiding the Android 15 dataSync timeout.
 - **Responsiveness**: entry add/delete are local-first; sync pull no longer holds the store mutex.
+- **Data Health**: payout gaps, missing due days, inactive links, odometer coverage, backup age, open week and week-close variance with direct actions.
 - **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Next
@@ -16,8 +17,9 @@ As of **0.50.9** (2026-11-23).
 2. Fresh portable backup and payout/statement reconciliation; the newest local backup predates current data.
 3. Add Android instrumentation coverage for the Week Close modal sheet if semantics permits.
 4. Finish the vehicle economy surface: rate settings still use decimal input while money amounts use cents-first.
-5. Then choose Android quick capture or vehicle service reminders.
-6. Backlog: holiday/no-work neutral state, streak-gap behavior, variable typography polish.
+5. Storage research: outbox first, then SQLDelight + SQLCipher spike. See [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
+6. Then choose Android quick capture or vehicle service reminders.
+7. Backlog: holiday/no-work neutral state, streak-gap behavior, variable typography polish.
 
 ## Recently completed
 
