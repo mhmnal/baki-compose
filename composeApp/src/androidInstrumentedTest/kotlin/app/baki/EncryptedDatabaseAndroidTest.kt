@@ -1,6 +1,7 @@
 package app.baki
 
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
@@ -26,6 +27,11 @@ class EncryptedDatabaseAndroidTest {
         ctx.deleteDatabase("baki-spike.db")
     }
 
+    private fun shell(command: String): String {
+        val pfd = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
+        return ParcelFileDescriptor.AutoCloseInputStream(pfd).bufferedReader().readText()
+    }
+
     @Test
     fun writeCrossPlatformFixture() {
         val ctx: Context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -35,7 +41,12 @@ class EncryptedDatabaseAndroidTest {
         try {
             first.db.probeQueries.insertProbe("cross-android", "from-android", "2026-11-23T21:00:00")
         } finally { first.close() }
-        // Intentionally kept for the desktop compatibility pull.
+        // Export through shell so the package can be removed after instrumentation.
+        shell("run-as ${ctx.packageName} cat databases/baki-spike.db > /sdcard/Download/baki-android-spike.db")
+        val wal = ctx.getDatabasePath("baki-spike.db-wal")
+        if (wal.exists()) {
+            shell("run-as ${ctx.packageName} cat databases/baki-spike.db-wal > /sdcard/Download/baki-android-spike.db-wal")
+        }
     }
 
     @Test

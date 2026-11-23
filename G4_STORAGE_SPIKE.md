@@ -18,8 +18,10 @@ Status: **technical pass on branch `spike/g4-encrypted-sqldelight`. Not shipped 
 - schema v1 → v2 migration adds a column
 - 10,000-row encrypted database opens and queries in **466 ms**
 - SQLCipher V4 defaults allow a desktop-written encrypted database to open on Android
+- an Android-written encrypted database opens on desktop
 - 255 JVM tests, 0 failures
 - Android `readsDesktopWrittenCipherDatabase` passed
+- Android `writeCrossPlatformFixture` passed
 
 ## Decision
 
@@ -28,16 +30,15 @@ Status: **technical pass on branch `spike/g4-encrypted-sqldelight`. Not shipped 
 Production cutover is still not approved:
 
 - desktop encryption uses the Willena SQLite3MultipleCiphers fork, Android uses Zetetic SQLCipher
-- cross-platform desktop → Android with SQLCipher V4 defaults passed; Android → desktop still should be checked
+- cross-platform compatibility passed **both directions** with SQLCipher V4 defaults
 - different cipher implementations remain a support and dependency risk
 - SQLCipher native libraries add APK size
 - SQLCipher dependencies remain on the spike branch only
 
 ## Next
 
-1. Android → desktop reverse compatibility test.
-2. Decide whether mixed cipher implementations are acceptable.
-3. If yes, G5 importer/cutover.
-4. If no, stay on JSON + outbox and revisit Room KMP/SQLCipher.
+1. Decide whether the mixed SQLCipher/SQLite3MultipleCiphers dependency risk is acceptable.
+2. If yes, G5 importer/cutover.
+3. If no, stay on JSON + outbox and revisit Room KMP/SQLCipher.
 
 No production storage path uses this database.
