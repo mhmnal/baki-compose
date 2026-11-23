@@ -35,7 +35,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
 
     var config by mutableStateOf(initial)
         private set
-    var store by mutableStateOf(loadLocal())
+    private val operationLog = OperationLog()
+
+    var store by mutableStateOf(loadLocalWithOperations(operationLog))
         private set
     var live by mutableStateOf(loadLive())
         private set
@@ -52,6 +54,18 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         private set
 
     val readOnly: Boolean get() = !config.allowWrites
+
+    /** Number of entry operations that have not yet been covered by a successful full push. */
+    fun outboxDepth(): Int = operationLog.pendingCount()
+
+    private fun recordEntry(entry: Entry, kind: String): Long? {
+        val payload = if (kind == "upsert") BakiJson.encodeToString(Entry.serializer(), entry) else ""
+        return operationLog.append("entry", entry.id, kind, payload, entry.updated)
+    }
+
+    private fun markEntrySnapshot(seq: Long?) {
+        if (seq != null && StoreHealth.saveError == null) operationLog.markSnapshot(seq)
+    }
 
     private fun blocked(): Boolean {
         if (config.allowWrites) return false
@@ -621,7 +635,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 note = note, updated = stamp, loggedAt = stamp, odo = odo,
             )
             store = store.copy(entries = store.entries + entry, updatedAt = stamp)
+            val opSeq = recordEntry(entry, "upsert")
             saveLocal(store)                       // never lose a tap, even offline
+            markEntrySnapshot(opSeq)
             entry.id
         }
         // The durable outbox owns the upload. Do not make the user wait for a network round-trip.
@@ -643,7 +659,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             )
         }
         store = store.copy(entries = store.entries + made, updatedAt = stamp)
+        val opSeqs = made.mapNotNull { recordEntry(it, "upsert") }
         saveLocal(store)
+        opSeqs.maxOrNull()?.let { markEntrySnapshot(it) }
         try {
             pushWithAllTombs()
             saveLocal(store, markDirty = false)
@@ -950,11 +968,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 type = type, amount = amountCents, cat = cat, note = note, date = date,
                 odo = odo ?: entry.odo, updated = nowIso(),
             )
+            val opStamp = nowIso()
             store = store.copy(
                 entries = store.entries.map { if (it.id == entry.id) edited else it },
-                updatedAt = nowIso(),
+                updatedAt = opStamp,
             )
+            val opSeq = recordEntry(edited, "upsert")
             saveLocal(store)
+            markEntrySnapshot(opSeq)
             pushWithTombs(emptyList())
         }
 
@@ -1110,7 +1131,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updatedAt = stamp,
         )
         store = next
+        val opSeq = operationLog.append("entry", id, "delete", updated = stamp)
         saveLocal(store)
+        markEntrySnapshot(opSeq)
         // Local deletion is immediate; the tombstone/outbox upload happens on the sync loop.
         true
     }
@@ -1130,6 +1153,8 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     init {
         StoreWrite.onLocalSave = { markDirty() }
         StoreHealth.loadError?.let { lastError = it }
+        // A replayed operation or a crash before the snapshot save must still reach the server.
+        if (operationLog.pendingCount() > 0) markDirty()
     }
 
     private fun markDirty() {
@@ -1160,6 +1185,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     private suspend fun pushAll() {
         pushWithAllTombs()
         saveLocal(store, markDirty = false)
+        operationLog.acknowledgeAll()
         pendingPush = false
         status = "synced"
         lastError = null
@@ -1170,6 +1196,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         try {
             pushWithAllTombs(ids)
             saveLocal(store, markDirty = false)
+            operationLog.acknowledgeAll()
             status = "synced"
             pendingPush = false
             lastPushAt = nowMillis()

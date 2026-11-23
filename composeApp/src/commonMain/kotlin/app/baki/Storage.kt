@@ -12,6 +12,13 @@ expect object LocalStore {
 
     /** Move an unreadable file aside so it can be inspected instead of overwritten. */
     fun quarantine(name: String): String?
+
+    /** Raw sidecar bytes; the caller is responsible for sealing if the content is sensitive. */
+    fun exists(name: String): Boolean
+    fun readBytes(name: String): ByteArray?
+    fun writeBytes(name: String, bytes: ByteArray)
+    fun appendBytes(name: String, bytes: ByteArray)
+    fun deleteBytes(name: String)
 }
 
 /** Non-fatal storage problems, surfaced in diagnostics rather than swallowed. */
@@ -64,6 +71,20 @@ fun loadLocal(): Store {
     return runCatching { BakiJson.decodeFromString<Store>(raw) }.getOrElse { e ->
         recoverLocal("Local store could not be parsed (${e.message ?: "invalid JSON"}).")
     }
+}
+
+/** Load the snapshot, then replay any entry operations that a crash left outside it. */
+fun loadLocalWithOperations(log: OperationLog): Store {
+    log.repairTornTail()
+    val base = loadLocal()
+    val pending = log.pendingAfterSnapshot()
+    if (pending.isEmpty()) return base
+    val replayed = applyEntryOperations(base, pending)
+    if (replayed != base) saveLocal(replayed)
+    if (replayed == base || StoreHealth.saveError == null) {
+        log.markSnapshot(pending.maxOf { it.seq })
+    }
+    return replayed
 }
 
 fun saveLocal(store: Store, markDirty: Boolean = true) {

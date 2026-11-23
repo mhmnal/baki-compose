@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.52.0 entry operation outbox
+
+- Encrypted append-only operation log beside the JSON snapshot.
+- Snapshot sequence vs server-acknowledged sequence.
+- Idempotent entry replay after a crash; torn-tail repair.
+- 10k-operation test; outbox depth in Diagnostics.
+- Entries only; other entities remain on snapshot + pendingPush.
+- 243 tests and Android lane passed.
+
 ## 0.51.1 data health polish
 
 - Optional goal bills no longer appear as missing due-day bills.

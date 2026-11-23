@@ -66,6 +66,40 @@ actual object LocalStore {
 
     actual fun writeText(name: String, text: String) = writeSealed(File(baseDir(), File(name).name), text)
 
+    actual fun exists(name: String): Boolean = File(baseDir(), File(name).name).exists()
+
+    actual fun readBytes(name: String): ByteArray? {
+        val f = File(baseDir(), File(name).name)
+        return if (f.exists()) f.readBytes() else null
+    }
+
+    actual fun writeBytes(name: String, bytes: ByteArray) {
+        val f = File(baseDir(), File(name).name)
+        f.parentFile?.mkdirs()
+        val tmp = File(f.parentFile, f.name + ".tmp")
+        FileOutputStream(tmp).use { out ->
+            out.write(bytes)
+            out.fd.sync()
+        }
+        if (!tmp.renameTo(f)) {
+            f.writeBytes(bytes)
+            tmp.delete()
+        }
+    }
+
+    actual fun appendBytes(name: String, bytes: ByteArray) {
+        val f = File(baseDir(), File(name).name)
+        f.parentFile?.mkdirs()
+        FileOutputStream(f, true).use { out ->
+            out.write(bytes)
+            out.fd.sync()
+        }
+    }
+
+    actual fun deleteBytes(name: String) {
+        File(baseDir(), File(name).name).delete()
+    }
+
     actual fun quarantine(name: String): String? {
         val f = File(baseDir(), File(name).name)
         if (!f.exists()) return null

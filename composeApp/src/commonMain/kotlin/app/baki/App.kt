@@ -2618,6 +2618,7 @@ private fun MoreScreen(
                 })
                 StoreHealth.loadError?.let { add("Local store" to it) }
                 StoreHealth.saveError?.let { add("Local save" to it) }
+                add("Outbox" to "${repo.outboxDepth()} entry operation(s)")
                 add("Notifications" to when {
                     !reliability.notificationsAllowed -> "blocked — enable Baki notifications"
                     reliability.notificationActive -> "allowed · live notification active"
