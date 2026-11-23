@@ -58,7 +58,11 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.apache.pdfbox:pdfbox:2.0.32")
-                implementation("app.cash.sqldelight:sqlite-driver:2.4.1")
+                implementation("app.cash.sqldelight:sqlite-driver:2.4.1") {
+                    // SQLDelight's JDBC driver brings Xerial's unencrypted driver; the encrypted fork
+                    // provides the same org.sqlite classes.
+                    exclude(group = "org.xerial", module = "sqlite-jdbc")
+                }
                 implementation("io.github.willena:sqlite-jdbc:3.53.4.0")
                 // KMP soft-shadow library: the neumorphic material lives on the desktop only
                 implementation("io.ktor:ktor-client-cio:3.0.3")
@@ -131,6 +135,8 @@ compose.desktop {
         mainClass = "app.baki.MainKt"
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.AppImage)
+            // JDBC/SQLCipher classes reference java.sql; jpackage otherwise strips it.
+            modules("java.sql")
             packageName = "Baki"
             packageVersion = "0.56.1"
             description = "What your shift really pays"
