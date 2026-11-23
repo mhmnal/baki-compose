@@ -8,7 +8,7 @@ Two surfaces, one ledger:
 | | Phone (Android) | Desktop (JVM) |
 |---|---|---|
 | Role | capture and decide in the moment | review, compare, print |
-| Design | Material 3 + Paper Ledger, liquid-glass nav/+ | Modern hybrid neumorphism (Soft UI 2.0 / Obsidian Slate) |
+| Design | Material 3 Expressive · Roast & Pine | Read-only companion, same warm visual language |
 | Writes | yes | no — read-only by design |
 
 Current version: **0.58.0** (`versionCode` 249+). Material Design 3. The phone carries the working ledger; the desk reads the
@@ -38,6 +38,7 @@ Test suite: **264 JVM tests** (`:composeApp:desktopTest`).
 - bulk import and share a PDF straight into the app
 - reconcile statement income and insurance count against what was logged
 - per-shift payout reconciliation: recorded vs received vs still due, with visible Add payout/Edit actions
+- statement-funded payout allocation: split a real weekly payout across unpaid shifts, exact cents, labelled **allocated** rather than observed cash
 - portable backup with last-backup health, merge-only restore confirmation, merge-conflict reporting, and optional passphrase encryption
 - odometer-anchored vehicle wear on phone and Desk
 
@@ -45,34 +46,40 @@ Test suite: **264 JVM tests** (`:composeApp:desktopTest`).
 - read-only tables, route traces (sealed end-to-end), month comparison, year at a glance, statement preview
 - routes never leave the phone unsealed; the server stores ciphertext only
 
+**Storage and recovery**
+- normalized, encrypted SQLite is authoritative on Android and desktop; schema version 4
+- SQLCipher on Android and SQLite3MultipleCiphers on desktop
+- one persistent encrypted handle and diff-only row writes; entry saves stay off the UI dispatcher
+- JSON snapshot retained for import/rollback; portable JSON backup remains the off-device copy
+- a verified local recovery snapshot is written after every successful Week Close
+- if SQLite cannot load, the app shows an explicit **storage recovery mode** banner instead of silently presenting stale JSON
+
 **Phone UI**
-- Paper Ledger: warm paper/ink light mode, warm-black/brass night mode
-- bundled **Source Serif 4** display/tabular money, paired with Inter controls
-- very subtle static paper grain, M3 typography roles, ruled sections and square controls
-- continuous ledger rows with inset hairlines; contained paper panels only for action-heavy groups
-- ruled in/out metrics, quick actions, filter tabs, budget bars and ledger sparkline
-- flat live ticket, ruled payout rows, Paper-sheet forms, ledger charts and statement rows
-- Paper QR customer screen, flat Summary/More sections, responsive shift fields
-- **liquid-glass nav and `+` are preserved**; Paper Ledger styles the content around them
-- More is split into **Money / Shift / App**, with the switcher pinned above the scroll area
-- cash truth, service target, weekly review and privacy/discreet amounts
-- press feedback, animated sync stamp, animated list placement and adaptive 360–412dp layouts
+- Material 3 Expressive with the warm **Roast & Pine** palette: deep green, cream, peach and muted surfaces
+- bundled **Archivo variable** type; tabular money figures and cents-first money entry
+- large rounded surfaces, soft tonal cards, a floating navigation bar and a morphing add action
+- hero money, live-shift card, food cap, target/operating basis and today’s entries
+- responsive shift cards with time-first titles, bold amounts and payout actions
+- Data Health uses a neutral warning surface with a direct 48 dp Review action
+- More is split into **Money / Work / App**, with the switcher pinned above the scroll area
+- cash truth, payout allocation, service target, weekly review and privacy/discreet amounts
+- press feedback, route preview, adaptive 360–412 dp layouts and large-font support
 
 ## Stack
 
-- Kotlin 2.4, Compose Multiplatform 1.12, AGP 9.3, Gradle 9.6, compileSdk 37 / minSdk 24
-- Desktop runs on JDK 21 (Backdrop ships Java 21 bytecode)
+- Kotlin 2.4.21, Compose Multiplatform 1.12.2, AGP 9.3.1, Gradle 9.6, compileSdk 37 / minSdk 24
+- Desktop runs on JDK 21
+- SQLDelight 2.4.1; SQLCipher Android, SQLite3MultipleCiphers desktop
 - Server: Node (`../grab-tracker/server.mjs`), JSON store, merge-only writes, tombstones, 30 rotating backups
 - PDF: `pdfbox-android` on the phone, `pdfbox` on the desk
-- Phone display: **Source Serif 4** (SIL Open Font License 1.1), bundled under
-  `composeApp/src/commonMain/composeResources/files/source-serif-4-OFL.txt`
+- Phone/desktop type: **Archivo variable** (SIL Open Font License 1.1), bundled with the app
 
 ## Layout
 
 ```
 composeApp/src/commonMain/   model, money maths, cover rule, merge, sync, statement parser, vehicle wear, UI
 composeApp/src/androidMain/  activity, live service, GPS, widget, PDF picker
-composeApp/src/desktopMain/  neumorphic shell, read-only views, PDF, printing
+composeApp/src/desktopMain/  read-only desk shell, PDF, printing, local database
 ../grab-tracker/             sync server + PWA (still intact)
 scripts/                     release.sh, shots.sh (deterministic desk captures)
 ```
@@ -119,12 +126,14 @@ committed.
 
 - One store per user; the phone and desk share it through `POST/GET /api/data`.
 - Writes merge by id, newest wins; deletions are tombstones; statements are keyed by week.
-- The desk cannot create, edit or delete — `ReadOnlyShellTest` enforces it.
 - Client config (server URL, theme, route key, **durable outbox bit**) is device-local.
 - A local save marks the outbox; the sync loop retries it after restarts and sends tombstones with the
   full-store push, so offline edits and deletes cannot sit silently on one device.
-- Local writes fsync the temp file, keep a `.bak`, and quarantine an unreadable store instead of
-  starting empty; the previous local backup or the server copy is used to recover.
+- Local writes go to encrypted SQLite first; the generic operation outbox is the sync source of truth.
+- SQLite writes use one transaction per change and a persistent SQLCipher handle.
+- The local JSON snapshot is a rollback/import path, not the live store; it is not rewritten after cutover.
+- A verified local recovery snapshot is created after Week Close. A failed SQLite load surfaces a
+  recovery banner and never silently pretends the stale JSON is current.
 - Server keeps 30 rotating backups in `../grab-tracker/backups/`.
 
 ## Docs
@@ -133,15 +142,17 @@ committed.
 - [DESIGN.md](DESIGN.md) — material doctrine, Surface depth, desktop layout, statement decisions
 - [ACCESSIBILITY.md](ACCESSIBILITY.md) — enforced contrast/behaviour and current gaps
 - [BUGS.md](BUGS.md) — known issues and parked work
-- [NEXT.md](NEXT.md) — current priorities
+- [STATUS.md](STATUS.md) — current release, data state and next gates
+- [NEXT.md](NEXT.md) — release and design history
 - [PARITY.md](PARITY.md) — PWA → Compose feature comparison
 - [PERFORMANCE.md](PERFORMANCE.md) — benchmark baseline and how to rerun
 
 ## Known constraints
 
-- The sync API has no user authentication; treat the server as LAN-only and keep route traces sealed.
+- The sync API is open unless `BAKI_TOKEN` is set; treat an untokened server as LAN-only.
 - The desk is read-only by design.
 - Dynamic (wallpaper) colour is not contrast-clamped.
+- SQLite is authoritative; portable backup is still a manual, off-device action.
 - Phone TalkBack coverage of custom canvases and swipe rows is incomplete.
 - Cover renewal uses the saved wall-clock end (`hours + breakMinutes`). Older shifts without a
   break value fall back to worked hours.

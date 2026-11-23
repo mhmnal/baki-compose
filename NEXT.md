@@ -1,6 +1,6 @@
 # Baki — Material Design 3 Migration
 
-Version: **0.40.6 / code 127 — signed and installed**
+Version: **0.58.0 / code 249 — signed and installed**
 
 ## Design direction
 
@@ -730,6 +730,16 @@ No financial feature was removed.
 - Statement preview/tax/print, CSV/JSON/GPX export, route pull and sync.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
+
+## 0.58.0 visual clarity pass
+
+- Recovery guard and automatic local snapshot are documented in `STATUS.md`.
+- Data Health uses a neutral surface with a 48 dp Review action.
+- More headings are stronger; cached/offline status is neutral.
+- Shift rows are time-first with bold amounts and payout pills.
+- Desktop Ledger uses right-aligned numerics, `24 Nov` dates and ink outflows.
+- Hero describes recorded net; unentered payouts read **Not entered**.
+- Preview harness clears transient feedback; 264 tests pass.
 
 ## 0.57.0 recovery guard and payout allocation
 

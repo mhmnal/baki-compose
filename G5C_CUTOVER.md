@@ -11,8 +11,8 @@ Status: **cutover enabled on master after the real-device backup/restore test.**
   - SQLite storage reconstructs the normalized Store and serializes it
 - exact Store parity checks on import/export
 - `ClientConfig.storageEngine`:
-  - `"json"` default
-  - `"sqlite"` opt-in
+  - `"sqlite"` production default since 0.56.0
+  - `"json"` explicit opt-in for tests and rollback
 - `BakiRepo` selects normalized SQLite when configured
 - rollback path:
   - backup from the SQLite-backed app
@@ -42,7 +42,15 @@ Status: **cutover enabled on master after the real-device backup/restore test.**
 
 The JSON snapshot from before cutover is also retained on the device.
 
-## Cutover gate still required
+## Post-cutover state (0.58.0)
+
+- SQLite schema version 4, unchanged through 0.56.1–0.58.0.
+- JSON snapshot is import/rollback only; it is not rewritten after cutover.
+- A verified local recovery snapshot is written after Week Close.
+- SQLite failure surfaces a recovery banner instead of silently presenting stale JSON.
+- Current suite: 264 JVM tests plus the Android lane.
+
+## Historical cutover gate
 
 - [x] real phone import test with production-sized data (131 entries)
 - [x] backup from SQLite and restore into JSON build on device
