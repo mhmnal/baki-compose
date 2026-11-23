@@ -16,6 +16,20 @@ same store through the sync server.
 
 Test suite: **264 JVM tests** (`:composeApp:desktopTest`).
 
+## Screens
+
+<p align="center">
+  <img src="visual-review/images/01-phone-light-today.png" width="230" alt="Baki Today screen">
+  <img src="visual-review/images/03-phone-light-shifts.png" width="230" alt="Baki Shifts screen">
+  <img src="visual-review/images/05-phone-light-more.png" width="230" alt="Baki More and Data Health screen">
+</p>
+<p align="center"><sub>Today · Shifts · More and Data Health</sub></p>
+
+<p align="center">
+  <img src="visual-review/images/09-desktop-light-ledger.png" width="760" alt="Baki desktop Ledger">
+</p>
+<p align="center"><sub>Read-only desktop Ledger · same encrypted ledger as the phone</sub></p>
+
 ## What it does
 
 **Shift economics**
