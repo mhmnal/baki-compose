@@ -1,6 +1,6 @@
 # State & next
 
-As of **0.51.0** (2026-11-23).
+As of **0.51.1** (2026-11-23).
 
 ## Current direction
 
