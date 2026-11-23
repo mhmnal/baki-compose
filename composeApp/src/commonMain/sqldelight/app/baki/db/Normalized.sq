@@ -1,0 +1,150 @@
+CREATE TABLE entries (
+    id TEXT NOT NULL PRIMARY KEY,
+    entry_date TEXT NOT NULL,
+    entry_type TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE shifts (
+    id TEXT NOT NULL PRIMARY KEY,
+    shift_date TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    hours REAL NOT NULL,
+    km REAL NOT NULL,
+    gross INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE bills (
+    id TEXT NOT NULL PRIMARY KEY,
+    active INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE bill_payments (
+    bill_id TEXT NOT NULL,
+    period TEXT NOT NULL,
+    active INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    PRIMARY KEY (bill_id, period)
+);
+
+CREATE TABLE week_closes (
+    week_start TEXT NOT NULL PRIMARY KEY,
+    closed_at TEXT NOT NULL,
+    received_cents INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE reserve_txns (
+    id TEXT NOT NULL PRIMARY KEY,
+    txn_date TEXT NOT NULL,
+    fund TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE odometer_readings (
+    id TEXT NOT NULL PRIMARY KEY,
+    reading_date TEXT NOT NULL,
+    km REAL NOT NULL,
+    updated TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE store_settings (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL,
+    updated TEXT NOT NULL
+);
+
+CREATE TABLE store_aux (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL,
+    updated TEXT NOT NULL
+);
+
+CREATE TABLE tombstones (
+    kind TEXT NOT NULL,
+    value TEXT NOT NULL,
+    PRIMARY KEY (kind, value)
+);
+
+selectEntryPayloads:
+SELECT payload FROM entries ORDER BY rowid;
+
+selectShiftPayloads:
+SELECT payload FROM shifts ORDER BY rowid;
+
+selectBillPayloads:
+SELECT payload FROM bills ORDER BY rowid;
+
+selectBillPaymentPayloads:
+SELECT payload FROM bill_payments ORDER BY rowid;
+
+selectWeekClosePayloads:
+SELECT payload FROM week_closes ORDER BY rowid;
+
+selectReserveTxnPayloads:
+SELECT payload FROM reserve_txns ORDER BY rowid;
+
+selectOdometerPayloads:
+SELECT payload FROM odometer_readings ORDER BY rowid;
+
+selectSettingsPayload:
+SELECT payload FROM store_settings WHERE id = 1;
+
+selectAuxPayload:
+SELECT payload FROM store_aux WHERE id = 1;
+
+selectTombstoneIds:
+SELECT value FROM tombstones WHERE kind = 'id' ORDER BY rowid;
+
+selectTombstoneCats:
+SELECT value FROM tombstones WHERE kind = 'cat' ORDER BY rowid;
+
+deleteEntries:
+DELETE FROM entries;
+deleteShifts:
+DELETE FROM shifts;
+deleteBills:
+DELETE FROM bills;
+deleteBillPayments:
+DELETE FROM bill_payments;
+deleteWeekCloses:
+DELETE FROM week_closes;
+deleteReserveTxns:
+DELETE FROM reserve_txns;
+deleteOdometer:
+DELETE FROM odometer_readings;
+deleteTombstones:
+DELETE FROM tombstones;
+
+insertEntry:
+INSERT INTO entries(id, entry_date, entry_type, category, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?);
+insertShift:
+INSERT INTO shifts(id, shift_date, start_time, hours, km, gross, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+insertBill:
+INSERT INTO bills(id, active, updated, payload) VALUES (?, ?, ?, ?);
+insertBillPayment:
+INSERT INTO bill_payments(bill_id, period, active, updated, payload) VALUES (?, ?, ?, ?, ?);
+insertWeekClose:
+INSERT INTO week_closes(week_start, closed_at, received_cents, updated, payload) VALUES (?, ?, ?, ?, ?);
+insertReserveTxn:
+INSERT INTO reserve_txns(id, txn_date, fund, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?);
+insertOdometer:
+INSERT INTO odometer_readings(id, reading_date, km, updated, payload) VALUES (?, ?, ?, ?, ?);
+insertTombstone:
+INSERT OR IGNORE INTO tombstones(kind, value) VALUES (?, ?);
+replaceSettings:
+INSERT OR REPLACE INTO store_settings(id, payload, updated) VALUES (1, ?, ?);
+replaceAux:
+INSERT OR REPLACE INTO store_aux(id, payload, updated) VALUES (1, ?, ?);
