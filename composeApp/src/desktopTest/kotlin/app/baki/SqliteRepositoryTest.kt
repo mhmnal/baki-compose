@@ -31,6 +31,7 @@ class SqliteRepositoryTest {
             assertEquals(id, exported.entries.single().id)
             assertTrue(storage.exportJson()!!.contains(id))
         } finally {
+            storage.close()
             saveLocal(previous, markDirty = false)
             LocalStore.deleteBytes("operations.log")
             LocalStore.deleteBytes("operations.meta")

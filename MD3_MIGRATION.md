@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.56.1 SQLite write latency
+
+- One persistent SQLCipher handle per storage instance.
+- Diff-only row writes; no delete-all/insert-all per tap.
+- Entry persistence moved off the UI dispatcher.
+- Add/update/delete parity tests pass; full suite 260.
+
 ## 0.56.0 SQLite cutover
 
 - Production storage default is normalized encrypted SQLite.

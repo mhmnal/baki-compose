@@ -129,22 +129,54 @@ deleteTombstones:
 DELETE FROM tombstones;
 
 insertEntry:
-INSERT INTO entries(id, entry_date, entry_type, category, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO entries(id, entry_date, entry_type, category, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?);
 insertShift:
-INSERT INTO shifts(id, shift_date, start_time, hours, km, gross, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO shifts(id, shift_date, start_time, hours, km, gross, updated, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 insertBill:
-INSERT INTO bills(id, active, updated, payload) VALUES (?, ?, ?, ?);
+INSERT OR REPLACE INTO bills(id, active, updated, payload) VALUES (?, ?, ?, ?);
 insertBillPayment:
-INSERT INTO bill_payments(bill_id, period, active, updated, payload) VALUES (?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO bill_payments(bill_id, period, active, updated, payload) VALUES (?, ?, ?, ?, ?);
 insertWeekClose:
-INSERT INTO week_closes(week_start, closed_at, received_cents, updated, payload) VALUES (?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO week_closes(week_start, closed_at, received_cents, updated, payload) VALUES (?, ?, ?, ?, ?);
 insertReserveTxn:
-INSERT INTO reserve_txns(id, txn_date, fund, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO reserve_txns(id, txn_date, fund, amount, updated, payload) VALUES (?, ?, ?, ?, ?, ?);
 insertOdometer:
-INSERT INTO odometer_readings(id, reading_date, km, updated, payload) VALUES (?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO odometer_readings(id, reading_date, km, updated, payload) VALUES (?, ?, ?, ?, ?);
 insertTombstone:
 INSERT OR IGNORE INTO tombstones(kind, value) VALUES (?, ?);
 replaceSettings:
 INSERT OR REPLACE INTO store_settings(id, payload, updated) VALUES (1, ?, ?);
 replaceAux:
 INSERT OR REPLACE INTO store_aux(id, payload, updated) VALUES (1, ?, ?);
+
+deleteEntryById:
+DELETE FROM entries WHERE id = ?;
+deleteShiftById:
+DELETE FROM shifts WHERE id = ?;
+deleteBillById:
+DELETE FROM bills WHERE id = ?;
+deleteBillPaymentByKey:
+DELETE FROM bill_payments WHERE bill_id = ? AND period = ?;
+deleteWeekCloseById:
+DELETE FROM week_closes WHERE week_start = ?;
+deleteReserveTxnById:
+DELETE FROM reserve_txns WHERE id = ?;
+deleteOdometerById:
+DELETE FROM odometer_readings WHERE id = ?;
+deleteTombstone:
+DELETE FROM tombstones WHERE kind = ? AND value = ?;
+
+updateEntry:
+UPDATE entries SET entry_date = ?, entry_type = ?, category = ?, amount = ?, updated = ?, payload = ? WHERE id = ?;
+updateShift:
+UPDATE shifts SET shift_date = ?, start_time = ?, hours = ?, km = ?, gross = ?, updated = ?, payload = ? WHERE id = ?;
+updateBill:
+UPDATE bills SET active = ?, updated = ?, payload = ? WHERE id = ?;
+updateBillPayment:
+UPDATE bill_payments SET active = ?, updated = ?, payload = ? WHERE bill_id = ? AND period = ?;
+updateWeekClose:
+UPDATE week_closes SET closed_at = ?, received_cents = ?, updated = ?, payload = ? WHERE week_start = ?;
+updateReserveTxn:
+UPDATE reserve_txns SET txn_date = ?, fund = ?, amount = ?, updated = ?, payload = ? WHERE id = ?;
+updateOdometer:
+UPDATE odometer_readings SET reading_date = ?, km = ?, updated = ?, payload = ? WHERE id = ?;

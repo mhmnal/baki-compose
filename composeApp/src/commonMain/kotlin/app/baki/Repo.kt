@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,6 +75,10 @@ class BakiRepo(
     private fun markEntrySnapshot(seq: Long?) {
         if (seq != null && StoreHealth.saveError == null) operationLog.markSnapshot(seq)
     }
+
+    /** Database I/O must not hold the UI dispatcher; the in-memory Store is already current. */
+    private suspend fun persistLocal(store: Store, recordOutbox: Boolean = true) =
+        withContext(Dispatchers.Default) { storage.save(store, recordOutbox = recordOutbox) }
 
     private fun blocked(): Boolean {
         if (config.allowWrites) return false
