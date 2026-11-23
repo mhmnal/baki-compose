@@ -21,7 +21,7 @@ class DataHealthTest {
                 Entry(id = "f2", date = day, type = "expense", cat = "fuel", amount = 4_500),
             ),
             shifts = listOf(shift),
-            bills = listOf(bill),
+            bills = listOf(bill, bill.copy(id = "goal", name = "Optional goal", optional = true)),
             billPayments = listOf(inactive),
         )
         val report = dataHealth(
@@ -34,6 +34,7 @@ class DataHealthTest {
         assertEquals(1, report.payoutGaps.size)
         assertEquals(10_000L, report.payoutGapTotal)
         assertEquals(1, report.missingDueBills.size)
+        assertEquals("Phone", report.missingDueBills.first().name)
         assertEquals(1, report.inactiveBills.size)
         assertEquals(0, report.odometerFills)
         assertEquals(2, report.fuelFills)

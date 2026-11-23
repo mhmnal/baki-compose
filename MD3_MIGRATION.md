@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.51.1 data health polish
+
+- Optional goal bills no longer appear as missing due-day bills.
+- Payout action from Data Health verified on the phone.
+- 237 tests and Android lane passed.
+
 ## 0.51.0 data health
 
 - Data Health card and sheet: payout gaps, bills missing due days, inactive bill links, odometer coverage, backup age, open week and week-close/statement variance.

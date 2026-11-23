@@ -68,7 +68,7 @@ fun dataHealth(
         .sortedByDescending { it.shift.date }
 
     val missingDue = store.bills
-        .filter { it.active && it.cadence != "annual" && it.dueDay == null }
+        .filter { it.active && !it.optional && it.cadence != "annual" && it.dueDay == null }
         .sortedBy { it.name }
 
     val inactive = store.bills
