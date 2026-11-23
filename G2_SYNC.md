@@ -1,6 +1,6 @@
 # G2 — incremental operation sync
 
-Status: **validated locally; fallback and multi-device conflict matrix still pending**.
+Status: **G2 gate passed**.
 
 ## Server
 
@@ -66,6 +66,6 @@ Response:
 - [x] outbox pollution fixed
 - [x] duplicate delivery test
 - [x] end-to-end repo sync/compaction test
-- [ ] explicit old-server 404 fallback integration test
-- [ ] two-device conflict matrix
+- [x] explicit old-server 404 fallback integration test
+- [x] two-device conflict matrix
 - [ ] entity-specific compact operations (generic Store payloads for now)

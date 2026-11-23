@@ -1,6 +1,6 @@
 # State & next
 
-As of **0.54.0** (2026-11-23).
+As of **0.55.0** (2026-11-23).
 
 ## Current direction
 
@@ -10,13 +10,14 @@ As of **0.54.0** (2026-11-23).
 - **Responsiveness**: entry add/delete are local-first; sync pull no longer holds the store mutex.
 - **Data Health**: payout gaps, missing due days, inactive links, odometer coverage, backup age, open week and week-close variance with direct actions.
 - **G1 outbox**: encrypted append-only operation log for every Store mutation, snapshot/ack sequences, crash replay and 10k-operation test.
-- **G2 sync**: server `/api/ops`, dedupe journal, batch client push, contiguous ack compaction and full-store fallback.
+- **G2 sync**: server `/api/ops`, dedupe journal, batch client push, contiguous ack compaction, full-store fallback and conflict/fallback matrix.
+- **G3 seam**: `LedgerStorage` + JSON adapter + repository injection; no UI storage internals.
 - **Workflow**: use `scripts/fastcheck.sh` during iteration and `scripts/gate.sh` before shipping. See [WORKFLOW.md](WORKFLOW.md).
 
 ## Next
 
-1. Finish G2 conflict matrix and explicit old-server fallback test.
-2. G3 storage seam; G4 SQLDelight + SQLCipher spike; G5 import/cutover. See [G0_BASELINE.md](G0_BASELINE.md), [G1_OUTBOX.md](G1_OUTBOX.md), [G2_SYNC.md](G2_SYNC.md), [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
+1. G4 SQLDelight + SQLCipher spike on a branch; go/no-go.
+2. G5 import/cutover after G4. See [G0_BASELINE.md](G0_BASELINE.md), [G1_OUTBOX.md](G1_OUTBOX.md), [G2_SYNC.md](G2_SYNC.md), [STORAGE_RESEARCH.md](STORAGE_RESEARCH.md).
 4. Real long-shift test: screen-off GPS, >6-hour service survival, notification persistence and battery state.
 5. Fresh portable backup and payout/statement reconciliation; the newest local backup predates current data.
 6. Android Week Close modal instrumentation if semantics permits.

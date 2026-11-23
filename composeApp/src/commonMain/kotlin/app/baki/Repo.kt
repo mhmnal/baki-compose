@@ -28,7 +28,10 @@ fun newId(prefix: String = "c"): String {
  * Read is safe; writes go through [addExpense] which saves locally first, then pushes the merged
  * store. The server merges by id with tombstones, so the phone and this app can both write.
  */
-class BakiRepo(initial: ClientConfig = loadConfig()) {
+class BakiRepo(
+    initial: ClientConfig = loadConfig(),
+    private val storage: LedgerStorage = JsonLedgerStorage,
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
     private var client = TrackerClient(initial.serverUrl, initial.serverToken)
@@ -37,7 +40,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         private set
     private val operationLog = OperationLog()
 
-    var store by mutableStateOf(loadLocalWithOperations(operationLog))
+    var store by mutableStateOf(storage.loadWithOperations(operationLog))
         private set
     var live by mutableStateOf(loadLive())
         private set
@@ -54,6 +57,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         private set
 
     val readOnly: Boolean get() = !config.allowWrites
+    val storagePath: String get() = storage.path()
 
     /** Number of entry operations that have not yet been covered by a successful full push. */
     fun outboxDepth(): Int = operationLog.pendingCount()
@@ -90,7 +94,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             ),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         scope.launch { runCatching { pushWithTombs(emptyList()) } }
     }
 
@@ -194,7 +198,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 if (changed) {
                     store = merged
                     // A server merge is not a local edit; marking it dirty creates a push/SSE loop.
-                    saveLocal(store, markDirty = false)
+                    storage.save(store, markDirty = false)
                 }
                 // upload only when we hold something the server did not get last time
                 if (config.allowWrites && pendingPush) pushAll()
@@ -220,7 +224,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             statements = store.statements + (statement.weekStart to statement),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
     }
 
@@ -243,7 +247,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             bills = store.bills.filterNot { it.id == id } + clean,
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
         true
     }
@@ -262,7 +266,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             },
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
         true
     }
@@ -281,7 +285,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             },
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
         true
     }
@@ -295,7 +299,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 // replace the payment with the server's still-uncovered copy.
                 try {
                     pushWithTombs(emptyList())
-                    saveLocal(store, markDirty = false)
+                    storage.save(store, markDirty = false)
                     pendingPush = false
                     status = "synced"
                 } catch (e: Exception) {
@@ -319,7 +323,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updated = stamp,
         )
         store = store.copy(weekCloses = store.weekCloses + (weekStart to close), updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -333,7 +337,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             weekCloses = store.weekCloses + (weekStart to existing.copy(closedAt = "", updated = stamp)),
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -353,7 +357,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             tomb = nextTomb,
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(if (removeEntry) listOf(entryId) else emptyList())
         true
     }
@@ -379,7 +383,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             } else store.billPayments + payment,
             updatedAt = now,
         )
-        saveLocal(store)
+        storage.save(store)
         return true
     }
 
@@ -401,7 +405,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             } else store.billPayments + link,
             updatedAt = now,
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
         true
     }
@@ -426,13 +430,13 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     ) {
         val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds, removedMonths) }.getOrNull() ?: return
         store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        saveLocal(store, markDirty = false, recordOutbox = false)
+        storage.save(store, markDirty = false, recordOutbox = false)
     }
 
     private suspend fun pullStatementsNow() {
         val remote = runCatching { client.pullStatements() }.getOrNull() ?: return
         store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        saveLocal(store, markDirty = false, recordOutbox = false)
+        storage.save(store, markDirty = false, recordOutbox = false)
     }
 
     /** Reclassify sub-account moves already in the queue: hide, but retain for audit. */
@@ -446,7 +450,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         if (changed) {
             store = store.copy(importedTxns = rows, updatedAt = nowIso())
-            saveLocal(store, markDirty = false, recordOutbox = false)
+            storage.save(store, markDirty = false, recordOutbox = false)
         }
     }
 
@@ -497,7 +501,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             statementBatches = store.statementBatches + batch,
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         suggestTransfers()
         pushStatementsNow()
         StageResult(next.size, duplicates)
@@ -516,14 +520,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(accounts = store.accounts.map {
             if (it.id == id) it.copy(name = name.trim().take(60), openingBalance = openingBalance ?: it.openingBalance, openingDate = openingDate ?: it.openingDate) else it
         }, updatedAt = stamp)
-        saveLocal(store); pushStatementsNow(); true
+        storage.save(store); pushStatementsNow(); true
     }
 
     suspend fun archiveAccount(id: String, archived: Boolean): Boolean = mutex.withLock {
         if (store.accounts.none { it.id == id }) return@withLock false
         val stamp = nowIso()
         store = store.copy(accounts = store.accounts.map { if (it.id == id) it.copy(archived = archived) else it }, updatedAt = stamp)
-        saveLocal(store); pushWithTombs(emptyList()); true
+        storage.save(store); pushWithTombs(emptyList()); true
     }
 
     /** Link a staged statement row to a phone-written entry. Never creates or edits an entry. */
@@ -534,7 +538,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(importedTxns = store.importedTxns.map {
             if (it.id == id) it.copy(status = "matched", entryId = entryId, updated = stamp) else it
         }, updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushStatementsNow()
         true
     }
@@ -561,14 +565,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (!isValidIsoDate("$month-01")) return@withLock false
         val stamp = nowIso()
         store = store.copy(monthCloses = store.monthCloses + (month to stamp), updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushStatementsNow()
         true
     }
 
     suspend fun reopenMonth(month: String): Boolean = mutex.withLock {
         store = store.copy(monthCloses = store.monthCloses - month, updatedAt = nowIso())
-        saveLocal(store)
+        storage.save(store)
         pushStatementsNow(removedMonths = listOf(month))
         true
     }
@@ -581,7 +585,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             statementBatches = store.statementBatches.map { if (it.id == batchId) it.copy(deletedAt = stamp) else it },
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushStatementsNow(listOf(batchId))
         true
     }
@@ -619,7 +623,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(importedTxns = store.importedTxns.map {
             if (it.suggestedPairId == suggestedPairId) it.copy(pairId = suggestedPairId, suggestedPairId = "", updated = stamp) else it
         }, updatedAt = stamp)
-        saveLocal(store); pushStatementsNow(); true
+        storage.save(store); pushStatementsNow(); true
     }
 
     suspend fun rejectTransferPair(suggestedPairId: String): Boolean = mutex.withLock {
@@ -628,14 +632,14 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = store.copy(importedTxns = store.importedTxns.map {
             if (it.suggestedPairId == suggestedPairId) it.copy(suggestedPairId = "", pairRejected = true, updated = stamp) else it
         }, updatedAt = stamp)
-        saveLocal(store); pushStatementsNow(); true
+        storage.save(store); pushStatementsNow(); true
     }
 
     suspend fun ignoreImported(id: String): Boolean = mutex.withLock {
         if (store.importedTxns.none { it.id == id && it.status == "pending" }) return@withLock false
         val stamp = nowIso()
         store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "ignored", updated = stamp) else it }, updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushStatementsNow()
         true
     }
@@ -659,7 +663,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             )
             store = store.copy(entries = store.entries + entry, updatedAt = stamp)
             val opSeq = recordEntry(entry, "upsert")
-            saveLocal(store, recordOutbox = false)  // entry op was appended above
+            storage.save(store, recordOutbox = false)  // entry op was appended above
             markEntrySnapshot(opSeq)
             entry.id
         }
@@ -683,11 +687,11 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         store = store.copy(entries = store.entries + made, updatedAt = stamp)
         val opSeqs = made.mapNotNull { recordEntry(it, "upsert") }
-        saveLocal(store, recordOutbox = false)
+        storage.save(store, recordOutbox = false)
         opSeqs.maxOrNull()?.let { markEntrySnapshot(it) }
         try {
             pushWithAllTombs()
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             pendingPush = false
             status = "synced"
         } catch (e: Exception) {
@@ -719,10 +723,10 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         // recompute over the whole timeline so earlier shifts stay correct
         val withShift = store.copy(shifts = store.shifts + shift, updatedAt = nowIso())
         store = recomputeCover(withShift).first
-        saveLocal(store)
+        storage.save(store)
         try {
             pushWithAllTombs()
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             pendingPush = false
             status = "synced"
         } catch (e: Exception) {
@@ -759,7 +763,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (want <= 0) {
             if (existing != null) {
                 store = store.copy(entries = store.entries.filterNot { it.id == id }, updatedAt = nowIso())
-                saveLocal(store)
+                storage.save(store)
             }
             return
         }
@@ -773,7 +777,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             entries = store.entries.filterNot { it.id == id } + entry,
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
     }
 
     /** Drop the provisional live fee; the finished shift's fee entry replaces it. */
@@ -885,7 +889,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         store = recomputeCover(
             store.copy(shifts = store.shifts.map { if (it.id == shift.id) edited else it }, updatedAt = nowIso()),
         ).first
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -917,7 +921,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             live = null
             saveLive(null)
             clearLiveCover(current.id)
-            saveLocal(store)
+            storage.save(store)
             PlatformEffects.liveChanged(null, 0)
             PlatformEffects.successFeedback()
             return@withLock
@@ -942,7 +946,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         store = recomputeCover(store.copy(shifts = store.shifts + shift, updatedAt = nowIso())).first
         clearLiveCover(current.id)
-        saveLocal(store)
+        storage.save(store)
         // move the path onto the shift id, simplify it, then enforce retention
         runCatching {
             RouteStore.rename(routeKey, shiftId)
@@ -957,7 +961,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         PlatformEffects.successFeedback()
         try {
             pushWithAllTombs()
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             pendingPush = false
             status = "synced"
             // route is finalized above; try immediately rather than waiting for the next tick
@@ -974,7 +978,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         saveLive(null)
         if (id != null) {
             clearLiveCover(id)
-            saveLocal(store)
+            storage.save(store)
         }
         PlatformEffects.liveChanged(null, 0)
     }
@@ -997,7 +1001,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
                 updatedAt = opStamp,
             )
             val opSeq = recordEntry(edited, "upsert")
-            saveLocal(store, recordOutbox = false)
+            storage.save(store, recordOutbox = false)
             markEntrySnapshot(opSeq)
             pushWithTombs(emptyList())
         }
@@ -1015,7 +1019,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             },
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1029,7 +1033,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             dayNotes = store.dayNotes + (date to DayNote(clean, stamp)),
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1042,7 +1046,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             dayCloses = store.dayCloses + (date to DayClose(closed, stamp)),
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1056,7 +1060,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             statementMarks = store.statementMarks + (weekStart to StatementMark(reconciled, stamp)),
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1073,7 +1077,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             },
             updatedAt = stamp,
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1104,7 +1108,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updatedAt = nowIso(),
         )
         store = recomputeCover(store).first
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -1116,7 +1120,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updatedAt = nowIso(),
         )
         store = recomputeCover(store).first
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -1133,7 +1137,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             updatedAt = nowIso(),
         )
         store = recomputeCover(next).first
-        saveLocal(store)
+        storage.save(store)
         // a deleted shift must not leave its movement history behind
         runCatching { RouteStore.delete(id) }
         pushWithTombs(listOf(id, feeId))
@@ -1155,7 +1159,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         )
         store = next
         val opSeq = operationLog.append("entry", id, "delete", updated = stamp)
-        saveLocal(store, recordOutbox = false)
+        storage.save(store, recordOutbox = false)
         markEntrySnapshot(opSeq)
         // Local deletion is immediate; the tombstone/outbox upload happens on the sync loop.
         true
@@ -1208,7 +1212,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Full-store push used by the retry loop. */
     private suspend fun pushAll() {
         pushWithAllTombs()
-        saveLocal(store, markDirty = false)
+        storage.save(store, markDirty = false)
         operationLog.acknowledgeAll()
         pendingPush = false
         status = "synced"
@@ -1219,7 +1223,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     private suspend fun pushWithTombs(ids: List<String>) {
         try {
             pushWithAllTombs(ids)
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             operationLog.acknowledgeAll()
             status = "synced"
             pendingPush = false
@@ -1240,9 +1244,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (store.settings.cats.catsOut.any { it.id == id }) return@withLock
         val cat = Cat(id = id, name = name.trim(), icon = "🏷️")
         store = store.copy(settings = store.settings.copy(cats = store.settings.cats.copy(catsOut = store.settings.cats.catsOut + cat)))
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithAllTombs() }.onSuccess {
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             pendingPush = false
         }
     }
@@ -1260,7 +1264,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(cats = Cats(inn, out)),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
     }
 
@@ -1270,9 +1274,9 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         if (store.entries.any { it.cat == id }) return@withLock
         val cats = store.settings.cats
         store = store.copy(settings = store.settings.copy(cats = cats.copy(catsOut = cats.catsOut.filter { it.id != id })))
-        saveLocal(store)
+        storage.save(store)
         runCatching { pushWithAllTombs() }.onSuccess {
-            saveLocal(store, markDirty = false)
+            storage.save(store, markDirty = false)
             pendingPush = false
         }
     }
@@ -1303,7 +1307,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         }
         val before = store.entries.size + store.shifts.size
         store = mergeStores(store, incoming)
-        saveLocal(store)
+        storage.save(store)
         val added = (store.entries.size + store.shifts.size) - before
         bundle?.config?.let { saved ->
             // A restore must never silently turn writes on. The user re-enables explicitly.
@@ -1329,7 +1333,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
     /** Forget the local copy and pull again from the server. */
     suspend fun resetLocal() = mutex.withLock {
         store = Store()
-        saveLocal(store)
+        storage.save(store)
         sync()
     }
 
@@ -1341,7 +1345,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(gpsCorrection = factor),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -1369,7 +1373,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             ),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         PlatformEffects.tapFeedback()
         ActionFeedback.show(if (km != null) "Service baseline set" else "Service baseline cleared")
@@ -1381,7 +1385,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val stamp = nowIso()
         val reading = OdometerReading(id = newId("odo"), date = date, km = km, note = note.trim().take(80), updated = stamp)
         store = store.copy(odometerReadings = store.odometerReadings + reading, updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1395,7 +1399,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(budgets = next),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -1405,7 +1409,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(budgets = all.filterValues { it > 0.0 }),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         ActionFeedback.show("Budgets saved")
     }
@@ -1416,7 +1420,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(envelopeCarry = on),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithAllTombs()
     }
 
@@ -1430,7 +1434,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             envelopeMoves = store.envelopeMoves + (month to updated),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1445,7 +1449,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             ),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 
@@ -1456,7 +1460,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
         val stamp = nowIso()
         val tx = ReserveTxn(newId("res"), fund, amountCents, date, note.trim().take(120), stamp)
         store = store.copy(reserveTxns = store.reserveTxns + tx, updatedAt = stamp)
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         true
     }
@@ -1512,7 +1516,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(dailyFoodCapCents = cents?.takeIf { it > 0 }),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
         ActionFeedback.show("Food cap saved")
     }
@@ -1524,7 +1528,7 @@ class BakiRepo(initial: ClientConfig = loadConfig()) {
             settings = store.settings.copy(nextServiceKm = km, nextServiceOn = date),
             updatedAt = nowIso(),
         )
-        saveLocal(store)
+        storage.save(store)
         pushWithTombs(emptyList())
     }
 

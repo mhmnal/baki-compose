@@ -1,5 +1,20 @@
 package app.baki
 
+
+/** Storage seam: the repository never needs to know whether the snapshot is JSON or SQLite. */
+interface LedgerStorage {
+    fun loadWithOperations(log: OperationLog): Store
+    fun save(store: Store, markDirty: Boolean = true, recordOutbox: Boolean = true)
+    fun path(): String
+}
+
+object JsonLedgerStorage : LedgerStorage {
+    override fun loadWithOperations(log: OperationLog): Store = loadLocalWithOperations(log)
+    override fun save(store: Store, markDirty: Boolean, recordOutbox: Boolean) {
+        saveLocal(store, markDirty = markDirty, recordOutbox = recordOutbox)
+    }
+    override fun path(): String = LocalStore.path()
+}
 /** Where the local copy of the store lives. Mirrors localStorage in the web app. */
 expect object LocalStore {
     fun read(): String?

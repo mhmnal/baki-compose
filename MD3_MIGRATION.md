@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.55.0 storage seam
+
+- LedgerStorage interface with JSON adapter and repository injection.
+- All repository snapshot writes go through storage; UI uses repo.storagePath.
+- G2 old-server fallback and two-client conflict matrix passed.
+- 250 tests and Android lane passed.
+
 ## 0.54.0 incremental operation sync
 
 - `POST /api/ops` with durable dedupe journal.

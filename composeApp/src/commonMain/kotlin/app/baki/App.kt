@@ -2788,7 +2788,7 @@ private fun MoreScreen(
         Spacer(Modifier.height(Space.l))
         SectionTitle("ON THIS DEVICE")
         Spacer(Modifier.height(Space.s))
-        RowCard("Store", LocalStore.path(), "", scheme.onSurfaceVariant)
+        RowCard("Store", repo.storagePath, "", scheme.onSurfaceVariant)
         Spacer(Modifier.height(Space.s))
         RowCard("Records", "${repo.store.entries.size} entries · ${repo.store.shifts.size} shifts", "", scheme.onSurfaceVariant)
         Spacer(Modifier.height(Space.s))
