@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.59.0 sparse-state and desktop type
+
+- Compact one-active-day Summary.
+- Desktop typography and vehicle chart clipping.
+- Route action clears the FAB.
+- Preview screenshots wait for money animations to settle.
+- 264 tests pass.
+
 ## 0.58.1 mid-week recovery snapshot
 
 - Automatic first-launch local snapshot when none exists.

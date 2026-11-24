@@ -731,6 +731,15 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.59.0 sparse-state and desktop type
+
+- One-active-day Summary shows a compact note instead of a chart/target line.
+- Desktop secondary copy uses bodyMedium; desk labels use labelMedium.
+- Vehicle economy month marker no longer clips.
+- Today route **Open** clears the floating add action.
+- Preview captures settle EasedMoney animations before screenshotting; numbers now match.
+- 264 tests pass.
+
 ## 0.58.1 mid-week recovery snapshot
 
 - First launch after upgrade creates a verified local recovery snapshot if none exists.

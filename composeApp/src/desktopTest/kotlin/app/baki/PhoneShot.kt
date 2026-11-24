@@ -96,8 +96,8 @@ class PhoneShot {
         try {
             scene.render()
             var image = scene.render()
-            // let entry animations and the first layout pass settle
-            repeat(14) { frame ->
+            // Let entry and money animations settle; a 224 ms capture caught EasedMoney mid-count.
+            repeat(100) { frame ->
                 image = scene.render((frame + 1) * 16_000_000L)
             }
             val data = image.encodeToData(EncodedImageFormat.PNG)

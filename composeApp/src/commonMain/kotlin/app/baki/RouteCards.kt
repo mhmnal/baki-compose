@@ -163,7 +163,7 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
                     .heightIn(min = Control.primary)
                     .clip(CircleShape)
                     .clickable { expanded = true }
-                    .padding(horizontal = Space.m, vertical = 6.dp),
+                    .padding(start = Space.m, end = Space.m + 56.dp, top = 6.dp, bottom = 6.dp),
             )
         }
         RouteMap(

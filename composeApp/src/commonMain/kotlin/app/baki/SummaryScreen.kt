@@ -589,9 +589,45 @@ private fun MonthInkChart(store: Store, month: String) {
             }
         }
         Spacer(Modifier.height(Space.s))
+        // A one-active-day window does not deserve a chart or a judgemental target line.
+        val sparse = range == 7 && shown.count { it.active } <= 1
+        if (sparse) {
+            val activeDay = shown.firstOrNull { it.active }
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = scheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = Space.m, vertical = Space.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (activeDay == null) "No active days yet" else "1 active day",
+                            color = scheme.onSurface,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                        Text(
+                            activeDay?.let {
+                                "${weekdayShort(it.iso)} ${prettyDateShort(it.iso)} · net RM ${rm(it.net)}"
+                            } ?: "Add an entry and the chart will start here.",
+                            color = scheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Text(
+                        "Chart appears\nafter 2 days",
+                        color = scheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        } else {
         Box(Modifier.fillMaxWidth()) {
         Canvas(
-            Modifier.fillMaxWidth().height(142.dp).clipToBounds()
+            Modifier.fillMaxWidth().height(if (sparse) 84.dp else 142.dp).clipToBounds()
                 .pointerInput(shown) {
                     detectTapGestures { point ->
                         if (shown.isNotEmpty()) {
@@ -624,7 +660,8 @@ private fun MonthInkChart(store: Store, month: String) {
                 runningPoints.maxOfOrNull { abs(it) / 100.0 } ?: 1.0
             }
             val scaleMax = if (range == 7) {
-                if (targetPerDay > 0.01) maxOf(1.0, targetPerDay * 2.0) else maxOf(1.0, dataMax)
+                if (sparse) maxOf(1.0, dataMax * 1.35)
+                else if (targetPerDay > 0.01) maxOf(1.0, targetPerDay * 2.0) else maxOf(1.0, dataMax)
             } else maxOf(1.0, dataMax * 1.06)
             val targetY = (zeroY - (targetPerDay / scaleMax * usable).toFloat())
                 .coerceIn(topPad, size.height - topPad)
@@ -641,7 +678,7 @@ private fun MonthInkChart(store: Store, month: String) {
                 )
             }
             drawLine(scheme.outlineVariant, Offset(0f, zeroY), Offset(size.width, zeroY), 1.dp.toPx())
-            if (range == 7 && targetPerDay > 0.01) {
+            if (!sparse && range == 7 && targetPerDay > 0.01) {
                 drawLine(
                     color = scheme.tertiary.copy(alpha = 0.75f),
                     start = Offset(0f, targetY), end = Offset(size.width, targetY),
@@ -708,6 +745,7 @@ private fun MonthInkChart(store: Store, month: String) {
             )
         }
         }
+        }
         Spacer(Modifier.height(Space.s))
         selectedDay?.let { day ->
             Surface(
@@ -728,6 +766,7 @@ private fun MonthInkChart(store: Store, month: String) {
                 }
             }
         }
+        if (!sparse) {
         if (range == 7) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 shown.forEach { day ->
@@ -744,6 +783,7 @@ private fun MonthInkChart(store: Store, month: String) {
                     Text(shown[index].iso.takeLast(5), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 }
             }
+        }
         }
     }
 }

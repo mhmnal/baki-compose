@@ -52,7 +52,7 @@ fun VehicleEconomyCard(store: Store) {
                 letterSpacing = 1.2.sp,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
             )
-            Text("What the car returns — measured, not assumed.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text("What the car returns — measured, not assumed.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
 
             Spacer(Modifier.height(Space.xs))
             if (economy != null) {
@@ -64,7 +64,7 @@ fun VehicleEconomyCard(store: Store) {
                 Text(
                     "measured over ${"%.0f".format(economy.km)} km · ${economy.fills} fills · ${economy.from} → ${economy.to}",
                     color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
                 )
             } else {
                 Text("No measured km/L yet", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
@@ -72,7 +72,7 @@ fun VehicleEconomyCard(store: Store) {
                     "$fuelFills of $odometerFills fuel fills carry an odometer reading. " +
                         "Enter the dashboard reading on two fill-ups to measure this.",
                     color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
@@ -95,7 +95,7 @@ fun VehicleEconomyCard(store: Store) {
             if (series.isNotEmpty()) {
                 val peak = series.maxOf { it.perKm }.coerceAtLeast(0.01)
                 Row(
-                    Modifier.fillMaxWidth().height(42.dp),
+                    Modifier.fillMaxWidth().height(52.dp),
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
                     verticalAlignment = Alignment.Bottom,
                 ) {
@@ -112,10 +112,11 @@ fun VehicleEconomyCard(store: Store) {
                     }
                 }
             }
+            Spacer(Modifier.height(Space.xs))
             Text(
                 "Cost uses recorded fuel, wear and upkeep spending; it is not a target.",
                 color = scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }

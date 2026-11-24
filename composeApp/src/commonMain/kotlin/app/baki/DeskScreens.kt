@@ -81,7 +81,7 @@ internal fun DeskLabel(text: String, color: Color? = null) {
         text,
         color = color ?: MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 1.3.sp,
-        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
     )
 }
 
@@ -207,7 +207,7 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                     Text(
                         if (shifts.isEmpty()) "No shifts recorded this month."
                         else "${days.size} active ${if (days.size == 1) "day" else "days"} recorded.",
-                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                     )
                 }
                 DeskCard(Modifier.weight(0.7f)) {
@@ -218,9 +218,9 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                         Text(repo.status, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                     }
                     Spacer(Modifier.height(Space.xs))
-                    Text("read-only desk · phone remains the writer", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("read-only desk · phone remains the writer", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(Space.s))
-                    Text("Last sync: ${repo.lastSyncAt?.let { clockOf(it) } ?: "not yet"}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("Last sync: ${repo.lastSyncAt?.let { clockOf(it) } ?: "not yet"}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -261,12 +261,12 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                     DeskLabel("COMMITMENTS")
                     Spacer(Modifier.height(Space.s))
                     DeskMoney("RM ${rm(due.sumOf { it.amount })}", scheme.onSurface, MaterialTheme.typography.headlineMedium)
-                    Text("${unpaid.size} still open · ${due.size - unpaid.size} covered", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("${unpaid.size} still open · ${due.size - unpaid.size} covered", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(Space.s))
                     due.take(3).forEach { bill ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                            Text(bill.name, color = scheme.onSurface, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("RM ${rm(bill.amount)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"))
+                            Text(bill.name, color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("RM ${rm(bill.amount)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
                         }
                     }
                 }
@@ -278,18 +278,18 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                         DeskMetric("WEAR", "RM ${rm(funds.wear.balance)}")
                     }
                     Spacer(Modifier.height(Space.s))
-                    Text("rolling provisions · read-only", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("rolling provisions · read-only", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
                 DeskCard(Modifier.weight(1f)) {
                     DeskLabel("SPEND BY CATEGORY")
                     Spacer(Modifier.height(Space.s))
                     if (cats.isEmpty()) {
-                        Text("No expenses this month.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        Text("No expenses this month.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     } else {
                         cats.forEach { (id, cents) ->
                             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                                Text(categoryLabel(store, id), color = scheme.onSurface, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("RM ${rm(cents)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"))
+                                Text(categoryLabel(store, id), color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("RM ${rm(cents)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
                             }
                         }
                     }
@@ -613,7 +613,7 @@ private fun DeskShiftDetail(repo: BakiRepo, shift: Shift, modifier: Modifier) {
                 DeskMetric("RM / H", "RM ${rm(if (shift.hours > 0) metrics.net / shift.hours else 0.0)}")
             }
             Spacer(Modifier.height(Space.s))
-            Text("Started ${shift.start} · read-only on the desk", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text("Started ${shift.start} · read-only on the desk", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("PAYOUTS")
@@ -753,7 +753,7 @@ internal fun DeskRoutes(repo: BakiRepo, month: String) {
                     Spacer(Modifier.height(Space.s))
                     Text(
                         "Read-only route from the phone · RM ${rm(shiftMetrics(selectedShift, store.settings.profit).let { m -> if (m.km > 0.01) m.net / m.km else 0.0 })}/km · pull again if a drive is missing.",
-                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
@@ -990,7 +990,7 @@ internal fun DeskSettings(repo: BakiRepo) {
             Spacer(Modifier.height(Space.s))
             Text(
                 "Own-name and account-suffix hints for DuitNow classification. Desk-local; never synced.",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(Space.s))
             OutlinedTextField(
@@ -1040,7 +1040,7 @@ internal fun DeskSettings(repo: BakiRepo) {
                     "${repo.status} · ${repo.lastSyncAt?.let { clockOf(it) } ?: "not synced"}" +
                         if (repo.lastMergeConflicts > 0) " · ${repo.lastMergeConflicts} overlaps" else "",
                     color = if (repo.lastMergeConflicts > 0) scheme.secondary else scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
             if (repo.lastMergeConflicts > 0) {
@@ -1048,13 +1048,13 @@ internal fun DeskSettings(repo: BakiRepo) {
                 Text(
                     "${repo.lastMergeConflicts} record(s) overlapped on the last pull · newest edit wins.",
                     color = scheme.secondary,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
             Text(
                 "Pull runs before push. Newest edit per record wins; deletions stay deleted.",
                 color = scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
         DeskCard(Modifier.fillMaxWidth()) {
@@ -1075,7 +1075,7 @@ internal fun DeskSettings(repo: BakiRepo) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("High contrast", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                    Text("stronger text and outlines", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("stronger text and outlines", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
                 Switch(checked = repo.config.highContrast, onCheckedChange = { repo.setHighContrast(it) })
             }
@@ -1086,7 +1086,7 @@ internal fun DeskSettings(repo: BakiRepo) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Sync route traces", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                    Text("Routes are sealed end-to-end; the server never sees coordinates.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("Routes are sealed end-to-end; the server never sees coordinates.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
                 Switch(checked = routeSync, onCheckedChange = { routeSync = it })
             }
@@ -1145,14 +1145,14 @@ internal fun DeskSettings(repo: BakiRepo) {
                 repo.config.lastBackupAt?.let { "Last backup ${ago(nowMillis(), it)} · ${repo.config.lastBackupEntries} entries, ${repo.config.lastBackupShifts} shifts" }
                     ?: "No portable backup yet. Create one before resetting this device.",
                 color = if (repo.config.lastBackupAt == null) scheme.secondary else scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
             )
             Text(
                 "Restore merges into the local copy and keeps writes off. Desktop never edits ledger records.",
                 color = scheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
             )
-            restoreError?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodySmall) }
+            restoreError?.let { Text(it, color = scheme.error, style = MaterialTheme.typography.bodyMedium) }
         }
         DeskCard(Modifier.fillMaxWidth()) {
             DeskLabel("PHONE PREVIEW")
@@ -1316,7 +1316,7 @@ internal fun DeskStatements(repo: BakiRepo) {
             Spacer(Modifier.height(Space.s))
             Text(
                 "Imports are sidecar data. Ledger entries remain phone-written; there is no Accept-to-ledger action.",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
         }
         val internalCount = store.importedTxns.count { it.status == "internal" }
@@ -1324,7 +1324,7 @@ internal fun DeskStatements(repo: BakiRepo) {
             Spacer(Modifier.height(Space.s))
             Text(
                 "$internalCount internal sub-account transfers hidden from review · kept for audit",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
         }
         Spacer(Modifier.height(Space.l))
@@ -1338,7 +1338,7 @@ internal fun DeskStatements(repo: BakiRepo) {
                             Text(acc.name, color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                             Text(
                                 (if (acc.archived) "archived · " else "") + "opening ${if (acc.openingBalance != 0L) "RM ${rm(acc.openingBalance / 100.0)}" else "not set"} ${acc.openingDate}".trim(),
-                                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                         TextButton(onClick = { editingAccount = acc }) { Text("Edit", color = scheme.primary) }
@@ -1357,7 +1357,7 @@ internal fun DeskStatements(repo: BakiRepo) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("${batch.periodStart} → ${batch.periodEnd}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-                            Text("${batch.source.uppercase()} · ${batch.rowCount} rows · ${batch.duplicateCount} duplicates skipped", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            Text("${batch.source.uppercase()} · ${batch.rowCount} rows · ${batch.duplicateCount} duplicates skipped", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                         }
                         TextButton(onClick = { deletingBatch = batch }, modifier = Modifier.testTag("delete-batch")) { Text("Delete", color = scheme.error) }
                     }
@@ -1384,20 +1384,20 @@ internal fun DeskStatements(repo: BakiRepo) {
                                 "${row.date} · ${account} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}${if (row.pairId.isNotBlank()) " · PAIRED TRANSFER" else if (row.transfer) " · TRANSFER" else ""}",
                                 color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
                             )
-                            Text(row.description.take(140), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                            Text(row.description.take(140), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                             if (row.suggestedPairId.isNotBlank() && row.pairId.isBlank()) {
                                 Text(
                                     "Suggested transfer pair — confirm both sides.",
-                                    color = scheme.tertiary, style = MaterialTheme.typography.bodySmall,
+                                    color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium,
                                 )
                             }
                             if (suggestion != null) {
                                 Text(
                                     "Suggested: ${suggestion.date} · ${suggestion.note.ifBlank { categoryLabel(store, suggestion.cat) }} · RM ${rm(suggestion.amount / 100.0)}",
-                                    color = scheme.tertiary, style = MaterialTheme.typography.bodySmall,
+                                    color = scheme.tertiary, style = MaterialTheme.typography.bodyMedium,
                                 )
                             } else if (!row.transfer) {
-                                Text("Unrecorded on phone — add it manually on the phone, then match later.", color = scheme.secondary, style = MaterialTheme.typography.bodySmall)
+                                Text("Unrecorded on phone — add it manually on the phone, then match later.", color = scheme.secondary, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                         if (row.suggestedPairId.isNotBlank() && row.pairId.isBlank()) {
@@ -1414,7 +1414,7 @@ internal fun DeskStatements(repo: BakiRepo) {
             }
             if (pending.size > 250) {
                 Spacer(Modifier.height(Space.s))
-                Text("Showing the first 250 of ${pending.size} open rows. Match or ignore these to reveal the rest.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                Text("Showing the first 250 of ${pending.size} open rows. Match or ignore these to reveal the rest.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
         }
         Spacer(Modifier.height(80.dp))
@@ -1517,7 +1517,7 @@ internal fun DeskMonthClose(repo: BakiRepo, month: String) {
             Spacer(Modifier.height(Space.s))
             Text(
                 "Insurance ${if (insurance == 0L) "—" else "RM ${rm(insurance)}"} · recorded net ${if (totals.net >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(totals.net))} · cash ${if (truth.cashNet >= 0) "+" else "−"}RM ${rm(kotlin.math.abs(truth.cashNet))}",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"),
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
             )
         }
         Spacer(Modifier.height(Space.l))
@@ -1547,6 +1547,6 @@ private fun CloseCheck(label: String, done: Boolean, detail: String) {
         Box(Modifier.size(9.dp).clip(CircleShape).background(if (done) scheme.tertiary else scheme.secondary))
         Spacer(Modifier.width(Space.s))
         Text(label, color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(detail, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+        Text(detail, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
     }
 }

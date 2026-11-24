@@ -1,6 +1,6 @@
 # Baki visual review pack
 
-Generated from the 0.58.0 preview fixtures on 2026-11-24.
+Generated from the 0.59.0 preview fixtures on 2026-11-24.
 
 These are synthetic preview screenshots, not the live ledger.
 
