@@ -42,6 +42,19 @@ private fun preparePreviewHome() {
     val previewHome = java.io.File(realHome, ".baki-preview-home").apply { mkdirs() }
     val preview = java.io.File(previewHome, ".local/share/baki").apply { mkdirs() }
     val reset = System.getenv("BAKI_PREVIEW_RESET") == "1"
+    val synthetic = System.getenv("BAKI_PREVIEW_SCENARIO")?.lowercase() != "real"
+    if (synthetic) {
+        // A preview is a sandbox. Give it a fresh synthetic history and never copy the live SQLite.
+        val key = java.io.File(real, ".key")
+        if (key.exists()) runCatching { key.copyTo(java.io.File(preview, ".key"), overwrite = false) }
+        listOf("store.json", "store.json.bak", "baki.db", "baki.db-wal", "baki.db-shm", "live.json").forEach {
+            java.io.File(preview, it).delete()
+        }
+        System.setProperty("user.home", previewHome.absolutePath)
+        val seed = System.getenv("BAKI_PREVIEW_SEED")?.toLongOrNull() ?: System.currentTimeMillis()
+        saveLocal(PreviewScenario.generate(seed = seed), markDirty = false)
+        return
+    }
     if (reset || !java.io.File(preview, "store.json").exists()) {
         listOf(".key", "store.json", "store.json.bak", "routes.json", "live.json").forEach { name ->
             val from = java.io.File(real, name)
@@ -92,6 +105,7 @@ fun main(args: Array<String>) {
                 ClientConfig(
                     serverUrl = "",
                     allowWrites = true,
+                    storageEngine = "json",
                     themeMode = "dark",
                     colorSource = "baki",
                 ),

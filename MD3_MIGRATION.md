@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.60.0 synthetic preview data
+
+- Open Phone Preview now uses an isolated 75-day synthetic ledger by default.
+- Seeded daily shifts, spending, payouts, statements, bills, reserves and odometer gaps.
+- `BAKI_PREVIEW_SEED` makes previews reproducible; `BAKI_PREVIEW_SCENARIO=real` keeps the old copy path.
+- Preview never writes the production ledger or sync server.
+- 267 tests pass.
+
 ## 0.59.0 sparse-state and desktop type
 
 - One-active-day Summary shows a compact note instead of a chart/target line.

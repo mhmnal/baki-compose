@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.60.0 synthetic preview data
+
+- 75-day seeded synthetic phone preview.
+- Randomised working days, shifts, payouts, spending and anomalies.
+- Isolated preview store; fixed seed supported.
+- 267 tests pass.
+
 ## 0.59.0 sparse-state and desktop type
 
 - Compact one-active-day Summary.
