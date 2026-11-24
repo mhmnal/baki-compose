@@ -11,7 +11,7 @@ As of **2026-11-24**.
 | APK | `dist/baki-compose-0.62.1.apk` |
 | SHA-256 | `428b51f71c1140a8088decefadda008c0ce7ba4316b70987667c8b2aec11c941` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.61.1 installed · 0.62.1 install pending (ADB disconnected) |
+| Phone | 0.62.1 installed |
 | Desktop | 0.62.1 installed |
 
 ## Data
