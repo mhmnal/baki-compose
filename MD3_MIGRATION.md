@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.61.1 quick capture focus
+
+- Quick capture opens with the amount field focused and the numeric keypad requested.
+- No data or schema change.
+- 267 tests pass.
+
 ## 0.61.0 quick capture
 
 - One `QuickAddRequest` path for shortcuts, live notification and the quick-log widget.

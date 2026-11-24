@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.61.1 quick capture focus
+
+- Auto-focus amount field in quick capture.
+- 267 tests pass.
+
 ## 0.61.0 quick capture
 
 - Intent contract and one capture form.

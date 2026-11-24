@@ -631,6 +631,7 @@ private fun AppContent(repo: BakiRepo) {
                 settings = repo.store.settings,
                 day = todayIso(),
                 initialCat = request.category,
+                autoFocusAmount = true,
                 onDismiss = { QuickCaptureRequest.clear() },
                 onSave = { type, cents, cat, note, date, odoAtFill ->
                     QuickCaptureRequest.clear()
@@ -3114,11 +3115,19 @@ private fun EntryDialog(
     initialCat: String? = null,
     initialAmount: String? = null,
     initialNote: String? = null,
+    autoFocusAmount: Boolean = false,
     onDismiss: () -> Unit,
     onSave: (String, Long, String, String, String, Int?) -> Unit,
     onDelete: (Entry) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val amountFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(autoFocusAmount) {
+        if (autoFocusAmount) {
+            delay(250)
+            runCatching { amountFocus.requestFocus() }
+        }
+    }
     var type by remember { mutableStateOf(existing?.type ?: initialType) }
     var amountDigits by remember { mutableStateOf(existing?.amount?.let(::centsDigits) ?: initialCentsDigits(initialAmount)) }
     var note by remember { mutableStateOf(existing?.note ?: initialNote ?: "") }
@@ -3198,6 +3207,7 @@ private fun EntryDialog(
                     shape = MaterialTheme.shapes.extraLarge,
                     filled = true,
                     contentDescription = "Amount in Malaysian ringgit",
+                    focusRequester = amountFocus,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = scheme.secondaryContainer,
                         unfocusedContainerColor = scheme.secondaryContainer,

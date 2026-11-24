@@ -13,6 +13,8 @@ import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -96,6 +98,7 @@ fun CentsField(
     filled: Boolean = false,
     contentDescription: String? = null,
     enabled: Boolean = true,
+    focusRequester: FocusRequester? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val leading: @Composable (() -> Unit)? = if (prefix.isNotEmpty()) {
@@ -118,9 +121,10 @@ fun CentsField(
             style = textStyle ?: MaterialTheme.typography.bodyLarge,
         )
     }
-    val semanticsMod = if (contentDescription != null) {
+    val withSemantics = if (contentDescription != null) {
         modifier.semantics { this.contentDescription = contentDescription }
     } else modifier
+    val semanticsMod = if (focusRequester != null) withSemantics.focusRequester(focusRequester) else withSemantics
 
     if (filled) {
         TextField(
