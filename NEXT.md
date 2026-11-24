@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.62.0 compact quick capture
+
+- Compact amount-first sheet for launcher surfaces.
+- Full form remains one tap away with carried amount/note.
+- 267 tests pass.
+
 ## 0.61.1 quick capture focus
 
 - Auto-focus amount field in quick capture.

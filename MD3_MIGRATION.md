@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.62.0 compact quick capture
+
+- Quick capture is now a compact amount-first sheet: type, six favourite categories, note, Save, More details.
+- More details carries the typed amount and note into the full form.
+- Same single write path for shortcuts, widget and notification.
+- 267 tests pass.
+
 ## 0.61.1 quick capture focus
 
 - Quick capture opens with the amount field focused and the numeric keypad requested.

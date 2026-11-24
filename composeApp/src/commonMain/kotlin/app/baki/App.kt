@@ -625,25 +625,28 @@ private fun AppContent(repo: BakiRepo) {
                 ActionFeedback.show("Quick add needs writes enabled")
             }
         } else {
-            EntryDialog(
-                existing = null,
-                initialType = request.type,
+            QuickCaptureSheet(
+                request = request,
                 settings = repo.store.settings,
-                day = todayIso(),
-                initialCat = request.category,
-                autoFocusAmount = true,
                 onDismiss = { QuickCaptureRequest.clear() },
-                onSave = { type, cents, cat, note, date, odoAtFill ->
+                onMoreDetails = { cents, note ->
+                    QuickCaptureRequest.clear()
+                    adding = 2
+                    entryType = request.type
+                    presetCat = request.category
+                    presetAmount = if (cents > 0) "%.2f".format(cents / 100.0) else null
+                    presetNote = note.ifBlank { null }
+                },
+                onSave = { type, cents, cat, note ->
                     QuickCaptureRequest.clear()
                     scope.launch {
-                        val id = repo.addEntry(type, cents, cat, note, date, odoAtFill)
+                        val id = repo.addEntry(type, cents, cat, note, todayIso(), null)
                         ActionFeedback.show(
                             if (id != null) "Added RM ${rm(cents)} · ${categoryLabel(repo.store, cat)}"
                             else "Could not add — check writes"
                         )
                     }
                 },
-                onDelete = {},
             )
         }
     }
