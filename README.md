@@ -26,6 +26,11 @@ Test suite: **267 JVM tests** (`:composeApp:desktopTest`).
 <p align="center"><sub>Today · Shifts · More and Data Health</sub></p>
 
 <p align="center">
+  <img src="visual-review/images/11-phone-quick-capture.png" width="250" alt="Baki quick capture sheet">
+</p>
+<p align="center"><sub>Quick capture · amount first, category prefilled, keypad already open</sub></p>
+
+<p align="center">
   <img src="visual-review/images/09-desktop-light-ledger.png" width="760" alt="Baki desktop Ledger">
 </p>
 <p align="center"><sub>Read-only desktop Ledger · same encrypted ledger as the phone</sub></p>

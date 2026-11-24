@@ -16,6 +16,7 @@ These are synthetic preview screenshots, not the live ledger.
 8. Desktop light — Overview
 9. Desktop light — Ledger
 10. Desktop light — Shifts
+11. Phone light — Quick Capture
 
 Pixel dimensions: phone 780×1688; desktop 1440×900.
 
