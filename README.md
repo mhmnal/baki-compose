@@ -11,7 +11,7 @@ Two surfaces, one ledger:
 | Design | Material 3 Expressive · Roast & Pine | Read-only companion, same warm visual language |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.60.0** (`versionCode` 252+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.61.0** (`versionCode` 253+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
 Test suite: **267 JVM tests** (`:composeApp:desktopTest`).
@@ -78,6 +78,7 @@ Test suite: **267 JVM tests** (`:composeApp:desktopTest`).
 - Data Health uses a neutral warning surface with a direct 48 dp Review action
 - More is split into **Money / Work / App**, with the switcher pinned above the scroll area
 - cash truth, payout allocation, service target, weekly review and privacy/discreet amounts
+- quick capture from app shortcuts, the live-shift notification and a 2×2 quick-log widget
 - press feedback, route preview, adaptive 360–412 dp layouts and large-font support
 
 ## Stack
@@ -134,11 +135,11 @@ BAKI_PREVIEW_SCENARIO=synthetic BAKI_PREVIEW_SEED=42 ./scripts/gradle-capped.sh 
 # BAKI_PREVIEW_SCENARIO=real falls back to the old copied-store preview
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.60.0
+./scripts/release.sh 0.61.0
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.60.0.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.61.0.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync

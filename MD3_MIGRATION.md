@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.61.0 quick capture
+
+- One `QuickAddRequest` path for shortcuts, live notification and the quick-log widget.
+- Dynamic app shortcuts: Expense, Fuel, Toll, My QR.
+- Live shift notification gains **+ Expense**.
+- 2×2 quick-log widget launches the validated capture form; no widget-side writes.
+- 267 tests pass.
+
 ## 0.60.0 synthetic preview data
 
 - Open Phone Preview now uses an isolated 75-day synthetic ledger by default.

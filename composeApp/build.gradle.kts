@@ -83,8 +83,8 @@ android {
         minSdk = 24
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 252
-        versionName = "0.60.0"
+        versionCode = 253
+        versionName = "0.61.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -138,7 +138,7 @@ compose.desktop {
             // JDBC/SQLCipher classes reference java.sql; jpackage otherwise strips it.
             modules("java.sql")
             packageName = "Baki"
-            packageVersion = "0.60.0"
+            packageVersion = "0.61.0"
             description = "What your shift really pays"
             vendor = "Baki"
             linux { iconFile.set(project.file("icons/baki.png")) }

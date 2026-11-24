@@ -618,6 +618,35 @@ private fun AppContent(repo: BakiRepo) {
         )
     }
 
+    QuickCaptureRequest.pending?.let { request ->
+        if (repo.readOnly) {
+            LaunchedEffect(request) {
+                QuickCaptureRequest.clear()
+                ActionFeedback.show("Quick add needs writes enabled")
+            }
+        } else {
+            EntryDialog(
+                existing = null,
+                initialType = request.type,
+                settings = repo.store.settings,
+                day = todayIso(),
+                initialCat = request.category,
+                onDismiss = { QuickCaptureRequest.clear() },
+                onSave = { type, cents, cat, note, date, odoAtFill ->
+                    QuickCaptureRequest.clear()
+                    scope.launch {
+                        val id = repo.addEntry(type, cents, cat, note, date, odoAtFill)
+                        ActionFeedback.show(
+                            if (id != null) "Added RM ${rm(cents)} · ${categoryLabel(repo.store, cat)}"
+                            else "Could not add — check writes"
+                        )
+                    }
+                },
+                onDelete = {},
+            )
+        }
+    }
+
     when (adding) {
         2 -> EntryDialog(
             existing = editingEntry,

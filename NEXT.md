@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.61.0 quick capture
+
+- Intent contract and one capture form.
+- App shortcuts, live notification action and 2×2 widget.
+- No new permissions or direct widget writes.
+- 267 tests pass.
+
 ## 0.60.0 synthetic preview data
 
 - 75-day seeded synthetic phone preview.

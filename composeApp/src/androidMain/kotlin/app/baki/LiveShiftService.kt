@@ -123,6 +123,7 @@ class LiveShiftService : Service() {
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(open)
+            .addAction(0, "+ Expense", action("quick_add"))
             .addAction(0, "+ Payout", action("payout"))
             .addAction(0, if (paused) "Resume" else "Pause", action("pause"))
             .addAction(0, "End shift", action("end"))
