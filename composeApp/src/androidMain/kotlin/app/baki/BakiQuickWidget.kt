@@ -19,7 +19,7 @@ class BakiQuickWidget : AppWidgetProvider() {
 
     private fun build(ctx: Context): RemoteViews {
         val views = RemoteViews(ctx.packageName, R.layout.baki_quick_widget)
-        views.setOnClickPendingIntent(R.id.quick_food, capture(ctx, 11, null, "widget_food"))
+        views.setOnClickPendingIntent(R.id.quick_food, capture(ctx, 11, "food", "widget_food"))
         views.setOnClickPendingIntent(R.id.quick_toll, capture(ctx, 12, "toll", "widget_toll"))
         views.setOnClickPendingIntent(R.id.quick_fuel, capture(ctx, 13, "fuel", "widget_fuel"))
         views.setOnClickPendingIntent(R.id.quick_more, capture(ctx, 14, null, "widget_more"))

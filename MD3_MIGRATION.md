@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.62.1 quick-capture correctness
+
+- Quick-log Food widget now sends the food category.
+- Portable and encrypted backups are decoded and count-checked before "ready".
+- 267 tests pass.
+
 ## 0.62.0 compact quick capture
 
 - Quick capture is now a compact amount-first sheet: type, six favourite categories, note, Save, More details.

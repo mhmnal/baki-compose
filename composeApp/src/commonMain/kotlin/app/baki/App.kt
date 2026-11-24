@@ -1851,6 +1851,13 @@ private fun MoreScreen(
                 ActionFeedback.show("Backup could not be created")
                 return@launch
             }
+            val check = summarizeBackup(json)
+            if (check == null || check.entries != repo.store.entries.size ||
+                check.shifts != repo.store.shifts.size || check.statements != repo.store.statements.size
+            ) {
+                ActionFeedback.show("Backup failed verification")
+                return@launch
+            }
             repo.markBackupExported(json)
             PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
             PlatformEffects.successFeedback()
@@ -2951,7 +2958,10 @@ private fun MoreScreen(
                     scope.launch {
                         val json = runCatching { backupBundleJson(repo) }.getOrNull()
                         val sealed = json?.let { encryptBackup(it, passphrase) }
-                        if (json != null && sealed != null) {
+                        val check = sealed?.let { decryptBackup(it, passphrase) }?.let(::summarizeBackup)
+                        if (json != null && sealed != null && check != null &&
+                            check.entries == repo.store.entries.size && check.shifts == repo.store.shifts.size
+                        ) {
                             repo.markBackupExported(json)
                             PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
                             PlatformEffects.successFeedback()

@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.62.1 quick-capture correctness
+
+- Widget Food category fixed.
+- Portable/encrypted backup verification before success.
+- 267 tests pass.
+
 ## 0.62.0 compact quick capture
 
 - Compact amount-first sheet for launcher surfaces.
