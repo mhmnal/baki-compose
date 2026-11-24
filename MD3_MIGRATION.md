@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.58.1 mid-week recovery snapshot
+
+- First launch after upgrade creates a verified local recovery snapshot if none exists.
+- More → Backup exposes **Save local recovery snapshot**.
+- Never overwrites recovery mode with stale JSON.
+- 264 tests pass.
+
 ## 0.58.0 visual clarity pass
 
 - Recovery snapshot is automatic after Week Close.

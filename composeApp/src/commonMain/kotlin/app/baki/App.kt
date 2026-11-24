@@ -507,6 +507,10 @@ private fun AppContent(repo: BakiRepo) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        repo.ensureRecoverySnapshot()
+    }
+
     LaunchedEffect(repo.live?.start) {
         if (repo.live != null) addMenuOpen = false
     }
@@ -2776,6 +2780,25 @@ private fun MoreScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.onSurface),
                 shape = CircleShape, modifier = Modifier.fillMaxWidth(),
             ) { Text("Encrypted backup", style = MaterialTheme.typography.labelLarge) }
+            Spacer(Modifier.height(Space.s))
+            Button(
+                onClick = {
+                    scope.launch {
+                        val saved = withContext(Dispatchers.Default) { repo.saveRecoverySnapshot() }
+                        ActionFeedback.show(
+                            if (saved) "Local recovery snapshot saved"
+                            else "Could not save recovery snapshot"
+                        )
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.surfaceContainerHigh, contentColor = scheme.onSurface),
+                shape = CircleShape, modifier = Modifier.fillMaxWidth(),
+            ) { Text("Save local recovery snapshot", style = MaterialTheme.typography.labelLarge) }
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "A local encrypted copy for recovery. This is not portable; Download or Encrypted backup is the off-device copy.",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+            )
             Spacer(Modifier.height(Space.s))
             Text(
                 "Backup includes the ledger, device settings, calibration and local routes. Restore merges into this device, never deletes, and keeps writes off. The file contains private server and route-key data; store it securely.",

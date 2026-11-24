@@ -11,7 +11,7 @@ Two surfaces, one ledger:
 | Design | Material 3 Expressive · Roast & Pine | Read-only companion, same warm visual language |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.58.0** (`versionCode` 249+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.58.1** (`versionCode` 250+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
 Test suite: **264 JVM tests** (`:composeApp:desktopTest`).
@@ -66,6 +66,7 @@ Test suite: **264 JVM tests** (`:composeApp:desktopTest`).
 - one persistent encrypted handle and diff-only row writes; entry saves stay off the UI dispatcher
 - JSON snapshot retained for import/rollback; portable JSON backup remains the off-device copy
 - a verified local recovery snapshot is written after every successful Week Close
+- first launch after an upgrade writes one automatically if none exists; More also has **Save local recovery snapshot**
 - if SQLite cannot load, the app shows an explicit **storage recovery mode** banner instead of silently presenting stale JSON
 
 **Phone UI**
@@ -129,11 +130,11 @@ See [ANDROID_TESTING.md](ANDROID_TESTING.md).
 cd ../grab-tracker && node server.mjs
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.58.0
+./scripts/release.sh 0.58.1
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.58.0.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.58.1.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync

@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.58.1 mid-week recovery snapshot
+
+- Automatic first-launch local snapshot when none exists.
+- Manual **Save local recovery snapshot** action in More.
+- Does not run while storage is in recovery mode.
+- 264 tests pass.
+
 ## 0.58.0 visual clarity pass
 
 - Recovery guard and automatic local snapshot are documented in `STATUS.md`.

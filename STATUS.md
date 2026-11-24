@@ -6,13 +6,13 @@ As of **2026-11-24**.
 
 | | |
 |---|---|
-| Version | **0.58.0** |
-| versionCode | **249** |
-| APK | `dist/baki-compose-0.58.0.apk` |
-| SHA-256 | `abbac94daaedfffe5e661512a35766987e2bc0a68cc8363d5ce50483023cbd90` |
+| Version | **0.58.1** |
+| versionCode | **250** |
+| APK | `dist/baki-compose-0.58.1.apk` |
+| SHA-256 | `cc96ff025f34899c3ce76fa7215c912f4e770d3d6139deabd2ab992e63a89efd` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.58.0 installed |
-| Desktop | 0.58.0 installed |
+| Phone | 0.58.1 installed |
+| Desktop | 0.58.1 installed |
 
 ## Data
 
@@ -28,7 +28,7 @@ As of **2026-11-24**.
 - **0.56.1** persistent SQLCipher handle, diff-only writes, off-UI persistence
 - desktop jpackage: added `java.sql`, removed duplicate Xerial JDBC jar
 - **0.57.0** explicit recovery mode, verified local snapshot after Week Close, statement-funded payout allocation
-- **0.58.0** visual clarity pass: neutral Data Health, stronger More hierarchy, shift payout pills, desktop ledger alignment, truth labels
+- **0.58.1** visual clarity pass: neutral Data Health, stronger More hierarchy, shift payout pills, desktop ledger alignment, truth labels
 
 ## Verification
 

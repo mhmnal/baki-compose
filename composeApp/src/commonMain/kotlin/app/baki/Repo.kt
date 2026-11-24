@@ -355,6 +355,19 @@ class BakiRepo(
         added
     }
 
+    /** Write a verified local recovery copy now. Never overwrite recovery mode with stale JSON. */
+    suspend fun saveRecoverySnapshot(): Boolean = withContext(Dispatchers.Default) {
+        if (StoreHealth.recoveryWarning != null) return@withContext false
+        RecoverySnapshot.save(store)
+    }
+
+    /** First launch after an upgrade should not wait for Sunday to have a recovery copy. */
+    suspend fun ensureRecoverySnapshot(): Boolean = withContext(Dispatchers.Default) {
+        if (StoreHealth.recoveryWarning != null) return@withContext false
+        if (RecoverySnapshot.load() != null) return@withContext false
+        RecoverySnapshot.save(store)
+    }
+
     /** Reopen a closed week; the entered amount is retained for the next close. */
     suspend fun reopenWeek(weekStart: String): Boolean = mutex.withLock {
         if (config.allowWrites.not()) return@withLock false
