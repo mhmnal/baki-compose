@@ -337,7 +337,7 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
         } ?: Text("No statement imported for this week.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         if (breakdownOpen && view.statement != null) {
             Text("WEEKLY EARNINGS BREAKDOWN", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-            Text("Net GSF is informational and is not deducted from total earnings. The PDF weekly payout stays authoritative.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text("Saving posts incentives, tips and delivery incentives as income entries automatically. Net GSF is informational and is not deducted from total earnings. The PDF weekly payout stays authoritative.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             CentsField(digits = bIncentives, onDigitsChange = { bIncentives = it }, label = "Incentives (from PDF)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
             CentsField(digits = bTips, onDigitsChange = { bTips = it }, label = "Tips (from PDF)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
             CentsField(digits = bDelivery, onDigitsChange = { bDelivery = it }, label = "Delivery incentive (app)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)

@@ -509,6 +509,7 @@ private fun AppContent(repo: BakiRepo) {
 
     LaunchedEffect(Unit) {
         repo.ensureRecoverySnapshot()
+        repo.postAllStatementIncome()
     }
 
     LaunchedEffect(repo.live?.start) {

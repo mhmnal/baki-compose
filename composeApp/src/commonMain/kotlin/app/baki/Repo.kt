@@ -229,9 +229,12 @@ class BakiRepo(
     /** Statements are keyed by week, so re-importing a corrected statement replaces it. */
     suspend fun saveStatement(statement: Statement) = mutex.withLock {
         if (blocked()) return@withLock
-        store = store.copy(
-            statements = store.statements + (statement.weekStart to statement),
-            updatedAt = nowIso(),
+        store = postStatementIncome(
+            store.copy(
+                statements = store.statements + (statement.weekStart to statement),
+                updatedAt = nowIso(),
+            ),
+            statement,
         )
         storage.save(store)
         runCatching { pushWithTombs(emptyList()) }
@@ -387,9 +390,24 @@ class BakiRepo(
             deliveryIncentive = deliveryIncentiveCents / 100.0,
             importedAt = nowIso(),
         )
-        store = store.copy(statements = store.statements + (weekStart to updated), updatedAt = nowIso())
+        store = postStatementIncome(
+            store.copy(statements = store.statements + (weekStart to updated), updatedAt = nowIso()),
+            updated,
+        )
         storage.save(store)
         try { pushWithTombs(emptyList()) } catch (_: Exception) { }
+        true
+    }
+
+    /** Post incentives/tips for every imported statement. Idempotent; safe on every launch. */
+    suspend fun postAllStatementIncome(): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        var next = store
+        for (st in store.statements.values) next = postStatementIncome(next, st)
+        if (next.entries == store.entries) return@withLock false
+        store = next.copy(updatedAt = nowIso())
+        storage.save(store)
+        runCatching { pushWithTombs(emptyList()) }
         true
     }
 

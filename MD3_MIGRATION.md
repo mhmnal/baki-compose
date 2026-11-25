@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.63.1 automatic statement income
+
+- Incentives, tips and delivery incentives post automatically as stable weekly income entries.
+- Explicit shift incentives are subtracted to avoid double counting.
+- Reimport/reconciliation updates the same auto IDs; no duplicates or relaunch rewrites.
+- 271 tests pass.
+
 ## 0.63.0 weekly GSF breakdown
 
 - Weekly statement metadata now stores Net GSF, Net GSF rate and delivery incentive.

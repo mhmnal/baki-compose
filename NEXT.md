@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.63.1 automatic statement income
+
+- Auto-posted incentives/tips/delivery entries.
+- Idempotent across launches and reimports.
+- Shift incentives deducted from the weekly incentive total.
+- 271 tests pass.
+
 ## 0.63.0 weekly GSF breakdown
 
 - Statement fields for Net GSF, rate and delivery incentive.
