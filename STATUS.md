@@ -12,7 +12,7 @@ As of **2026-11-25**.
 | SHA-256 | `759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
 | Phone | 0.64.2 installed · direct-Downloads backup verified |
-| Desktop | 0.64.1 installed · 0.64.2 not built |
+| Desktop | 0.64.2 installed · 0.64.1 and 0.63.1 rollbacks retained |
 
 ## Data
 

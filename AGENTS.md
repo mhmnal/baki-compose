@@ -12,7 +12,7 @@ R8 APK        dist/baki-compose-0.64.2.apk
 SHA-256       759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a
 Unminified    dist/baki-compose-0.64.2-unminified.apk
 Phone         0.64.2 installed; direct-Downloads backup verified
-Desktop       0.64.1 installed; 0.64.2 not built
+Desktop       0.64.2 installed; 0.64.1/0.63.1 rollbacks retained
 ```
 
 Standing decisions:
@@ -159,7 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Build/install desktop 0.64.2.
-2. Review the remaining payout gap in Data Health.
-3. Run a 6+ hour shift soak with screen off.
-4. Keep R8 on `release-r8-safe.sh`.
+1. Review the remaining payout gap in Data Health.
+2. Run a 6+ hour shift soak with screen off.
+3. Keep R8 on `release-r8-safe.sh`.
+4. Keep desktop packaging inside the capped systemd service.
