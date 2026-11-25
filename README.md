@@ -132,6 +132,10 @@ See [ANDROID_TESTING.md](ANDROID_TESTING.md).
 # complete gate: full JVM suite + Android lane + release build
 ./scripts/gate.sh
 
+# R8 release build in a memory-capped systemd service
+# close Firefox/heavy apps first; R8 failure cannot kill the desktop session
+./scripts/release-r8-safe.sh
+
 # all tests under the capped build wrapper
 ./scripts/gradle-capped.sh :composeApp:desktopTest
 
