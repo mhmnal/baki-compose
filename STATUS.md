@@ -6,13 +6,13 @@ As of **2026-11-25**.
 
 | | |
 |---|---|
-| Version | **0.64.3** |
-| versionCode | **262** |
-| APK | `dist/baki-compose-0.64.3.apk` · R8 fullMode=false |
-| SHA-256 | `b0a23eb01657f052838265923f87dff5f6719ba9e338e549c870810985f141fd` |
+| Version | **0.64.4** |
+| versionCode | **263** |
+| APK | `dist/baki-compose-0.64.4.apk` · R8 fullMode=false |
+| SHA-256 | `39d4f33a540b98272807b986cd71b0e208db328aef8522976f95baad7a171ef3` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.64.3 installed · direct-Downloads backup verified |
-| Desktop | 0.64.3 installed · 0.64.1 and 0.63.1 rollbacks retained |
+| Phone | 0.64.4 installed · direct-Downloads backup verified |
+| Desktop | 0.64.4 installed · 0.64.1 and 0.63.1 rollbacks retained |
 
 ## Data
 
@@ -46,7 +46,7 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 ## Verification
 
 - **243 JVM tests, 0 failures**
-- 0.64.3 R8 APK built, signed, installed and backup path verified
+- 0.64.4 R8 APK built, signed, installed and backup path verified
 - Android compile passed
 - phone install verified: bank screens gone, weekly statement and Data Health present
 - W47 applied through `Repo.updateStatementBreakdown`
@@ -66,4 +66,4 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 - Some desktop card typography remains small.
 - Single-cipher SQLite dependency unresolved.
 - No automatic portable backup; local snapshot is not off-device.
-- TalkBack coverage of custom canvases and swipe rows incomplete.
+- TalkBack: payout delete action and desk chart summary added; broader focus-order/row audit still pending.

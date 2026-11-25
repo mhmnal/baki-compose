@@ -360,7 +360,12 @@ private fun DeskRunningCard(store: Store, month: String) {
         Text("No activity yet.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         return
     }
-    Canvas(Modifier.fillMaxWidth().height(150.dp)) {
+    val chartDescription = "Running net chart, ${points.size} " +
+        (if (allTime) "months" else "days") +
+        ", from ${points.first().label} RM ${rm(points.first().total)} to ${points.last().label} RM ${rm(points.last().total)}"
+    Canvas(
+        Modifier.fillMaxWidth().height(150.dp).semantics { contentDescription = chartDescription },
+    ) {
         val topPad = 8.dp.toPx()
         val zeroY = size.height * 0.78f
         val usable = zeroY - topPad

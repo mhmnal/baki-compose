@@ -43,6 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -183,6 +185,9 @@ fun PayoutsSheet(
                             if (editable) {
                                 role = androidx.compose.ui.semantics.Role.Button
                                 contentDescription = "Payout RM ${rm(payout.c)} at ${clockTime(payout.at)}; tap to edit"
+                                customActions = listOf(
+                                    CustomAccessibilityAction("Delete payout") { onDelete(index); true },
+                                )
                             }
                         }
                         .heightIn(min = Control.primary)

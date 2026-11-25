@@ -5,19 +5,19 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 25 November 2026
 
 ```text
-Version       0.64.3
-Code          262
+Version       0.64.4
+Code          263
 Tests         243 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.3.apk
-SHA-256       b0a23eb01657f052838265923f87dff5f6719ba9e338e549c870810985f141fd
-Unminified    dist/baki-compose-0.64.3-unminified.apk
-Phone         0.64.3 installed; direct-Downloads backup verified
-Desktop       0.64.3 installed; 0.64.1/0.63.1 rollbacks retained
+R8 APK        dist/baki-compose-0.64.4.apk
+SHA-256       39d4f33a540b98272807b986cd71b0e208db328aef8522976f95baad7a171ef3
+Unminified    dist/baki-compose-0.64.4-unminified.apk
+Phone         0.64.4 installed; direct-Downloads backup verified
+Desktop       0.64.4 installed; 0.64.1/0.63.1 rollbacks retained
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.3. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.4. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.3 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.4 build used this
 exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape

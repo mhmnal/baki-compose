@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.4 accessibility fixes
+
+- Payout delete is available to TalkBack.
+- Desktop chart has a spoken summary.
+
 ## 0.64.3 Data Health cleanup
 
 - W45/W46 aligned to statements.

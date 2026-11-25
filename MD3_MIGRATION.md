@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.4 accessibility fixes
+
+- Payout rows expose a TalkBack “Delete payout” action instead of relying on swipe.
+- Desktop running-net chart has a spoken summary.
+- 243 tests pass.
+
 ## 0.64.3 Data Health cleanup
 
 - W45/W46 received amounts align with their weekly statements.
