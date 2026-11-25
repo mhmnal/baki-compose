@@ -44,8 +44,8 @@ Use only:
 That wrapper runs Gradle in a transient systemd **service**:
 
 ```text
-MemoryMax     8 GB
-MemoryHigh  7.5 GB
+MemoryMax     9 GB
+MemoryHigh  8 GB
 SwapMax       2 GB
 KillMode      control-group
 R8 fullMode   false
@@ -54,7 +54,7 @@ Screen         Firefox may stay open
 ```
 
 If R8 exceeds the cap, the service dies, not the session. The successful 0.64.1 build used this
-exact path and finished in 1m10s.
+exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
 containment.
