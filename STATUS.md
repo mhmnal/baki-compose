@@ -1,6 +1,6 @@
 # Baki — current status
 
-As of **2026-11-24**.
+As of **2026-11-25**.
 
 ## Release
 
@@ -12,46 +12,56 @@ As of **2026-11-24**.
 | SHA-256 | `3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
 | Phone | 0.64.1 installed · verified 25 Nov 2026 |
-| Desktop | 0.63.1 installed · 0.64.1 package ready |
+| Desktop | 0.63.1 installed · 0.64.1 package not built yet |
 
 ## Data
 
-- encrypted SQLite is authoritative
+- encrypted SQLite authoritative
 - schema version **4**
-- current phone ledger: **132 entries · 18 shifts**
-- portable backup is **stale and must be refreshed**
-- JSON snapshot is rollback/import only
+- server ledger: **149 entries · 18 shifts · 4 statements**
+- W47 breakdown applied: incentives 16.80, tips 4.00, delivery 1.50, Net GSF 101.71, rate 19.9%
+- W47 weekly payout remains **387.70**
+- W47 auto entries:
+  - `statement-auto-2026-11-16-incentive` RM 16.80
+  - `statement-auto-2026-11-16-tips` RM 4.00
+  - `statement-auto-2026-11-16-delivery` RM 1.50
+- JSON snapshot remains rollback/import only
 
-## Shipped since cutover
+## Portable backup
 
-- **0.56.0** normalized encrypted SQLite, JSON rollback retained
-- **0.56.1** persistent SQLCipher handle, diff-only writes, off-UI persistence
-- desktop jpackage: added `java.sql`, removed duplicate Xerial JDBC jar
-- **0.57.0** explicit recovery mode, verified local snapshot after Week Close, statement-funded payout allocation
-- **0.64.1** low-risk pruning: dead UI/chart/parser/helper removal; 242 tests
+- file: `~/baki-backups/baki-20261125-backup.bak`
+- contents: **146 entries · 18 shifts · 4 statements** (before W47)
+- size: **2.6 MB**
+- passphrase: separate local file `~/baki-backups/baki-backup-passphrase-20261125.txt`
+- backup SHA-256: `c2285574e677be0052845116d93f9f63564d2665d0324d162f09171446796a73`
+- decryption verified by the app’s own `encryptBackup`/`decryptBackup`
+
+The backup and passphrase **must be moved to separate off-device locations**.
 
 ## Verification
 
-- 264 JVM tests, 0 failures
-- full gate passed
-- Android lane passed
-- real phone SQLite cutover passed
-- real-device SQLite backup → JSON restore was verified earlier
-- payout allocation source survives server sync
+- **242 JVM tests, 0 failures**
+- 0.64.1 R8 build passed in capped systemd service
+- Android compile passed
+- phone install verified: bank screens gone, weekly statement and Data Health present
+- W47 applied through `Repo.updateStatementBreakdown`
 
 ## Next gates
 
-1. Fresh portable backup.
-2. Close the current week once to create the first automatic recovery snapshot.
-3. Test payout allocation against a real statement week.
-4. Run a 6+ hour shift soak with screen off.
-5. Keep the week of data, then retire the JSON write path (G6).
+1. Move backup and passphrase to separate off-device storage.
+2. Force phone sync and confirm W47 breakdown/auto entries on device.
+3. Build/install desktop 0.64.1.
+4. Fix the misleading backup-age health line.
+5. Investigate the remaining payout gap reported by Data Health.
+6. Run a 6+ hour shift soak with screen off.
+7. Keep the week of data, then retire the JSON write path (G6).
 
 ## Known gaps
 
+- Data Health backup age reports recent even when no portable file exists.
 - Summary chart is oversized for a one-point week.
 - FAB can overlap mid-scroll content.
 - Some desktop card typography remains small.
-- Single-cipher SQLite dependency is unresolved.
+- Single-cipher SQLite dependency unresolved.
 - No automatic portable backup; local snapshot is not off-device.
-- TalkBack coverage of custom canvases and swipe rows is incomplete.
+- TalkBack coverage of custom canvases and swipe rows incomplete.

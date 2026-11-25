@@ -159,8 +159,9 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Install 0.64.1 on the phone when ADB is available.
-2. Confirm bank Statement/Close-month surfaces are gone.
-3. Confirm weekly statements, GSF breakdown, auto-posted incentives/tips and Data Health still work.
-4. Verify one save strips dormant bank fields from the phone’s local SQLite.
-5. Keep R8 on `release-r8-safe.sh`.
+1. Move `~/baki-backups/baki-20261125-backup.bak` and its passphrase to separate off-device storage.
+2. Force phone sync; confirm W47 incentives/tips/delivery and the three auto entries on device.
+3. Build/install desktop 0.64.1.
+4. Fix the misleading backup-age health line.
+5. Investigate the remaining payout gap in Data Health.
+6. Keep R8 on `release-r8-safe.sh`.
