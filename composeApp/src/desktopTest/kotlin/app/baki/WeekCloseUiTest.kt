@@ -38,7 +38,7 @@ class WeekCloseUiTest {
 
             onNodeWithContentDescription("Stats").performClick()
             waitForIdle()
-            onNodeWithText("WEEK CLOSE").assertExists()
+            onNodeWithText("/ WEEK CLOSE").assertExists()
             onNodeWithTag("week-close-review").performScrollTo().assertIsEnabled()
             onNodeWithTag("week-close-picker").assertExists()
 

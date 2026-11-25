@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 
 import androidx.compose.material3.Typography
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.material3.MaterialTheme
 
@@ -97,6 +98,9 @@ object Control {
     val primary = 48.dp
     val secondary = 48.dp
 }
+
+/** Receipt stamp/pill corners; general cards keep the Material shape scale. */
+val ReceiptCorner = RoundedCornerShape(2.dp)
 
 
 /** Keeps a long money total inside its column without flattening the hierarchy. */

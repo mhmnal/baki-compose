@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.5 receipt design trial
+
+- Monthly statement and Week Close are notched receipt papers.
+- Paper-first Stats order; analysis chart follows after a deliberate gap.
+- Today ledger is one continuous day receipt with dashed lines and staggered rows.
+- One lime accent for positive/closed states; reduced-motion respected.
+- 243 tests and updated goldens pass.
+
 ## 0.64.4 accessibility fixes
 
 - Payout rows expose a TalkBack “Delete payout” action instead of relying on swipe.

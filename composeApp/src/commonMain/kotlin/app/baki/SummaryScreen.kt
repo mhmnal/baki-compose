@@ -1,5 +1,9 @@
 package app.baki
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 
 import androidx.compose.foundation.Canvas
@@ -45,16 +49,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathOperation
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -63,6 +74,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.graphics.Color
@@ -107,10 +119,7 @@ fun SummaryScreen(
         contentPadding = PaddingValues(top = 0.dp, bottom = 188.dp),
     ) {
         item {
-            Md3Card(
-                container = MaterialTheme.colorScheme.surfaceContainerLow,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ) {
+            ReceiptCard(reduceMotion = repo.config.reducedMotion) {
                 StatementCover(
                     month = month, t = t, days = days,
                     cost = cost, prevNet = prevNet,
@@ -118,8 +127,14 @@ fun SummaryScreen(
                 )
             }
         }
+        item {
+            ReceiptCard(reduceMotion = repo.config.reducedMotion, delayMillis = 80) {
+                WeekCloseCard(repo = repo, store = store)
+            }
+        }
+        // Paper first: documents stay together, then analysis opens with a deliberate breath.
+        item { Spacer(Modifier.height(Space.l)) }
         item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
-        item { Md3Card { WeekCloseCard(repo = repo, store = store) } }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }
@@ -141,6 +156,82 @@ fun SummaryScreen(
     }
 }
 
+/** A paper ticket: four small radius corners, with a shallow bite on each side at mid-height. */
+internal class ReceiptShape : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val corner = with(density) { 4.dp.toPx() }
+        val notch = with(density) { 7.dp.toPx() }
+        val base = Path().apply {
+            addRoundRect(
+                androidx.compose.ui.geometry.RoundRect(
+                    0f, 0f, size.width, size.height,
+                    CornerRadius(corner, corner),
+                ),
+            )
+        }
+        val cuts = Path().apply {
+            addOval(Rect(center = Offset(0f, size.height * 0.5f), radius = notch))
+            addOval(Rect(center = Offset(size.width, size.height * 0.5f), radius = notch))
+        }
+        val outline = Path().apply { op(base, cuts, PathOperation.Difference) }
+        return Outline.Generic(outline)
+    }
+}
+
+@Composable
+internal fun ReceiptCard(
+    reduceMotion: Boolean,
+    delayMillis: Int = 0,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+    val progress by animateFloatAsState(
+        targetValue = if (entered || reduceMotion) 1f else 0f,
+        animationSpec = tween(durationMillis = 280, delayMillis = delayMillis, easing = FastOutSlowInEasing),
+        label = "week-receipt-in",
+    )
+    Box(
+        Modifier.fillMaxWidth().graphicsLayer {
+            alpha = progress
+            translationY = (1f - progress) * 12.dp.toPx()
+        },
+    ) {
+        val paper = ReceiptShape()
+        Box(
+            Modifier.matchParentSize()
+                .offset(x = 5.dp, y = 5.dp)
+                .background(scheme.primary.copy(alpha = 0.18f), paper),
+        )
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = paper,
+            color = scheme.surface,
+            border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.55f)),
+        ) {
+            Column(Modifier.padding(Space.l), content = content)
+        }
+    }
+}
+
+@Composable
+internal fun ReceiptRule(color: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)) {
+    Canvas(Modifier.fillMaxWidth().height(1.dp)) {
+        drawLine(
+            color = color,
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())),
+        )
+    }
+}
+
 @Composable
 private fun WeekCloseCard(repo: BakiRepo, store: Store) {
     val scheme = MaterialTheme.colorScheme
@@ -152,26 +243,39 @@ private fun WeekCloseCard(repo: BakiRepo, store: Store) {
     var open by remember { mutableStateOf(false) }
     var pickerOpen by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        SectionMark(if (view.isClosed) scheme.tertiary else scheme.secondary, 14.dp)
-        Spacer(Modifier.width(Space.s))
         Column(Modifier.weight(1f)) {
-            Text("WEEK CLOSE", color = scheme.onSurfaceVariant, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Text(
+                "/ WEEK CLOSE",
+                color = scheme.primary,
+                letterSpacing = 1.4.sp,
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
             Text("${prettyDate(view.weekStart)} – ${prettyDate(view.weekEnd)}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall)
         }
-        Text(
-            if (view.isClosed) "CLOSED" else "OPEN",
-            color = if (view.isClosed) scheme.tertiary else scheme.secondary,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-        )
+        Surface(
+            color = if (view.isClosed) Color(0xFFDFF56A) else scheme.surfaceContainerHigh,
+            contentColor = if (view.isClosed) Color(0xFF0B331E) else scheme.onSurfaceVariant,
+            shape = ReceiptCorner,
+            border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.35f)),
+        ) {
+            Text(
+                if (view.isClosed) "CLOSED" else "OPEN",
+                modifier = Modifier.padding(horizontal = Space.s, vertical = 4.dp),
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.8.sp,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            )
+        }
     }
     Spacer(Modifier.height(Space.s))
     Row(verticalAlignment = Alignment.Bottom) {
         Column(Modifier.weight(1f)) {
-            Text("Recorded shift net", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text("RECORDED NET", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp, style = MaterialTheme.typography.labelSmall)
             Text("RM ${rm(view.recordedNet)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("Received", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text("RECEIVED", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp, style = MaterialTheme.typography.labelSmall)
             Text(
                 if (!view.isClosed && view.received == 0L) "Not entered" else "RM ${rm(view.received)}",
                 color = if (!view.isClosed && view.received == 0L) scheme.onSurfaceVariant else scheme.onSurface,
@@ -506,22 +610,29 @@ private fun StatementCover(
                 ink = scheme.onSurface,
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "MONTHLY STATEMENT",
-                color = scheme.onSurfaceVariant,
-                letterSpacing = 1.2.sp,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.weight(1f),
-            )
-        }
+        Spacer(Modifier.height(Space.m))
+        ReceiptRule()
+        Spacer(Modifier.height(Space.m))
+        Text(
+            "/ MONTHLY STATEMENT",
+            color = scheme.primary,
+            letterSpacing = 1.4.sp,
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+        )
         Spacer(Modifier.height(Space.xs))
         EasedMoney(t.net, scheme.onSurface, MaterialTheme.typography.displaySmallEmphasized.copy(fontFeatureSettings = "tnum"))
-        Text(
-            if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
-            color = if (delta >= 0) scheme.onSurface else scheme.error,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Surface(
+            color = if (delta >= 0) Color(0xFFDFF56A) else scheme.errorContainer,
+            contentColor = if (delta >= 0) Color(0xFF0B331E) else scheme.onErrorContainer,
+            shape = ReceiptCorner,
+        ) {
+            Text(
+                if (delta >= 0) "+RM ${rm(delta)} vs last month" else "−RM ${rm(-delta)} vs last month",
+                modifier = Modifier.padding(horizontal = Space.s, vertical = 3.dp),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            )
+        }
         Text(
             "$dayLabel · in RM ${rm(t.income)} · out RM ${rm(t.expense)}",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge,

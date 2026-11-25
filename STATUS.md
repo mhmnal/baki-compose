@@ -6,13 +6,13 @@ As of **2026-11-25**.
 
 | | |
 |---|---|
-| Version | **0.64.4** |
-| versionCode | **263** |
-| APK | `dist/baki-compose-0.64.4.apk` · R8 fullMode=false |
-| SHA-256 | `39d4f33a540b98272807b986cd71b0e208db328aef8522976f95baad7a171ef3` |
+| Version | **0.64.5** |
+| versionCode | **264** |
+| APK | `dist/baki-compose-0.64.5.apk` · R8 fullMode=false |
+| SHA-256 | `52325f14b848c80564d3362b76491193d99c7b85cf4b0820778cbed996de377c` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.64.4 installed · direct-Downloads backup verified |
-| Desktop | 0.64.4 installed · 0.64.1 and 0.63.1 rollbacks retained |
+| Phone | 0.64.5 installed · one-day receipt trial |
+| Desktop | 0.64.5 installed · one-day receipt trial |
 
 ## Data
 
@@ -46,17 +46,18 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 ## Verification
 
 - **243 JVM tests, 0 failures**
-- 0.64.4 R8 APK built, signed, installed and backup path verified
+- 0.64.5 R8 APK built, signed, installed and backup path verified
 - Android compile passed
 - phone install verified: bank screens gone, weekly statement and Data Health present
 - W47 applied through `Repo.updateStatementBreakdown`
 
 ## Next gates
 
-1. Mark or unlink Celcomdigi’s remaining payment.
-2. Run a 6+ hour shift soak with screen off.
-3. Keep the week of data, then retire the JSON write path (G6).
-4. Keep R8 and desktop packaging inside capped systemd services.
+1. Use 0.64.5 for one day and review the receipt design.
+2. Mark or unlink Celcomdigi’s remaining payment.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep the week of data, then retire the JSON write path (G6).
+5. Keep R8 and desktop packaging inside capped systemd services.
 
 ## Known gaps
 

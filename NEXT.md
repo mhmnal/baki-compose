@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.5 receipt design trial
+
+- Paper-first Stats: monthly + Week Close receipts.
+- Continuous day receipt for Today entries.
+- One-day trial before extending the philosophy.
+
 ## 0.64.4 accessibility fixes
 
 - Payout delete is available to TalkBack.

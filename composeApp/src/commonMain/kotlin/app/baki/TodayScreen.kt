@@ -16,10 +16,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.animateContentSize
@@ -397,53 +399,19 @@ fun TodayScreen(
             }
         }
 
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Box(
-                    Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(scheme.primary),
-                )
-                Text(
-                    "${if (day == today) "TODAY" else day.uppercase()} · ${t.entryCount} ${if (t.entryCount == 1) "ENTRY" else "ENTRIES"}",
-                    color = scheme.onSurfaceVariant,
-                    letterSpacing = 1.sp,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                )
-            }
-        }
-
-        items(shifts, key = { it.id }) { sh ->
-            val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
-            Box(Modifier.animateItem()) {
-                RowCardIcon(
-                    icon = BakiIcons.Car,
-                    title = "Shift ${sh.start.ifEmpty { sh.date }}",
-                    sub = "${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
-                    amount = "RM ${rm(m.net)}",
-                    tint = scheme.tertiary,
-                    onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
-                )
-            }
-        }
-        items(entries, key = { it.id }) { e ->
-            Box(Modifier.animateItem()) {
-                RowCardIcon(
-                    icon = categoryIcon(e.cat),
-                    title = e.note.ifEmpty { categoryLabel(store, e.cat) },
-                    sub = listOfNotNull(
-                        e.cat,
-                        e.odo?.takeIf { it > 0 }?.let { "$it km" },
-                        loggedTime(e.loggedAt)?.let { "logged $it" },
-                    ).joinToString(" · "),
-                    amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
-                    tint = if (e.type == "income") scheme.tertiary else scheme.error,
-                    sharedKey = "entry-${e.id}",
-                    onEdit = { onEditEntry(e) },
-                    onDelete = { onDeleteEntry(e) },
-                )
-            }
+        if (shifts.isNotEmpty() || entries.isNotEmpty()) item {
+            DayReceipt(
+                day = day,
+                today = today,
+                shifts = shifts,
+                entries = entries,
+                store = store,
+                cfg = cfg,
+                netCents = t.net,
+                reduceMotion = repo.config.reducedMotion,
+                onEditEntry = onEditEntry,
+                onDeleteEntry = onDeleteEntry,
+            )
         }
         if (shifts.isEmpty() && entries.isEmpty()) item {
             Column(
@@ -559,6 +527,99 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
+private fun StaggeredReceiptRow(
+    index: Int,
+    reduceMotion: Boolean,
+    shown: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val p by animateFloatAsState(
+        targetValue = if (shown || reduceMotion) 1f else 0f,
+        animationSpec = if (reduceMotion) tween(durationMillis = 0) else
+            tween(durationMillis = 220, delayMillis = index.coerceAtMost(8) * 45, easing = FastOutSlowInEasing),
+        label = "receipt-line-in",
+    )
+    Box(Modifier.graphicsLayer {
+        alpha = p
+        translationY = (1f - p) * 7.dp.toPx()
+    }) { content() }
+}
+
+@Composable
+private fun DayReceipt(
+    day: String,
+    today: String,
+    shifts: List<Shift>,
+    entries: List<Entry>,
+    store: Store,
+    cfg: Profit,
+    netCents: Long,
+    reduceMotion: Boolean,
+    onEditEntry: (Entry) -> Unit,
+    onDeleteEntry: (Entry) -> Unit,
+) {
+    var linesIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { linesIn = true }
+    ReceiptCard(reduceMotion = reduceMotion) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "/ ${if (day == today) "TODAY" else day.uppercase()} · ${shifts.size + entries.size} ${if (shifts.size + entries.size == 1) "LINE" else "LINES"}",
+                color = MaterialTheme.colorScheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.1.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "RM ${rm(netCents)}",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        }
+        Spacer(Modifier.height(Space.s))
+        ReceiptRule()
+        shifts.forEachIndexed { index, sh ->
+            val m = shiftMetrics(sh, cfg, overheadPerHour(store, sh.date.take(7)))
+            StaggeredReceiptRow(index, reduceMotion, linesIn) {
+                RowCardIcon(
+                    icon = BakiIcons.Car,
+                    title = "Shift ${sh.start.ifEmpty { sh.date }}",
+                    sub = "${"%.1f".format(sh.hours)}h · ${"%.0f".format(m.km)} km",
+                    amount = "RM ${rm(m.net)}",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    receipt = true,
+                    onEdit = { onEditEntry(Entry(sh.id, sh.date, "shift", "shift", 0)) },
+                )
+            }
+            if (index != shifts.lastIndex || entries.isNotEmpty()) ReceiptRule()
+        }
+        entries.forEachIndexed { index, e ->
+            StaggeredReceiptRow(shifts.size + index, reduceMotion, linesIn) {
+                RowCardIcon(
+                    icon = categoryIcon(e.cat),
+                    title = e.note.ifEmpty { categoryLabel(store, e.cat) },
+                    sub = listOfNotNull(
+                        e.cat,
+                        e.odo?.takeIf { it > 0 }?.let { "$it km" },
+                        loggedTime(e.loggedAt)?.let { "logged $it" },
+                    ).joinToString(" · "),
+                    amount = (if (e.type == "income") "+" else "−") + rm(e.amount),
+                    tint = if (e.type == "income") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                    sharedKey = "entry-${e.id}",
+                    receipt = true,
+                    onEdit = { onEditEntry(e) },
+                    onDelete = { onDeleteEntry(e) },
+                )
+            }
+            if (index != entries.lastIndex) ReceiptRule()
+        }
+    }
+}
+
+@Composable
 fun RowCardIcon(
     icon: ImageVector,
     title: String,
@@ -567,10 +628,12 @@ fun RowCardIcon(
     tint: Color,
     sharedKey: String? = null,
     editable: Boolean = true,
+    receipt: Boolean = false,
     onEdit: () -> Unit = {},
     onDelete: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val rowShape = if (receipt) ReceiptCorner else MaterialTheme.shapes.large
     val gestureScope = rememberCoroutineScope()
     var acted by remember { mutableStateOf(false) }
     val sharedScope = LocalSharedTransition.current
@@ -607,7 +670,7 @@ fun RowCardIcon(
         backgroundContent = {
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             Row(
-                Modifier.fillMaxSize().clip(MaterialTheme.shapes.large)
+                Modifier.fillMaxSize().clip(rowShape)
                     .background(if (editing) scheme.primaryContainer else scheme.error.copy(alpha = 0.22f))
                     .padding(horizontal = Space.ml),
                 verticalAlignment = Alignment.CenterVertically,
@@ -629,17 +692,17 @@ fun RowCardIcon(
         Row(
             Modifier.fillMaxWidth().then(sharedMod)
                 .then(
-                    Modifier.clip(MaterialTheme.shapes.large).background(scheme.surfaceContainerLow)
+                    Modifier.clip(rowShape).background(if (receipt) scheme.surface else scheme.surfaceContainerLow)
                 )
                 .then(if (editable) Modifier.pointerInput(title) { detectTapGestures(onLongPress = { onEdit() }) } else Modifier)
                 .semantics { customActions = a11yActions }
-                .padding(vertical = Space.m, horizontal = Space.l),
+                .padding(vertical = Space.m, horizontal = if (receipt) Space.s else Space.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 Modifier
                     .size(36.dp)
-                    .clip(CircleShape)
+                    .clip(if (receipt) ReceiptCorner else CircleShape)
                     .background(tint.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
             ) { Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(IconSize.inline)) }
