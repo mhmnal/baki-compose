@@ -39,6 +39,7 @@ As of **2026-11-25**.
 - passphrase: separate local file `~/baki-backups/baki-backup-passphrase-20261125.txt`
 - backup SHA-256: `c2285574e677be0052845116d93f9f63564d2665d0324d162f09171446796a73`
 - decryption verified by the app’s own `encryptBackup`/`decryptBackup`
+- full restore verified in an isolated profile: 146 entries · 18 shifts · 4 statements, writes off
 
 User moved the backup and passphrase off-device on 25 Nov 2026.
 
