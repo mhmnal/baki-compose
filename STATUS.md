@@ -8,8 +8,8 @@ As of **2026-11-24**.
 |---|---|
 | Version | **0.64.0** |
 | versionCode | **259** |
-| APK | `dist/baki-compose-0.64.0.apk` · local unminified release |
-| SHA-256 | `9f1c3945d0be765e3a062a545cfee47ec489bbcbbb141d62884014a56f84eadc` |
+| APK | `dist/baki-compose-0.64.0.apk` · R8 fullMode=false |
+| SHA-256 | `2bcab312d9b4aab9f20ef8760779fcdb5529578a868d22c9935ed75fb086ab11` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
 | Phone | 0.62.1 installed · 0.64.0 pending (ADB disconnected) |
 | Desktop | 0.63.1 installed · 0.64.0 package ready |
