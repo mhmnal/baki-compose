@@ -159,7 +159,8 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Run a 6+ hour shift soak with screen off.
-2. Review the remaining week-close differences in Data Health.
-3. Keep R8 and desktop packaging inside capped systemd services.
-4. Keep the week of data, then retire the JSON write path (G6).
+1. Resolve W45/W46 week-close differences using actual received amounts.
+2. Decide on the 3 inactive bill links.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep R8 and desktop packaging inside capped systemd services.
+5. Keep the week of data, then retire the JSON write path (G6).

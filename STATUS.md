@@ -20,6 +20,8 @@ As of **2026-11-25**.
 - schema version **4**
 - server ledger: **149 entries · 18 shifts · 4 statements**
 - payout gap cleared: 1 Nov statement-funded RM 140.26; 2 Nov statement-funded RM 164.95
+- W47 received aligned to statement: RM 387.70
+- Data Health: 6 open (2 week-close variances, 3 inactive bill links, 1 other)
 - W47 breakdown applied: incentives 16.80, tips 4.00, delivery 1.50, Net GSF 101.71, rate 19.9%
 - W47 weekly payout remains **387.70**
 - W47 auto entries:
@@ -49,10 +51,11 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 
 ## Next gates
 
-1. Run a 6+ hour shift soak with screen off.
-2. Review the remaining week-close differences in Data Health.
-3. Keep the week of data, then retire the JSON write path (G6).
-4. Keep R8 and desktop packaging inside capped systemd services.
+1. Resolve W45/W46 week-close differences with actual received amounts.
+2. Decide on the 3 inactive bill links.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep the week of data, then retire the JSON write path (G6).
+5. Keep R8 and desktop packaging inside capped systemd services.
 
 ## Known gaps
 
