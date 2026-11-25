@@ -5,19 +5,19 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 25 November 2026
 
 ```text
-Version       0.64.2
-Code          261
-Tests         242 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.2.apk
-SHA-256       759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a
-Unminified    dist/baki-compose-0.64.2-unminified.apk
-Phone         0.64.2 installed; direct-Downloads backup verified
-Desktop       0.64.2 installed; 0.64.1/0.63.1 rollbacks retained
+Version       0.64.3
+Code          262
+Tests         243 JVM tests, 0 failures
+R8 APK        dist/baki-compose-0.64.3.apk
+SHA-256       b0a23eb01657f052838265923f87dff5f6719ba9e338e549c870810985f141fd
+Unminified    dist/baki-compose-0.64.3-unminified.apk
+Phone         0.64.3 installed; direct-Downloads backup verified
+Desktop       0.64.3 installed; 0.64.1/0.63.1 rollbacks retained
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.2. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.3. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.2 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.3 build used this
 exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
@@ -159,8 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Resolve W45/W46 week-close differences using actual received amounts.
-2. Decide on the 3 inactive bill links.
-3. Run a 6+ hour shift soak with screen off.
-4. Keep R8 and desktop packaging inside capped systemd services.
-5. Keep the week of data, then retire the JSON write path (G6).
+1. Mark or unlink Celcomdigi’s remaining payment.
+2. Run a 6+ hour shift soak with screen off.
+3. Keep R8 and desktop packaging inside capped systemd services.
+4. Keep the week of data, then retire the JSON write path (G6).

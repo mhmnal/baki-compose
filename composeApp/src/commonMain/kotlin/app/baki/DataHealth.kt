@@ -71,8 +71,13 @@ fun dataHealth(
         .filter { it.active && !it.optional && it.cadence != "annual" && it.dueDay == null }
         .sortedBy { it.name }
 
+    val paymentsByBill = store.billPayments.groupBy { it.billId }
     val inactive = store.bills
-        .filter { bill -> bill.active && store.billPayments.any { it.billId == bill.id && !it.active } }
+        .filter { bill ->
+            if (!bill.active) return@filter false
+            val links = paymentsByBill[bill.id].orEmpty()
+            links.isNotEmpty() && links.none { it.active }
+        }
         .sortedBy { it.name }
 
     val fuel = store.entries.filter { isFuelCat(it.cat) }
@@ -209,7 +214,7 @@ fun DataHealthSheet(
         if (report.inactiveBills.isNotEmpty()) {
             HealthSection("INACTIVE BILL LINKS", "${report.inactiveBills.size} bill${if (report.inactiveBills.size == 1) "" else "s"}")
             report.inactiveBills.forEach { bill ->
-                HealthRow(bill.name, "Payment history is inactive", "Edit") { onEditBill(bill) }
+                HealthRow(bill.name, "No active payment link", "Edit") { onEditBill(bill) }
             }
         }
 

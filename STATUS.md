@@ -6,13 +6,13 @@ As of **2026-11-25**.
 
 | | |
 |---|---|
-| Version | **0.64.2** |
-| versionCode | **261** |
-| APK | `dist/baki-compose-0.64.2.apk` · R8 fullMode=false |
-| SHA-256 | `759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a` |
+| Version | **0.64.3** |
+| versionCode | **262** |
+| APK | `dist/baki-compose-0.64.3.apk` · R8 fullMode=false |
+| SHA-256 | `b0a23eb01657f052838265923f87dff5f6719ba9e338e549c870810985f141fd` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.64.2 installed · direct-Downloads backup verified |
-| Desktop | 0.64.2 installed · 0.64.1 and 0.63.1 rollbacks retained |
+| Phone | 0.64.3 installed · direct-Downloads backup verified |
+| Desktop | 0.64.3 installed · 0.64.1 and 0.63.1 rollbacks retained |
 
 ## Data
 
@@ -20,8 +20,9 @@ As of **2026-11-25**.
 - schema version **4**
 - server ledger: **149 entries · 18 shifts · 4 statements**
 - payout gap cleared: 1 Nov statement-funded RM 140.26; 2 Nov statement-funded RM 164.95
-- W47 received aligned to statement: RM 387.70
-- Data Health: 6 open (2 week-close variances, 3 inactive bill links, 1 other)
+- W44/W45/W46/W47 received amounts align to their weekly statements
+- W47 received: RM 387.70
+- Data Health: 1 open (Celcomdigi has no active payment link)
 - W47 breakdown applied: incentives 16.80, tips 4.00, delivery 1.50, Net GSF 101.71, rate 19.9%
 - W47 weekly payout remains **387.70**
 - W47 auto entries:
@@ -43,19 +44,18 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 
 ## Verification
 
-- **242 JVM tests, 0 failures**
-- 0.64.2 R8 APK built, signed, installed and backup path verified
+- **243 JVM tests, 0 failures**
+- 0.64.3 R8 APK built, signed, installed and backup path verified
 - Android compile passed
 - phone install verified: bank screens gone, weekly statement and Data Health present
 - W47 applied through `Repo.updateStatementBreakdown`
 
 ## Next gates
 
-1. Resolve W45/W46 week-close differences with actual received amounts.
-2. Decide on the 3 inactive bill links.
-3. Run a 6+ hour shift soak with screen off.
-4. Keep the week of data, then retire the JSON write path (G6).
-5. Keep R8 and desktop packaging inside capped systemd services.
+1. Mark or unlink Celcomdigi’s remaining payment.
+2. Run a 6+ hour shift soak with screen off.
+3. Keep the week of data, then retire the JSON write path (G6).
+4. Keep R8 and desktop packaging inside capped systemd services.
 
 ## Known gaps
 

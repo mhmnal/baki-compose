@@ -45,6 +45,20 @@ class DataHealthTest {
     }
 
     @Test
+    fun activeLinkSupersedesInactiveHistory() {
+        val bill = Bill(id = "b1", name = "Phone", amount = 5_000, category = "phone", dueDay = 7)
+        val store = Store(
+            bills = listOf(bill),
+            billPayments = listOf(
+                BillPayment("b1", "2026-11", 5_000, "e1", "2026-11-20", "2026-11-20", active = true),
+                BillPayment("b1", "2026-12", 5_000, "e2", "2026-11-21", "2026-11-21", active = false),
+            ),
+        )
+        val report = dataHealth(store, lastBackupAt = 1_800_000_000_000L, lastBackupEntries = 0, now = 1_800_000_000_000L, today = "2026-11-23")
+        assertEquals(0, report.inactiveBills.size)
+    }
+
+    @Test
     fun cleanReportHasNoIssues() {
         val report = dataHealth(Store(), lastBackupAt = 1_800_000_000_000L, lastBackupEntries = 0, now = 1_800_000_000_000L, today = "2026-11-23")
         assertFalse(report.hasIssues)

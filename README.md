@@ -11,10 +11,10 @@ Two surfaces, one ledger:
 | Design | Material 3 Expressive · Roast & Pine | Read-only companion, same warm visual language |
 | Writes | yes | no — read-only by design |
 
-Current version: **0.64.2** (`versionCode` 261+). Material Design 3. The phone carries the working ledger; the desk reads the
+Current version: **0.64.3** (`versionCode` 262+). Material Design 3. The phone carries the working ledger; the desk reads the
 same store through the sync server.
 
-Test suite: **242 JVM tests** (`:composeApp:desktopTest`).
+Test suite: **243 JVM tests** (`:composeApp:desktopTest`).
 
 ## Screens
 
@@ -150,11 +150,11 @@ BAKI_PREVIEW_SCENARIO=synthetic BAKI_PREVIEW_SEED=42 ./scripts/gradle-capped.sh 
 # BAKI_PREVIEW_SCENARIO=real falls back to the old copied-store preview
 
 # signed phone build -> dist/baki-compose-<version>.apk
-./scripts/release.sh 0.64.2
+./scripts/release.sh 0.64.3
 ```
 
 Phone install: enable wireless debugging, `adb connect <phone>:<port>`, then
-`adb install -r dist/baki-compose-0.64.2.apk`. The release key lives in `../.tools/keystore` and is never
+`adb install -r dist/baki-compose-0.64.3.apk`. The release key lives in `../.tools/keystore` and is never
 committed.
 
 ## Data & sync
