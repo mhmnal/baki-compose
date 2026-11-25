@@ -98,12 +98,6 @@ object Control {
     val secondary = 48.dp
 }
 
-object Veil {
-    const val hairline = 0.12f
-    const val dim = 0.22f
-    const val overlay = 0.45f
-    const val scrim = 0.45f
-}
 
 /** Keeps a long money total inside its column without flattening the hierarchy. */
 fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {
@@ -346,12 +340,6 @@ fun BakiDialogHeader(
         }
     }
 }
-
-/** Wide display face used only for the Split Ink hero: Archivo Expanded 800. */
-@Composable
-fun archivoDisplayFontFamily(): FontFamily = FontFamily(
-    Font(Res.font.archivo_expanded_800, weight = FontWeight.ExtraBold),
-)
 
 /** Archivo variable: real width/weight contrast for the hero composition. */
 @Composable

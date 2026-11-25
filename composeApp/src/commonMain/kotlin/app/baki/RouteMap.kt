@@ -195,52 +195,6 @@ private fun DrawScope.drawEndpoint(
     )
 }
 
-/** One day's worth of routes, as a card you can open full-screen. */
-@Composable
-fun DayMapCard(
-    date: String,
-    routes: List<MapRoute>,
-    onOpen: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-) {
-    val scheme = MaterialTheme.colorScheme
-    val km = routes.sumOf { routeMetres(it.route.points) } / 1000.0
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .background(scheme.surfaceContainerLow)
-            .then(if (onOpen != null) Modifier.clickable { onOpen() } else Modifier),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text(prettyDate(date), color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                val shifts = routes.size
-                Text(
-                    buildString {
-                        append(if (shifts == 1) "1 shift" else "$shifts shifts")
-                        append(" · ")
-                        append("%.1f km".format(km))
-                    },
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-                )
-            }
-            if (onOpen != null) {
-                Text("Open", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            }
-        }
-        RouteMap(
-            routes = routes,
-            modifier = Modifier.fillMaxWidth().height(168.dp),
-            showAttribution = true,
-        )
-        Spacer(Modifier.height(Space.m))
-    }
-}
 
 /** Full-screen read-only day map. Still inert: it is a bigger card, not an interactive map. */
 @Composable

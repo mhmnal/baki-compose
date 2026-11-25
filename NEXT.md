@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.1 low-risk pruning
+
+- Dead private UI and superseded helpers removed.
+- Unused chart components and quick parser removed.
+- 242 tests pass.
+
 ## 0.64.0 bank reconciliation removed
 
 - Removed AEON/TNG bank sidecar, UI, sync and server endpoints.

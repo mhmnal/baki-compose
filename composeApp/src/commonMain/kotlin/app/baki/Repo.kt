@@ -524,36 +524,6 @@ class BakiRepo(
         return id
     }
 
-    /**
-     * Commits several entries parsed from one sentence, in a single store write and one sync.
-     * Returns the new ids so the caller can offer one undo for the whole sentence.
-     */
-    suspend fun addMany(entries: List<QuickEntry>, date: String): List<String> = mutex.withLock {
-        if (blocked() || entries.isEmpty()) return@withLock emptyList()
-        if (!isValidIsoDate(date)) return@withLock emptyList()
-        val stamp = nowIso()
-        val made = entries.map { q ->
-            Entry(
-                id = newId(), date = date, type = "expense", cat = q.cat, amount = q.cents,
-                note = "", updated = stamp, loggedAt = stamp,
-            )
-        }
-        store = store.copy(entries = store.entries + made, updatedAt = stamp)
-        val opSeqs = made.mapNotNull { recordEntry(it, "upsert") }
-        storage.save(store, recordOutbox = false)
-        opSeqs.maxOrNull()?.let { markEntrySnapshot(it) }
-        try {
-            pushWithAllTombs()
-            storage.save(store, markDirty = false)
-            pendingPush = false
-            status = "synced"
-        } catch (e: Exception) {
-            status = "cached"
-            lastError = e.message
-        }
-        made.map { it.id }
-    }
-
     /** Every route key that must survive a sweep: stored shifts plus the one being recorded. */
     private fun routeKeysInUse(): Set<String> =
         store.shifts.mapTo(mutableSetOf()) { it.id } + listOfNotNull(live?.id)

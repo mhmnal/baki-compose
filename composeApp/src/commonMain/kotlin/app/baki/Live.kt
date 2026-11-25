@@ -27,7 +27,6 @@ data class LiveShift(
 
 private const val LIVE_FILE = "live.json"
 
-fun lifeOf(l: LiveShift?): LiveShift? = l
 fun loadLive(): LiveShift? {
     val raw = try {
         LocalStore.readText(LIVE_FILE)

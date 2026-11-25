@@ -847,87 +847,6 @@ private fun MonthInkChart(store: Store, month: String) {
 }
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun WeekSection(store: Store, today: String) {
-    val scheme = MaterialTheme.colorScheme
-    val start = remember(today) { weekStartOf(today) }
-    val dates = remember(start) { (0..6).map { addDays(start, it) } }
-    val values = remember(store, start) { dates.map { dayTotals(store, it) } }
-    val thisWeek = remember(store, start) { weekTotals(store, start) }
-    val lastWeek = remember(store, start) { weekTotals(store, addDays(start, -7)) }
-    val hours = remember(store, start) { store.shifts.filter { it.date in dates }.sumOf { it.hours } }
-    val actual = if (hours > 0) thisWeek.net / 100.0 / hours else 0.0
-    val target = store.settings.profit.targetRate
-    val peak = maxOf(1L, values.maxOfOrNull { abs(it.net) } ?: 1L)
-    val best = values.maxByOrNull { it.net }
-
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionMark(scheme.primary)
-            Spacer(Modifier.width(Space.s))
-            Text("This week", color = scheme.onSurface, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
-            Text("RM ${rm(thisWeek.net)}", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium)
-        }
-        Text(
-            "${if (thisWeek.net - lastWeek.net >= 0) "+" else "−"}RM ${rm(abs(thisWeek.net - lastWeek.net))} vs last week · " +
-                if (hours > 0) "RM ${rm(actual)}/hr vs target RM ${rm(target)}/hr" else "no hours yet",
-            color = scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Spacer(Modifier.height(Space.m))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-            dates.forEachIndexed { i, iso ->
-                val v = values[i].net
-                val active = v != 0L || (iso == today && thisWeek.shiftCount > 0)
-                val color = when {
-                    v < 0 -> scheme.error
-                    iso == today -> scheme.primary
-                    values[i] == best -> scheme.tertiary
-                    active -> scheme.primary.copy(alpha = 0.55f)
-                    else -> scheme.onSecondaryContainer.copy(alpha = 0.18f)
-                }
-                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(Modifier.fillMaxWidth().height(56.dp), contentAlignment = Alignment.BottomCenter) {
-                        Box(
-                            Modifier.width(12.dp).fillMaxHeight()
-                                .clip(RoundedCornerShape(50))
-                                .background(scheme.surfaceContainerHighest),
-                        ) {
-                            if (active) {
-                                Box(
-                                    Modifier.align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .fillMaxHeight((abs(v).toFloat() / peak).coerceIn(0.08f, 1f))
-                                        .clip(RoundedCornerShape(50))
-                                        .background(color),
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(Space.xs))
-                    Text(
-                        weekdayShort(iso).take(1),
-                        color = if (iso == today) scheme.primary else scheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                    Text(
-                        iso.takeLast(2),
-                        color = if (iso == today) scheme.primary else scheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(Space.s))
-        Text(
-            "${thisWeek.shiftCount} ${if (thisWeek.shiftCount == 1) "shift" else "shifts"} · " +
-                "${thisWeek.entryCount} ${if (thisWeek.entryCount == 1) "entry" else "entries"}",
-            color = scheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
-}
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
 private fun WhereItWent(cats: List<Pair<String, Long>>, total: Long, store: Store) {
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
@@ -1227,26 +1146,6 @@ private fun CashLine(label: String, cents: Long, color: Color, scheme: androidx.
     }
 }
 
-@Composable
-private fun WeeklyReviewCard(start: String, r: WeeklyReview, target: Double, below: Int) {
-    val scheme = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("WEEKLY REVIEW", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.weight(1f))
-            Text("MON–SUN", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-        }
-        Text("${prettyDate(start)} – ${prettyDate(addDays(start, 6))}", color = scheme.onSurface, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-        Text("${r.days} days · ${"%.1f".format(r.hours)}h · RM ${rm(r.net)} net", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge)
-        Text("RM ${rm(r.perHour)}/hr · fuel RM ${rm(r.fuelPerKm)}/km", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
-        if (r.bestDay.isNotEmpty()) Text("Best day: ${prettyDate(r.bestDay)} · RM ${rm(r.bestNet)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        Text(
-            if (below > 0) "$below shifts below RM ${rm(target)}/hr" else "Every shift cleared RM ${rm(target)}/hr",
-            color = if (below > 0) scheme.secondary else scheme.tertiary, style = MaterialTheme.typography.bodyMedium,
-        )
-        Spacer(Modifier.height(Space.xs))
-    }
-}
 
 
 @Composable

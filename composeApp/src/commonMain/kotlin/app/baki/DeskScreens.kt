@@ -400,33 +400,6 @@ private fun DeskRunningCard(store: Store, month: String) {
     }
 }
 
-@Composable
-private fun DayBars(days: List<Pair<String, Totals>>) {
-    val scheme = MaterialTheme.colorScheme
-    val peak = days.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1L) ?: 1L
-    Row(
-        Modifier.fillMaxWidth().height(120.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        days.forEach { (date, t) ->
-            val fraction = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.06f, 1f)
-            Column(
-                Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement = Arrangement.Bottom,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(
-                    Modifier.width(20.dp).fillMaxHeight(fraction)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(if (t.net < 0) scheme.secondary else scheme.primary),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(date.takeLast(2), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            }
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Ledger

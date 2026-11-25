@@ -103,5 +103,4 @@ object Calibration {
         return median.coerceIn(MIN_FACTOR, MAX_FACTOR)
     }
 
-    suspend fun sampleCount(): Int = mutex.withLock { load().samples.size }
 }

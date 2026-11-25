@@ -1,9 +1,6 @@
 package app.baki
 
 /** Full store as pretty JSON — the same shape the server and the web app use. */
-fun backupJson(store: Store): String =
-    kotlinx.serialization.json.Json { prettyPrint = true; encodeDefaults = true }
-        .encodeToString(Store.serializer(), store)
 
 @kotlinx.serialization.Serializable
 data class BakiBackupBundle(

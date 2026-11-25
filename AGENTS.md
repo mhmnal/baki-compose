@@ -5,19 +5,19 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 25 November 2026
 
 ```text
-Version       0.64.0
-Code          259
-Tests         257 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.0.apk
-SHA-256       2bcab312d9b4aab9f20ef8760779fcdb5529578a868d22c9935ed75fb086ab11
-Unminified    dist/baki-compose-0.64.0-unminified.apk
-Phone         0.62.1 installed; 0.64.0 pending
-Desktop       0.63.1 installed; 0.64.0 package ready
+Version       0.64.1
+Code          260
+Tests         242 JVM tests, 0 failures
+R8 APK        dist/baki-compose-0.64.1.apk
+SHA-256       3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06
+Unminified    dist/baki-compose-0.64.1-unminified.apk
+Phone         0.62.1 installed; 0.64.1 pending
+Desktop       0.63.1 installed; 0.64.1 package ready
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.0. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.1. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.0 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.1 build used this
 exact path and finished in 1m10s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
@@ -159,7 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Install 0.64.0 on the phone when ADB is available.
+1. Install 0.64.1 on the phone when ADB is available.
 2. Confirm bank Statement/Close-month surfaces are gone.
 3. Confirm weekly statements, GSF breakdown, auto-posted incentives/tips and Data Health still work.
 4. Verify one save strips dormant bank fields from the phone’s local SQLite.

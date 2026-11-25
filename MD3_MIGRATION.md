@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.1 low-risk pruning
+
+- Removed dead private composables and superseded helpers.
+- Removed unused trend/sparkline/progress-ring chart code while keeping HoursHeatmap.
+- Removed unused text quick-entry parser and `Repo.addMany`.
+- Kept compatibility code, previews, widgets, weekly statements and Data Health.
+- 242 tests pass.
+
 ## 0.64.0 bank reconciliation removed
 
 - Removed AEON/TNG import, matching, accounts, batches and month-close screens.

@@ -80,10 +80,4 @@ class CompareTest {
         assertEquals(120.0, periodStats(s, "2026-11").km, 0.001)
     }
 
-    @Test
-    fun categoriesAreRankedBySpend() {
-        val cats = categoryTotals(store(), "2026-11")
-        assertEquals("fuel", cats.first().first)
-        assertTrue(cats.zipWithNext().all { (a, b) -> a.second >= b.second })
-    }
 }

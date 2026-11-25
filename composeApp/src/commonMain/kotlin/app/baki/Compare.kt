@@ -83,14 +83,6 @@ internal fun isGood(changePositive: Boolean?, higherIsBetter: Boolean?): Boolean
 }
 
 /** Expense totals per category for a month, biggest first. */
-fun categoryTotals(store: Store, month: String): List<Pair<String, Long>> {
-    val cats = store.settings.cats.catsOut.associateBy { it.id }
-    return store.entries
-        .filter { it.date.startsWith(month) && it.type != "income" }
-        .groupBy { it.cat }
-        .map { (id, list) -> (cats[id]?.name ?: id) to list.sumOf { it.amount } }
-        .sortedByDescending { it.second }
-}
 
 
 /**

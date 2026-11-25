@@ -22,42 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-/** Read-only view of the last imported Grab statement. */
-@Composable
-fun StatementCard(store: Store, onViewHistory: (() -> Unit)? = null) {
-    val scheme = MaterialTheme.colorScheme
-    val st = store.statements.values.maxByOrNull { it.weekStart } ?: return
-    Column(
-        Modifier.fillMaxWidth().padding(vertical = Space.m),
-    ) {
-        Text("LAST STATEMENT · ${st.weekStart}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-        Spacer(Modifier.height(Space.s))
-        Text("RM ${rm(st.income)} gross", color = scheme.onSurface, style = MaterialTheme.typography.titleLarge )
-        Text(
-            "RM ${rm(kotlin.math.abs(st.deductions))} deductions · RM ${rm(st.weekly)} weekly payout",
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
-        Text(
-            st.insuranceCount?.let { "$it insurance charge(s) on the statement" }
-                ?: "insurance count not recorded in this old import",
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
-        if (st.rangeText.isNotEmpty()) {
-            Text(st.rangeText, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium )
-        }
-        Text("imported ${st.importedAt.take(16).replace('T', ' ')}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        val latestMark = store.statementMarks[st.weekStart]
-        Text(
-            if (latestMark?.reconciled == true) "reconciled ${latestMark.updated.take(16).replace('T', ' ')}"
-            else "not reconciled",
-            color = if (latestMark?.reconciled == true) scheme.tertiary else scheme.secondary,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        if (onViewHistory != null && store.statements.size > 1) {
-            TextButton(onClick = onViewHistory, contentPadding = PaddingValues(0.dp)) {
-                Text("View all ${store.statements.size} weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold) )
-            }
-        }
-    }
-}
 
 /** All imported weekly statements, newest first; week-level reconciliation, no day stamps. */
 @Composable
