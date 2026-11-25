@@ -1858,10 +1858,13 @@ private fun MoreScreen(
                 ActionFeedback.show("Backup failed verification")
                 return@launch
             }
-            repo.markBackupExported(json)
-            PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
-            PlatformEffects.successFeedback()
-            ActionFeedback.show("Backup ready")
+            if (PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)) {
+                repo.markBackupExported(json)
+                PlatformEffects.successFeedback()
+                ActionFeedback.show("Backup saved to Downloads")
+            } else {
+                ActionFeedback.show("Backup could not be saved to Downloads")
+            }
         }
     }
 
@@ -2879,10 +2882,13 @@ private fun MoreScreen(
                         if (json != null && sealed != null && check != null &&
                             check.entries == repo.store.entries.size && check.shifts == repo.store.shifts.size
                         ) {
-                            repo.markBackupExported(json)
-                            PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
-                            PlatformEffects.successFeedback()
-                            ActionFeedback.show("Encrypted backup ready")
+                            if (PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)) {
+                                repo.markBackupExported(json)
+                                PlatformEffects.successFeedback()
+                                ActionFeedback.show("Encrypted backup saved to Downloads")
+                            } else {
+                                restoreError = "Encrypted backup could not be saved to Downloads"
+                            }
                         } else {
                             restoreError = "Could not create encrypted backup"
                         }

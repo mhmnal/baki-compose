@@ -63,10 +63,16 @@ actual object PlatformEffects {
     actual fun log(msg: String) = println(msg)
     actual fun dataChanged() = Unit
 
-    actual fun exportFile(name: String, mime: String, content: String) {
-        val f = java.io.File(System.getProperty("user.home"), "scheme-$name")
-        f.writeText(content)
-        println("exported to ${f.absolutePath}")
+    actual fun exportFile(name: String, mime: String, content: String): Boolean {
+        return runCatching {
+            val home = java.io.File(System.getProperty("user.home"))
+            val dir = java.io.File(home, "Downloads").takeIf { it.isDirectory } ?: home
+            val f = java.io.File(dir, name)
+            f.writeText(content)
+            f.length() > 0L
+        }.getOrDefault(false).also { ok ->
+            println(if (ok) "exported $name to Downloads" else "export failed for $name")
+        }
     }
     actual fun tapFeedback() = Unit
     actual fun successFeedback() = Unit

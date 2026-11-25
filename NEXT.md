@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.2 direct Downloads backups
+
+- Backups save directly to Downloads.
+- Backup health is marked only after a successful write.
+
 ## 0.64.1 low-risk pruning
 
 - Dead private UI and superseded helpers removed.

@@ -5,19 +5,19 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 25 November 2026
 
 ```text
-Version       0.64.1
-Code          260
+Version       0.64.2
+Code          261
 Tests         242 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.1.apk
-SHA-256       3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06
-Unminified    dist/baki-compose-0.64.1-unminified.apk
-Phone         0.64.1 installed
-Desktop       0.64.1 installed; 0.63.1 rollback retained
+R8 APK        dist/baki-compose-0.64.2.apk
+SHA-256       759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a
+Unminified    dist/baki-compose-0.64.2-unminified.apk
+Phone         0.64.1 installed; 0.64.2 pending
+Desktop       0.64.1 installed; 0.64.2 not built
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.1. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.2. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.1 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.2 build used this
 exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
@@ -159,7 +159,9 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Fix backup-age health: save Android backups directly to Downloads and mark success only after a verified write.
-2. Review the remaining payout gap in Data Health.
-3. Run a 6+ hour shift soak with screen off.
-4. Keep R8 on `release-r8-safe.sh`.
+1. Reconnect the phone and install `dist/baki-compose-0.64.2.apk`.
+2. Verify a backup writes directly to Downloads and Data Health updates only after the write.
+3. Build/install desktop 0.64.2.
+4. Review the remaining payout gap in Data Health.
+5. Run a 6+ hour shift soak with screen off.
+6. Keep R8 on `release-r8-safe.sh`.

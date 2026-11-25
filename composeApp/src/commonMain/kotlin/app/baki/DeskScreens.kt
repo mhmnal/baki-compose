@@ -1060,11 +1060,16 @@ internal fun DeskSettings(repo: BakiRepo) {
                 FilledTonalButton(onClick = {
                     scope.launch {
                         val json = runCatching { backupBundleJson(repo) }.getOrNull()
-                        if (json != null) {
-                            repo.markBackupExported(json)
+                        val saved = json != null &&
                             PlatformEffects.exportFile("baki-${todayStamp()}-backup.json", "application/json", json)
-                        }
-                        note(if (json != null) "Backup exported" else "Backup could not be created")
+                        if (saved && json != null) repo.markBackupExported(json)
+                        note(
+                            when {
+                                json == null -> "Backup could not be created"
+                                saved -> "Backup saved to Downloads"
+                                else -> "Backup could not be saved to Downloads"
+                            },
+                        )
                     }
                 }, colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                     containerColor = scheme.primaryContainer,
@@ -1136,9 +1141,9 @@ internal fun DeskSettings(repo: BakiRepo) {
                         val json = runCatching { backupBundleJson(repo) }.getOrNull()
                         val sealed = json?.let { encryptBackup(it, passphrase) }
                         if (json != null && sealed != null) {
-                            repo.markBackupExported(json)
-                            PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
-                            note("Encrypted backup ready")
+                            val saved = PlatformEffects.exportFile("baki-${todayStamp()}-backup.bak", "application/octet-stream", sealed)
+                            if (saved) repo.markBackupExported(json)
+                            note(if (saved) "Encrypted backup saved to Downloads" else "Encrypted backup could not be saved to Downloads")
                         } else note("Could not create encrypted backup")
                     }
                 } else {

@@ -34,8 +34,8 @@ expect object PlatformEffects {
     fun tapFeedback()
     fun log(msg: String)
     fun dataChanged()
-    /** Hand a file to the platform's share sheet (no-op on desktop). */
-    fun exportFile(name: String, mime: String, content: String)
+    /** Save an export to the platform's Downloads location. True only after a successful write. */
+    fun exportFile(name: String, mime: String, content: String): Boolean
     fun successFeedback()
     /** Save and open a print-ready document; phones have no printer workflow. */
     fun printStatement(html: String)

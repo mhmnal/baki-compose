@@ -6,13 +6,13 @@ As of **2026-11-25**.
 
 | | |
 |---|---|
-| Version | **0.64.1** |
-| versionCode | **260** |
-| APK | `dist/baki-compose-0.64.1.apk` · R8 fullMode=false |
-| SHA-256 | `3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06` |
+| Version | **0.64.2** |
+| versionCode | **261** |
+| APK | `dist/baki-compose-0.64.2.apk` · R8 fullMode=false |
+| SHA-256 | `759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.64.1 installed · verified 25 Nov 2026 |
-| Desktop | 0.64.1 installed · 0.63.1 rollback retained |
+| Phone | 0.64.1 installed · 0.64.2 pending (ADB offline) |
+| Desktop | 0.64.1 installed · 0.64.2 not built |
 
 ## Data
 
@@ -41,7 +41,7 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 ## Verification
 
 - **242 JVM tests, 0 failures**
-- 0.64.1 R8 build passed in capped systemd service
+- 0.64.2 R8 APK built and signed; phone install pending
 - Android compile passed
 - phone install verified: bank screens gone, weekly statement and Data Health present
 - W47 applied through `Repo.updateStatementBreakdown`

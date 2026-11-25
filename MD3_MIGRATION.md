@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.2 direct Downloads backups
+
+- Android exports now write directly to Downloads through MediaStore.
+- Backup timestamp updates only after a verified file write.
+- Removed the misleading share-sheet step; backup health now reflects saved files.
+- 242 tests pass.
+
 ## 0.64.1 low-risk pruning
 
 - Removed dead private composables and superseded helpers.

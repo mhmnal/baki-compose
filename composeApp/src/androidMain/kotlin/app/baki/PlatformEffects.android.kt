@@ -1,10 +1,13 @@
 package app.baki
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -60,21 +63,40 @@ actual object PlatformEffects {
         BakiWidget.refresh(ctx)
     }
 
-    actual fun exportFile(name: String, mime: String, content: String) {
-        val ctx = AppCtx.ctx ?: return
-        runCatching {
-            val dir = java.io.File(ctx.cacheDir, "exports").apply { mkdirs() }
-            val file = java.io.File(dir, name).apply { writeText(content) }
-            val uri = androidx.core.content.FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
-            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                type = mime
-                putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    actual fun exportFile(name: String, mime: String, content: String): Boolean {
+        val ctx = AppCtx.ctx ?: return false
+        return runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val resolver = ctx.contentResolver
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                    put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: return@runCatching false
+                try {
+                    resolver.openOutputStream(uri)?.use { out ->
+                        out.write(content.toByteArray(Charsets.UTF_8))
+                        out.flush()
+                    } ?: error("Downloads stream unavailable")
+                    values.clear()
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(uri, values, null, null)
+                    true
+                } catch (e: Exception) {
+                    resolver.delete(uri, null, null)
+                    false
+                }
+            } else {
+                val dir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: ctx.filesDir
+                dir.mkdirs()
+                val file = java.io.File(dir, name)
+                file.writeText(content)
+                file.length() > 0L
             }
-            val chooser = android.content.Intent.createChooser(send, "Export $name")
-                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            ctx.startActivity(chooser)
-        }
+        }.getOrDefault(false)
     }
 
     actual fun dataChanged() { AppCtx.ctx?.let { BakiWidget.refresh(it); BakiLiveWidget.refresh(it) } }
