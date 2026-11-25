@@ -20,6 +20,12 @@
 -dontwarn com.gemalto.jp2.**
 -dontwarn com.tom_roush.pdfbox.filter.JPXFilter
 
+# Desktop PDFBox has optional BouncyCastle/JAXB/color-management paths; the app only extracts text.
+-dontwarn org.apache.pdfbox.**
+-dontwarn org.bouncycastle.**
+-dontwarn javax.xml.bind.**
+-dontwarn sun.java2d.cmm.**
+
 # WorkManager opens its Room database reflectively; R8 must keep the generated implementation.
 -keep class androidx.work.impl.WorkDatabase_Impl { *; }
 -keep class * extends androidx.room.RoomDatabase { *; }

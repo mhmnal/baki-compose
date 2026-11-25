@@ -12,7 +12,7 @@ R8 APK        dist/baki-compose-0.64.1.apk
 SHA-256       3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06
 Unminified    dist/baki-compose-0.64.1-unminified.apk
 Phone         0.64.1 installed
-Desktop       0.63.1 installed; 0.64.1 package not built yet
+Desktop       0.64.1 installed; 0.63.1 rollback retained
 ```
 
 Standing decisions:
@@ -161,7 +161,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 1. Move `~/baki-backups/baki-20261125-backup.bak` and its passphrase to separate off-device storage.
 2. Force phone sync; confirm W47 incentives/tips/delivery and the three auto entries on device.
-3. Build/install desktop 0.64.1.
+3. Desktop 0.64.1 installed; verify a real desk session.
 4. Fix the misleading backup-age health line.
 5. Investigate the remaining payout gap in Data Health.
 6. Keep R8 on `release-r8-safe.sh`.

@@ -12,7 +12,7 @@ As of **2026-11-25**.
 | SHA-256 | `3163782ae664f8d3b101fcdde01723fab625de22f83b84146a4843460a823a06` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
 | Phone | 0.64.1 installed · verified 25 Nov 2026 |
-| Desktop | 0.63.1 installed · 0.64.1 package not built yet |
+| Desktop | 0.64.1 installed · 0.63.1 rollback retained |
 
 ## Data
 
@@ -50,7 +50,7 @@ The backup and passphrase **must be moved to separate off-device locations**.
 
 1. Move backup and passphrase to separate off-device storage.
 2. Force phone sync and confirm W47 breakdown/auto entries on device.
-3. Build/install desktop 0.64.1.
+3. Desktop 0.64.1 installed; verify a real desk session.
 4. Fix the misleading backup-age health line.
 5. Investigate the remaining payout gap reported by Data Health.
 6. Run a 6+ hour shift soak with screen off.
