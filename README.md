@@ -65,6 +65,12 @@ Test suite: **267 JVM tests** (`:composeApp:desktopTest`).
 - read-only tables, route traces (sealed end-to-end), month comparison, year at a glance, statement preview
 - routes never leave the phone unsealed; the server stores ciphertext only
 
+**Weekly GSF and incentives**
+- Net GSF is stored as informational metadata, never subtracted from earnings a second time
+- Net GSF rate and delivery incentives are kept with the weekly statement
+- incentives, tips and delivery incentives are editable in the Week Close breakdown
+- the PDF weekly payout remains the authoritative paid amount; Grab app screenshots cover fields the PDF does not contain
+
 **Storage and recovery**
 - normalized, encrypted SQLite is authoritative on Android and desktop; schema version 4
 - SQLCipher on Android and SQLite3MultipleCiphers on desktop

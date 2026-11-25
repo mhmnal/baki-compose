@@ -30,6 +30,29 @@ class StatementParseTest {
     }
 
     @Test
+    fun gsfMetadataRoundTripsWithoutChangingPayout() {
+        val st = Statement(
+            weekStart = "2026-11-16",
+            income = 417.70,
+            deductions = -30.00,
+            weekly = 387.70,
+            incentives = 16.80,
+            tips = 4.00,
+            netGsf = 101.71,
+            netGsfRate = 19.9,
+            deliveryIncentive = 1.50,
+        )
+        val encoded = BakiJson.encodeToString(Statement.serializer(), st)
+        val decoded = BakiJson.decodeFromString(Statement.serializer(), encoded)
+        assertEquals(387.70, decoded.weekly, 0.001)
+        assertEquals(101.71, decoded.netGsf, 0.001)
+        assertEquals(19.9, decoded.netGsfRate, 0.001)
+        assertEquals(1.50, decoded.deliveryIncentive, 0.001)
+        assertEquals(16.80, decoded.incentives, 0.001)
+        assertEquals(4.00, decoded.tips, 0.001)
+    }
+
+    @Test
     fun rejectsTextThatIsNotAStatement() {
         assertEquals(null, StatementParse.parse("hello, this is a receipt for nasi lemak RM 5.00"))
     }
