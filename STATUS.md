@@ -36,7 +36,7 @@ As of **2026-11-25**.
 - backup SHA-256: `c2285574e677be0052845116d93f9f63564d2665d0324d162f09171446796a73`
 - decryption verified by the app’s own `encryptBackup`/`decryptBackup`
 
-The backup and passphrase **must be moved to separate off-device locations**.
+User moved the backup and passphrase off-device on 25 Nov 2026.
 
 ## Verification
 
@@ -48,13 +48,10 @@ The backup and passphrase **must be moved to separate off-device locations**.
 
 ## Next gates
 
-1. Move backup and passphrase to separate off-device storage.
-2. Force phone sync and confirm W47 breakdown/auto entries on device.
-3. Desktop 0.64.1 installed; verify a real desk session.
-4. Fix the misleading backup-age health line.
-5. Investigate the remaining payout gap reported by Data Health.
-6. Run a 6+ hour shift soak with screen off.
-7. Keep the week of data, then retire the JSON write path (G6).
+1. Fix backup-age health: make Android save directly to Downloads and mark the backup only after the write succeeds.
+2. Review the remaining payout gap in Data Health.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep the week of data, then retire the JSON write path (G6).
 
 ## Known gaps
 

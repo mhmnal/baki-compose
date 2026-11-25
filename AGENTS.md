@@ -159,9 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Move `~/baki-backups/baki-20261125-backup.bak` and its passphrase to separate off-device storage.
-2. Force phone sync; confirm W47 incentives/tips/delivery and the three auto entries on device.
-3. Desktop 0.64.1 installed; verify a real desk session.
-4. Fix the misleading backup-age health line.
-5. Investigate the remaining payout gap in Data Health.
-6. Keep R8 on `release-r8-safe.sh`.
+1. Fix backup-age health: save Android backups directly to Downloads and mark success only after a verified write.
+2. Review the remaining payout gap in Data Health.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep R8 on `release-r8-safe.sh`.
