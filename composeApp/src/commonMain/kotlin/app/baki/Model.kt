@@ -255,6 +255,10 @@ data class Statement(
     @SerialName("other_income") val otherIncome: Double = 0.0,
     val incentives: Double = 0.0,
     val tips: Double = 0.0,
+    /** Weekly Net Grab Service Fee shown in the new earnings breakdown. Informational only. */
+    @SerialName("net_gsf") val netGsf: Double = 0.0,
+    @SerialName("net_gsf_rate") val netGsfRate: Double = 0.0,
+    @SerialName("delivery_incentive") val deliveryIncentive: Double = 0.0,
     /** Null for old imports that predate insurance-count capture. */
     @SerialName("insurance_count") val insuranceCount: Int? = null,
     val consistent: Boolean = false,

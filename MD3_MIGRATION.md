@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.63.0 weekly GSF breakdown
+
+- Weekly statement metadata now stores Net GSF, Net GSF rate and delivery incentive.
+- Week Close exposes an editable earnings breakdown: incentives, tips, delivery incentive, Net GSF, rate.
+- Net GSF is labelled informational and never deducted from earnings again.
+- Server preserves the new fields.
+- 267 tests pass.
+
 ## 0.62.1 quick-capture correctness
 
 - Quick-log Food widget now sends the food category.

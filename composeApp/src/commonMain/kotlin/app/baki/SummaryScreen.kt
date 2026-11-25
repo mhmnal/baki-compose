@@ -266,6 +266,12 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
     val scope = rememberCoroutineScope()
     var received by remember(initial.received) { mutableStateOf(centsDigits(initial.received)) }
     var saving by remember { mutableStateOf(false) }
+    var breakdownOpen by remember { mutableStateOf(false) }
+    var bIncentives by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.incentives * 100).roundToLong()) } ?: "") }
+    var bTips by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.tips * 100).roundToLong()) } ?: "") }
+    var bNetGsf by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.netGsf * 100).roundToLong()) } ?: "") }
+    var bRate by remember(initial.statement) { mutableStateOf(initial.statement?.let { if (it.netGsfRate > 0) "%.1f".format(it.netGsfRate) else "" } ?: "") }
+    var bDelivery by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.deliveryIncentive * 100).roundToLong()) } ?: "") }
     val cents = centsFromDigits(received)
     val view = remember(repo.store, weekStart) { weekCloseView(repo.store, weekStart) }
     BakiSheet(
@@ -316,8 +322,60 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
             WeekCloseRow("Gross", "RM ${rm((st.income * 100).roundToLong())}")
             WeekCloseRow("Deductions", "− RM ${rm((kotlin.math.abs(st.deductions) * 100).roundToLong())}")
             WeekCloseRow("Weekly payout", "RM ${rm((st.weekly * 100).roundToLong())}")
+            if (st.netGsf > 0) WeekCloseRow("Net GSF · informational", "RM ${"%.2f".format(st.netGsf)}")
+            if (st.netGsfRate > 0) WeekCloseRow("Net GSF rate", "${"%.1f".format(st.netGsfRate)}%")
+            if (st.deliveryIncentive > 0) WeekCloseRow("Delivery incentive · app", "RM ${"%.2f".format(st.deliveryIncentive)}")
+            if (st.incentives > 0 || st.tips > 0) {
+                WeekCloseRow("Incentives / tips", "RM ${"%.2f".format(st.incentives)} / ${"%.2f".format(st.tips)}")
+            }
             WeekCloseRow("Reconciled", if (view.statementReconciled) "yes" else "no")
+            TextButton(
+                onClick = { breakdownOpen = !breakdownOpen },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                modifier = Modifier.testTag("week-breakdown-toggle"),
+            ) { Text(if (breakdownOpen) "Hide earnings breakdown" else "Edit earnings breakdown", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
         } ?: Text("No statement imported for this week.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        if (breakdownOpen && view.statement != null) {
+            Text("WEEKLY EARNINGS BREAKDOWN", color = scheme.onSurfaceVariant, letterSpacing = 1.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+            Text("Net GSF is informational and is not deducted from total earnings. The PDF weekly payout stays authoritative.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            CentsField(digits = bIncentives, onDigitsChange = { bIncentives = it }, label = "Incentives (from PDF)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
+            CentsField(digits = bTips, onDigitsChange = { bTips = it }, label = "Tips (from PDF)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
+            CentsField(digits = bDelivery, onDigitsChange = { bDelivery = it }, label = "Delivery incentive (app)", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
+            CentsField(digits = bNetGsf, onDigitsChange = { bNetGsf = it }, label = "Net GSF · not deducted", prefix = "RM", colors = OutlinedTextFieldDefaults.colors(), modifier = Modifier.fillMaxWidth(), enabled = !repo.readOnly)
+            OutlinedTextField(
+                value = bRate,
+                onValueChange = { bRate = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(5) },
+                label = { Text("Net GSF rate %") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !repo.readOnly,
+            )
+            Button(
+                onClick = {
+                    scope.launch {
+                        saving = true
+                        val ok = repo.updateStatementBreakdown(
+                            weekStart = weekStart,
+                            incentivesCents = centsFromDigits(bIncentives),
+                            tipsCents = centsFromDigits(bTips),
+                            netGsfCents = centsFromDigits(bNetGsf),
+                            netGsfRate = (bRate.replace(',', '.').toDoubleOrNull() ?: 0.0),
+                            deliveryIncentiveCents = centsFromDigits(bDelivery),
+                        )
+                        saving = false
+                        if (ok) {
+                            breakdownOpen = false
+                            ActionFeedback.show("Weekly breakdown saved")
+                        }
+                    }
+                },
+                enabled = !repo.readOnly && !saving,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Save breakdown") }
+        }
         Spacer(Modifier.height(Space.s))
         Text("ACTUAL PAYOUT RECEIVED", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
         CentsField(

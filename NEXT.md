@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.63.0 weekly GSF breakdown
+
+- Statement fields for Net GSF, rate and delivery incentive.
+- Editable Week Close breakdown.
+- Informational GSF semantics; PDF payout remains authoritative.
+- 267 tests pass.
+
 ## 0.62.1 quick-capture correctness
 
 - Widget Food category fixed.

@@ -368,6 +368,31 @@ class BakiRepo(
         RecoverySnapshot.save(store)
     }
 
+    /** Update the new weekly GSF/breakdown metadata without changing the PDF payout. */
+    suspend fun updateStatementBreakdown(
+        weekStart: String,
+        incentivesCents: Long,
+        tipsCents: Long,
+        netGsfCents: Long,
+        netGsfRate: Double,
+        deliveryIncentiveCents: Long,
+    ): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val st = store.statements[weekStart] ?: return@withLock false
+        val updated = st.copy(
+            incentives = incentivesCents / 100.0,
+            tips = tipsCents / 100.0,
+            netGsf = netGsfCents / 100.0,
+            netGsfRate = netGsfRate.coerceIn(0.0, 100.0),
+            deliveryIncentive = deliveryIncentiveCents / 100.0,
+            importedAt = nowIso(),
+        )
+        store = store.copy(statements = store.statements + (weekStart to updated), updatedAt = nowIso())
+        storage.save(store)
+        try { pushWithTombs(emptyList()) } catch (_: Exception) { }
+        true
+    }
+
     /** Reopen a closed week; the entered amount is retained for the next close. */
     suspend fun reopenWeek(weekStart: String): Boolean = mutex.withLock {
         if (config.allowWrites.not()) return@withLock false
