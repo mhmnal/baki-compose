@@ -11,7 +11,7 @@ Tests         242 JVM tests, 0 failures
 R8 APK        dist/baki-compose-0.64.2.apk
 SHA-256       759eb6072ff932ef473438eff75a5cb32732b3862fc3cd0a68f478d42dad1f3a
 Unminified    dist/baki-compose-0.64.2-unminified.apk
-Phone         0.64.1 installed; 0.64.2 pending
+Phone         0.64.2 installed; direct-Downloads backup verified
 Desktop       0.64.1 installed; 0.64.2 not built
 ```
 
@@ -159,9 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Reconnect the phone and install `dist/baki-compose-0.64.2.apk`.
-2. Verify a backup writes directly to Downloads and Data Health updates only after the write.
-3. Build/install desktop 0.64.2.
-4. Review the remaining payout gap in Data Health.
-5. Run a 6+ hour shift soak with screen off.
-6. Keep R8 on `release-r8-safe.sh`.
+1. Build/install desktop 0.64.2.
+2. Review the remaining payout gap in Data Health.
+3. Run a 6+ hour shift soak with screen off.
+4. Keep R8 on `release-r8-safe.sh`.
