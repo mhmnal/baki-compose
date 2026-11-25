@@ -8,8 +8,8 @@ As of **2026-11-24**.
 |---|---|
 | Version | **0.63.1** |
 | versionCode | **258** |
-| APK | `dist/baki-compose-0.63.1.apk` |
-| SHA-256 | `PENDING_0631` |
+| APK | **not built yet** — R8 release deferred |
+| SHA-256 | — |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
 | Phone | 0.62.1 installed · 0.63.1 pending (ADB disconnected) |
 | Desktop | 0.63.1 installed |
