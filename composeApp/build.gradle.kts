@@ -83,8 +83,8 @@ android {
         minSdk = 24
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 258
-        versionName = "0.63.1"
+        versionCode = 259
+        versionName = "0.64.0"
         // opt-in: build the same app under a separate package id purely to verify an
         // R8-minified build on a device without touching the real installation's data
         if (project.findProperty("bakiVerify") == "true") applicationIdSuffix = ".verify"
@@ -97,8 +97,10 @@ android {
         release {
             // R8: drop unused code and shrink resources. The app ships Compose + Ktor +
             // serialization, most of which the linker can prove is unreachable.
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Local/low-memory builds can pass -PbakiMinify=false; production keeps R8.
+            val minify = (project.findProperty("bakiMinify") as String?)?.toBoolean() ?: true
+            isMinifyEnabled = minify
+            isShrinkResources = minify
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -138,7 +140,7 @@ compose.desktop {
             // JDBC/SQLCipher classes reference java.sql; jpackage otherwise strips it.
             modules("java.sql")
             packageName = "Baki"
-            packageVersion = "0.63.1"
+            packageVersion = "0.64.0"
             description = "What your shift really pays"
             vendor = "Baki"
             linux { iconFile.set(project.file("icons/baki.png")) }

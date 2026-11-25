@@ -13,10 +13,6 @@ private data class StoreAux(
     val dayCloses: Map<String, DayClose> = emptyMap(),
     val statementMarks: Map<String, StatementMark> = emptyMap(),
     val envelopeMoves: Map<String, Map<String, Double>> = emptyMap(),
-    val accounts: List<Account> = emptyList(),
-    val importedTxns: List<ImportedTxn> = emptyList(),
-    val statementBatches: List<StatementBatch> = emptyList(),
-    val monthCloses: Map<String, String> = emptyMap(),
 )
 
 private fun auxOf(store: Store) = StoreAux(
@@ -28,10 +24,6 @@ private fun auxOf(store: Store) = StoreAux(
     dayCloses = store.dayCloses,
     statementMarks = store.statementMarks,
     envelopeMoves = store.envelopeMoves,
-    accounts = store.accounts,
-    importedTxns = store.importedTxns,
-    statementBatches = store.statementBatches,
-    monthCloses = store.monthCloses,
 )
 
 private fun auxJson(store: Store): String =
@@ -98,10 +90,6 @@ class NormalizedSqliteStorage(
             envelopeMoves = aux.envelopeMoves,
             reserveTxns = reserves,
             odometerReadings = odometers,
-            accounts = aux.accounts,
-            importedTxns = aux.importedTxns,
-            statementBatches = aux.statementBatches,
-            monthCloses = aux.monthCloses,
         )
     }
 

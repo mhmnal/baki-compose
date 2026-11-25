@@ -731,6 +731,12 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.0 bank reconciliation removed
+
+- Removed AEON/TNG bank sidecar, UI, sync and server endpoints.
+- Weekly statements and Data Health remain.
+- 257 tests pass.
+
 ## 0.63.1 automatic statement income
 
 - Auto-posted incentives/tips/delivery entries.

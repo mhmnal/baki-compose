@@ -6,13 +6,13 @@ As of **2026-11-24**.
 
 | | |
 |---|---|
-| Version | **0.63.1** |
-| versionCode | **258** |
-| APK | `dist/baki-compose-0.63.1.apk` |
-| SHA-256 | `2cea6f87d0b91dd3b21fbb8c653f270187d31cf3ab88b3533ebdc5550e7468c4` |
+| Version | **0.64.0** |
+| versionCode | **259** |
+| APK | `dist/baki-compose-0.64.0.apk` |
+| SHA-256 | `PENDING_0640` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.62.1 installed · 0.63.1 pending (ADB disconnected) |
-| Desktop | 0.63.1 installed |
+| Phone | 0.62.1 installed · 0.64.0 pending (ADB disconnected) |
+| Desktop | 0.64.0 installed |
 
 ## Data
 
@@ -28,7 +28,7 @@ As of **2026-11-24**.
 - **0.56.1** persistent SQLCipher handle, diff-only writes, off-UI persistence
 - desktop jpackage: added `java.sql`, removed duplicate Xerial JDBC jar
 - **0.57.0** explicit recovery mode, verified local snapshot after Week Close, statement-funded payout allocation
-- **0.63.1** quick capture: app shortcuts, live-notification action, 2×2 quick-log widget
+- **0.64.0** quick capture: app shortcuts, live-notification action, 2×2 quick-log widget
 
 ## Verification
 

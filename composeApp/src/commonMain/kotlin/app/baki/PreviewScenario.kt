@@ -264,9 +264,6 @@ object PreviewScenario {
             statementMarks = marks,
             reserveTxns = reserve,
             odometerReadings = odometers,
-            accounts = listOf(
-                Account(id = "preview-account", name = "Preview account", kind = "bank", openingBalance = 120_000, openingDate = end.minus(90, DateTimeUnit.DAY).toString()),
-            ),
         )
     }
 

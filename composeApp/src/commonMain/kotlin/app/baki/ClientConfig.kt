@@ -42,8 +42,6 @@ data class ClientConfig(
     val deskCategory: String = "all",
     val deskSort: String = "Newest",
     /** Desk-local statement matching hints; never synced. */
-    val statementName: String = "",
-    val statementAccountSuffixes: List<String> = emptyList(),
     /**
      * Durable outbox bit: a local mutation has not reached the server yet. Default true so the first
      * launch after this field was introduced reconciles any pre-existing local-only edits.

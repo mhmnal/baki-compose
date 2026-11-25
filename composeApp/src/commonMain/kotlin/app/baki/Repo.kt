@@ -109,8 +109,6 @@ class BakiRepo(
 
     fun start() {
         ensureTollCategory()
-        normalizeInternalTransfers()
-        scope.launch { runCatching { pushStatementsNow() } }
         // enforce retention and drop paths whose shift no longer exists, even if no shift is ended.
         // The id of a shift in progress is NOT in store.shifts yet: sweeping without it deletes the
         // path being recorded right now, which is what made a drive appear to restart after a stop.
@@ -188,9 +186,6 @@ class BakiRepo(
                     // 304: the server has nothing new, but our outbox may still hold local edits.
                     // Keep the last conflict count; a 304 is not a new pull to clear it with.
                     if (config.allowWrites && pendingPush) pushAll()
-                    runCatching { pullStatementsNow() }
-                    normalizeInternalTransfers()
-                    runCatching { pushStatementsNow() }
                     runCatching { pushRoutes() }
                     runCatching { pullRoutes(addDays(todayIso(), -45)) }
                     status = "synced"
@@ -211,9 +206,6 @@ class BakiRepo(
                 }
                 // upload only when we hold something the server did not get last time
                 if (config.allowWrites && pendingPush) pushAll()
-                runCatching { pullStatementsNow() }
-                normalizeInternalTransfers()
-                runCatching { pushStatementsNow() }
                 runCatching { pushRoutes() }
                 runCatching { pullRoutes(addDays(todayIso(), -45)) }
                 status = "synced"
@@ -503,228 +495,6 @@ class BakiRepo(
         }
         if (n > 0) runCatching { pushWithTombs(emptyList()) }
         n
-    }
-
-    private fun statementBook() = StatementBook(store.accounts, store.statementBatches, store.importedTxns, store.monthCloses)
-
-    private suspend fun pushStatementsNow(
-        deletedBatchIds: List<String> = emptyList(),
-        removedMonths: List<String> = emptyList(),
-    ) {
-        val remote = runCatching { client.pushStatements(statementBook(), deletedBatchIds, removedMonths) }.getOrNull() ?: return
-        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        storage.save(store, markDirty = false, recordOutbox = false)
-    }
-
-    private suspend fun pullStatementsNow() {
-        val remote = runCatching { client.pullStatements() }.getOrNull() ?: return
-        store = store.copy(accounts = remote.accounts, importedTxns = remote.txns, statementBatches = remote.batches, monthCloses = remote.monthCloses)
-        storage.save(store, markDirty = false, recordOutbox = false)
-    }
-
-    /** Reclassify sub-account moves already in the queue: hide, but retain for audit. */
-    private fun normalizeInternalTransfers() {
-        var changed = false
-        val rows = store.importedTxns.map {
-            if (!it.internal && it.status == "pending" && isInternalTransfer(it.description, it.source, config.statementName, config.statementAccountSuffixes)) {
-                changed = true
-                it.copy(internal = true, transfer = true, status = "internal", updated = nowIso())
-            } else it
-        }
-        if (changed) {
-            store = store.copy(importedTxns = rows, updatedAt = nowIso())
-            storage.save(store, markDirty = false, recordOutbox = false)
-        }
-    }
-
-    data class StageResult(val staged: Int, val duplicates: Int)
-
-    /** Parse AEON/TNG/CSV text and stage rows for review. Nothing enters ledger totals. */
-    suspend fun stageStatementText(text: String): StageResult = mutex.withLock {
-        // Statement rows are sidecar evidence; this is allowed even when ledger writes are off.
-        val drafts = parseStatementText(text)
-        if (drafts.isEmpty()) return@withLock StageResult(0, 0)
-        val stamp = nowIso()
-        var accounts = store.accounts.toList()
-        val next = mutableListOf<ImportedTxn>()
-        var duplicates = 0
-        val batchId = newId("batch")
-        for (d in drafts) {
-            var account = accounts.firstOrNull { it.name == d.accountName }
-            if (account == null) {
-                account = Account(id = newId("acc"), name = d.accountName, kind = d.accountKind)
-                accounts += account
-            }
-            val fingerprint = fingerprintOf(account.id, d)
-            if ((store.importedTxns + next).any { fingerprintOf(it.accountId, it) == fingerprint }) {
-                duplicates++
-                continue
-            }
-            next += ImportedTxn(
-                id = newId("imp"), accountId = account.id, date = d.date,
-                description = d.description.take(160), amount = d.amountCents,
-                direction = d.direction, transfer = d.isTransfer, source = d.source,
-                suggestedEntryId = suggestStatementMatch(store, d),
-                batchId = batchId,
-                internal = d.isInternal || isInternalTransfer(d.description, d.source, config.statementName, config.statementAccountSuffixes),
-                status = if (d.isInternal || isInternalTransfer(d.description, d.source, config.statementName, config.statementAccountSuffixes)) "internal" else "pending",
-                updated = stamp,
-            )
-        }
-        if (next.isEmpty()) return@withLock StageResult(0, duplicates)
-        val dates = next.map { it.date }.sorted()
-        val batch = StatementBatch(
-            id = batchId, accountId = next.first().accountId, source = next.first().source,
-            importedAt = stamp, periodStart = dates.firstOrNull() ?: "", periodEnd = dates.lastOrNull() ?: "",
-            rowCount = next.size, duplicateCount = duplicates,
-        )
-        store = store.copy(
-            accounts = accounts,
-            importedTxns = store.importedTxns + next,
-            statementBatches = store.statementBatches + batch,
-            updatedAt = stamp,
-        )
-        storage.save(store)
-        suggestTransfers()
-        pushStatementsNow()
-        StageResult(next.size, duplicates)
-    }
-
-    private fun fingerprintOf(accountId: String, t: ImportedTxn): String =
-        "$accountId|${t.date}|${t.direction}|${t.amount}|${t.description.lowercase().replace(Regex("\\s+"), " ").trim().take(100)}"
-
-    private fun fingerprintOf(accountId: String, d: DraftTxn): String =
-        "$accountId|${d.date}|${d.direction}|${d.amountCents}|${d.description.lowercase().replace(Regex("\\s+"), " ").trim().take(100)}"
-
-    suspend fun renameAccount(id: String, name: String, openingBalance: Long? = null, openingDate: String? = null): Boolean = mutex.withLock {
-        if (name.isBlank()) return@withLock false
-        if (store.accounts.none { it.id == id }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(accounts = store.accounts.map {
-            if (it.id == id) it.copy(name = name.trim().take(60), openingBalance = openingBalance ?: it.openingBalance, openingDate = openingDate ?: it.openingDate) else it
-        }, updatedAt = stamp)
-        storage.save(store); pushStatementsNow(); true
-    }
-
-    suspend fun archiveAccount(id: String, archived: Boolean): Boolean = mutex.withLock {
-        if (store.accounts.none { it.id == id }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(accounts = store.accounts.map { if (it.id == id) it.copy(archived = archived) else it }, updatedAt = stamp)
-        storage.save(store); pushWithTombs(emptyList()); true
-    }
-
-    /** Link a staged statement row to a phone-written entry. Never creates or edits an entry. */
-    suspend fun matchImported(id: String, entryId: String): Boolean = mutex.withLock {
-        val row = store.importedTxns.firstOrNull { it.id == id && it.status == "pending" } ?: return@withLock false
-        if (store.entries.none { it.id == entryId }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(importedTxns = store.importedTxns.map {
-            if (it.id == id) it.copy(status = "matched", entryId = entryId, updated = stamp) else it
-        }, updatedAt = stamp)
-        storage.save(store)
-        pushStatementsNow()
-        true
-    }
-
-    private fun suggestStatementMatch(store: Store, d: DraftTxn): String? {
-        val target = runCatching { kotlinx.datetime.LocalDate.parse(d.date) }.getOrNull() ?: return null
-        val stop = setOf("the", "and", "payment", "purchase", "transfer", "via", "for", "with", "from", "sdn", "bhd")
-        val tokens = d.description.lowercase().split(Regex("[^a-z0-9]+")).filter { it.length >= 3 && it !in stop }.toSet()
-        return store.entries
-            .filter { it.type == (if (d.direction == "in") "income" else "expense") && it.amount == d.amountCents }
-            .mapNotNull { e ->
-                val day = runCatching { kotlinx.datetime.LocalDate.parse(e.date) }.getOrNull() ?: return@mapNotNull null
-                val diff = kotlin.math.abs((target.toEpochDays() - day.toEpochDays()).toInt())
-                if (diff > 3) return@mapNotNull null
-                val noteTokens = (e.note + " " + categoryLabel(store, e.cat)).lowercase().split(Regex("[^a-z0-9]+")).filter { it.length >= 3 }.toSet()
-                val overlap = tokens.intersect(noteTokens).size
-                Triple(e, diff, overlap)
-            }
-            .sortedWith(compareByDescending<Triple<Entry, Int, Int>> { it.third }.thenBy { it.second })
-            .firstOrNull()?.first?.id
-    }
-
-    suspend fun closeMonth(month: String): Boolean = mutex.withLock {
-        if (!isValidIsoDate("$month-01")) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(monthCloses = store.monthCloses + (month to stamp), updatedAt = stamp)
-        storage.save(store)
-        pushStatementsNow()
-        true
-    }
-
-    suspend fun reopenMonth(month: String): Boolean = mutex.withLock {
-        store = store.copy(monthCloses = store.monthCloses - month, updatedAt = nowIso())
-        storage.save(store)
-        pushStatementsNow(removedMonths = listOf(month))
-        true
-    }
-
-    suspend fun deleteStatementBatch(batchId: String): Boolean = mutex.withLock {
-        if (store.statementBatches.none { it.id == batchId }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(
-            importedTxns = store.importedTxns.filterNot { it.batchId == batchId },
-            statementBatches = store.statementBatches.map { if (it.id == batchId) it.copy(deletedAt = stamp) else it },
-            updatedAt = stamp,
-        )
-        storage.save(store)
-        pushStatementsNow(listOf(batchId))
-        true
-    }
-
-    /** Suggest opposite-direction transfer pairs on different accounts, exact amount, ±1 day. */
-    private fun suggestTransfers() {
-        val pending = store.importedTxns.filter { it.status == "pending" && it.transfer && it.pairId.isBlank() && it.suggestedPairId.isBlank() && !it.pairRejected }
-        val used = mutableSetOf<String>()
-        var changed = false
-        val rows = store.importedTxns.toMutableList()
-        for (a in pending) {
-            if (a.id in used) continue
-            val match = pending.firstOrNull { b ->
-                b.id != a.id && b.id !in used && b.accountId != a.accountId &&
-                    b.direction != a.direction && b.amount == a.amount &&
-                    runCatching {
-                        kotlin.math.abs(kotlinx.datetime.LocalDate.parse(a.date).toEpochDays() - kotlinx.datetime.LocalDate.parse(b.date).toEpochDays()) <= 1
-                    }.getOrDefault(false)
-            }
-            val b = match ?: continue
-            val pair = newId("pair")
-            val ia = rows.indexOfFirst { it.id == a.id }; val ib = rows.indexOfFirst { it.id == b.id }
-            if (ia >= 0 && ib >= 0) {
-                rows[ia] = rows[ia].copy(suggestedPairId = pair); rows[ib] = rows[ib].copy(suggestedPairId = pair)
-                used += a.id; used += b.id; changed = true
-            }
-        }
-        if (changed) store = store.copy(importedTxns = rows)
-    }
-
-    suspend fun confirmTransferPair(suggestedPairId: String): Boolean = mutex.withLock {
-        val rows = store.importedTxns.filter { it.suggestedPairId == suggestedPairId }
-        if (rows.size != 2) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(importedTxns = store.importedTxns.map {
-            if (it.suggestedPairId == suggestedPairId) it.copy(pairId = suggestedPairId, suggestedPairId = "", updated = stamp) else it
-        }, updatedAt = stamp)
-        storage.save(store); pushStatementsNow(); true
-    }
-
-    suspend fun rejectTransferPair(suggestedPairId: String): Boolean = mutex.withLock {
-        if (store.importedTxns.none { it.suggestedPairId == suggestedPairId }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(importedTxns = store.importedTxns.map {
-            if (it.suggestedPairId == suggestedPairId) it.copy(suggestedPairId = "", pairRejected = true, updated = stamp) else it
-        }, updatedAt = stamp)
-        storage.save(store); pushStatementsNow(); true
-    }
-
-    suspend fun ignoreImported(id: String): Boolean = mutex.withLock {
-        if (store.importedTxns.none { it.id == id && it.status == "pending" }) return@withLock false
-        val stamp = nowIso()
-        store = store.copy(importedTxns = store.importedTxns.map { if (it.id == id) it.copy(status = "ignored", updated = stamp) else it }, updatedAt = stamp)
-        storage.save(store)
-        pushStatementsNow()
-        true
     }
 
     suspend fun addExpense(amountCents: Long, cat: String, note: String, date: String, odo: Int? = null) =
@@ -1436,15 +1206,6 @@ class BakiRepo(
         if (config.deskQuery == query && config.deskCategory == category && config.deskSort == sort) return
         config = config.copy(deskQuery = query, deskCategory = category, deskSort = sort)
         saveConfig(config)
-    }
-
-    fun setStatementIdentity(name: String, suffixes: List<String>) {
-        config = config.copy(
-            statementName = name.trim().uppercase(),
-            statementAccountSuffixes = suffixes.map { it.filter { c -> c.isDigit() }.takeLast(6) }.filter { it.length == 6 }.distinct(),
-        )
-        saveConfig(config)
-        ActionFeedback.show("Statement identity saved")
     }
 
     suspend fun setServiceBaseline(km: Int?, date: String?) = mutex.withLock {

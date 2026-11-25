@@ -135,50 +135,6 @@ data class Shift(
 )
 
 @Serializable
-data class Account(
-    val id: String,
-    val name: String,
-    val kind: String = "bank",
-    val openingBalance: Long = 0,
-    val openingDate: String = "",
-    val archived: Boolean = false,
-)
-
-@Serializable
-data class StatementBatch(
-    val id: String,
-    val accountId: String,
-    val source: String = "",
-    val importedAt: String = "",
-    val periodStart: String = "",
-    val periodEnd: String = "",
-    val rowCount: Int = 0,
-    val duplicateCount: Int = 0,
-    val deletedAt: String = "",
-)
-
-@Serializable
-data class ImportedTxn(
-    val id: String,
-    val accountId: String,
-    val date: String,
-    val description: String,
-    val amount: Long,
-    val direction: String,
-    val transfer: Boolean = false,
-    val source: String = "",
-    val status: String = "pending",
-    val entryId: String? = null,
-    val suggestedEntryId: String? = null,
-    val batchId: String = "",
-    val pairId: String = "",
-    val suggestedPairId: String = "",
-    val pairRejected: Boolean = false,
-    val internal: Boolean = false,
-    val updated: String = "",
-)
-
-@Serializable
 data class OdometerReading(
     val id: String,
     val date: String,
@@ -291,12 +247,6 @@ data class Store(
     val reserveTxns: List<ReserveTxn> = emptyList(),
     /** Manual dashboard readings; fuel/shift odometers are derived automatically. */
     val odometerReadings: List<OdometerReading> = emptyList(),
-    /** Bank/e-wallet accounts and staged statement rows. */
-    val accounts: List<Account> = emptyList(),
-    val importedTxns: List<ImportedTxn> = emptyList(),
-    val statementBatches: List<StatementBatch> = emptyList(),
-    /** month (YYYY-MM) → close timestamp; review state, not a ledger lock. */
-    val monthCloses: Map<String, String> = emptyMap(),
 )
 
 val BakiJson = Json {

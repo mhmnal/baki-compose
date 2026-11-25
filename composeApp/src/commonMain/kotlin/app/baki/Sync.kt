@@ -106,33 +106,10 @@ class TrackerClient(
         val res = http.post("$baseUrl/api/data") {
             auth()
             contentType(ContentType.Application.Json)
-            val ledgerOnly = store.copy(accounts = emptyList(), importedTxns = emptyList(), statementBatches = emptyList())
-            setBody(BakiJson.encodeToString(PushBody.serializer(), PushBody(ledgerOnly, deletedIds, undeleteIds)))
+            setBody(BakiJson.encodeToString(PushBody.serializer(), PushBody(store, deletedIds, undeleteIds)))
         }
         val env = BakiJson.decodeFromString<DataEnvelope>(res.bodyAsText())
         return env.data ?: store
-    }
-
-    /** Statement sidecar: separate from the ledger payload. */
-    suspend fun pullStatements(): StatementBook {
-        val res = http.get("$baseUrl/api/statements") { auth() }
-        if (res.status != HttpStatusCode.OK) throw IllegalStateException("statement pull failed: ${res.status}")
-        return BakiJson.decodeFromString<StatementBook>(res.bodyAsText())
-    }
-
-    suspend fun pushStatements(
-        book: StatementBook,
-        deletedBatchIds: List<String> = emptyList(),
-        removedMonths: List<String> = emptyList(),
-    ): StatementBook {
-        val res = http.post("$baseUrl/api/statements") {
-            auth()
-            contentType(ContentType.Application.Json)
-            setBody(BakiJson.encodeToString(StatementPush.serializer(), StatementPush(book.accounts, book.batches, book.txns, book.monthCloses, removedMonths, deletedBatchIds)))
-        }
-        if (res.status != HttpStatusCode.OK) throw IllegalStateException("statement push failed: ${res.status}")
-        val value = BakiJson.decodeFromString<StatementBook>(res.bodyAsText())
-        return value
     }
 
     /** Upload sealed traces; the server stores them under the shift id. */
@@ -163,21 +140,3 @@ class TrackerClient(
         }
     }
 }
-
-@Serializable
-data class StatementBook(
-    val accounts: List<Account> = emptyList(),
-    val batches: List<StatementBatch> = emptyList(),
-    val txns: List<ImportedTxn> = emptyList(),
-    val monthCloses: Map<String, String> = emptyMap(),
-)
-
-@Serializable
-private data class StatementPush(
-    val accounts: List<Account> = emptyList(),
-    val batches: List<StatementBatch> = emptyList(),
-    val txns: List<ImportedTxn> = emptyList(),
-    val monthCloses: Map<String, String> = emptyMap(),
-    val removedMonths: List<String> = emptyList(),
-    val deletedBatchIds: List<String> = emptyList(),
-)

@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.0 bank reconciliation removed
+
+- Removed AEON/TNG import, matching, accounts, batches and month-close screens.
+- Removed `/api/statements` and dormant sidecar fields from the store/server.
+- Weekly Grab statements, incentives/tips auto-posting and Data Health are unchanged.
+- Current and historical sidecar data archived under `~/baki-backups/bank-removal-20261125`.
+- 257 tests pass.
+
 ## 0.63.1 automatic statement income
 
 - Incentives, tips and delivery incentives post automatically as stable weekly income entries.

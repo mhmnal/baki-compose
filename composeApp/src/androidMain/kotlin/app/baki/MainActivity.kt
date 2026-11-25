@@ -185,44 +185,15 @@ class MainActivity : ComponentActivity() {
     private val askLocation =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { /* optional */ }
 
-    /** Test-only seed for the isolated .verify package; never present in the normal app. */
+    /** Test-only restore fixture for the isolated .verify package; never present in the normal app. */
     private fun seedVerifyStatements() {
         if (packageName.endsWith(".verify").not()) return
-        // A clean-restore fixture, if supplied by the Android test harness.
         val fixture = getExternalFilesDir(null)?.resolve("baki-restore-test.json") ?: java.io.File("/sdcard/Download/baki-restore-test.json")
-        if (fixture.exists()) {
-            runCatching {
-                val text = fixture.readText()
-                val bundle = BakiJson.decodeFromString<BakiBackupBundle>(text)
-                saveLocal(bundle.store)
-            }
-            return
+        if (!fixture.exists()) return
+        runCatching {
+            val bundle = BakiJson.decodeFromString<BakiBackupBundle>(fixture.readText())
+            saveLocal(bundle.store)
         }
-        val current = runCatching { loadLocal() }.getOrNull() ?: return
-        if (current.importedTxns.isNotEmpty()) return
-        val stamp = nowIso()
-        runCatching { saveConfig(loadConfig().copy(allowWrites = true)) }
-        val aeon = Account(id = "test-aeon", name = "AEON Bank — Savings Account-i", kind = "bank")
-        val tng = Account(id = "test-tng", name = "TNG eWallet", kind = "ewallet")
-        val batch = StatementBatch(
-            id = "test-batch", accountId = aeon.id, source = "aeon", importedAt = stamp,
-            periodStart = "2026-10-01", periodEnd = "2026-10-02", rowCount = 2, duplicateCount = 0,
-        )
-        val rows = listOf(
-            ImportedTxn(
-                id = "test-row-1", accountId = aeon.id, date = "2026-10-01",
-                description = "TEST COFFEE · DuitNowQR", amount = 1230, direction = "out",
-                source = "aeon", status = "pending", batchId = batch.id,
-                suggestedEntryId = null, suggestedPairId = "", updated = stamp,
-            ),
-            ImportedTxn(
-                id = "test-row-2", accountId = tng.id, date = "2026-10-02",
-                description = "TEST RELOAD · transfer", amount = 5000, direction = "in",
-                transfer = true, source = "tng", status = "matched", entryId = null,
-                batchId = "", updated = stamp,
-            ),
-        )
-        saveLocal(current.copy(accounts = listOf(aeon, tng), importedTxns = rows, statementBatches = listOf(batch)))
     }
 
     /** Requested from the live-shift start path, not at launch. */

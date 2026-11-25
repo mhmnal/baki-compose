@@ -1813,7 +1813,6 @@ private fun MoreScreen(
     var serviceTargetOpen by remember { mutableStateOf(false) }
     var serviceBaselineOpen by remember { mutableStateOf(false) }
     var manualOdometerOpen by remember { mutableStateOf(false) }
-    var prefillStatement by remember { mutableStateOf<ImportedTxn?>(null) }
     var moreTab by remember { mutableStateOf(MoreTab.MONEY) }
     var pendingRestore by remember { mutableStateOf<String?>(null) }
     var restoreSummary by remember { mutableStateOf<BackupSummary?>(null) }
@@ -2126,57 +2125,6 @@ private fun MoreScreen(
                 onDismiss = { dataHealthOpen = false },
             )
         }
-        val statementRows = repo.store.importedTxns
-        val matchedRows = statementRows.count { it.status == "matched" }
-        val pendingRows = statementRows.count { it.status == "pending" }
-        SectionTitle("STATEMENT RECONCILIATION")
-        Spacer(Modifier.height(Space.s))
-        Text(
-            "Statements are imported and matched on Desk. The phone ledger is unchanged; only the reconciliation summary appears here.",
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
-        )
-        if (statementRows.isEmpty()) {
-            Spacer(Modifier.height(Space.s))
-            Text("No statement batches yet — open Desk → Statements.", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium)
-        } else {
-            Spacer(Modifier.height(Space.m))
-            val currentMonth = todayIso().take(7)
-            if (repo.store.monthCloses.containsKey(currentMonth)) {
-                Text("✓ ${monthLabel(currentMonth)} closed", color = scheme.tertiary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-            }
-            Text(
-                "$matchedRows matched · $pendingRows unrecorded",
-                color = if (pendingRows > 0) scheme.secondary else scheme.tertiary,
-                style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold),
-            )
-            repo.store.accounts.filter { acc -> !acc.archived && statementRows.any { it.accountId == acc.id } }.forEach { acc ->
-                val rows = statementRows.filter { it.accountId == acc.id }
-                val open = rows.count { it.status == "pending" }
-                Text(
-                    "${acc.name}: ${rows.count { it.status == "matched" }} matched · $open open",
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            statementRows.filter { it.status == "pending" && !it.transfer }.take(5).forEach { row ->
-                Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "${row.date} · ${if (row.direction == "in") "+" else "−"}RM ${rm(row.amount / 100.0)}",
-                        color = scheme.onSurface, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"), modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        onClick = { prefillStatement = row },
-                        contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.testTag("statement-prefill"),
-                    ) { Text("Add", color = scheme.primary) }
-                }
-            }
-            Spacer(Modifier.height(Space.xs))
-            Text(
-                "Review and match the full list on Desk. Missing rows are still added manually on the phone.",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        Spacer(Modifier.height(Space.l))
         SectionTitle("BILLS")
         Spacer(Modifier.height(Space.s))
         Column(Modifier.fillMaxWidth().padding(vertical = Space.m)) {
@@ -2912,38 +2860,6 @@ private fun MoreScreen(
     SnackbarHost(undoSnackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp))
     }
 
-    prefillStatement?.let { row ->
-        val account = repo.store.accounts.firstOrNull { it.id == row.accountId }?.name ?: "Statement"
-        var amount by remember(row.id) { mutableStateOf(centsDigits(row.amount)) }
-        var date by remember(row.id) { mutableStateOf(row.date) }
-        var category by remember(row.id) { mutableStateOf(statementCategoryHint(row.description)) }
-        var note by remember(row.id) { mutableStateOf("$account · ${row.description}".take(160)) }
-        AlertDialog(
-            onDismissRequest = { prefillStatement = null },
-            title = { Text(if (row.direction == "in") "Add statement income" else "Add statement expense") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    CentsField(amount, { amount = it }, label = "Amount (RM)", prefix = "", modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(date, { date = it }, label = { Text("Date (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(category, { category = it }, label = { Text("Category") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(note, { note = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth())
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val cents = centsFromDigits(amount)
-                    if (cents > 0) {
-                        scope.launch {
-                            val entryId = repo.addEntry(if (row.direction == "in") "income" else "expense", cents, category, note, date)
-                            if (entryId != null) repo.matchImported(row.id, entryId)
-                            prefillStatement = null
-                        }
-                    }
-                }) { Text("Save on phone") }
-            },
-            dismissButton = { TextButton(onClick = { prefillStatement = null }) { Text("Cancel") } },
-        )
-    }
 
     if (statementHistoryOpen) {
         StatementHistorySheet(repo = repo, onDismiss = { statementHistoryOpen = false })
