@@ -159,7 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Review the remaining payout gap in Data Health.
-2. Run a 6+ hour shift soak with screen off.
-3. Keep R8 on `release-r8-safe.sh`.
-4. Keep desktop packaging inside the capped systemd service.
+1. Run a 6+ hour shift soak with screen off.
+2. Review the remaining week-close differences in Data Health.
+3. Keep R8 and desktop packaging inside capped systemd services.
+4. Keep the week of data, then retire the JSON write path (G6).
