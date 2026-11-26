@@ -7,7 +7,7 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ```text
 Version       0.64.7
 Code          266
-Tests         243 JVM tests, 0 failures
+Tests         243 last full; targeted preview after Ledger
 R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
