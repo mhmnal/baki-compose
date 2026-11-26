@@ -12,7 +12,7 @@ R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
 Phone         0.64.7 installed; Shifts receipt trial
-Desktop       0.64.7 installed; ledger spread trial
+Desktop       0.64.7 installed; Overview spread + open Ledger trial
 ```
 
 Standing decisions:
@@ -162,9 +162,9 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Trial the desktop Overview ledger spread at the real window size.
-2. Trial Shifts weekly receipts on phone.
-3. Build/install 0.64.7 desktop is done; keep phone/desktop at 0.64.7 for the trial.
+1. Trial desktop Overview spread + open Ledger at the real window size.
+2. Re-run the full test suite once, after the design settles.
+3. Trial Shifts weekly receipts on phone.
 4. Mark or unlink Celcomdigi’s remaining payment.
 5. Run a 6+ hour shift soak with screen off.
 6. Keep R8 and desktop packaging inside capped systemd services.

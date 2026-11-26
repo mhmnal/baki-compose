@@ -483,6 +483,20 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
     val out = filtered.filter { it.type != "income" }.sumOf { it.amount }
 
     Column(Modifier.fillMaxSize().padding(horizontal = Space.xl)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "/ 01  LEDGER",
+                color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.4.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
+            Spacer(Modifier.weight(1f))
+            Text("${rows.size} entries · RM ${rm(out)} out", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
+            Spacer(Modifier.width(Space.m))
+            Text("READ-ONLY", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        }
+        Spacer(Modifier.height(Space.s))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
             OutlinedTextField(
                 value = query,
@@ -490,11 +504,8 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
                 placeholder = { Text("Filter notes or categories") },
                 singleLine = true,
                 shape = MaterialTheme.shapes.large,
-                modifier = Modifier.widthIn(max = 360.dp).weight(1f),
+                modifier = Modifier.widthIn(max = 360.dp),
             )
-            Spacer(Modifier.weight(1f))
-            Text("${rows.size} entries · RM ${rm(out)} out", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
-            Text("READ-ONLY", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
         }
         Spacer(Modifier.height(Space.s))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
@@ -511,33 +522,31 @@ internal fun DeskLedger(repo: BakiRepo, month: String) {
             }
         }
         Spacer(Modifier.height(Space.s))
-        Surface(Modifier.fillMaxWidth().weight(1f), shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
-            Column(Modifier.fillMaxSize().padding(horizontal = Space.l, vertical = Space.s)) {
-                DeskTableHead(
-                    "DATE" to 0.85f, "CATEGORY" to 1.1f, "NOTE" to 2.4f,
-                    "AMOUNT" to 1f, "RUNNING" to 1.2f,
-                )
-                LazyColumn(Modifier.fillMaxSize()) {
-                    if (rows.isEmpty()) item {
-                        Text("No entries match this view.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = Space.l))
-                    }
-                    items(rows, key = { it.id }) { e ->
-                        DeskTableRow(
-                            listOf(
-                                shortDate(e.date) to 0.85f,
-                                categoryLabel(store, e.cat) to 1.1f,
-                                e.note.ifBlank { "—" } to 2.4f,
-                                (if (e.type == "income") "+" else "−") + "RM " + rm(e.amount) to 1f,
-                                "RM " + rm(chronological[e.id] ?: 0L) to 1.2f,
-                            ),
-                            colors = listOf(
-                                scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface,
-                                if (e.type == "income") scheme.tertiary else scheme.onSurface,
-                                scheme.onSurfaceVariant,
-                            ),
-                            alignments = listOf(TextAlign.Start, TextAlign.Start, TextAlign.Start, TextAlign.End, TextAlign.End),
-                        )
-                    }
+        Column(Modifier.fillMaxWidth().weight(1f)) {
+            DeskTableHead(
+                "DATE" to 0.85f, "CATEGORY" to 1.1f, "NOTE" to 2.4f,
+                "AMOUNT" to 1f, "RUNNING" to 1.2f,
+            )
+            LazyColumn(Modifier.fillMaxSize()) {
+                if (rows.isEmpty()) item {
+                    Text("No entries match this view.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = Space.l))
+                }
+                items(rows, key = { it.id }) { e ->
+                    DeskTableRow(
+                        listOf(
+                            shortDate(e.date) to 0.85f,
+                            categoryLabel(store, e.cat) to 1.1f,
+                            e.note.ifBlank { "—" } to 2.4f,
+                            (if (e.type == "income") "+" else "−") + "RM " + rm(e.amount) to 1f,
+                            "RM " + rm(chronological[e.id] ?: 0L) to 1.2f,
+                        ),
+                        colors = listOf(
+                            scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface,
+                            if (e.type == "income") scheme.tertiary else scheme.onSurface,
+                            scheme.onSurfaceVariant,
+                        ),
+                        alignments = listOf(TextAlign.Start, TextAlign.Start, TextAlign.Start, TextAlign.End, TextAlign.End),
+                    )
                 }
             }
         }
