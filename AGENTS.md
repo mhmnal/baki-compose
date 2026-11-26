@@ -154,7 +154,7 @@ Open the device or desktop window for those. State which checks were actually pe
 
 ## R8 fallback
 
-If the 8 GB service still gets killed by its cap, do not raise it blindly. The safe alternatives are:
+If the 6 GB service still gets killed by its cap, do not raise it blindly. The safe alternatives are:
 
 1. keep the unminified APK for local use;
 2. run standard R8 on a GitHub Actions 16 GB runner;
