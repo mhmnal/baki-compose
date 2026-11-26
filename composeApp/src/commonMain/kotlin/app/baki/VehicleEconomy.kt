@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 
 /** What the vehicle actually returns, and what a kilometre costs. */
 @Composable
-fun VehicleEconomyCard(store: Store) {
+fun VehicleEconomyCard(store: Store, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val economy = remember(store) { measuredEconomy(store) }
     val fuelFills = remember(store) {
@@ -43,7 +43,7 @@ fun VehicleEconomyCard(store: Store) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = scheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Text(

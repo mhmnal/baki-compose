@@ -68,6 +68,7 @@ internal class ReceiptShape : Shape {
 @Composable
 internal fun ReceiptCard(
     reduceMotion: Boolean,
+    modifier: Modifier = Modifier,
     delayMillis: Int = 0,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -80,7 +81,7 @@ internal fun ReceiptCard(
         label = "receipt-in",
     )
     Box(
-        Modifier.fillMaxWidth().graphicsLayer {
+        modifier.fillMaxWidth().graphicsLayer {
             alpha = progress
             translationY = (1f - progress) * 12.dp.toPx()
         },

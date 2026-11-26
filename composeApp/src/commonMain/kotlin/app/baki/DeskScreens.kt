@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -180,64 +181,92 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = Space.s, bottom = Space.xl),
     ) {
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                DeskCard(Modifier.weight(1.35f)) {
-                    DeskLabel("NET THIS MONTH")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xl),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(Modifier.weight(1.3f)) {
+                ReceiptCard(
+                    reduceMotion = repo.config.reducedMotion,
+                    modifier = Modifier,
+                ) {
+                    Text(
+                        "/ 01  MONTH STATEMENT",
+                        color = scheme.primary,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.4.sp,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    )
                     Spacer(Modifier.height(Space.s))
                     DeskMoney(
                         "RM ${rm(t.net)}",
                         if (t.net < 0) scheme.error else scheme.onSurface,
                         MaterialTheme.typography.displayLarge,
                     )
-                    Spacer(Modifier.height(Space.s))
                     Text(
                         "in RM ${rm(t.income)} · out RM ${rm(t.expense)} · ${t.entryCount} entries",
                         color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                     )
-                }
-                DeskCard(Modifier.weight(0.85f)) {
-                    DeskLabel("THE ROAD")
+                    Spacer(Modifier.height(Space.m))
+                    ReceiptRule()
                     Spacer(Modifier.height(Space.m))
                     Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
                         DeskMetric("HOURS", "%.1f".format(hours))
                         DeskMetric("KM", "%.0f".format(km))
                         DeskMetric("SHIFTS", shifts.size.toString())
                     }
-                    Spacer(Modifier.height(Space.m))
+                    Spacer(Modifier.height(Space.s))
                     Text(
                         if (shifts.isEmpty()) "No shifts recorded this month."
-                        else "${days.size} active ${if (days.size == 1) "day" else "days"} recorded.",
+                        else "${days.size} active ${if (days.size == 1) "day" else "days"} recorded · read-only desk",
                         color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                DeskCard(Modifier.weight(0.7f)) {
-                    DeskLabel("DATA")
-                    Spacer(Modifier.height(Space.m))
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                Spacer(Modifier.height(Space.xl))
+                DeskLatestEntries(store, entries)
+                }
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(8.dp).clip(CircleShape).background(if (repo.status == "offline") scheme.error else scheme.tertiary))
-                        Text(repo.status, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        Spacer(Modifier.width(Space.s))
+                        Text(
+                            "/ ANALYSIS",
+                            color = scheme.primary,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = 1.4.sp,
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(repo.status, color = scheme.onSurface, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
                     }
                     Spacer(Modifier.height(Space.xs))
-                    Text("read-only desk · phone remains the writer", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(Modifier.height(Space.s))
-                    Text("Last sync: ${repo.lastSyncAt?.let { clockOf(it) } ?: "not yet"}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "read-only desk · phone remains the writer · last sync ${repo.lastSyncAt?.let { clockOf(it) } ?: "not yet"}",
+                        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(Space.m))
+                    DeskCard(Modifier.fillMaxWidth()) { DeskRunningCard(store, month, showTotal = false) }
+                    if (remember(store) { hourHeatmap(store).isNotEmpty() }) {
+                        Spacer(Modifier.height(Space.m))
+                        DeskCard(Modifier.fillMaxWidth()) { HoursHeatmap(store) }
+                    }
                 }
             }
         }
         item {
-            VehicleWearCard(store)
+            Text(
+                "/ 03  VEHICLE & CASH",
+                color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.4.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
         }
         item {
-            VehicleEconomyCard(store)
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-                DeskCard(Modifier.weight(1.35f)) {
-                    DeskRunningCard(store, month)
-                }
-                if (remember(store) { hourHeatmap(store).isNotEmpty() }) {
-                    DeskCard(Modifier.weight(1f)) { HoursHeatmap(store) }
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.m), verticalAlignment = Alignment.Top) {
+                VehicleWearCard(store, Modifier.weight(1f))
+                VehicleEconomyCard(store, Modifier.weight(1f))
             }
         }
         item {
@@ -296,38 +325,49 @@ internal fun DeskOverview(repo: BakiRepo, month: String) {
                 }
             }
         }
-        item {
-            DeskCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DeskLabel("LATEST ENTRIES")
-                    Spacer(Modifier.weight(1f))
-                    Text("read-only", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                }
-                Spacer(Modifier.height(Space.xs))
-                DeskTableHead("DATE" to 0.9f, "CATEGORY" to 1.1f, "NOTE" to 2.4f, "AMOUNT" to 1f)
-                if (entries.isEmpty()) {
-                    Text("No entries yet.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = Space.m))
-                } else {
-                    entries.forEach { e ->
-                        val name = categoryLabel(store, e.cat)
-                        DeskTableRow(
-                            listOf(
-                                shortDate(e.date) to 0.9f,
-                                name to 1.1f,
-                                e.note.ifBlank { "—" } to 2.4f,
-                                "${if (e.type == "income") "+" else "−"}RM ${rm(e.amount)}" to 1f,
-                            ),
-                            colors = listOf(scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface, if (e.type == "income") scheme.tertiary else scheme.secondary),
-                        )
-                    }
-                }
+    }
+}
+
+@Composable
+private fun DeskLatestEntries(store: Store, entries: List<Entry>) {
+    val scheme = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "/ 02  LATEST ENTRIES",
+                color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.4.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            )
+            Spacer(Modifier.weight(1f))
+            Text("read-only", color = scheme.tertiary, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+        }
+        Spacer(Modifier.height(Space.s))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
+        Spacer(Modifier.height(Space.s))
+        DeskTableHead("DATE" to 0.9f, "CATEGORY" to 1.1f, "NOTE" to 2.4f, "AMOUNT" to 1f)
+        if (entries.isEmpty()) {
+            Text("No entries yet.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = Space.m))
+        } else {
+            entries.forEach { e ->
+                val name = categoryLabel(store, e.cat)
+                DeskTableRow(
+                    listOf(
+                        shortDate(e.date) to 0.9f,
+                        name to 1.1f,
+                        e.note.ifBlank { "—" } to 2.4f,
+                        "${if (e.type == "income") "+" else "−"}RM ${rm(e.amount)}" to 1f,
+                    ),
+                    colors = listOf(scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface, if (e.type == "income") scheme.tertiary else scheme.secondary),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun DeskRunningCard(store: Store, month: String) {
+private fun DeskRunningCard(store: Store, month: String, showTotal: Boolean = true) {
     val scheme = MaterialTheme.colorScheme
     var allTime by remember(month) { mutableStateOf(false) }
     val points = remember(store, month, allTime) {
@@ -342,16 +382,24 @@ private fun DeskRunningCard(store: Store, month: String) {
         DeskFilter("All time", allTime) { allTime = true }
     }
     Spacer(Modifier.height(Space.s))
-    Row(verticalAlignment = Alignment.Bottom) {
-        DeskMoney(
-            "RM ${rm(total)}",
-            if (total < 0) scheme.error else scheme.onSurface,
-            MaterialTheme.typography.headlineLarge,
-        )
-        Spacer(Modifier.weight(1f))
+    if (showTotal) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            DeskMoney(
+                "RM ${rm(total)}",
+                if (total < 0) scheme.error else scheme.onSurface,
+                MaterialTheme.typography.headlineLarge,
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                if (allTime) "${points.size} month${if (points.size == 1) "" else "s"} · cumulative"
+                else "${points.size} day${if (points.size == 1) "" else "s"} · to date",
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    } else {
         Text(
-            if (allTime) "${points.size} month${if (points.size == 1) "" else "s"} · cumulative"
-            else "${points.size} day${if (points.size == 1) "" else "s"} · to date",
+            if (allTime) "${points.size} months · cumulative"
+            else "${points.size} days · to date",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
         )
     }
