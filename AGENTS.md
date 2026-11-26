@@ -11,7 +11,7 @@ Tests         243 JVM tests, 0 failures
 R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
-Phone         0.64.6 installed; 0.64.7 download published
+Phone         0.64.7 installed; Shifts receipt trial
 Desktop       0.64.6 installed; 0.64.7 not built
 ```
 
@@ -159,8 +159,8 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Install 0.64.7 on the phone from `/dl` and trial Shifts weekly receipts.
-2. Build/install desktop 0.64.7 later, inside the 4 GB service.
+1. Trial Shifts weekly receipts on 0.64.7; collect feedback before more design.
+2. Build/install desktop 0.64.7 later, inside the 4 GB service with Firefox closed.
 3. Mark or unlink Celcomdigi’s remaining payment.
 4. Run a 6+ hour shift soak with screen off.
 5. Keep R8 and desktop packaging inside capped systemd services.
