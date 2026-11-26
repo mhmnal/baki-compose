@@ -377,8 +377,14 @@ private fun DeskRunningCard(store: Store, month: String, showTotal: Boolean = tr
     Row(verticalAlignment = Alignment.CenterVertically) {
         DeskLabel(if (allTime) "ALL-TIME RECORDED NET" else "RUNNING NET · ${monthLabel(month).uppercase()}")
         Spacer(Modifier.weight(1f))
+        Text(
+            if (allTime) "${points.size} months" else "${points.size} days",
+            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+        )
+    }
+    Spacer(Modifier.height(Space.xs))
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         DeskFilter("Month", !allTime) { allTime = false }
-        Spacer(Modifier.width(Space.xs))
         DeskFilter("All time", allTime) { allTime = true }
     }
     Spacer(Modifier.height(Space.s))
@@ -389,19 +395,7 @@ private fun DeskRunningCard(store: Store, month: String, showTotal: Boolean = tr
                 if (total < 0) scheme.error else scheme.onSurface,
                 MaterialTheme.typography.headlineLarge,
             )
-            Spacer(Modifier.weight(1f))
-            Text(
-                if (allTime) "${points.size} month${if (points.size == 1) "" else "s"} · cumulative"
-                else "${points.size} day${if (points.size == 1) "" else "s"} · to date",
-                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
-            )
         }
-    } else {
-        Text(
-            if (allTime) "${points.size} months · cumulative"
-            else "${points.size} days · to date",
-            color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
-        )
     }
     Spacer(Modifier.height(Space.s))
     if (points.isEmpty()) {

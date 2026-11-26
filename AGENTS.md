@@ -12,7 +12,7 @@ R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
 Phone         0.64.7 installed; Shifts receipt trial
-Desktop       0.64.6 installed; 0.64.7 not built
+Desktop       0.64.7 installed; ledger spread trial
 ```
 
 Standing decisions:
@@ -162,9 +162,10 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Trial Shifts weekly receipts on 0.64.7; collect feedback before more design.
-2. Build/install desktop 0.64.7 later, inside the 4 GB service with Firefox closed.
-3. Mark or unlink Celcomdigi’s remaining payment.
-4. Run a 6+ hour shift soak with screen off.
-5. Keep R8 and desktop packaging inside capped systemd services.
-6. Keep the week of data, then retire the JSON write path (G6).
+1. Trial the desktop Overview ledger spread at the real window size.
+2. Trial Shifts weekly receipts on phone.
+3. Build/install 0.64.7 desktop is done; keep phone/desktop at 0.64.7 for the trial.
+4. Mark or unlink Celcomdigi’s remaining payment.
+5. Run a 6+ hour shift soak with screen off.
+6. Keep R8 and desktop packaging inside capped systemd services.
+7. Keep the week of data, then retire the JSON write path (G6).
