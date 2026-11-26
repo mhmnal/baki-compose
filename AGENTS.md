@@ -159,7 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Install 0.64.6 on the phone from `/dl` and trial Spend receipts.
+1. Trial Spend receipts on 0.64.6; collect feedback before extending the design.
 2. Mark or unlink Celcomdigi’s remaining payment.
 3. Run a 6+ hour shift soak with screen off.
 4. Keep R8 and desktop packaging inside capped systemd services.
