@@ -1,6 +1,7 @@
 package app.baki
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -917,51 +918,90 @@ internal fun DeskYear(repo: BakiRepo, month: String) {
 
 @Composable
 private fun DeskStatementPreview(store: Store, month: String, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            Modifier.fillMaxSize().padding(Space.xl),
+            contentAlignment = Alignment.Center,
+        ) {
+            DeskStatementPaper(store = store, month = month, onClose = onDismiss)
+        }
+    }
+}
+
+@Composable
+internal fun DeskStatementPaper(store: Store, month: String, onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val t = monthTotals(store, month)
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedBy { it.date }
     val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
-    Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(
-            Modifier.fillMaxSize().padding(Space.xl),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = scheme.surface,
-        ) {
-            Column(Modifier.fillMaxSize().padding(Space.xl)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        DeskLabel("STATEMENT")
-                        Text(monthLabel(month), color = scheme.onSurface, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold))
-                    }
-                    FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }) { Text("Print / PDF") }
-                    Spacer(Modifier.width(Space.s))
-                    TextButton(onClick = onDismiss) { Text("Close") }
+
+    Surface(
+        Modifier.fillMaxHeight().widthIn(max = 1040.dp),
+        shape = ReceiptShape(),
+        color = scheme.surface,
+        border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.55f)),
+    ) {
+        Column(Modifier.fillMaxSize().padding(Space.xl)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "/ STATEMENT · ${monthLabel(month).uppercase()}",
+                        color = scheme.primary,
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 1.4.sp,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "NET",
+                        color = scheme.onSurfaceVariant,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                    DeskMoney("RM ${rm(t.net)}", if (t.net < 0) scheme.error else scheme.onSurface, MaterialTheme.typography.displayMedium)
+                    Text("${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                }
+                FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }) { Text("Print / PDF") }
+                Spacer(Modifier.width(Space.s))
+                TextButton(onClick = onClose) { Text("Close") }
+            }
+            Spacer(Modifier.height(Space.m))
+            ReceiptRule()
+            Spacer(Modifier.height(Space.m))
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                Text(
+                    "/ 01  SHIFTS",
+                    color = scheme.primary,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.2.sp,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                )
+                Spacer(Modifier.height(Space.xs))
+                DeskTableHead("DATE" to 1f, "START" to 0.8f, "HOURS" to 0.7f, "KM" to 0.7f, "GROSS" to 1f, "NET" to 1f)
+                shifts.forEach { sh ->
+                    val m = shiftMetrics(sh, store.settings.profit)
+                    DeskTableRow(
+                        listOf(sh.date to 1f, sh.start to 0.8f, "%.1f".format(sh.hours) to 0.7f, "%.0f".format(sh.km) to 0.7f, "RM ${rm(sh.gross)}" to 1f, "RM ${rm(m.net)}" to 1f),
+                    )
                 }
                 Spacer(Modifier.height(Space.m))
-                Text("NET", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                DeskMoney("RM ${rm(t.net)}", if (t.net < 0) scheme.error else scheme.onSurface, MaterialTheme.typography.displayMedium)
-                Text("${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(Space.m))
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                    DeskLabel("SHIFTS")
-                    Spacer(Modifier.height(Space.xs))
-                    DeskTableHead("DATE" to 1f, "START" to 0.8f, "HOURS" to 0.7f, "KM" to 0.7f, "GROSS" to 1f, "NET" to 1f)
-                    shifts.forEach { sh ->
-                        val m = shiftMetrics(sh, store.settings.profit)
-                        DeskTableRow(
-                            listOf(sh.date to 1f, sh.start to 0.8f, "%.1f".format(sh.hours) to 0.7f, "%.0f".format(sh.km) to 0.7f, "RM ${rm(sh.gross)}" to 1f, "RM ${rm(m.net)}" to 1f),
-                        )
-                    }
-                    Spacer(Modifier.height(Space.m))
-                    DeskLabel("ENTRIES")
-                    Spacer(Modifier.height(Space.xs))
-                    DeskTableHead("DATE" to 1f, "CATEGORY" to 1f, "NOTE" to 2.4f, "AMOUNT" to 1f)
-                    entries.forEach { e ->
-                        DeskTableRow(
-                            listOf(shortDate(e.date) to 1f, categoryLabel(store, e.cat) to 1f, e.note.ifBlank { "—" } to 2.4f, (if (e.type == "income") "+" else "−") + "RM " + rm(e.amount) to 1f),
-                            colors = listOf(scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface, if (e.type == "income") scheme.tertiary else scheme.secondary),
-                        )
-                    }
+                Text(
+                    "/ 02  ENTRIES",
+                    color = scheme.primary,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.2.sp,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                )
+                Spacer(Modifier.height(Space.xs))
+                DeskTableHead("DATE" to 1f, "CATEGORY" to 1f, "NOTE" to 2.4f, "AMOUNT" to 1f)
+                entries.forEach { e ->
+                    DeskTableRow(
+                        listOf(shortDate(e.date) to 1f, categoryLabel(store, e.cat) to 1f, e.note.ifBlank { "—" } to 2.4f, (if (e.type == "income") "+" else "−") + "RM " + rm(e.amount) to 1f),
+                        colors = listOf(scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurface, if (e.type == "income") scheme.tertiary else scheme.secondary),
+                    )
                 }
             }
         }

@@ -12,7 +12,7 @@ R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
 Phone         0.64.7 installed; Shifts receipt trial
-Desktop       0.64.7 installed; Overview spread + open Ledger trial
+Desktop       0.64.7 installed; Overview spread, open Ledger, paper Statement
 ```
 
 Standing decisions:
@@ -162,7 +162,7 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Trial desktop Overview spread + open Ledger at the real window size.
+1. Trial desktop Overview spread, open Ledger and paper Statement at the real window size.
 2. Re-run the full test suite once, after the design settles.
 3. Trial Shifts weekly receipts on phone.
 4. Mark or unlink Celcomdigi’s remaining payment.
