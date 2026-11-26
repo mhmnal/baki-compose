@@ -5,19 +5,19 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 25 November 2026
 
 ```text
-Version       0.64.5
-Code          264
+Version       0.64.6
+Code          265
 Tests         243 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.5.apk
-SHA-256       52325f14b848c80564d3362b76491193d99c7b85cf4b0820778cbed996de377c
-Unminified    dist/baki-compose-0.64.5-unminified.apk
-Phone         0.64.5 installed; direct-Downloads backup verified
-Desktop       0.64.5 installed; 0.64.1/0.63.1 rollbacks retained
+R8 APK        dist/baki-compose-0.64.6.apk
+SHA-256       9d71ad2a7724b3ac7fb8f6e01682bc33de0bd9404d661d8280cd61f67f2d38ee
+Unminified    dist/baki-compose-0.64.6-unminified.apk
+Phone         0.64.5 installed; 0.64.6 published for download
+Desktop       0.64.6 installed; 0.64.5/0.64.1/0.63.1 rollbacks retained
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.5. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.6. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.5 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.6 build used this
 exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
@@ -159,7 +159,7 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. One-day receipt trial on 0.64.5; collect feedback before extending the design.
+1. Install 0.64.6 on the phone from `/dl` and trial Spend receipts.
 2. Mark or unlink Celcomdigi’s remaining payment.
 3. Run a 6+ hour shift soak with screen off.
 4. Keep R8 and desktop packaging inside capped systemd services.

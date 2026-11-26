@@ -731,6 +731,13 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.6 spend receipts
+
+- Spend history groups each day into one notched paper receipt.
+- Search, filters, envelopes, swipe edit/delete and TalkBack actions preserved.
+- Receipt rows cascade in with the same reduced-motion-safe stagger.
+- 243 tests pass.
+
 ## 0.64.5 receipt design trial
 
 - Monthly statement and Week Close are notched receipt papers.

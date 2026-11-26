@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.platform.LocalDensity
@@ -943,8 +944,10 @@ fun RowCard(
     running: String? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    receipt: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val rowShape = if (receipt) ReceiptCorner else MaterialTheme.shapes.large
     val ink = if (amountTint == Color.Unspecified) scheme.onSurface else amountTint
     val dot = if (dotTint == Color.Unspecified) ink else dotTint
     val gestureScope = rememberCoroutineScope()
@@ -971,7 +974,7 @@ fun RowCard(
             val editing = swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             if (swipe.dismissDirection != SwipeToDismissBoxValue.Settled) {
                 Row(
-                    Modifier.fillMaxSize().clip(MaterialTheme.shapes.large)
+                    Modifier.fillMaxSize().clip(rowShape)
                         .background(if (editing) scheme.primaryContainer else scheme.error.copy(alpha = 0.22f))
                         .padding(horizontal = Space.ml),
                     verticalAlignment = Alignment.CenterVertically,
@@ -996,7 +999,9 @@ fun RowCard(
         Row(
             Modifier.fillMaxWidth()
                 .then(
-                    Modifier.clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    Modifier.clip(rowShape).background(
+                        if (receipt) scheme.surface else MaterialTheme.colorScheme.surfaceContainerLow,
+                    )
                 )
                 .then(
                     if (onClick != null || onLongPress != null) Modifier.pointerInput(title) {
@@ -1014,14 +1019,14 @@ fun RowCard(
                         actionLabel?.let { append(", $it available") }
                     }
                 }
-                .padding(vertical = Space.l, horizontal = Space.l),
+                .padding(vertical = if (receipt) Space.m else Space.l, horizontal = if (receipt) Space.s else Space.l),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (icon != null) {
                 Box(
                     Modifier
                         .size(34.dp)
-                        .clip(CircleShape)
+                        .clip(if (receipt) ReceiptCorner else CircleShape)
                         .background(scheme.primaryContainer.copy(alpha = 0.75f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
@@ -1526,25 +1531,13 @@ private fun SpendingScreen(
             }
             entriesByDay.forEach { (date, dayEntries) ->
                 item(key = "day-$date") {
-                    val out = dayEntries.filter { it.type != "income" }.sumOf { it.amount }
-                    Row(Modifier.fillMaxWidth().padding(top = Space.s), verticalAlignment = Alignment.CenterVertically) {
-                        Text("${weekdayShort(date)} ${prettyDate(date)}", color = scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-                        Spacer(Modifier.weight(1f))
-                        Text("RM ${rm(out)} out", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"))
-                    }
-                }
-                items(dayEntries, key = { it.id }) { e ->
-                    RowCard(
-                        e.note.ifEmpty { categoryLabel(repo.store, e.cat) },
-                        buildString {
-                            e.odo?.takeIf { it > 0 }?.let { append("${it} km") }
-                            loggedTime(e.loggedAt)?.let { if (isNotEmpty()) append(" · "); append("logged $it") }
-                        },
-                        (if (e.type == "income") "+" else "−") + rm(e.amount),
-                        if (e.type == "income") scheme.tertiary else scheme.onSurface,
-                        icon = categoryIcon(e.cat),
-                        onLongPress = { onEditEntry(e) },
-                        onDelete = { onDeleteEntry(e) },
+                    SpendDayReceipt(
+                        date = date,
+                        entries = dayEntries,
+                        store = repo.store,
+                        reduceMotion = repo.config.reducedMotion,
+                        onEditEntry = onEditEntry,
+                        onDeleteEntry = onDeleteEntry,
                     )
                 }
             }
@@ -1556,6 +1549,61 @@ private fun SpendingScreen(
                 }
             }
         }
+}
+
+@Composable
+private fun SpendDayReceipt(
+    date: String,
+    entries: List<Entry>,
+    store: Store,
+    reduceMotion: Boolean,
+    onEditEntry: (Entry) -> Unit,
+    onDeleteEntry: (Entry) -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    var linesIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { linesIn = true }
+    val out = entries.filter { it.type != "income" }.sumOf { it.amount }
+    ReceiptCard(reduceMotion = reduceMotion) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "/ ${weekdayShort(date)} ${prettyDate(date).uppercase()}",
+                color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.1.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "RM ${rm(out)} OUT",
+                color = scheme.onSurface,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        }
+        Spacer(Modifier.height(Space.s))
+        ReceiptRule()
+        entries.forEachIndexed { index, e ->
+            StaggeredReceiptRow(index, reduceMotion, linesIn) {
+                RowCard(
+                    e.note.ifEmpty { categoryLabel(store, e.cat) },
+                    buildString {
+                        e.odo?.takeIf { it > 0 }?.let { append("$it km") }
+                        loggedTime(e.loggedAt)?.let { if (isNotEmpty()) append(" · "); append("logged $it") }
+                    },
+                    (if (e.type == "income") "+" else "−") + rm(e.amount),
+                    if (e.type == "income") scheme.tertiary else scheme.onSurface,
+                    icon = categoryIcon(e.cat),
+                    onLongPress = { onEditEntry(e) },
+                    onDelete = { onDeleteEntry(e) },
+                    receipt = true,
+                )
+            }
+            if (index != entries.lastIndex) ReceiptRule()
+        }
+    }
 }
 
 @Composable

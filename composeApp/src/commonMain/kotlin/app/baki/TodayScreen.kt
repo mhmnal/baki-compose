@@ -527,7 +527,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
-private fun StaggeredReceiptRow(
+internal fun StaggeredReceiptRow(
     index: Int,
     reduceMotion: Boolean,
     shown: Boolean,

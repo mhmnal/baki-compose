@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.6 spend receipts
+
+- One daily receipt per Spend day.
+- Extended receipt system beyond Today/Stats.
+
 ## 0.64.5 receipt design trial
 
 - Paper-first Stats: monthly + Week Close receipts.
