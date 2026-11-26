@@ -11,7 +11,7 @@ As of **2026-11-25**.
 | APK | `dist/baki-compose-0.64.6.apk` · R8 fullMode=false |
 | SHA-256 | `9d71ad2a7724b3ac7fb8f6e01682bc33de0bd9404d661d8280cd61f67f2d38ee` |
 | Signature | Baki release key, SHA-256 `f73c832f0bd750c77571f219049a4db68e72b0e8351e4c7f0889a510b128c9dc` |
-| Phone | 0.64.5 installed · 0.64.6 download published |
+| Phone | 0.64.6 installed · Spend receipt trial |
 | Desktop | 0.64.6 installed · Spend receipt trial |
 
 ## Data

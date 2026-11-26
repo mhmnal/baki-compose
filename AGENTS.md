@@ -11,7 +11,7 @@ Tests         243 JVM tests, 0 failures
 R8 APK        dist/baki-compose-0.64.6.apk
 SHA-256       9d71ad2a7724b3ac7fb8f6e01682bc33de0bd9404d661d8280cd61f67f2d38ee
 Unminified    dist/baki-compose-0.64.6-unminified.apk
-Phone         0.64.5 installed; 0.64.6 published for download
+Phone         0.64.6 installed; Spend receipt trial
 Desktop       0.64.6 installed; 0.64.5/0.64.1/0.63.1 rollbacks retained
 ```
 
