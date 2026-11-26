@@ -41,23 +41,26 @@ Use only:
 ./scripts/release-r8-safe.sh
 ```
 
-That wrapper runs Gradle in a transient systemd **service**:
+Before a build, check it without starting R8:
 
-```text
-MemoryMax     9 GB
-MemoryHigh  8 GB
-SwapMax       2 GB
-KillMode      control-group
-R8 fullMode   false
-Workers       1
-Screen         Firefox may stay open
+```bash
+./scripts/release-r8-safe.sh --check
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.7 build used this
-exact path and finished in 1m38s.
+The wrapper now has three guards:
 
-Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
-containment.
+1. **Preflight** — refuses to start with less than 6 GB available, or any `java` process over 1 GB.
+   It stops Gradle and Kotlin daemons first. Other app processes are not counted.
+2. **Service cap** — R8 runs in a unique transient systemd service with `MemoryMax=6G`,
+   `MemoryHigh=5G`, `MemorySwapMax=2G`, `KillMode=control-group`.
+3. **Host monitor** — polls `/proc/meminfo`; if available memory falls below 1.5 GB, it stops the
+   service before the kernel OOM killer can target the session.
+
+The previous crash was a **6.6 GB Java process outside the build cgroup**, not the R8 service.
+The cage protected the build; it could not protect an unrelated JVM. Preflight is now the missing
+part of that guard.
+
+Do not use `gradle-capped.sh` or a terminal scope for R8.
 
 ### Non-R8 builds
 
