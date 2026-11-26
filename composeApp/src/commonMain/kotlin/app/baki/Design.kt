@@ -102,6 +102,9 @@ object Control {
 /** Receipt stamp/pill corners; general cards keep the Material shape scale. */
 val ReceiptCorner = RoundedCornerShape(2.dp)
 
+/** Soft instrument surface: distinct from paper, quieter than a Material card. */
+val InstrumentShape = RoundedCornerShape(16.dp)
+
 
 /** Keeps a long money total inside its column without flattening the hierarchy. */
 fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {

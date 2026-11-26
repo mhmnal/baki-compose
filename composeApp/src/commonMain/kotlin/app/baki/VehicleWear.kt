@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -162,12 +163,12 @@ fun VehicleWearCard(store: Store, modifier: Modifier = Modifier, onAddReading: (
         modifier = modifier.fillMaxWidth().semantics {
             contentDescription = "Odometer wear, work and personal distance"
         },
-        shape = MaterialTheme.shapes.large,
+        shape = InstrumentShape,
         color = scheme.surfaceContainerLow,
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("ODOMETER WEAR", color = scheme.primary, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
+                Text("/ ODOMETER WEAR", color = scheme.primary, fontFamily = FontFamily.Monospace, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
                 Text("${wear.anchors} anchors", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             }
             if (!wear.hasCoverage) {

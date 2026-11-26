@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,10 +50,13 @@ fun HoursHeatmap(store: Store) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Box(Modifier.size(14.dp).clip(CircleShape).background(scheme.primary))
-            Text("NET BY HOUR", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-        }
+        Text(
+            "/ NET BY HOUR",
+            color = scheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.2.sp,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+        )
         Spacer(Modifier.height(Space.s))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Spacer(Modifier.width(Space.l))

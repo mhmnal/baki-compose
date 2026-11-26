@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,14 +42,15 @@ fun VehicleEconomyCard(store: Store, modifier: Modifier = Modifier) {
     }
 
     Surface(
-        shape = MaterialTheme.shapes.large,
+        shape = InstrumentShape,
         color = scheme.surfaceContainerLow,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Text(
-                "VEHICLE ECONOMY",
+                "/ VEHICLE ECONOMY",
                 color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
                 letterSpacing = 1.2.sp,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
             )

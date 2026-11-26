@@ -72,7 +72,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 internal fun DeskCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+    Surface(modifier, shape = InstrumentShape, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(Space.l), content = content)
     }
 }
@@ -80,9 +80,10 @@ internal fun DeskCard(modifier: Modifier = Modifier, content: @Composable Column
 @Composable
 internal fun DeskLabel(text: String, color: Color? = null) {
     Text(
-        text,
+        if (text.startsWith("/")) text else "/ $text",
         color = color ?: MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 1.3.sp,
+        fontFamily = FontFamily.Monospace,
         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
     )
 }
@@ -90,7 +91,13 @@ internal fun DeskLabel(text: String, color: Color? = null) {
 @Composable
 internal fun DeskMetric(label: String, value: String, tint: Color = MaterialTheme.colorScheme.onSurface) {
     Column {
-        DeskLabel(label)
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.1.sp,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        )
         Spacer(Modifier.height(2.dp))
         Text(value, color = tint, style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
     }
@@ -122,9 +129,10 @@ private fun DeskTableHead(vararg cells: Pair<String, Float>) {
             Text(
                 label,
                 color = scheme.onSurfaceVariant,
-                letterSpacing = 0.8.sp,
+                letterSpacing = 0.9.sp,
+                fontFamily = FontFamily.Monospace,
                 textAlign = if (label == "AMOUNT" || label == "RUNNING") TextAlign.End else TextAlign.Start,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.weight(weight),
             )
         }
