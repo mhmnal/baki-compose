@@ -145,3 +145,25 @@ Before adding a surface:
 5. Does it work in dark mode, large font, reduced motion and TalkBack?
 
 If the answer is unclear, it is not ready.
+
+## Validated on 27 Nov 2026
+
+The desktop Overview spread was reviewed at the real 1080 px window width.
+
+Keep:
+
+- paper month statement on the left, dominant
+- exactly seven latest entries, open ruled table, no card
+- analysis column on the right, visually subordinate
+- filters on their own row at narrow widths
+- compact ledger table; ellipsis in a crowded category is acceptable
+- no duplicate running-net total beside the statement total
+- paper document and instruments may differ in height; no forced equal-height cards
+
+Rejected:
+
+- rail index numbers — the plain rail reads better
+- more cards around the latest entries
+- stretching the paper statement to match the analysis column
+
+This is the reference composition for future desktop work. Do not add chrome to it.
