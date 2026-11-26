@@ -731,6 +731,14 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.7 Shifts receipts and design law
+
+- Shifts history groups one paper receipt per payout week.
+- Payout actions are text actions inside paper, not filled pills.
+- Receipt primitives live in `Receipt.kt`.
+- `DESIGN_LAW.md` codifies paper, instrument and action tiers.
+- 243 tests pass.
+
 ## 0.64.6 spend receipts
 
 - Spend history groups each day into one notched paper receipt.

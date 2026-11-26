@@ -1049,20 +1049,33 @@ fun RowCard(
                 Text(amount, color = ink, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = "tnum"))
                 if (running != null) Text(running, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                 if (actionLabel != null && onAction != null) {
-                    Box(
-                        Modifier
-                            .heightIn(min = 40.dp)
-                            .clip(CircleShape)
-                            .background(scheme.primary.copy(alpha = 0.11f))
-                            .clickable(onClick = onAction)
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
+                    if (receipt) {
                         Text(
                             actionLabel,
                             color = scheme.primary,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            fontFamily = FontFamily.Monospace,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            modifier = Modifier
+                                .heightIn(min = Control.primary)
+                                .clickable(onClick = onAction)
+                                .padding(horizontal = Space.s, vertical = Space.xs),
                         )
+                    } else {
+                        Box(
+                            Modifier
+                                .heightIn(min = 40.dp)
+                                .clip(CircleShape)
+                                .background(scheme.primary.copy(alpha = 0.11f))
+                                .clickable(onClick = onAction)
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                actionLabel,
+                                color = scheme.primary,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            )
+                        }
                     }
                 }
             }
@@ -1607,6 +1620,62 @@ private fun SpendDayReceipt(
 }
 
 @Composable
+private fun ShiftWeekReceipt(
+    week: String,
+    rows: List<Pair<Shift, ShiftMetrics>>,
+    reduceMotion: Boolean,
+    onEditShift: (Shift) -> Unit,
+    onPayouts: (Shift) -> Unit,
+    onDeleteShift: (Shift) -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    var linesIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { linesIn = true }
+    val weekNet = rows.sumOf { it.second.net }
+    ReceiptCard(reduceMotion = reduceMotion) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "/ WEEK OF ${prettyDateShort(week).uppercase()}",
+                color = scheme.primary,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.1.sp,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "RM ${rm(weekNet)} NET",
+                color = scheme.onSurface,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontFeatureSettings = "tnum",
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        }
+        Spacer(Modifier.height(Space.s))
+        ReceiptRule()
+        rows.forEachIndexed { index, row ->
+            val sh = row.first
+            val m = row.second
+            StaggeredReceiptRow(index, reduceMotion, linesIn) {
+                RowCard(
+                    sh.start.ifBlank { "Shift" },
+                    "${weekdayShort(sh.date)} ${prettyDateShort(sh.date)} · ${"%.0f".format(m.km)} km · ${"%.1f".format(m.hrs)}h",
+                    "RM ${rm(m.net)}",
+                    scheme.onSurface,
+                    onClick = { onEditShift(sh) },
+                    onLongPress = { onEditShift(sh) },
+                    onDelete = { onDeleteShift(sh) },
+                    actionLabel = if (sh.payouts.isEmpty()) "Add payout" else "Payouts",
+                    onAction = { onPayouts(sh) },
+                    receipt = true,
+                )
+            }
+            if (index != rows.lastIndex) ReceiptRule()
+        }
+    }
+}
+
+@Composable
 private fun ShiftsScreen(
     repo: BakiRepo,
     onAddShift: () -> Unit,
@@ -1630,6 +1699,9 @@ private fun ShiftsScreen(
     }
     val hours = remember(store) { rows.sumOf { it.first.hours } }
     val net = remember(store) { rows.sumOf { it.second.net } }
+    val rowsByWeek = remember(rows) {
+        rows.groupBy { weekStartOf(it.first.date) }.toSortedMap(compareByDescending { it })
+    }
 
     LazyColumn(
         state = listState,
@@ -1659,20 +1731,17 @@ private fun ShiftsScreen(
         if (rows.isEmpty()) item {
             EmptyState("No shifts yet", "The road is waiting. Add a shift and see what it really paid.")
         }
-        items(rows, key = { it.first.id }) { row ->
-            val sh = row.first
-            val m = row.second
-            RowCard(
-                sh.start.ifBlank { "Shift" },
-                "${weekdayShort(sh.date)} ${prettyDateShort(sh.date)} · ${"%.0f".format(m.km)} km · ${"%.1f".format(m.hrs)}h",
-                "RM ${rm(m.net)}",
-                scheme.onSurface,
-                onClick = { onEditShift(sh) },
-                onLongPress = { onEditShift(sh) },
-                onDelete = { onDeleteShift(sh) },
-                actionLabel = if (sh.payouts.isEmpty()) "Add payout" else "Payouts",
-                onAction = { onPayouts(sh) },
-            )
+        rowsByWeek.forEach { (week, weekRows) ->
+            item(key = "week-$week") {
+                ShiftWeekReceipt(
+                    week = week,
+                    rows = weekRows,
+                    reduceMotion = repo.config.reducedMotion,
+                    onEditShift = onEditShift,
+                    onPayouts = onPayouts,
+                    onDeleteShift = onDeleteShift,
+                )
+            }
         }
     }
 }

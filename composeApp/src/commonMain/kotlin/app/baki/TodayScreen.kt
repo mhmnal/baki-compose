@@ -527,25 +527,6 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
-internal fun StaggeredReceiptRow(
-    index: Int,
-    reduceMotion: Boolean,
-    shown: Boolean,
-    content: @Composable () -> Unit,
-) {
-    val p by animateFloatAsState(
-        targetValue = if (shown || reduceMotion) 1f else 0f,
-        animationSpec = if (reduceMotion) tween(durationMillis = 0) else
-            tween(durationMillis = 220, delayMillis = index.coerceAtMost(8) * 45, easing = FastOutSlowInEasing),
-        label = "receipt-line-in",
-    )
-    Box(Modifier.graphicsLayer {
-        alpha = p
-        translationY = (1f - p) * 7.dp.toPx()
-    }) { content() }
-}
-
-@Composable
 private fun DayReceipt(
     day: String,
     today: String,

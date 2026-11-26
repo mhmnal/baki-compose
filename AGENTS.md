@@ -1,23 +1,23 @@
 # Working in this repo
 
-Read [STATUS.md](STATUS.md) first for current release, data and pending installs.
+Read [STATUS.md](STATUS.md) first for current release, data and pending installs. Read [DESIGN_LAW.md](DESIGN_LAW.md) before changing visual surfaces.
 
-## Current handoff — 25 November 2026
+## Current handoff — 27 November 2026
 
 ```text
-Version       0.64.6
-Code          265
+Version       0.64.7
+Code          266
 Tests         243 JVM tests, 0 failures
-R8 APK        dist/baki-compose-0.64.6.apk
-SHA-256       9d71ad2a7724b3ac7fb8f6e01682bc33de0bd9404d661d8280cd61f67f2d38ee
-Unminified    dist/baki-compose-0.64.6-unminified.apk
-Phone         0.64.6 installed; Spend receipt trial
-Desktop       0.64.6 installed; 0.64.5/0.64.1/0.63.1 rollbacks retained
+R8 APK        dist/baki-compose-0.64.7.apk
+SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
+Unminified    dist/baki-compose-0.64.7-unminified.apk
+Phone         0.64.6 installed; 0.64.7 download published
+Desktop       0.64.6 installed; 0.64.7 not built
 ```
 
 Standing decisions:
 
-- Bank reconciliation was removed in 0.64.6. Do not reintroduce AEON/TNG accounts, imported bank
+- Bank reconciliation was removed in 0.64.7. Do not reintroduce AEON/TNG accounts, imported bank
   rows, batches, matching screens or `/api/statements`.
 - Weekly Grab statements (`Store.statements`) and Data Health stay.
 - Statement incentives, tips and delivery incentives auto-post as stable weekly income entries
@@ -53,7 +53,7 @@ Workers       1
 Screen         Firefox may stay open
 ```
 
-If R8 exceeds the cap, the service dies, not the session. The successful 0.64.6 build used this
+If R8 exceeds the cap, the service dies, not the session. The successful 0.64.7 build used this
 exact path and finished in 1m38s.
 
 Do not use `gradle-capped.sh` for R8. A terminal scope previously allowed the R8 process to escape
@@ -159,8 +159,9 @@ If the 8 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Trial Spend receipts on 0.64.6; collect feedback before extending the design.
-2. Mark or unlink Celcomdigi’s remaining payment.
-3. Run a 6+ hour shift soak with screen off.
-4. Keep R8 and desktop packaging inside capped systemd services.
-5. Keep the week of data, then retire the JSON write path (G6).
+1. Install 0.64.7 on the phone from `/dl` and trial Shifts weekly receipts.
+2. Build/install desktop 0.64.7 later, inside the 4 GB service.
+3. Mark or unlink Celcomdigi’s remaining payment.
+4. Run a 6+ hour shift soak with screen off.
+5. Keep R8 and desktop packaging inside capped systemd services.
+6. Keep the week of data, then retire the JSON write path (G6).

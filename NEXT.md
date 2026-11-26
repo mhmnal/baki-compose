@@ -731,6 +731,11 @@ No financial feature was removed.
 - No phone add/edit controls, FAB, bottom navigation or financial forms.
 - 205 tests, 0 failures.
 
+## 0.64.7 Shifts receipts and design law
+
+- One weekly receipt per week of shifts.
+- Baki Design Law added.
+
 ## 0.64.6 spend receipts
 
 - One daily receipt per Spend day.
