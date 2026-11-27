@@ -114,10 +114,9 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
                 }
                 Spacer(Modifier.width(Space.m))
                 Column {
-                    Text(
-                        if (live != null && day == today) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
-                        color = scheme.onSurfaceVariant, letterSpacing = 1.sp,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    PhoneSectionLabel(
+                        if (live != null && day == today) "where you've been" else "where you went",
+                        style = MaterialTheme.typography.labelLarge,
                     )
                     Text(
                         "No breadcrumbs yet. Keep location on during a live shift and the map draws itself.",
@@ -144,9 +143,9 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text(
-                    if (liveHere) "WHERE YOU'VE BEEN" else "WHERE YOU WENT",
-                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall,
+                PhoneSectionLabel(
+                    if (liveHere) "where you've been" else "where you went",
+                    style = MaterialTheme.typography.labelLarge,
                 )
                 Text(
                     buildString {

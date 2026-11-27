@@ -1093,27 +1093,12 @@ fun RowCard(
     }
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SectionTitle(text: String, trailing: String = "") {
     val scheme = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                Box(
-                    Modifier
-                        .size(13.dp)
-                        .clip(CircleShape)
-                        .background(scheme.primary),
-                )
-                Text(
-                    text.lowercase().replaceFirstChar { it.titlecase() }, color = scheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.semantics { heading() },
-                )
-            }
-            if (trailing.isNotEmpty()) Text(trailing, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        PhoneSectionLabel(text, color = scheme.onSurface)
+        if (trailing.isNotEmpty()) Text(trailing, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

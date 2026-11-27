@@ -361,5 +361,24 @@ fun archivoVariableFontFamily(weight: Int, width: Float): FontFamily = FontFamil
     ),
 )
 
+/** The phone's section voice: monospace, slash-prefixed, one size family. */
+@Composable
+internal fun PhoneSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    style: TextStyle = MaterialTheme.typography.labelLarge,
+) {
+    val label = if (text.startsWith("/")) text else "/ ${text.uppercase()}"
+    Text(
+        label,
+        modifier = modifier.semantics { heading() },
+        color = color,
+        fontFamily = FontFamily.Monospace,
+        letterSpacing = 1.2.sp,
+        style = style.copy(fontWeight = FontWeight.Bold),
+    )
+}
+
 /** Hero display size; relative roles are derived in the amount composition. */
 val BakiHeroFontSize = 150.sp

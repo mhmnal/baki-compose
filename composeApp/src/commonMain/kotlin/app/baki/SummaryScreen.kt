@@ -770,14 +770,7 @@ private fun MonthInkChart(store: Store, month: String) {
     Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
         if (largeText) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .padding(end = Space.s)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(scheme.primary),
-                )
-                Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+                PhoneSectionLabel("month in ink", modifier = Modifier.weight(1f))
             }
             Spacer(Modifier.height(Space.xs))
             ConnectedChoiceGroup(
@@ -788,14 +781,7 @@ private fun MonthInkChart(store: Store, month: String) {
             )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .padding(end = Space.s)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(scheme.primary),
-                )
-                Text("Month in ink", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmallEmphasized, modifier = Modifier.weight(1f))
+                PhoneSectionLabel("month in ink", modifier = Modifier.weight(1f))
                 ConnectedChoiceGroup(
                     options = listOf("7D", "30D"),
                     selected = if (range == 7) "7D" else "30D",

@@ -158,7 +158,7 @@ fun TodayScreen(
             val largeText = LocalDensity.current.fontScale >= 1.6f
             Column(Modifier.fillMaxWidth()) {
                 Text(
-                    if (day == today) "TODAY'S TAKE" else "THAT DAY'S TAKE",
+                    if (day == today) "/ TODAY'S TAKE" else "/ THAT DAY'S TAKE",
                     color = scheme.onSurfaceVariant,
                     letterSpacing = 1.4.sp,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
@@ -286,11 +286,7 @@ fun TodayScreen(
                 ) {
                     Column(Modifier.padding(Space.m)) {
                         if (largeText) {
-                            Text(
-                                "WHAT THE SHIFT PAID",
-                                color = scheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            )
+                            PhoneSectionLabel("what the shift paid", style = MaterialTheme.typography.labelSmall)
                             Text(
                                 "RM ${rm(m.net)}",
                                 color = scheme.onSurface,
@@ -306,11 +302,7 @@ fun TodayScreen(
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(
-                                        "WHAT THE SHIFT PAID",
-                                        color = scheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    )
+                                    PhoneSectionLabel("what the shift paid", style = MaterialTheme.typography.labelSmall)
                                     Text(
                                         "RM ${rm(m.net)}",
                                         color = scheme.onSurface,
@@ -355,7 +347,7 @@ fun TodayScreen(
         // what you keep buying, one tap away
         if (day == today && !repo.readOnly && quick.isNotEmpty()) item {
             Column {
-                Text("QUICK HITS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                PhoneSectionLabel("quick hits")
                 Spacer(Modifier.height(Space.s))
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -850,7 +842,7 @@ private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
         val title: @Composable (Modifier) -> Unit = { titleMod ->
             Column(titleMod) {
                 Text(
-                    "LIVE SHIFT",
+                    "/ LIVE SHIFT",
                     color = scheme.onPrimaryContainer.copy(alpha = 0.7f),
                     letterSpacing = 1.2.sp,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
@@ -913,7 +905,7 @@ private fun FoodStrip(food: DailyFood?, paidUntil: Long?, animate: Boolean = tru
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "FOOD FUND",
+                        "/ FOOD FUND",
                         color = scheme.onSurfaceVariant,
                         letterSpacing = 1.2.sp,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
