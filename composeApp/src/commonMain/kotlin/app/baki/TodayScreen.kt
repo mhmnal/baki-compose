@@ -469,7 +469,7 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val largeText = LocalDensity.current.fontScale >= 1.6f
     Surface(
         color = Color.Transparent,
-        shape = RoundedCornerShape(0.dp),
+        shape = OpenShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

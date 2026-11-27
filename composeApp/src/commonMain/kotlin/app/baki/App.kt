@@ -1288,7 +1288,7 @@ private fun MonthHeader(month: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         color = Color.Transparent,
-        shape = RoundedCornerShape(0.dp),
+        shape = OpenShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

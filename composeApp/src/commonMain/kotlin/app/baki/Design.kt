@@ -108,6 +108,9 @@ val InstrumentShape = RoundedCornerShape(16.dp)
 /** Square icon stamp for instruments and navigation, never for actions. */
 val InstrumentStampShape = RoundedCornerShape(4.dp)
 
+/** An open header: no card shape, no radius. */
+val OpenShape = RoundedCornerShape(0.dp)
+
 
 /** Keeps a long money total inside its column without flattening the hierarchy. */
 fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {
