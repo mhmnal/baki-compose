@@ -16,13 +16,20 @@ HOST_MIN_MB="${BAKI_TEST_HOST_MIN_MB:-1536}"
 available_mb() { awk '/^MemAvailable:/ {print int($2/1024)}' /proc/meminfo; }
 java_rows() { ps -C java -o pid=,rss=,args= 2>/dev/null || true; }
 
+# A test worker may outlive its service unit. Kill only Gradle/Kotlin worker JVMs.
+reap_workers() {
+  for pattern in '[o]rg.gradle.internal.worker' '[G]radleDaemon' '[K]otlinCompileDaemon' '[o]rg.jetbrains.kotlin.daemon' '[G]radleWorkerMain'; do
+    for pid in $(pgrep -f "$pattern" 2>/dev/null || true); do
+      kill "$pid" 2>/dev/null || true
+    done
+  done
+}
+
 cd "$ROOT"
 
-echo "==> stopping Gradle/Kotlin daemons"
+echo "==> stopping Gradle/Kotlin daemons and stale workers"
 ./gradlew --stop >/dev/null 2>&1 || true
-for pid in $(pgrep -f '[o]rg.gradle.launcher.daemon|[K]otlinCompileDaemon|[o]rg.jetbrains.kotlin.daemon' 2>/dev/null || true); do
-  kill "$pid" 2>/dev/null || true
-done
+reap_workers
 sleep 2
 
 # Refuse if a large JVM survived outside the unit; the service cage cannot protect it.
@@ -40,7 +47,8 @@ if (( avail < 4096 )); then
 fi
 
 RUNNER="$(mktemp /tmp/baki-test-run.XXXXXX.sh)"
-trap 'rm -f "$RUNNER"' EXIT
+cleanup() { reap_workers; rm -f "${RUNNER:-}"; }
+trap cleanup EXIT
 rm -f "$STATUS"
 cat > "$RUNNER" <<RUNNER_EOF
 #!/usr/bin/env bash
@@ -82,6 +90,7 @@ while systemctl --user is-active --quiet "$UNIT"; do
   sleep 2
 done
 
+reap_workers
 exec_status="$(cat "$STATUS" 2>/dev/null || true)"
 peak="$(systemctl --user show "$UNIT" -p MemoryPeak --value 2>/dev/null || true)"
 echo "==> test service result: ${exec_status:-unknown}, peak: ${peak:-unknown} bytes"
