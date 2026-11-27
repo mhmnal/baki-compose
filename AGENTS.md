@@ -8,11 +8,11 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 Version       0.66.0
 Code          270
 Tests         253, 0 failures (full suite)
-R8 APK        dist/baki-compose-0.65.0.apk
-SHA-256       fb69bc7f13ec11ab4ef6e90de0c9a8e59c8103acaa7514ae5f6bf49d9532b86c
+R8 APK        dist/baki-compose-0.66.0.apk
+SHA-256       cd8c77b789a5d457696e06e3e0f88ad3e88dce8a90d970df32feda3d73d2c0dc
 Unminified    not built; R8 APK is the release
-Phone         0.64.9 installed; 0.65.0 pending ADB
-Desktop       0.66.0 pending; weekly Shifts ledger + motion
+Phone         0.66.0 installed; ledger intact
+Desktop       0.66.0 installed; weekly Shifts ledger + motion
 ```
 
 Standing decisions:
