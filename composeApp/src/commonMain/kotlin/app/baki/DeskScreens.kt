@@ -3,6 +3,14 @@ package app.baki
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.focusable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -145,12 +153,33 @@ private fun DeskTableRow(
     values: List<Pair<String, Float>>,
     colors: List<Color> = emptyList(),
     alignments: List<TextAlign> = emptyList(),
+    selected: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val reduceMotion = LocalReducedMotion.current
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    var focused by remember { mutableStateOf(false) }
+    val base = if (selected) scheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent
+    val hover = scheme.onSurface.copy(alpha = 0.045f)
+    val background by animateColorAsState(
+        targetValue = if (hovered && !selected) hover else base,
+        animationSpec = if (reduceMotion) tween(0) else tween(120),
+        label = "desk-row-hover",
+    )
     Row(
         Modifier.fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .background(background)
+            .then(
+                if (onClick != null) Modifier
+                    .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                    .hoverable(interaction)
+                    .focusable(interactionSource = interaction)
+                    .onFocusChanged { focused = it.isFocused }
+                    .drawBehind { if (focused) drawRect(color = scheme.primary, style = Stroke(1.dp.toPx())) }
+                else Modifier,
+            )
             .padding(vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -598,34 +627,65 @@ internal fun DeskShifts(repo: BakiRepo, month: String) {
         return
     }
 
-    Row(Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-        Surface(Modifier.width(340.dp).fillMaxHeight(), shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
-            Column(Modifier.fillMaxSize().padding(Space.m)) {
-                DeskLabel("SHIFTS · ${shifts.size}")
-                Spacer(Modifier.height(Space.s))
-                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-                    items(shifts, key = { it.id }) { sh ->
-                        val metrics = shiftMetrics(sh, store.settings.profit)
-                        val active = sh.id == selected?.id
-                        Row(
-                            Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large)
-                                .background(if (active) scheme.primaryContainer else Color.Transparent)
-                                .clickable { selectedId = sh.id }
-                                .padding(horizontal = Space.m, vertical = Space.s),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(prettyDate(sh.date), color = if (active) scheme.onPrimaryContainer else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                                Text("${sh.start} · ${"%.1f".format(sh.hours)}h · ${"%.0f".format(metrics.km)} km", color = if (active) scheme.onPrimaryContainer.copy(alpha = 0.75f) else scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                            }
-                            Text("RM ${rm(metrics.net)}", color = if (active) scheme.onPrimaryContainer else scheme.onSurface, style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+    Row(Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s), horizontalArrangement = Arrangement.spacedBy(Space.l)) {
+        Column(Modifier.weight(1.05f).fillMaxHeight()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "/ 01  SHIFTS",
+                    color = scheme.primary,
+                    fontFamily = FontFamily.Monospace,
+                    letterSpacing = 1.4.sp,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                )
+                Spacer(Modifier.weight(1f))
+                Text("${shifts.size} shifts · ${"%.1f".format(shifts.sumOf { it.hours })}h", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall.copy(fontFeatureSettings = "tnum"))
+            }
+            Spacer(Modifier.height(Space.s))
+            Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
+            Spacer(Modifier.height(Space.xs))
+            LazyColumn(Modifier.fillMaxSize()) {
+                val weeks = shifts.groupBy { weekStartOf(it.date) }.toList().sortedByDescending { it.first }
+                weeks.forEach { (week, weekShifts) ->
+                    item(key = "head-$week") {
+                        Row(Modifier.fillMaxWidth().padding(top = Space.m, bottom = Space.xs), verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                "WEEK OF ${prettyDate(week)}",
+                                color = scheme.onSurface,
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 1.1.sp,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                "${weekShifts.size} shifts · ${"%.1f".format(weekShifts.sumOf { it.hours })}h · ${"%.0f".format(weekShifts.sumOf { shiftKm(it, store.settings.profit) })} km",
+                                color = scheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+                            )
                         }
+                        DeskTableHead("DATE" to 1.1f, "START" to 0.8f, "HOURS" to 0.7f, "KM" to 0.7f, "NET" to 1f)
                     }
+                    items(weekShifts, key = { it.id }) { sh ->
+                        val metrics = shiftMetrics(sh, store.settings.profit)
+                        DeskTableRow(
+                            listOf(
+                                shortDate(sh.date) to 1.1f,
+                                sh.start to 0.8f,
+                                "%.1f".format(sh.hours) to 0.7f,
+                                "%.0f".format(metrics.km) to 0.7f,
+                                "RM ${rm(metrics.net)}" to 1f,
+                            ),
+                            colors = listOf(scheme.onSurfaceVariant, scheme.onSurfaceVariant, scheme.onSurface, scheme.onSurfaceVariant, if (metrics.net < 0) scheme.error else scheme.onSurface),
+                            alignments = listOf(TextAlign.Start, TextAlign.Start, TextAlign.End, TextAlign.End, TextAlign.End),
+                            selected = sh.id == selected?.id,
+                            onClick = { selectedId = sh.id },
+                        )
+                    }
+                    item(key = "space-$week") { Spacer(Modifier.height(Space.s)) }
                 }
             }
         }
         if (selected != null) {
-            DeskShiftDetail(repo, selected, Modifier.weight(1f).fillMaxHeight())
+            DeskShiftDetail(repo, selected, Modifier.weight(1.25f).fillMaxHeight())
         }
     }
 }

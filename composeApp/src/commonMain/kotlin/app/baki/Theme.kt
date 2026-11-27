@@ -14,6 +14,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 
@@ -28,6 +30,9 @@ private val Md3Shapes = Shapes(
     large = RoundedCornerShape(16.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
+
+/** Desktop motion can be removed without changing layout or contrast. */
+val LocalReducedMotion = staticCompositionLocalOf { false }
 
 /**
  * Baki's Roast & Pine signature is the default. Dynamic Material You remains an optional source.
@@ -56,6 +61,7 @@ fun BakiTheme(
     } else {
         dynamic ?: if (dark) BakiDarkColors else BakiLightColors
     }
+    CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {
     MaterialTheme(
         colorScheme = scheme,
         typography = Typography(),
@@ -71,6 +77,7 @@ fun BakiTheme(
         },
         content = content,
     )
+    }
 }
 
 /** Dynamic Material You scheme; null where the platform has no Monet. */
