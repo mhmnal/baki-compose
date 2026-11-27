@@ -108,9 +108,17 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
         if (parsed == null) {
             PlatformEffects.notice("That PDF doesn't look like a Grab statement")
         } else {
-            repo.saveStatement(parsed)
-            StatementReview.pendingWeek = parsed.weekStart
-            PlatformEffects.notice("Imported week of ${parsed.weekStart}")
+            when (stageStatementImport(repo, parsed)) {
+                StatementImportOutcome.IMPORTED -> {
+                    StatementReview.pendingWeek = parsed.weekStart
+                    PlatformEffects.notice("Imported week of ${parsed.weekStart}")
+                }
+                StatementImportOutcome.ALREADY -> {
+                    StatementReview.pendingWeek = parsed.weekStart
+                    PlatformEffects.notice("That week is already imported")
+                }
+                StatementImportOutcome.CONFLICT -> PlatformEffects.notice("Review replacing week of ${parsed.weekStart}")
+            }
         }
     }
     BakiPrivacy.discreet = repo.config.discreet
@@ -2525,18 +2533,30 @@ private fun MoreScreen(
                 scope.launch {
                     var imported = 0
                     var skipped = 0
+                    var conflicts = 0
+                    var duplicates = 0
                     files.forEach { bytes ->
                         val parsed = withContext(Dispatchers.Default) {
                             PdfText.extract(bytes)?.let { StatementParse.parse(it) }
                         }
                         if (parsed == null) skipped++ else {
-                            repo.saveStatement(parsed)
-                            StatementReview.pendingWeek = parsed.weekStart
-                            imported++
+                            when (stageStatementImport(repo, parsed)) {
+                                StatementImportOutcome.IMPORTED -> {
+                                    StatementReview.pendingWeek = parsed.weekStart
+                                    imported++
+                                }
+                                StatementImportOutcome.ALREADY -> {
+                                    StatementReview.pendingWeek = parsed.weekStart
+                                    duplicates++
+                                }
+                                StatementImportOutcome.CONFLICT -> conflicts++
+                            }
                         }
                     }
                     importMsg = when {
-                        imported == 0 -> "None of those looked like Grab statements."
+                        imported == 0 && conflicts == 0 && duplicates == 0 -> "None of those looked like Grab statements."
+                        conflicts > 0 -> "Imported $imported · needs replace $conflicts · already imported $duplicates · skipped $skipped."
+                        duplicates > 0 -> "Imported $imported · already imported $duplicates · skipped $skipped."
                         skipped == 0 -> "Imported $imported statement${if (imported == 1) "" else "s"}."
                         else -> "Imported $imported · skipped $skipped."
                     }
@@ -2993,6 +3013,36 @@ private fun MoreScreen(
             weekStart = week,
             initial = weekCloseView(repo.store, week),
             onDismiss = { StatementReview.pendingWeek = null },
+        )
+    }
+
+    StatementImportGate.queue.firstOrNull()?.let { conflict ->
+        AlertDialog(
+            onDismissRequest = { StatementImportGate.pop() },
+            title = { Text("Replace week ${conflict.incoming.weekStart}?") },
+            text = {
+                Column {
+                    Text("That week is already imported. Compare the incoming statement before replacing it.")
+                    Spacer(Modifier.height(Space.m))
+                    conflict.changes.forEach { change ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Text(change.label, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Text("${change.before} → ${change.after}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        repo.saveStatement(conflict.incoming)
+                        StatementImportGate.pop()
+                        StatementReview.pendingWeek = conflict.incoming.weekStart
+                        ActionFeedback.show("Statement replaced")
+                    }
+                }) { Text("Replace", color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = { TextButton(onClick = { StatementImportGate.pop() }) { Text("Keep existing") } },
         )
     }
 

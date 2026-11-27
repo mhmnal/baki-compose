@@ -190,6 +190,8 @@ data class Settings(
     /** Service odometer baseline for a new car / reset; synced like the rest of the ledger. */
     val serviceOdoBase: Int? = null,
     val serviceOdoBaseOn: String? = null,
+    /** Planned share of a weekly payout kept back for tax/insurance; planning only. */
+    val setAsidePercent: Int = 0,
 )
 
 @Serializable

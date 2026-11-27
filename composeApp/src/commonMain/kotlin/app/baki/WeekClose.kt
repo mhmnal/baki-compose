@@ -125,3 +125,12 @@ fun weekReadiness(
         nextStep = nextStep,
     )
 }
+
+
+data class WeeklySetAside(val percent: Int, val amountCents: Long, val availableCents: Long)
+
+fun weeklySetAside(weeklyCents: Long, percent: Int): WeeklySetAside {
+    val clean = percent.coerceIn(0, 50)
+    val amount = (weeklyCents.toDouble() * clean / 100.0).roundToLong().coerceIn(0L, weeklyCents.coerceAtLeast(0L))
+    return WeeklySetAside(clean, amount, (weeklyCents - amount).coerceAtLeast(0L))
+}

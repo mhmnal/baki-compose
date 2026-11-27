@@ -30,6 +30,10 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
     val store = repo.store
     val scope = rememberCoroutineScope()
     val rows = store.statements.values.sortedByDescending { it.weekStart }
+    val statuses = rows.associate { it.weekStart to statementWeekStatus(store, it.weekStart) }
+    val allocated = statuses.values.count { it.allocated }
+    val reconciled = statuses.values.count { it.reconciled }
+    val closed = statuses.values.count { it.closed }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -38,7 +42,7 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
         text = {
         Column(Modifier.verticalScroll(rememberScrollState())) {
         Text(
-            "${rows.size} imported week${if (rows.size == 1) "" else "s"} · income and insurance reconciliation",
+            "${rows.size} imported week${if (rows.size == 1) "" else "s"} · $allocated allocated · $reconciled reconciled · $closed closed",
             color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
         )
         rows.forEachIndexed { index, st ->
@@ -79,6 +83,14 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                     )
                 }
                 val mark = store.statementMarks[st.weekStart]
+                val status = statuses.getValue(st.weekStart)
+                Text(
+                    "ALLOCATION ${if (status.allocated) "allocated" else "not allocated"} · " +
+                        "RECONCILED ${if (status.reconciled) "yes" else "no"} · " +
+                        "CLOSED ${if (status.closed) "yes" else "no"}",
+                    color = if (status.readyToClose) scheme.primary else scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                )
                 val matches = check.loggedShifts > 0 && kotlin.math.abs(gap) < 1.0 && check.insuranceMatches
                 Text(
                     when {
@@ -98,6 +110,9 @@ fun StatementHistorySheet(repo: BakiRepo, onDismiss: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
+                    TextButton(onClick = { StatementReview.pendingWeek = st.weekStart; onDismiss() }) {
+                        Text("Review", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    }
                     TextButton(
                         enabled = !repo.readOnly,
                         onClick = { scope.launch { repo.setStatementReconciled(st.weekStart, mark?.reconciled != true) } },

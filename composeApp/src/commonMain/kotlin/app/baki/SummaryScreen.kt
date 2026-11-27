@@ -301,12 +301,17 @@ internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClos
     var bRate by remember(initial.statement) { mutableStateOf(initial.statement?.let { if (it.netGsfRate > 0) "%.1f".format(it.netGsfRate) else "" } ?: "") }
     var bDelivery by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.deliveryIncentive * 100).roundToLong()) } ?: "") }
     var allocateConfirm by remember { mutableStateOf(false) }
+    var setAsideOpen by remember { mutableStateOf(false) }
+    var setAsideText by remember { mutableStateOf(repo.store.settings.setAsidePercent.toString()) }
     val cents = centsFromDigits(received)
     val view = remember(repo.store, weekStart) { weekCloseView(repo.store, weekStart) }
     val statementWeeklyCents = view.statement?.let { (it.weekly * 100).roundToLong() } ?: 0L
     val allocationCapacity = remember(repo.store, weekStart) { statementAllocationCapacity(repo.store, weekStart) }
     val alreadyAllocated = remember(repo.store, weekStart) {
         repo.store.shifts.any { shift -> weekStartOf(shift.date) == weekStart && shift.payouts.any { it.source == "statement:$weekStart" } }
+    }
+    val setAside = remember(statementWeeklyCents, repo.store.settings.setAsidePercent) {
+        weeklySetAside(statementWeeklyCents, repo.store.settings.setAsidePercent)
     }
     val readiness = remember(view, cents, allocationCapacity, alreadyAllocated) {
         weekReadiness(
@@ -384,6 +389,19 @@ internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClos
                     else -> "incomplete"
                 },
             )
+            if (statementWeeklyCents > 0L) {
+                WeekCloseRow("Set aside · ${setAside.percent}%", "RM ${rm(setAside.amountCents)}")
+                WeekCloseRow("Available after set-aside", "RM ${rm(setAside.availableCents)}")
+                Text(
+                    "Planning only · no reserve movement",
+                    color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall,
+                )
+                TextButton(
+                    onClick = { setAsideText = setAside.percent.toString(); setAsideOpen = true },
+                    enabled = !repo.readOnly,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                ) { Text("Edit set-aside", color = scheme.primary, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)) }
+            }
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
                 if (!view.isClosed && !repo.readOnly && statementWeeklyCents > 0L) {
                     TextButton(
@@ -482,6 +500,41 @@ internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClos
             color = if (repo.readOnly) scheme.secondary else scheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
+        if (setAsideOpen) {
+            AlertDialog(
+                onDismissRequest = { setAsideOpen = false },
+                title = { Text("Weekly set-aside") },
+                text = {
+                    Column {
+                        Text("Keep a planned share of the weekly payout for tax or insurance. This changes the plan only; it does not move cash or create a reserve entry.")
+                        Spacer(Modifier.height(Space.m))
+                        OutlinedTextField(
+                            value = setAsideText,
+                            onValueChange = { setAsideText = it.filter(Char::isDigit).take(2) },
+                            label = { Text("Percent (0–50)") },
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !saving,
+                        onClick = {
+                            scope.launch {
+                                saving = true
+                                val ok = repo.setSetAsidePercent(setAsideText.toIntOrNull() ?: 0)
+                                saving = false
+                                setAsideOpen = false
+                                if (ok) ActionFeedback.show("Set-aside plan saved")
+                            }
+                        },
+                    ) { Text("Save", color = scheme.primary) }
+                },
+                dismissButton = { TextButton(onClick = { setAsideOpen = false }) { Text("Cancel") } },
+            )
+        }
         if (allocateConfirm) {
             val amount = minOf(statementWeeklyCents, allocationCapacity)
             androidx.compose.material3.AlertDialog(

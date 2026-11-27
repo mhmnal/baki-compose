@@ -104,6 +104,7 @@ fun mergeStores(
             reserveTargets = a.settings.reserveTargets + b.settings.reserveTargets,
             serviceOdoBase = b.settings.serviceOdoBase ?: a.settings.serviceOdoBase,
             serviceOdoBaseOn = b.settings.serviceOdoBaseOn ?: a.settings.serviceOdoBaseOn,
+            setAsidePercent = if (b.settings.setAsidePercent > 0) b.settings.setAsidePercent else a.settings.setAsidePercent,
         ),
         // bills merge by id (newest wins); a payment is unique per bill+period
         bills = (a.bills + b.bills)

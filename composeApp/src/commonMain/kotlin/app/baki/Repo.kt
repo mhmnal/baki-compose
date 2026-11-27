@@ -1267,6 +1267,16 @@ class BakiRepo(
         pushWithTombs(emptyList())
     }
 
+    /** Store the planning-only set-aside percentage for weekly payouts. */
+    suspend fun setSetAsidePercent(percent: Int): Boolean = mutex.withLock {
+        if (blocked()) return@withLock false
+        val clean = percent.coerceIn(0, 50)
+        store = store.copy(settings = store.settings.copy(setAsidePercent = clean), updatedAt = nowIso())
+        storage.save(store)
+        pushWithTombs(emptyList())
+        true
+    }
+
     /** Positive amount adds to the virtual reserve; negative withdraws from it. */
     suspend fun addReserveTxn(fund: String, amountCents: Long, note: String = "", date: String = todayIso()): Boolean = mutex.withLock {
         if (blocked()) return@withLock false
