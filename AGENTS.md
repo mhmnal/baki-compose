@@ -9,10 +9,10 @@ Version       0.64.9
 Code          268
 Tests         245, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.64.9.apk
-SHA-256       pending
+SHA-256       e2924f131501d67c4c959bb3dff8ed16ee9e17005b620a012810fc77e1277b40
 Unminified    not built; R8 APK is the release
-Phone         0.64.8 installed; 0.64.9 pending
-Desktop       0.64.8 installed; 0.64.9 pending
+Phone         0.64.9 installed; ledger intact
+Desktop       0.64.9 installed; import review + allocation preview
 ```
 
 Standing decisions:
@@ -162,7 +162,7 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Build/publish/install 0.64.9 with import review + allocation preview.
+1. Trial import review + allocation preview on the phone.
 2. Trial Shifts weekly receipts on phone.
 3. Mark or unlink Celcomdigi’s remaining payment.
 4. Run a 6+ hour shift soak with screen off.
