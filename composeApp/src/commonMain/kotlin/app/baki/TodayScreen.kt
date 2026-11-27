@@ -170,8 +170,8 @@ fun TodayScreen(
                         fontFamily = archivoVariableFontFamily(800, 75f),
                         currencyFontFamily = archivoVariableFontFamily(350, 112f),
                         decimalFontFamily = archivoVariableFontFamily(550, 92f),
-                        background = scheme.primary, ink = scheme.onPrimary,
-                        decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = true,
+                        background = BakiCover, ink = BakiCoverInk,
+                        decimalInk = BakiCoverInk.copy(alpha = 0.78f), largeText = true,
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -188,8 +188,8 @@ fun TodayScreen(
                         fontFamily = archivoVariableFontFamily(800, 75f),
                         currencyFontFamily = archivoVariableFontFamily(350, 112f),
                         decimalFontFamily = archivoVariableFontFamily(550, 92f),
-                        background = scheme.primary, ink = scheme.onPrimary,
-                        decimalInk = scheme.onPrimary.copy(alpha = 0.78f), largeText = false,
+                        background = BakiCover, ink = BakiCoverInk,
+                        decimalInk = BakiCoverInk.copy(alpha = 0.78f), largeText = false,
                         height = 180.dp,
                         description = if (day == today) "Today's take" else "Take for ${prettyDate(day)}",
                         modifier = Modifier.fillMaxWidth(),
@@ -273,7 +273,7 @@ fun TodayScreen(
                 val m = shiftMetrics(shift, cfg, overheadPerHour(store, shift.date.take(7)))
                 val largeText = LocalDensity.current.fontScale >= 1.6f
                 Surface(
-                    shape = MaterialTheme.shapes.large,
+                    shape = InstrumentShape,
                     color = scheme.surfaceContainerLow,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -468,12 +468,12 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val isToday = day == today
     val largeText = LocalDensity.current.fontScale >= 1.6f
     Surface(
-        color = scheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.Transparent,
+        shape = RoundedCornerShape(0.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(Space.s),
+            Modifier.fillMaxWidth().padding(vertical = Space.s),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
@@ -482,15 +482,11 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
                 description = "Previous day",
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(7.dp).clip(CircleShape).background(scheme.primary))
-                    Text(
-                        if (isToday) "DAY IN PLAY" else weekdayShort(day).uppercase(),
-                        color = scheme.primary,
-                        letterSpacing = 1.3.sp,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
+                PhoneSectionLabel(
+                    if (isToday) "day in play" else weekdayShort(day),
+                    color = scheme.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                )
                 Text(
                     prettyDate(day),
                     color = scheme.onSurface,
@@ -760,17 +756,7 @@ private fun HeroAmount(
             .semantics { contentDescription = "$description, RM ${rm(cents)}" },
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            // One restrained tonal shape, clipped by the hero; no extra information.
-            drawCircle(
-                color = ink.copy(alpha = 0.055f),
-                radius = size.height * 0.82f,
-                center = Offset(size.width * 0.94f, size.height * 0.12f),
-            )
-            drawCircle(
-                color = ink.copy(alpha = 0.035f),
-                radius = size.height * 0.54f,
-                center = Offset(size.width * 0.80f, size.height * 0.72f),
-            )
+            // Cover: one flat ink field. No decorative shapes compete with the number.
             val edge = 10.dp.toPx()
             val available = (size.width - edge * 2f).coerceAtLeast(1f)
             val gap = 3.dp.toPx()
@@ -900,7 +886,7 @@ private fun FoodStrip(food: DailyFood?, paidUntil: Long?, animate: Boolean = tru
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "food cap progress",
     )
-    Surface(modifier, shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
+    Surface(modifier, shape = InstrumentShape, color = scheme.surfaceContainerLow) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Space.ml, vertical = Space.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {

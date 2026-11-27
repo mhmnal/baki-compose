@@ -99,14 +99,14 @@ fun TodayRouteCard(store: Store, day: String, live: LiveShift?, modifier: Modifi
         if (!hasActivity) return
         Surface(
             color = scheme.surfaceContainerLow,
-            shape = MaterialTheme.shapes.extraLarge,
+            shape = InstrumentShape,
             modifier = modifier.fillMaxWidth().padding(vertical = Space.s),
         ) {
             Row(Modifier.padding(Space.ml), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
                         .size(38.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clip(InstrumentStampShape)
                         .background(scheme.tertiaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {

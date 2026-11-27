@@ -105,6 +105,9 @@ val ReceiptCorner = RoundedCornerShape(2.dp)
 /** Soft instrument surface: distinct from paper, quieter than a Material card. */
 val InstrumentShape = RoundedCornerShape(16.dp)
 
+/** Square icon stamp for instruments and navigation, never for actions. */
+val InstrumentStampShape = RoundedCornerShape(4.dp)
+
 
 /** Keeps a long money total inside its column without flattening the hierarchy. */
 fun heroMoneyStyle(cents: Long, typography: Typography): TextStyle {
@@ -376,6 +379,8 @@ internal fun PhoneSectionLabel(
         color = color,
         fontFamily = FontFamily.Monospace,
         letterSpacing = 1.2.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         style = style.copy(fontWeight = FontWeight.Bold),
     )
 }

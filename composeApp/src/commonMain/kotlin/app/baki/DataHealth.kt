@@ -115,19 +115,13 @@ fun DataHealthCard(report: DataHealthReport, onOpen: () -> Unit) {
     if (!report.hasIssues) return
     val scheme = MaterialTheme.colorScheme
     Surface(
-        shape = MaterialTheme.shapes.large,
-        color = scheme.surfaceContainerHigh,
+        shape = InstrumentShape,
+        color = scheme.surfaceContainerLow,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "DATA HEALTH",
-                    color = scheme.primary,
-                    letterSpacing = 1.2.sp,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.weight(1f),
-                )
+                PhoneSectionLabel("data health", color = scheme.primary, modifier = Modifier.weight(1f))
                 Text(
                     "${report.issueCount} open",
                     color = scheme.onSurfaceVariant,
@@ -180,7 +174,7 @@ fun DataHealthSheet(
             ) { Text("!", color = scheme.onTertiaryContainer, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)) }
             Spacer(Modifier.width(Space.m))
             Column {
-                Text("DATA HEALTH", color = scheme.onSurfaceVariant, letterSpacing = 1.2.sp, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                PhoneSectionLabel("data health")
                 Text("What still needs a look", color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
         }

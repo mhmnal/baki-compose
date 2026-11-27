@@ -916,20 +916,7 @@ private fun Hero(label: String, amountCents: Long, tint: Color = Color.Unspecifi
     val scheme = MaterialTheme.colorScheme
     val ink = if (tint == Color.Unspecified) scheme.onSurface else tint
     Column {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Box(
-                Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(if (tint == Color.Unspecified) scheme.primary else tint),
-            )
-            Text(
-                label,
-                color = scheme.onSurfaceVariant,
-                letterSpacing = 1.1.sp,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            )
-        }
+        PhoneSectionLabel(label)
         EasedMoney(
             cents = amountCents, color = ink,
             // tabular figures: the hero number keeps its width as digits change
@@ -956,7 +943,7 @@ fun RowCard(
     receipt: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val rowShape = if (receipt) ReceiptCorner else MaterialTheme.shapes.large
+    val rowShape = if (receipt) ReceiptCorner else InstrumentShape
     val ink = if (amountTint == Color.Unspecified) scheme.onSurface else amountTint
     val dot = if (dotTint == Color.Unspecified) ink else dotTint
     val gestureScope = rememberCoroutineScope()
@@ -1035,7 +1022,7 @@ fun RowCard(
                 Box(
                     Modifier
                         .size(34.dp)
-                        .clip(if (receipt) ReceiptCorner else CircleShape)
+                        .clip(if (receipt) ReceiptCorner else InstrumentStampShape)
                         .background(scheme.primaryContainer.copy(alpha = 0.75f)),
                     contentAlignment = Alignment.Center,
                 ) { Icon(icon, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(IconSize.inline)) }
@@ -1300,12 +1287,12 @@ private fun LiveMetric(label: String, value: String, tint: Color) {
 private fun MonthHeader(month: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     Surface(
-        color = scheme.surfaceContainerLow,
-        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.Transparent,
+        shape = RoundedCornerShape(0.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(Space.s),
+            Modifier.fillMaxWidth().padding(vertical = Space.s),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
@@ -1316,15 +1303,7 @@ private fun MonthHeader(month: String, onChange: (String) -> Unit) {
                 description = "Previous month",
             )
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(7.dp).clip(CircleShape).background(scheme.primary))
-                    Text(
-                        "MONTH IN PLAY",
-                        color = scheme.primary,
-                        letterSpacing = 1.3.sp,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    )
-                }
+                PhoneSectionLabel("month in play", color = scheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text(
                     monthLabel(month),
                     color = scheme.onSurface,
@@ -1874,18 +1853,16 @@ private fun MoreHero(tab: MoreTab) {
         MoreTab.SHIFT -> Quad("WORK KIT", "Payment QR & service", "Keep the car on the road.", BakiIcons.Car)
         MoreTab.APP -> Quad("BAKI SETUP", "Sync & appearance", "Make Baki feel like yours.", BakiIcons.Phone)
     }
-    Surface(shape = MaterialTheme.shapes.extraLarge, color = scheme.primaryContainer) {
-        Row(Modifier.fillMaxWidth().padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(44.dp).clip(CircleShape).background(scheme.primary),
-                contentAlignment = Alignment.Center,
-            ) { Icon(icon, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(IconSize.row)) }
-            Spacer(Modifier.width(Space.m))
-            Column(Modifier.weight(1f)) {
-                Text(label, color = scheme.onPrimaryContainer.copy(alpha = 0.68f), letterSpacing = 1.3.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
-                Text(title, color = scheme.onPrimaryContainer, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                Text(sub, color = scheme.onPrimaryContainer.copy(alpha = 0.78f), style = MaterialTheme.typography.bodySmall)
-            }
+    Row(Modifier.fillMaxWidth().padding(vertical = Space.s), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(44.dp).clip(InstrumentStampShape).background(scheme.primary),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(IconSize.row)) }
+        Spacer(Modifier.width(Space.m))
+        Column(Modifier.weight(1f)) {
+            PhoneSectionLabel(label, color = scheme.onSurfaceVariant)
+            Text(title, color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+            Text(sub, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

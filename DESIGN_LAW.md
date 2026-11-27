@@ -177,3 +177,44 @@ This is the reference composition for future desktop work. Do not add chrome to 
 - Reduced motion makes these immediate; no looping or page-level motion.
 
 These are the reference structures for desktop analysis pages.
+
+## Four materials — confirmed overhaul
+
+Baki has four materials. Every visible surface must be one of them or plain page.
+
+### Cover
+- one per screen at most; Today uses it for the net number
+- deep pine field `#0B331E`, warm paper ink `#F6F0E4`
+- square corners, no border, no shadow, no decorative discs
+- brand material: the same field in light and dark
+- only the primary number; never a secondary metric
+
+### Paper
+- notched receipt, 2–4 dp radius, 1 px rule, offset shadow
+- records only: day, entries, weeks, statements, close
+- mono `/` labels, dashed internal rules
+
+### Instrument
+- 16 dp radius, flat tinted surface, no border, no shadow
+- analysis and secondary information: food fund, shift paid, route, chart, data health
+- mono `/` label, square 4 dp icon stamp
+- never use a huge rounded M3 card for this tier
+
+### Action
+- M3E controls, buttons, chips, tabs and sheets
+- 24 dp+ shapes; may be tonal or filled
+- forms and destructive/confirming actions never become paper
+
+### Navigation
+- section labels use PhoneSectionLabel / DeskLabel: mono, uppercase, `/`, one line
+- day/month headers are open rows, not cards
+- More navigation is an open row with a 4 dp square stamp
+- the rail is plain; no numbering
+
+### Hierarchy rules
+- one dominant gesture per screen
+- hero numbers are Archivo; labels are mono; body stays sans
+- do not add a card merely to group content
+- no decorative dot before a section label
+- no loops, marquees or scroll effects
+- reduced-motion removes animation but never contrast

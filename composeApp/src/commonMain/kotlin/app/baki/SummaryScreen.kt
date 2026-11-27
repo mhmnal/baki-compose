@@ -134,7 +134,7 @@ fun SummaryScreen(
         }
         // Paper first: documents stay together, then analysis opens with a deliberate breath.
         item { Spacer(Modifier.height(Space.l)) }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.extraLarge, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
+        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerLow, shape = InstrumentShape, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }

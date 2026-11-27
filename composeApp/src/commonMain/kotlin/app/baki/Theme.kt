@@ -21,7 +21,11 @@ import androidx.compose.ui.unit.dp
 
 /** MD3 Expressive shape scale. */
 /** One deliberate asymmetric corner for the Today hero, per the shape audit. */
-val BakiHeroShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp, bottomEnd = 32.dp, bottomStart = 8.dp)
+val BakiHeroShape = RoundedCornerShape(0.dp)
+
+/** Cover is a brand material, not a theme surface: deep pine field with warm paper ink. */
+val BakiCover = androidx.compose.ui.graphics.Color(0xFF0B331E)
+val BakiCoverInk = androidx.compose.ui.graphics.Color(0xFFF6F0E4)
 
 private val Md3Shapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
