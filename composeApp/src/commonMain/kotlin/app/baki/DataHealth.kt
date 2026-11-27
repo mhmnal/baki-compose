@@ -114,44 +114,43 @@ fun dataHealth(
 fun DataHealthCard(report: DataHealthReport, onOpen: () -> Unit) {
     if (!report.hasIssues) return
     val scheme = MaterialTheme.colorScheme
-    Surface(
-        shape = InstrumentShape,
-        color = scheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PhoneSectionLabel("data health", color = scheme.primary, modifier = Modifier.weight(1f))
-                Text(
-                    "${report.issueCount} open",
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelLarge,
-                )
+    Column(Modifier.fillMaxWidth()) {
+        Surface(
+            shape = InstrumentShape,
+            color = scheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PhoneSectionLabel("data health", color = scheme.primary, modifier = Modifier.weight(1f))
+                    Text("${report.issueCount} open", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
+                }
+                if (report.payoutGaps.isNotEmpty()) {
+                    Text(
+                        "Payout gap · RM ${rm(report.payoutGapTotal)}",
+                        color = scheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+                val detail = buildList {
+                    if (report.missingDueBills.isNotEmpty()) add("${report.missingDueBills.size} bill${if (report.missingDueBills.size == 1) "" else "s"} missing a due day")
+                    if (report.needsOdometer) add("${report.odometerFills} of ${report.fuelFills} fuel fills have an odometer")
+                    if (report.backupStale) add("backup is ${report.backupAgeDays?.let { "${it}d old" } ?: "missing"}")
+                    if (report.openWeek != null) add("week ${report.openWeek.weekStart} is open")
+                    if (report.weekVariances.isNotEmpty()) add("week close differs from statement")
+                }
+                if (detail.isNotEmpty()) {
+                    Text(detail.joinToString(" · "), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                }
             }
-            if (report.payoutGaps.isNotEmpty()) {
-                Text(
-                    "Payout gap · RM ${rm(report.payoutGapTotal)}",
-                    color = scheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                )
-            }
-            val detail = buildList {
-                if (report.missingDueBills.isNotEmpty()) add("${report.missingDueBills.size} bill${if (report.missingDueBills.size == 1) "" else "s"} missing a due day")
-                if (report.needsOdometer) add("${report.odometerFills} of ${report.fuelFills} fuel fills have an odometer")
-                if (report.backupStale) add("backup is ${report.backupAgeDays?.let { "${it}d old" } ?: "missing"}")
-                if (report.openWeek != null) add("week ${report.openWeek.weekStart} is open")
-                if (report.weekVariances.isNotEmpty()) add("week close differs from statement")
-            }
-            if (detail.isNotEmpty()) {
-                Text(detail.joinToString(" · "), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-            }
-            Button(
-                onClick = onOpen,
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
-                shape = CircleShape,
-                modifier = Modifier.height(48.dp),
-            ) { Text("Review", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
         }
+        Spacer(Modifier.height(Space.s))
+        Button(
+            onClick = onOpen,
+            colors = ButtonDefaults.buttonColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+            shape = CircleShape,
+            modifier = Modifier.height(48.dp),
+        ) { Text("Review", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)) }
     }
 }
 

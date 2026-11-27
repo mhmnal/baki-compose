@@ -1111,6 +1111,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     var now by remember { mutableStateOf(nowMillis()) }
     var ending by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val largeText = LocalDensity.current.fontScale >= 1.6f
 
     LaunchedEffect(live.start) {
         while (true) {
@@ -1130,12 +1131,11 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val accent = if (onBreak) scheme.secondary else scheme.primary
 
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(vertical = Space.s),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth(),
+        shape = InstrumentShape,
+        color = scheme.surfaceContainerLow,
     ) {
-        Box {
-            Column(Modifier.fillMaxWidth().padding(Space.l)) {
+        Column(Modifier.fillMaxWidth().padding(Space.l)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LiveTrace(
                     active = !onBreak,
@@ -1146,27 +1146,20 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 Spacer(Modifier.width(Space.s))
                 Column(Modifier.weight(1f)) {
                     Text(
-                        if (onBreak) "BREAK TIME" else "ON THE CLOCK",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        if (onBreak) "Break time" else "On the clock",
+                        color = scheme.onSurface,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     )
                     Text("since ${startClock(live.start)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                 }
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = accent.copy(alpha = 0.14f),
-                ) {
+                Surface(shape = RoundedCornerShape(50), color = accent.copy(alpha = 0.14f)) {
                     Row(
                         modifier = Modifier.padding(horizontal = Space.s, vertical = Space.xs),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-                        Text(
-                            if (onBreak) "PAUSED" else "LIVE",
-                            color = accent,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        )
+                        Text(if (onBreak) "PAUSED" else "LIVE", color = accent, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
@@ -1174,7 +1167,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
             Text("Net so far", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
             Text(
                 "RM ${rm(netCents)}",
-                color = if (net < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                color = if (net < 0) scheme.error else scheme.onSurface,
                 style = MaterialTheme.typography.headlineLargeEmphasized.copy(fontFeatureSettings = "tnum"),
             )
             Text(
@@ -1184,88 +1177,89 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
             )
             Spacer(Modifier.height(Space.s))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier
-                        .clickable(onClick = onPayouts)
-                        .semantics {
-                            role = Role.Button
-                            contentDescription = "Open payouts; ${live.payouts.size} recorded"
-                        },
-                ) {
+                TextButton(onClick = onPayouts, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
                     Text(
                         "${live.payouts.size} ${if (live.payouts.size == 1) "payout" else "payouts"} · view",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = Space.m, vertical = Space.xs),
+                        color = scheme.primary,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     )
                 }
                 Spacer(Modifier.weight(1f))
                 Text("gross RM ${rm(total)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
             }
-            Spacer(Modifier.height(Space.m))
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(Modifier.padding(horizontal = Space.m, vertical = Space.xs)) {
-                    LiveMetric("On clock", liveClock(worked), MaterialTheme.colorScheme.onSurface)
-                    LiveMetric("Costs so far", "RM ${rm(be.costs)}", scheme.onSurfaceVariant)
+            Spacer(Modifier.height(Space.xs))
+            HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.5f))
+            Column(Modifier.fillMaxWidth().padding(top = Space.xs)) {
+                LiveMetric("On clock", liveClock(worked), scheme.onSurface)
+                LiveMetric("Costs so far", "RM ${rm(be.costs)}", scheme.onSurfaceVariant)
+                LiveMetric(
+                    if (be.covered) "Break-even" else "Break-even in",
+                    if (be.covered) "covered" else be.minutesToGo?.let { "${it.toInt()} min" } ?: "add a payout",
+                    if (be.covered) scheme.tertiary else scheme.onSurfaceVariant,
+                )
+                if (be.netPerHour != null) {
                     LiveMetric(
-                        if (be.covered) "Break-even" else "Break-even in",
-                        if (be.covered) "covered" else be.minutesToGo?.let { "${it.toInt()} min" } ?: "add a payout",
-                        if (be.covered) scheme.tertiary else scheme.onSurfaceVariant,
-                    )
-                    if (be.netPerHour != null) {
-                        LiveMetric(
-                            "Yield now",
-                            buildString {
-                                append("RM ${rm(be.netPerHour)}/h")
-                                be.grossPerKm?.let { append(" · RM ${rm(it)}/km") }
-                            },
-                            if ((be.netPerHour ?: 0.0) >= repo.store.settings.profit.targetRate) scheme.tertiary else scheme.error,
-                        )
-                    }
-                    LiveMetric(
-                        "Tracked",
+                        "Yield now",
                         buildString {
-                            append("${"%.1f".format(live.km)} km")
-                            if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
+                            append("RM ${rm(be.netPerHour)}/h")
+                            be.grossPerKm?.let { append(" · RM ${rm(it)}/km") }
                         },
-                        scheme.onSurfaceVariant,
+                        if ((be.netPerHour ?: 0.0) >= repo.store.settings.profit.targetRate) scheme.tertiary else scheme.error,
                     )
                 }
-            }
-            Spacer(Modifier.height(Space.l))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                FilledTonalButton(
-                    onClick = onPayout,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Payout", style = MaterialTheme.typography.labelLargeEmphasized, maxLines = 1, softWrap = false) }
-                Button(
-                    enabled = !repo.readOnly,
-                    onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
-                    modifier = Modifier.weight(1f),
-                ) { Text(if (onBreak) "Resume" else "Pause", style = MaterialTheme.typography.labelLargeEmphasized) }
-                Button(
-                    enabled = !repo.readOnly && !ending,
-                    onClick = {
-                        if (ending) return@Button
-                        ending = true
-                        scope.launch {
-                            try { repo.endLive() } finally { ending = false }
-                        }
+                LiveMetric(
+                    "Tracked",
+                    buildString {
+                        append("${"%.1f".format(live.km)} km")
+                        if (breakMs > 0) append(" · ${liveClock(breakMs)} break")
                     },
-                    modifier = Modifier.weight(0.82f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    ),
-                ) { Text(if (ending) "Ending…" else "End", style = MaterialTheme.typography.labelLargeEmphasized) }
+                    scheme.onSurfaceVariant,
+                )
             }
+        }
+    }
+    Spacer(Modifier.height(Space.s))
+    if (largeText) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+            FilledTonalButton(onClick = onPayout, modifier = Modifier.fillMaxWidth()) {
+                Text("Payout", style = MaterialTheme.typography.labelLargeEmphasized)
             }
+            Button(
+                enabled = !repo.readOnly,
+                onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(if (onBreak) "Resume" else "Pause", style = MaterialTheme.typography.labelLargeEmphasized) }
+            Button(
+                enabled = !repo.readOnly && !ending,
+                onClick = {
+                    if (ending) return@Button
+                    ending = true
+                    scope.launch { try { repo.endLive() } finally { ending = false } }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.errorContainer, contentColor = scheme.onErrorContainer),
+            ) { Text(if (ending) "Ending…" else "End", style = MaterialTheme.typography.labelLargeEmphasized) }
+        }
+    } else {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            FilledTonalButton(onClick = onPayout, modifier = Modifier.weight(1f)) {
+                Text("Payout", style = MaterialTheme.typography.labelLargeEmphasized, maxLines = 1, softWrap = false)
+            }
+            Button(
+                enabled = !repo.readOnly,
+                onClick = { if (onBreak) repo.resumeLive() else repo.pauseLive() },
+                modifier = Modifier.weight(1f),
+            ) { Text(if (onBreak) "Resume" else "Pause", style = MaterialTheme.typography.labelLargeEmphasized) }
+            Button(
+                enabled = !repo.readOnly && !ending,
+                onClick = {
+                    if (ending) return@Button
+                    ending = true
+                    scope.launch { try { repo.endLive() } finally { ending = false } }
+                },
+                modifier = Modifier.weight(0.82f),
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.errorContainer, contentColor = scheme.onErrorContainer),
+            ) { Text(if (ending) "Ending…" else "End", style = MaterialTheme.typography.labelLargeEmphasized) }
         }
     }
 }
@@ -1284,40 +1278,34 @@ private fun LiveMetric(label: String, value: String, tint: Color) {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MonthHeader(month: String, onChange: (String) -> Unit) {
+internal fun MonthHeader(month: String, onChange: (String) -> Unit, subtitle: String = "spending, monthly") {
     val scheme = MaterialTheme.colorScheme
-    Surface(
-        color = Color.Transparent,
-        shape = OpenShape,
-        modifier = Modifier.fillMaxWidth(),
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = Space.s),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.s),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(vertical = Space.s),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
-        ) {
-            ShapeNavButton(
-                label = "‹",
-                enabled = true,
-                onClick = { onChange(addDays("$month-01", -1).take(7)) },
-                description = "Previous month",
+        ShapeNavButton(
+            label = "‹",
+            enabled = true,
+            onClick = { onChange(addDays("$month-01", -1).take(7)) },
+            description = "Previous month",
+        )
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            PhoneSectionLabel("month in play", color = scheme.primary, style = MaterialTheme.typography.labelSmall)
+            Text(
+                monthLabel(month),
+                color = scheme.onSurface,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             )
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                PhoneSectionLabel("month in play", color = scheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text(
-                    monthLabel(month),
-                    color = scheme.onSurface,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                )
-                Text("spending, monthly", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-            }
-            ShapeNavButton(
-                label = "›",
-                enabled = true,
-                onClick = { onChange(addDays(endOfMonth(month), 1).take(7)) },
-                description = "Next month",
-            )
+            Text(subtitle, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
         }
+        ShapeNavButton(
+            label = "›",
+            enabled = true,
+            onClick = { onChange(addDays(endOfMonth(month), 1).take(7)) },
+            description = "Next month",
+        )
     }
 }
 
@@ -1638,8 +1626,6 @@ private fun ShiftWeekReceipt(
                     onClick = { onEditShift(sh) },
                     onLongPress = { onEditShift(sh) },
                     onDelete = { onDeleteShift(sh) },
-                    actionLabel = if (sh.payouts.isEmpty()) "Add payout" else "Payouts",
-                    onAction = { onPayouts(sh) },
                     receipt = true,
                 )
             }
@@ -1687,7 +1673,7 @@ private fun ShiftsScreen(
                 Spacer(Modifier.height(Space.l))
                 Hero("ALL-TIME SHIFT NET", cents(net), scheme.onSurface, 40)
                 Text(
-                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · all time · tap a shift to edit",
+                    "${rows.size} ${if (rows.size == 1) "shift" else "shifts"} · ${"%.1f".format(hours)}h · RM ${rm(if (hours > 0) net / hours else 0.0)}/hr · all time · tap a shift to edit or add payout",
                     color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(Space.m))
                 FilledTonalButton(

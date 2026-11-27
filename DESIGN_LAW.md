@@ -218,3 +218,13 @@ Baki has four materials. Every visible surface must be one of them or plain page
 - no decorative dot before a section label
 - no loops, marquees or scroll effects
 - reduced-motion removes animation but never contrast
+
+## Control boundaries
+
+- Paper never contains an action button, form or navigation control. Record content only.
+- Month/date navigation sits in an open header above the record.
+- Week Close actions sit outside the receipt.
+- An Instrument may contain an inline text trigger, but not a primary button or form.
+- Primary actions sit outside or beside the instrument as Action controls.
+- Secondary labels inside instruments are sentence-case sans, not `/` labels.
+- Only top-level section headers use the monospace `/` voice.

@@ -238,7 +238,7 @@ fun TodayScreen(
                 if (operating.shiftCount > 0) {
                     Spacer(Modifier.height(Space.xs))
                     Text(
-                        "OPERATING · RM ${rm(operating.net)}" + (operating.perHour?.let { " · ${rm(it)}/h" } ?: "") + " · after running costs",
+                        "Operating · RM ${rm(operating.net)}" + (operating.perHour?.let { " · ${rm(it)}/h" } ?: "") + " · after running costs",
                         color = if (operating.net >= 0) scheme.onSurfaceVariant else scheme.error,
                         style = MaterialTheme.typography.labelSmall,
                     )
@@ -286,7 +286,7 @@ fun TodayScreen(
                 ) {
                     Column(Modifier.padding(Space.m)) {
                         if (largeText) {
-                            PhoneSectionLabel("what the shift paid", style = MaterialTheme.typography.labelSmall)
+                            Text("Shift pay", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                             Text(
                                 "RM ${rm(m.net)}",
                                 color = scheme.onSurface,
@@ -302,7 +302,7 @@ fun TodayScreen(
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    PhoneSectionLabel("what the shift paid", style = MaterialTheme.typography.labelSmall)
+                                    Text("Shift pay", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                                     Text(
                                         "RM ${rm(m.net)}",
                                         color = scheme.onSurface,
@@ -467,45 +467,39 @@ private fun DayPill(day: String, today: String, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val isToday = day == today
     val largeText = LocalDensity.current.fontScale >= 1.6f
-    Surface(
-        color = Color.Transparent,
-        shape = OpenShape,
-        modifier = Modifier.fillMaxWidth(),
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = Space.s),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Space.s),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(vertical = Space.s),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
-        ) {
-            ShapeNavButton(
-                label = "‹", enabled = true, onClick = { onChange(addDays(day, -1)) },
-                description = "Previous day",
+        ShapeNavButton(
+            label = "‹", enabled = true, onClick = { onChange(addDays(day, -1)) },
+            description = "Previous day",
+        )
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            PhoneSectionLabel(
+                if (isToday) "day in play" else weekdayShort(day),
+                color = scheme.primary,
+                style = MaterialTheme.typography.labelSmall,
             )
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                PhoneSectionLabel(
-                    if (isToday) "day in play" else weekdayShort(day),
-                    color = scheme.primary,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-                Text(
-                    prettyDate(day),
-                    color = scheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = (if (largeText) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
-                        .copy(fontWeight = FontWeight.Bold),
-                )
-                Text(
-                    if (isToday) "a day in the life" else "tap ‹ › to move",
-                    color = scheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-            ShapeNavButton(
-                label = "›", enabled = day < today, onClick = { onChange(addDays(day, 1)) },
-                description = "Next day",
+            Text(
+                prettyDate(day),
+                color = scheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = (if (largeText) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge)
+                    .copy(fontWeight = FontWeight.Bold),
+            )
+            Text(
+                if (isToday) "a day in the life" else "tap ‹ › to move",
+                color = scheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
             )
         }
+        ShapeNavButton(
+            label = "›", enabled = day < today, onClick = { onChange(addDays(day, 1)) },
+            description = "Next day",
+        )
     }
 }
 
@@ -820,57 +814,48 @@ private fun HeroAmount(
 private fun StartShiftCard(hasShift: Boolean, onStart: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val largeText = LocalDensity.current.fontScale >= 1.6f
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = scheme.primaryContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        val title: @Composable (Modifier) -> Unit = { titleMod ->
-            Column(titleMod) {
+    val readout: @Composable () -> Unit = {
+        Surface(shape = InstrumentShape, color = scheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(Space.m)) {
                 Text(
-                    "/ LIVE SHIFT",
-                    color = scheme.onPrimaryContainer.copy(alpha = 0.7f),
-                    letterSpacing = 1.2.sp,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    "Live shift",
+                    color = scheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 )
                 Text(
                     if (hasShift) "Start another live shift" else "Ready when you are",
-                    color = scheme.onPrimaryContainer,
+                    color = scheme.onSurface,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 )
             }
         }
-        val action: @Composable () -> Unit = {
+    }
+    val action: @Composable () -> Unit = {
+        FilledTonalButton(
+            onClick = onStart,
+            modifier = Modifier.height(48.dp),
+            colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
+                containerColor = scheme.primary,
+                contentColor = scheme.onPrimary,
+            ),
+        ) { Text("Start", style = MaterialTheme.typography.labelLargeEmphasized) }
+    }
+    if (largeText) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Space.s)) {
+            readout()
             FilledTonalButton(
                 onClick = onStart,
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
                     containerColor = scheme.primary,
                     contentColor = scheme.onPrimary,
                 ),
-            ) {
-                Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
-            }
+            ) { Text("Start", style = MaterialTheme.typography.labelLargeEmphasized) }
         }
-        if (largeText) {
-            Column(Modifier.padding(Space.m), verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                title(Modifier.fillMaxWidth())
-                FilledTonalButton(
-                    onClick = onStart,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.filledTonalButtonColors(
-                        containerColor = scheme.primary,
-                        contentColor = scheme.onPrimary,
-                    ),
-                ) {
-                    Text("Start", style = MaterialTheme.typography.labelLargeEmphasized)
-                }
-            }
-        } else {
-            Row(Modifier.padding(Space.m), verticalAlignment = Alignment.CenterVertically) {
-                title(Modifier.weight(1f))
-                action()
-            }
+    } else {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Column(Modifier.weight(1f)) { readout() }
+            action()
         }
     }
 }
@@ -891,10 +876,9 @@ private fun FoodStrip(food: DailyFood?, paidUntil: Long?, animate: Boolean = tru
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "/ FOOD FUND",
+                        "Food fund",
                         color = scheme.onSurfaceVariant,
-                        letterSpacing = 1.2.sp,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                     )
                     Text(
                         status,

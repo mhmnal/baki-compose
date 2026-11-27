@@ -1002,24 +1002,33 @@ private fun DeskStatementPreview(store: Store, month: String, onDismiss: () -> U
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(
+        Column(
             Modifier.fillMaxSize().padding(Space.xl),
-            contentAlignment = Alignment.Center,
+            verticalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            DeskStatementPaper(store = store, month = month, onClose = onDismiss)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }) { Text("Print / PDF") }
+                Spacer(Modifier.width(Space.s))
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
+            DeskStatementPaper(store = store, month = month, modifier = Modifier.weight(1f).fillMaxWidth())
         }
     }
 }
 
 @Composable
-internal fun DeskStatementPaper(store: Store, month: String, onClose: () -> Unit) {
+internal fun DeskStatementPaper(
+    store: Store,
+    month: String,
+    modifier: Modifier = Modifier.fillMaxHeight().widthIn(max = 1040.dp),
+) {
     val scheme = MaterialTheme.colorScheme
     val t = monthTotals(store, month)
     val shifts = store.shifts.filter { it.date.startsWith(month) }.sortedBy { it.date }
     val entries = store.entries.filter { it.date.startsWith(month) }.sortedBy { it.date }
 
     Surface(
-        Modifier.fillMaxHeight().widthIn(max = 1040.dp),
+        modifier,
         shape = ReceiptShape(),
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.55f)),
@@ -1044,9 +1053,6 @@ internal fun DeskStatementPaper(store: Store, month: String, onClose: () -> Unit
                     DeskMoney("RM ${rm(t.net)}", if (t.net < 0) scheme.error else scheme.onSurface, MaterialTheme.typography.displayMedium)
                     Text("${t.entryCount} entries · ${t.shiftCount} shifts · in RM ${rm(t.income)} · out RM ${rm(t.expense)}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                 }
-                FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }) { Text("Print / PDF") }
-                Spacer(Modifier.width(Space.s))
-                TextButton(onClick = onClose) { Text("Close") }
             }
             Spacer(Modifier.height(Space.m))
             ReceiptRule()

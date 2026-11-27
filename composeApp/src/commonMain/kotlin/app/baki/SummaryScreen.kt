@@ -111,6 +111,7 @@ fun SummaryScreen(
     val prevNet = remember(store, prevMonth) { monthTotals(store, prevMonth).net }
     val dayLabel = if (days.size == 1) "1 active day" else "${days.size} active days"
     var managingFund by remember { mutableStateOf<String?>(null) }
+    var inkRange by remember(month) { mutableStateOf(7) }
 
     LazyColumn(
         state = listState,
@@ -118,23 +119,44 @@ fun SummaryScreen(
         verticalArrangement = Arrangement.spacedBy(Space.s),
         contentPadding = PaddingValues(top = 0.dp, bottom = 188.dp),
     ) {
+        item { MonthHeader(month, onMonth, subtitle = "the month at a glance") }
         item {
             ReceiptCard(reduceMotion = repo.config.reducedMotion) {
-                StatementCover(
-                    month = month, t = t, days = days,
-                    cost = cost, prevNet = prevNet,
-                    onMonth = onMonth,
-                )
+                StatementCover(month = month, t = t, days = days, cost = cost, prevNet = prevNet)
             }
         }
-        item {
-            ReceiptCard(reduceMotion = repo.config.reducedMotion, delayMillis = 80) {
-                WeekCloseCard(repo = repo, store = store)
-            }
-        }
+        item { WeekCloseCard(repo = repo, store = store, reduceMotion = repo.config.reducedMotion) }
         // Paper first: documents stay together, then analysis opens with a deliberate breath.
         item { Spacer(Modifier.height(Space.l)) }
-        item { Md3Card(container = MaterialTheme.colorScheme.surfaceContainerLow, shape = InstrumentShape, padding = Space.ml) { MonthInkChart(store = store, month = month) } }
+        item {
+            Column(Modifier.fillMaxWidth()) {
+                val largeText = LocalDensity.current.fontScale >= 1.6f
+                if (largeText) {
+                    PhoneSectionLabel("month in ink")
+                    Spacer(Modifier.height(Space.xs))
+                    ConnectedChoiceGroup(
+                        options = listOf("7D", "30D"),
+                        selected = if (inkRange == 7) "7D" else "30D",
+                        onSelect = { inkRange = if (it == "7D") 7 else 30 },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PhoneSectionLabel("month in ink", modifier = Modifier.weight(1f))
+                        ConnectedChoiceGroup(
+                            options = listOf("7D", "30D"),
+                            selected = if (inkRange == 7) "7D" else "30D",
+                            onSelect = { inkRange = if (it == "7D") 7 else 30 },
+                            modifier = Modifier.width(144.dp),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(Space.s))
+                Md3Card(container = MaterialTheme.colorScheme.surfaceContainerLow, shape = InstrumentShape, padding = Space.ml) {
+                    MonthInkChart(store = store, month = month, range = inkRange)
+                }
+            }
+        }
         if (cats.isNotEmpty()) item {
             Md3Card { WhereItWent(cats = cats, total = t.expense, store = store) }
         }
@@ -157,7 +179,7 @@ fun SummaryScreen(
 }
 
 @Composable
-private fun WeekCloseCard(repo: BakiRepo, store: Store) {
+private fun WeekCloseCard(repo: BakiRepo, store: Store, reduceMotion: Boolean) {
     val scheme = MaterialTheme.colorScheme
     val currentWeek = weekStartOf(todayIso())
     val options = remember(store, currentWeek) { weekOptions(store, todayIso()) }
@@ -166,72 +188,77 @@ private fun WeekCloseCard(repo: BakiRepo, store: Store) {
     val view = remember(store, weekStart) { weekCloseView(store, weekStart) }
     var open by remember { mutableStateOf(false) }
     var pickerOpen by remember { mutableStateOf(false) }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
+
+    Column(Modifier.fillMaxWidth()) {
+        ReceiptCard(reduceMotion = reduceMotion, delayMillis = 80) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "/ WEEK CLOSE",
+                        color = scheme.primary,
+                        letterSpacing = 1.4.sp,
+                        fontFamily = FontFamily.Monospace,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text("${prettyDate(view.weekStart)} – ${prettyDate(view.weekEnd)}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall)
+                }
+                Surface(
+                    color = if (view.isClosed) Color(0xFFDFF56A) else scheme.surfaceContainerHigh,
+                    contentColor = if (view.isClosed) Color(0xFF0B331E) else scheme.onSurfaceVariant,
+                    shape = ReceiptCorner,
+                    border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.35f)),
+                ) {
+                    Text(
+                        if (view.isClosed) "CLOSED" else "OPEN",
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = 4.dp),
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 0.8.sp,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    )
+                }
+            }
+            Spacer(Modifier.height(Space.s))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Column(Modifier.weight(1f)) {
+                    Text("Recorded net", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    Text("RM ${rm(view.recordedNet)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Received", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        if (!view.isClosed && view.received == 0L) "Not entered" else "RM ${rm(view.received)}",
+                        color = if (!view.isClosed && view.received == 0L) scheme.onSurfaceVariant else scheme.onSurface,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFeatureSettings = "tnum",
+                            fontWeight = if (!view.isClosed && view.received == 0L) FontWeight.Normal else FontWeight.Bold,
+                        ),
+                    )
+                }
+            }
+            Spacer(Modifier.height(Space.xs))
             Text(
-                "/ WEEK CLOSE",
-                color = scheme.primary,
-                letterSpacing = 1.4.sp,
-                fontFamily = FontFamily.Monospace,
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            )
-            Text("${prettyDate(view.weekStart)} – ${prettyDate(view.weekEnd)}", color = scheme.onSurface, style = MaterialTheme.typography.titleSmall)
-        }
-        Surface(
-            color = if (view.isClosed) Color(0xFFDFF56A) else scheme.surfaceContainerHigh,
-            contentColor = if (view.isClosed) Color(0xFF0B331E) else scheme.onSurfaceVariant,
-            shape = ReceiptCorner,
-            border = BorderStroke(1.dp, scheme.outline.copy(alpha = 0.35f)),
-        ) {
-            Text(
-                if (view.isClosed) "CLOSED" else "OPEN",
-                modifier = Modifier.padding(horizontal = Space.s, vertical = 4.dp),
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 0.8.sp,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                when {
+                    view.isClosed -> "Closed ${view.closeDate?.take(10) ?: "—"} · review or reopen"
+                    view.statement == null -> "No statement imported · enter what you actually received"
+                    !view.statementReconciled -> "Statement is not reconciled"
+                    else -> "Ready to close"
+                },
+                color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
             )
         }
-    }
-    Spacer(Modifier.height(Space.s))
-    Row(verticalAlignment = Alignment.Bottom) {
-        Column(Modifier.weight(1f)) {
-            Text("RECORDED NET", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp, style = MaterialTheme.typography.labelSmall)
-            Text("RM ${rm(view.recordedNet)}", color = scheme.onSurface, style = MaterialTheme.typography.headlineSmall.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold))
+        Spacer(Modifier.height(Space.s))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.CenterVertically) {
+            FilledTonalButton(onClick = { open = true }, modifier = Modifier.weight(1f).testTag("week-close-review"), enabled = view.hasActivity) {
+                Text(if (view.isClosed) "Review" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
+            }
+            TextButton(onClick = { pickerOpen = true }, modifier = Modifier.heightIn(min = Control.primary).testTag("week-close-picker")) {
+                Text("Weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
         }
-        Column(horizontalAlignment = Alignment.End) {
-            Text("RECEIVED", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp, style = MaterialTheme.typography.labelSmall)
-            Text(
-                if (!view.isClosed && view.received == 0L) "Not entered" else "RM ${rm(view.received)}",
-                color = if (!view.isClosed && view.received == 0L) scheme.onSurfaceVariant else scheme.onSurface,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontFeatureSettings = "tnum",
-                    fontWeight = if (!view.isClosed && view.received == 0L) FontWeight.Normal else FontWeight.Bold,
-                ),
-            )
-        }
-    }
-    Spacer(Modifier.height(Space.xs))
-    Text(
-        when {
-            view.isClosed -> "Closed ${view.closeDate?.take(10) ?: "—"} · review or reopen"
-            view.statement == null -> "No statement imported · enter what you actually received"
-            !view.statementReconciled -> "Statement is not reconciled"
-            else -> "Ready to close"
-        },
-        color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
-    )
-    Spacer(Modifier.height(Space.s))
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.s), verticalAlignment = Alignment.CenterVertically) {
-        FilledTonalButton(onClick = { open = true }, modifier = Modifier.weight(1f).testTag("week-close-review"), enabled = view.hasActivity) {
-            Text(if (view.isClosed) "Review" else "Review week", style = MaterialTheme.typography.labelLargeEmphasized)
-        }
-        TextButton(onClick = { pickerOpen = true }, modifier = Modifier.heightIn(min = Control.primary).testTag("week-close-picker")) {
-            Text("Weeks", color = scheme.primary, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
-        }
-    }
-    if (weekStart != currentWeek) {
-        TextButton(onClick = { selectedWeek = currentWeek }, contentPadding = PaddingValues(horizontal = 0.dp)) {
-            Text("Back to this week", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+        if (weekStart != currentWeek) {
+            TextButton(onClick = { selectedWeek = currentWeek }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                Text("Back to this week", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
     if (open) WeekCloseSheet(repo = repo, weekStart = weekStart, initial = view, onDismiss = { open = false })
@@ -615,7 +642,7 @@ private fun SectionMark(tint: Color, size: androidx.compose.ui.unit.Dp = 16.dp) 
 private fun Md3Card(
     container: Color = MaterialTheme.colorScheme.surfaceContainerLow,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.large,
+    shape: androidx.compose.ui.graphics.Shape = InstrumentShape,
     padding: androidx.compose.ui.unit.Dp = Space.l,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
@@ -648,7 +675,6 @@ private fun StatementCover(
     days: List<Pair<String, Totals>>,
     cost: MonthCost,
     prevNet: Long,
-    onMonth: (String) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val delta = t.net - prevNet
@@ -656,36 +682,6 @@ private fun StatementCover(
 
     Box(Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ShapeNavButton(
-                label = "‹",
-                enabled = true,
-                onClick = { onMonth(addDays("$month-01", -1).take(7)) },
-                description = "Previous month",
-                background = scheme.surfaceContainerHighest,
-                ink = scheme.onSurface,
-            )
-            Text(
-                monthLabel(month), color = scheme.onSurface,
-                textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
-                maxLines = if (LocalDensity.current.fontScale >= 1.6f) 2 else 1,
-                overflow = TextOverflow.Ellipsis,
-                style = if (LocalDensity.current.fontScale >= 1.6f)
-                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                else MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            )
-            ShapeNavButton(
-                label = "›",
-                enabled = true,
-                onClick = { onMonth(addDays(endOfMonth(month), 1).take(7)) },
-                description = "Next month",
-                background = scheme.surfaceContainerHighest,
-                ink = scheme.onSurface,
-            )
-        }
-        Spacer(Modifier.height(Space.m))
-        ReceiptRule()
-        Spacer(Modifier.height(Space.m))
         Text(
             "/ MONTHLY STATEMENT",
             color = scheme.primary,
@@ -724,9 +720,8 @@ private data class InkDay(val iso: String, val net: Long, val active: Boolean)
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun MonthInkChart(store: Store, month: String) {
+private fun MonthInkChart(store: Store, month: String, range: Int) {
     val scheme = MaterialTheme.colorScheme
-    var range by remember(month) { mutableStateOf(7) }
     var selected by remember(month, range) { mutableStateOf<Int?>(null) }
     val allDays = remember(store, month) {
         monthGrid(month).filterNotNull().map { iso ->
@@ -767,30 +762,7 @@ private fun MonthInkChart(store: Store, month: String) {
     }
 
     val largeText = LocalDensity.current.fontScale >= 1.6f
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        if (largeText) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PhoneSectionLabel("month in ink", modifier = Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(Space.xs))
-            ConnectedChoiceGroup(
-                options = listOf("7D", "30D"),
-                selected = if (range == 7) "7D" else "30D",
-                onSelect = { range = if (it == "7D") 7 else 30 },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PhoneSectionLabel("month in ink", modifier = Modifier.weight(1f))
-                ConnectedChoiceGroup(
-                    options = listOf("7D", "30D"),
-                    selected = if (range == 7) "7D" else "30D",
-                    onSelect = { range = if (it == "7D") 7 else 30 },
-                    modifier = Modifier.width(144.dp),
-                )
-            }
-        }
-        Spacer(Modifier.height(Space.xs))
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
         if (largeText) {
             Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                 Surface(shape = RoundedCornerShape(50), color = if (range == 30) scheme.primaryContainer else scheme.tertiaryContainer) {
