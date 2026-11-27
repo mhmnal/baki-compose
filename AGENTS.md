@@ -9,10 +9,10 @@ Version       0.67.0
 Code          271
 Tests         253, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.67.0.apk
-SHA-256       pending
+SHA-256       c1c5db5e6e7f361d4c962fd259464c6e79f26166ac4ccac16952aa79ec783ebe
 Unminified    not built; R8 APK is the release
-Phone         0.66.0 installed; 0.67.0 pending
-Desktop       0.66.0 installed; 0.67.0 pending
+Phone         0.67.0 installed; ledger intact
+Desktop       0.67.0 installed; Compare + Year open pages
 ```
 
 Standing decisions:
