@@ -62,10 +62,11 @@ part of that guard.
 
 Do not use `gradle-capped.sh` or a terminal scope for R8.
 
-**Never run raw `./gradlew` for a build, test, preview or package.** Those commands must use
-`./scripts/gradle-capped.sh`, which puts the whole Gradle/test JVM inside a 6 GB systemd scope.
-Raw `./gradlew` may only be used for `--stop`. A bypassed test worker once reached 9 GB and triggered
-a global OOM kill; the cage would have contained it.
+**Tests and previews must use `./scripts/test-safe.sh`.** It runs Gradle in a persistent transient
+systemd service with a 6 GB cap, a host-memory monitor and a stray-JVM preflight. A scope wrapper is
+not enough: a test worker once escaped/interrupted and reached 9 GB outside the unit, causing a global
+OOM kill. Builds and packaging use `./scripts/gradle-capped.sh`. Raw `./gradlew` may only be used for
+`--stop`.
 
 ### Non-R8 builds
 
