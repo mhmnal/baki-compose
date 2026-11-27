@@ -9,10 +9,10 @@ Version       0.64.8
 Code          267
 Tests         244, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.64.8.apk
-SHA-256       pending
+SHA-256       5c5d42feb19b967fc01530e12fab12775ea84000ae21e23e2b6de807612fee14
 Unminified    dist/baki-compose-0.64.8-unminified.apk
-Phone         0.64.7 installed; Shifts receipt trial
-Desktop       0.64.7 installed; design + G6 + week-close actions
+Phone         0.64.7 installed; 0.64.8 pending ADB/install
+Desktop       0.64.8 installed; G6 + week-close actions
 ```
 
 Standing decisions:
@@ -162,7 +162,7 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Build/publish 0.64.8 through the guarded R8 script; install when ADB is connected.
+1. Install 0.64.8 on the phone when ADB/wireless debugging is available.
 2. Trial Shifts weekly receipts on phone.
 3. Mark or unlink Celcomdigi’s remaining payment.
 4. Run a 6+ hour shift soak with screen off.
