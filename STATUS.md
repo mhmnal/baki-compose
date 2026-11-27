@@ -46,10 +46,8 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 
 ## Verification
 
-- **243 JVM tests passed before the Ledger-only change**
-- targeted `PhoneShot` preview passed after Ledger
-- targeted Statement page preview passed in light/dark
-- desktop material grammar preview passed
+- **244 JVM tests, 0 failures (full suite)**
+- targeted previews pass after all design changes
 - 0.64.7 R8 APK built, signed, installed and backup path verified
 - Android compile passed
 - phone install verified: bank screens gone, weekly statement and Data Health present
