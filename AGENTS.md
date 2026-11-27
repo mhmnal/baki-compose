@@ -5,14 +5,14 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 27 November 2026
 
 ```text
-Version       0.66.0
-Code          270
+Version       0.67.0
+Code          271
 Tests         253, 0 failures (full suite)
-R8 APK        dist/baki-compose-0.66.0.apk
-SHA-256       cd8c77b789a5d457696e06e3e0f88ad3e88dce8a90d970df32feda3d73d2c0dc
+R8 APK        dist/baki-compose-0.67.0.apk
+SHA-256       pending
 Unminified    not built; R8 APK is the release
-Phone         0.66.0 installed; ledger intact
-Desktop       0.66.0 installed; weekly Shifts ledger + motion
+Phone         0.66.0 installed; 0.67.0 pending
+Desktop       0.66.0 installed; 0.67.0 pending
 ```
 
 Standing decisions:

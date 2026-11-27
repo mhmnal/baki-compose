@@ -167,3 +167,13 @@ Rejected:
 - stretching the paper statement to match the analysis column
 
 This is the reference composition for future desktop work. Do not add chrome to it.
+
+## Desktop completion — Compare, Year, motion
+
+- Compare is an open comparison table: period labels and month steppers are the header, not a card.
+- Year is an open annual page: net masthead, metrics, statement actions, wear instrument, month bars.
+- Statement actions on Year: one tonal Preview, short Print / CSV / PDF text actions.
+- Interactive desktop table rows use a 120 ms hover tint and a 1 px pine focus ring.
+- Reduced motion makes these immediate; no looping or page-level motion.
+
+These are the reference structures for desktop analysis pages.

@@ -871,32 +871,39 @@ internal fun DeskCompare(repo: BakiRepo, month: String) {
     var b by remember(month) { mutableStateOf(addDays("$month-01", -1).take(7)) }
     val rows = remember(store, a, b) { compareMonths(store, a, b) }
     Column(Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DeskLabel("PERIOD A")
-            Spacer(Modifier.width(Space.s))
-            DeskMonthStepper(a, { a = it }, compact = true)
+        Text(
+            "/ 01  COMPARE",
+            color = scheme.primary,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.4.sp,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        Spacer(Modifier.height(Space.s))
+        Row(verticalAlignment = Alignment.Bottom) {
+            Column {
+                Text("/ PERIOD A", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                DeskMonthStepper(a, { a = it }, compact = true)
+            }
             Spacer(Modifier.weight(1f))
-            Text("VERSUS", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            Text("VERSUS", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 1.4.sp, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
             Spacer(Modifier.weight(1f))
-            Text("PERIOD B", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-            Spacer(Modifier.width(Space.s))
-            DeskMonthStepper(b, { b = it }, compact = true)
+            Column(horizontalAlignment = Alignment.End) {
+                Text("/ PERIOD B", color = scheme.onSurfaceVariant, fontFamily = FontFamily.Monospace, letterSpacing = 1.1.sp, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                DeskMonthStepper(b, { b = it }, compact = true)
+            }
         }
         Spacer(Modifier.height(Space.m))
-        Surface(Modifier.fillMaxWidth().weight(1f), shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
-            Column(Modifier.padding(Space.l)) {
-                DeskTableHead("METRIC" to 1.2f, monthLabel(a).uppercase() to 1f, monthLabel(b).uppercase() to 1f, "CHANGE" to 0.8f)
-                LazyColumn(Modifier.fillMaxSize()) {
-                    items(rows, key = { it.label }) { row ->
-                        DeskTableRow(
-                            listOf(row.label to 1.2f, row.a to 1f, row.b to 1f, (row.changeLabel ?: "—") to 0.8f),
-                            colors = listOf(
-                                scheme.onSurface, scheme.onSurface, scheme.onSurface,
-                                when (row.good) { true -> scheme.tertiary; false -> scheme.error; null -> scheme.onSurfaceVariant },
-                            ),
-                        )
-                    }
-                }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
+        DeskTableHead("METRIC" to 1.2f, monthLabel(a).uppercase() to 1f, monthLabel(b).uppercase() to 1f, "CHANGE" to 0.8f)
+        LazyColumn(Modifier.fillMaxSize()) {
+            items(rows, key = { it.label }) { row ->
+                DeskTableRow(
+                    listOf(row.label to 1.2f, row.a to 1f, row.b to 1f, (row.changeLabel ?: "—") to 0.8f),
+                    colors = listOf(
+                        scheme.onSurface, scheme.onSurface, scheme.onSurface,
+                        when (row.good) { true -> scheme.tertiary; false -> scheme.error; null -> scheme.onSurfaceVariant },
+                    ),
+                )
             }
         }
     }
@@ -918,71 +925,76 @@ internal fun DeskYear(repo: BakiRepo, month: String) {
     val peak = months.maxOfOrNull { kotlin.math.abs(it.second.net) }?.coerceAtLeast(1L) ?: 1L
     var statementOpen by remember { mutableStateOf(false) }
     if (statementOpen) DeskStatementPreview(store, month) { statementOpen = false }
-    Column(Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s), verticalArrangement = Arrangement.spacedBy(Space.m)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
-            DeskCard(Modifier.weight(1.2f)) {
+
+    Column(Modifier.fillMaxSize().padding(horizontal = Space.xl, vertical = Space.s)) {
+        Text(
+            "/ 01  YEAR",
+            color = scheme.primary,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.4.sp,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+        )
+        Spacer(Modifier.height(Space.s))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xl), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1.2f)) {
                 DeskLabel("$year AT A GLANCE")
                 Spacer(Modifier.height(Space.xs))
                 DeskMoney("RM ${rm(net)} net", if (net < 0) scheme.error else scheme.onSurface, MaterialTheme.typography.displayMedium)
                 Spacer(Modifier.height(Space.s))
                 Text("in RM ${rm(months.sumOf { it.second.income })} · out RM ${rm(months.sumOf { it.second.expense })}", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
             }
-            DeskCard(Modifier.weight(0.8f)) {
+            Column(Modifier.weight(0.65f)) {
                 DeskLabel("THE YEAR IN MOTION")
                 Spacer(Modifier.height(Space.m))
-                Row(horizontalArrangement = Arrangement.spacedBy(Space.xl)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     DeskMetric("HOURS", "%.0f".format(yearShifts.sumOf { it.hours }))
                     DeskMetric("KM", "%.0f".format(yearShifts.sumOf { shiftKm(it, store.settings.profit) }))
                     DeskMetric("SHIFTS", yearShifts.size.toString())
                 }
             }
-            DeskCard(Modifier.weight(0.8f)) {
+            Column(Modifier.weight(0.85f)) {
                 DeskLabel("STATEMENT")
                 Spacer(Modifier.height(Space.xs))
                 Text(monthLabel(month), color = scheme.onSurface, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                 Spacer(Modifier.height(Space.s))
-                Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
-                    FilledTonalButton(onClick = { statementOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Preview", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                FilledTonalButton(onClick = { statementOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Preview", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+                    TextButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }, modifier = Modifier.weight(1f)) {
+                        Text("Print", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
-                    FilledTonalButton(onClick = { PlatformEffects.printStatement(statementHtml(store, month)) }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Print / PDF", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                    TextButton(onClick = { PlatformEffects.exportFile("baki-$year.csv", "text/csv", annualCsv(store, year)) }, modifier = Modifier.weight(1f)) {
+                        Text("CSV", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-                        FilledTonalButton(
-                            onClick = { PlatformEffects.exportFile("baki-$year.csv", "text/csv", annualCsv(store, year)) },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Annual CSV", style = MaterialTheme.typography.labelSmall) }
-                        FilledTonalButton(
-                            onClick = { PlatformEffects.printStatement(annualSummaryHtml(store, year)) },
-                            modifier = Modifier.weight(1f),
-                        ) { Text("Annual PDF", style = MaterialTheme.typography.labelSmall) }
+                    TextButton(onClick = { PlatformEffects.printStatement(annualSummaryHtml(store, year)) }, modifier = Modifier.weight(1f)) {
+                        Text("PDF", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
         }
+        Spacer(Modifier.height(Space.m))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
+        Spacer(Modifier.height(Space.m))
         VehicleWearCard(store, Modifier.fillMaxWidth())
-        Surface(Modifier.fillMaxWidth().weight(1f), shape = MaterialTheme.shapes.extraLarge, color = scheme.surfaceContainerLow) {
-            LazyColumn(Modifier.fillMaxSize().padding(horizontal = Space.l, vertical = Space.s)) {
-                items(months) { (label, t) ->
-                    val fraction = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.03f, 1f)
-                    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(monthLabel(label).substringBefore(' '), color = if (label == month) scheme.primary else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (label == month) FontWeight.Bold else FontWeight.Medium), modifier = Modifier.width(120.dp))
-                        Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(scheme.surfaceContainerHigh)) {
-                            Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().clip(CircleShape).background(if (t.net < 0) scheme.secondary else scheme.primary))
-                        }
-                        Text("RM ${rm(t.net)}", color = if (t.net < 0) scheme.secondary else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold), modifier = Modifier.width(150.dp).padding(start = Space.m), maxLines = 1)
+        Spacer(Modifier.height(Space.s))
+        DeskLabel("MONTHS")
+        Spacer(Modifier.height(Space.xs))
+        LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
+            items(months) { (label, t) ->
+                val fraction = (kotlin.math.abs(t.net).toFloat() / peak).coerceIn(0.03f, 1f)
+                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(monthLabel(label).substringBefore(' '), color = if (label == month) scheme.primary else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (label == month) FontWeight.Bold else FontWeight.Medium), modifier = Modifier.width(120.dp))
+                    Box(Modifier.weight(1f).height(10.dp).clip(CircleShape).background(scheme.surfaceContainerHigh)) {
+                        Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().clip(CircleShape).background(if (t.net < 0) scheme.secondary else scheme.primary))
                     }
-                    HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.4f))
+                    Text("RM ${rm(t.net)}", color = if (t.net < 0) scheme.secondary else scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum", fontWeight = FontWeight.Bold), modifier = Modifier.width(150.dp).padding(start = Space.m), maxLines = 1)
                 }
+                HorizontalDivider(color = scheme.outlineVariant.copy(alpha = 0.4f))
             }
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Statement preview
-// ---------------------------------------------------------------------------
 
 @Composable
 private fun DeskStatementPreview(store: Store, month: String, onDismiss: () -> Unit) {
