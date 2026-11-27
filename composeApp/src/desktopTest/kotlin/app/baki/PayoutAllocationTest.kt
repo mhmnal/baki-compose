@@ -30,6 +30,18 @@ class PayoutAllocationTest {
     }
 
     @Test
+    fun previewMatchesTheAppliedAllocation() {
+        val store = Store(shifts = listOf(shift("a", 100), shift("b", 200)))
+        val preview = statementAllocationPreview(store, week, 150)
+        assertEquals(150L, preview.sumOf { it.amountCents })
+        val applied = allocateStatementPayouts(store.shifts, week, 150)
+        preview.forEach { line ->
+            val shift = applied.single { it.id == line.shiftId }
+            assertEquals(line.amountCents, shift.payouts.sumOf { it.c })
+        }
+    }
+
+    @Test
     fun capacityStopsAtOutstandingGaps() {
         val store = Store(shifts = listOf(shift("a", 100, 40), shift("b", 50)))
         assertEquals(110L, statementAllocationCapacity(store, week))

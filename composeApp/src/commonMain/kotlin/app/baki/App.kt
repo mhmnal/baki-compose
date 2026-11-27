@@ -109,6 +109,7 @@ fun App(repo: BakiRepo = remember { BakiRepo() }) {
             PlatformEffects.notice("That PDF doesn't look like a Grab statement")
         } else {
             repo.saveStatement(parsed)
+            StatementReview.pendingWeek = parsed.weekStart
             PlatformEffects.notice("Imported week of ${parsed.weekStart}")
         }
     }
@@ -2530,6 +2531,7 @@ private fun MoreScreen(
                         }
                         if (parsed == null) skipped++ else {
                             repo.saveStatement(parsed)
+                            StatementReview.pendingWeek = parsed.weekStart
                             imported++
                         }
                     }
@@ -2983,6 +2985,15 @@ private fun MoreScreen(
 
     if (statementHistoryOpen) {
         StatementHistorySheet(repo = repo, onDismiss = { statementHistoryOpen = false })
+    }
+
+    StatementReview.pendingWeek?.let { week ->
+        WeekCloseSheet(
+            repo = repo,
+            weekStart = week,
+            initial = weekCloseView(repo.store, week),
+            onDismiss = { StatementReview.pendingWeek = null },
+        )
     }
 
     backupPassMode?.let { mode ->

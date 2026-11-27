@@ -289,7 +289,7 @@ private fun WeekPickerSheet(
 }
 
 @Composable
-private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekCloseView, onDismiss: () -> Unit) {
+internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekCloseView, onDismiss: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     var received by remember(initial.received) { mutableStateOf(centsDigits(initial.received)) }
@@ -468,10 +468,23 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
                 onDismissRequest = { allocateConfirm = false },
                 title = { Text("Allocate statement payout?") },
                 text = {
-                    Text(
-                        "Allocate RM ${rm(amount)} across this week's unpaid shift gaps. " +
-                            "These payouts are labelled statement-funded, not observed cash.",
-                    )
+                    Column {
+                        Text(
+                            "Allocate RM ${rm(amount)} across this week's unpaid shift gaps. " +
+                                "These payouts are labelled statement-funded, not observed cash.",
+                        )
+                        Spacer(Modifier.height(Space.s))
+                        val preview = remember(repo.store, weekStart, amount) { statementAllocationPreview(repo.store, weekStart, amount) }
+                        Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+                            preview.forEach { line ->
+                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                    Text(prettyDate(line.date), color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    Text("RM ${rm(line.amountCents)}", color = scheme.onSurface, style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"))
+                                }
+                            }
+                        }
+                        if (preview.isEmpty()) Text("No unpaid shift gaps remain.", color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
                 },
                 confirmButton = {
                     TextButton(

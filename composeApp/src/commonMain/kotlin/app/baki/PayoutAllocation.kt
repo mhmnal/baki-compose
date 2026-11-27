@@ -43,3 +43,18 @@ fun statementAllocationCapacity(store: Store, weekStart: String): Long {
         .filter { it.date >= weekStart && it.date < end }
         .sumOf { (it.gross + it.incentive - it.payouts.sumOf { p -> p.c }).coerceAtLeast(0L) }
 }
+
+
+/** Per-shift amounts the next statement allocation would create, without mutating the store. */
+data class AllocationPreviewLine(val shiftId: String, val date: String, val amountCents: Long)
+
+fun statementAllocationPreview(store: Store, weekStart: String, amountCents: Long): List<AllocationPreviewLine> {
+    val before = store.shifts
+    val after = allocateStatementPayouts(before, weekStart, amountCents)
+    val old = before.associateBy { it.id }
+    return after.mapNotNull { shift ->
+        val prior = old[shift.id] ?: return@mapNotNull null
+        val added = shift.payouts.drop(prior.payouts.size).sumOf { it.c }
+        if (added <= 0L) null else AllocationPreviewLine(shift.id, shift.date, added)
+    }
+}
