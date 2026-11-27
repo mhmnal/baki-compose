@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClientConfig(
     val serverUrl: String = defaultServerUrl,
-    /** "json" or "sqlite". SQLite is the G5 cutover engine; JSON remains the rollback mode. */
+    /** "json" is a direct-test seam only. Persisted configs are always migrated to "sqlite". */
     val storageEngine: String = "sqlite",
     /** Shared API token; blank works only when the server is unsecured. */
     val serverToken: String = "",
@@ -60,12 +60,22 @@ fun loadConfig(): ClientConfig {
         StoreHealth.loadError = "Client config could not be read; defaults restored."
         null
     } ?: return ClientConfig()
-    return runCatching { BakiJson.decodeFromString<ClientConfig>(raw) }.getOrElse {
+    val cfg = runCatching { BakiJson.decodeFromString<ClientConfig>(raw) }.getOrElse {
         runCatching { LocalStore.quarantine(CONFIG_FILE) }
         StoreHealth.loadError = "Client config could not be parsed; defaults restored."
         ClientConfig()
     }
+    val migrated = migrateStorageEngine(cfg)
+    if (migrated != cfg) {
+        // G6: SQLite is the only production writer. JSON stays as import/backup/test format.
+        saveConfig(migrated)
+    }
+    return migrated
 }
+
+/** G6: persisted configs never select the JSON writer; direct ClientConfig values remain test seams. */
+internal fun migrateStorageEngine(cfg: ClientConfig): ClientConfig =
+    if (cfg.storageEngine == "sqlite") cfg else cfg.copy(storageEngine = "sqlite")
 
 fun saveConfig(cfg: ClientConfig) {
     runCatching {

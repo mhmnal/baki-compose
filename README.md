@@ -166,7 +166,7 @@ committed.
   full-store push, so offline edits and deletes cannot sit silently on one device.
 - Local writes go to encrypted SQLite first; the generic operation outbox is the sync source of truth.
 - SQLite writes use one transaction per change and a persistent SQLCipher handle.
-- The local JSON snapshot is a rollback/import path, not the live store; it is not rewritten after cutover.
+- SQLite is the only production writer. The JSON snapshot is import/backup/test-only; persisted configs are migrated to SQLite on load.
 - A verified local recovery snapshot is created after Week Close. A failed SQLite load surfaces a
   recovery banner and never silently pretends the stale JSON is current.
 - Server keeps 30 rotating backups in `../grab-tracker/backups/`.

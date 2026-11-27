@@ -29,7 +29,8 @@ As of **2026-11-25**.
   - `statement-auto-2026-11-16-incentive` RM 16.80
   - `statement-auto-2026-11-16-tips` RM 4.00
   - `statement-auto-2026-11-16-delivery` RM 1.50
-- JSON snapshot remains rollback/import only
+- Week Close now offers: use statement amount, allocate statement payout with confirmation, mark/reopen statement reconciled
+- G6: persisted configs always migrate to SQLite; JSON is import/backup/test-only
 
 ## Portable backup
 
@@ -59,7 +60,7 @@ User moved the backup and passphrase off-device on 25 Nov 2026.
 1. Use 0.64.7 for one day and review the receipt design.
 2. Mark or unlink Celcomdigi’s remaining payment.
 3. Run a 6+ hour shift soak with screen off.
-4. Keep the week of data, then retire the JSON write path (G6).
+4. G6 write-path retirement is implemented; release it with the next build.
 5. Keep R8 and desktop packaging inside capped systemd services.
 
 ## Known gaps

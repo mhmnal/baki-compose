@@ -7,12 +7,12 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ```text
 Version       0.64.7
 Code          266
-Tests         243 last full; targeted preview after Ledger
+Tests         244: G6 + week-close targets pass; full suite pending
 R8 APK        dist/baki-compose-0.64.7.apk
 SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
 Unminified    dist/baki-compose-0.64.7-unminified.apk
 Phone         0.64.7 installed; Shifts receipt trial
-Desktop       0.64.7 installed; Overview spread, open Ledger, paper Statement, material grammar
+Desktop       0.64.7 installed; design + G6 + week-close actions
 ```
 
 Standing decisions:
@@ -162,10 +162,10 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Trial the desktop material grammar at the real window size.
-2. Re-run the full test suite once, after the design settles.
+1. Re-run the full test suite after G6 and the week-close actions.
+2. Build/install the next release with G6, design and week-close actions.
 3. Trial Shifts weekly receipts on phone.
 4. Mark or unlink Celcomdigi’s remaining payment.
 5. Run a 6+ hour shift soak with screen off.
 6. Keep R8 and desktop packaging inside capped systemd services.
-7. Keep the week of data, then retire the JSON write path (G6).
+7. Keep the week of data, then retire the JSON write path (G6) is done; release it.

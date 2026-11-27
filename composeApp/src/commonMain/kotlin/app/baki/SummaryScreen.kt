@@ -300,8 +300,14 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
     var bNetGsf by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.netGsf * 100).roundToLong()) } ?: "") }
     var bRate by remember(initial.statement) { mutableStateOf(initial.statement?.let { if (it.netGsfRate > 0) "%.1f".format(it.netGsfRate) else "" } ?: "") }
     var bDelivery by remember(initial.statement) { mutableStateOf(initial.statement?.let { centsDigits((it.deliveryIncentive * 100).roundToLong()) } ?: "") }
+    var allocateConfirm by remember { mutableStateOf(false) }
     val cents = centsFromDigits(received)
     val view = remember(repo.store, weekStart) { weekCloseView(repo.store, weekStart) }
+    val statementWeeklyCents = view.statement?.let { (it.weekly * 100).roundToLong() } ?: 0L
+    val allocationCapacity = remember(repo.store, weekStart) { statementAllocationCapacity(repo.store, weekStart) }
+    val alreadyAllocated = remember(repo.store, weekStart) {
+        repo.store.shifts.any { shift -> weekStartOf(shift.date) == weekStart && shift.payouts.any { it.source == "statement:$weekStart" } }
+    }
     BakiSheet(
         onDismiss = onDismiss,
         footer = {
@@ -357,6 +363,35 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
                 WeekCloseRow("Incentives / tips", "RM ${"%.2f".format(st.incentives)} / ${"%.2f".format(st.tips)}")
             }
             WeekCloseRow("Reconciled", if (view.statementReconciled) "yes" else "no")
+            WeekCloseRow("Statement payout allocation", if (alreadyAllocated) "allocated" else "not allocated")
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                if (!view.isClosed && !repo.readOnly && statementWeeklyCents > 0L) {
+                    TextButton(
+                        onClick = { received = centsDigits(statementWeeklyCents) },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { Text("Use statement amount", color = scheme.primary, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)) }
+                }
+                if (!repo.readOnly && allocationCapacity > 0L && !alreadyAllocated) {
+                    TextButton(
+                        onClick = { allocateConfirm = true },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { Text("Allocate payout", color = scheme.primary, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)) }
+                }
+                if (!repo.readOnly) {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                saving = true
+                                val ok = repo.setStatementReconciled(weekStart, !view.statementReconciled)
+                                saving = false
+                                if (ok) ActionFeedback.show(if (view.statementReconciled) "Statement reopened" else "Statement reconciled")
+                            }
+                        },
+                        enabled = !saving,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) { Text(if (view.statementReconciled) "Reopen statement" else "Mark reconciled", color = scheme.primary, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)) }
+                }
+            }
             TextButton(
                 onClick = { breakdownOpen = !breakdownOpen },
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -427,6 +462,34 @@ private fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClose
             color = if (repo.readOnly) scheme.secondary else scheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
+        if (allocateConfirm) {
+            val amount = minOf(statementWeeklyCents, allocationCapacity)
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { allocateConfirm = false },
+                title = { Text("Allocate statement payout?") },
+                text = {
+                    Text(
+                        "Allocate RM ${rm(amount)} across this week's unpaid shift gaps. " +
+                            "These payouts are labelled statement-funded, not observed cash.",
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = !saving && amount > 0L,
+                        onClick = {
+                            scope.launch {
+                                saving = true
+                                val n = repo.allocateStatementPayout(weekStart, amount)
+                                saving = false
+                                allocateConfirm = false
+                                if (n > 0) ActionFeedback.show("Allocated statement payout across $n shifts")
+                            }
+                        },
+                    ) { Text("Allocate", color = scheme.primary) }
+                },
+                dismissButton = { TextButton(onClick = { allocateConfirm = false }) { Text("Cancel") } },
+            )
+        }
     }
 }
 
