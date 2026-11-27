@@ -11,7 +11,7 @@ Tests         244, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.64.8.apk
 SHA-256       5c5d42feb19b967fc01530e12fab12775ea84000ae21e23e2b6de807612fee14
 Unminified    not built; R8 APK is the release
-Phone         0.64.7 installed; 0.64.8 pending ADB/install
+Phone         0.64.8 installed; ledger intact and synced
 Desktop       0.64.8 installed; G6 + week-close actions
 ```
 
@@ -162,7 +162,7 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Install 0.64.8 on the phone when ADB/wireless debugging is available.
+1. Trial 0.64.8 Week Close actions on the phone.
 2. Trial Shifts weekly receipts on phone.
 3. Mark or unlink Celcomdigi’s remaining payment.
 4. Run a 6+ hour shift soak with screen off.
