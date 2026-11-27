@@ -118,8 +118,8 @@ check; they are the second.
 Render both shells and both palettes:
 
 ```bash
-./scripts/gradle-capped.sh :composeApp:desktopTest \
-  --tests app.baki.PhoneShot --offline --no-daemon
+./scripts/test-safe.sh :composeApp:desktopTest \
+  --tests app.baki.PhoneShot --no-build-cache
 ```
 
 Frames land in `composeApp/build/preview/{dark,light}/{phone,desk}/*.png`. The **App Preview** page

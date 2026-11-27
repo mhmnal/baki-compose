@@ -50,8 +50,10 @@ export JAVA_HOME="$TOOLS/jdk21"
 export PATH="\$JAVA_HOME/bin:\$PATH"
 export GRADLE_USER_HOME="$TOOLS/gradle"
 export ANDROID_HOME="$TOOLS/sdk"
+set +e
 ./gradlew --no-daemon "\$@" > "$LOG" 2>&1
 status=\$?
+set -e
 printf '%s' "\$status" > "$STATUS"
 exit "\$status"
 RUNNER_EOF
@@ -86,5 +88,9 @@ echo "==> test service result: ${exec_status:-unknown}, peak: ${peak:-unknown} b
 tail -30 "$LOG" 2>/dev/null || true
 
 if (( killed_for_memory != 0 )); then exit 124; fi
-if [[ "$exec_status" =~ ^[0-9]+$ ]] && (( exec_status != 0 )); then exit "$exec_status"; fi
+if [[ ! -s "$STATUS" ]]; then
+  echo "==> test service produced no exit status" >&2
+  exit 1
+fi
+if (( exec_status != 0 )); then exit "$exec_status"; fi
 exit 0
