@@ -155,6 +155,7 @@ tasks.withType<JavaExec>().configureEach {
 }
 
 tasks.withType<Test>().configureEach {
+    maxHeapSize = "3g"
     systemProperty("user.home", System.getProperty("java.io.tmpdir"))
     // pass the golden-update switch into the test JVM (Gradle -D does not do that automatically)
     systemProperty("baki.golden.update", System.getProperty("baki.golden.update") ?: "false")

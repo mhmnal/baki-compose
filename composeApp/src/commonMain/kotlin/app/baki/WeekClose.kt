@@ -83,3 +83,45 @@ fun weekOptions(store: Store, today: String): List<WeekOption> {
             )
         }
 }
+
+/** What still blocks a confident weekly close. */
+enum class WeekCloseStep { USE_STATEMENT, ALLOCATE, RECONCILE, CLOSE }
+
+data class WeekReadiness(
+    val receivedMatches: Boolean,
+    val allocationComplete: Boolean,
+    val reconciled: Boolean,
+    val isClosed: Boolean,
+    val nextStep: WeekCloseStep?,
+) {
+    val readyToClose: Boolean
+        get() = !isClosed && receivedMatches && allocationComplete && reconciled
+}
+
+fun weekReadiness(
+    view: WeekCloseView,
+    enteredReceivedCents: Long,
+    remainingCapacityCents: Long,
+    alreadyAllocated: Boolean,
+    closedReceivedCents: Long = 0L,
+): WeekReadiness {
+    val statementCents = view.statement?.let { (it.weekly * 100).roundToLong() }
+    val received = enteredReceivedCents.takeIf { it > 0L } ?: closedReceivedCents
+    val receivedMatches = statementCents != null && received == statementCents
+    val allocationComplete = alreadyAllocated || remainingCapacityCents <= 0L
+    val reconciled = view.statementReconciled
+    val nextStep = when {
+        view.isClosed || view.statement == null -> null
+        !receivedMatches -> WeekCloseStep.USE_STATEMENT
+        !allocationComplete -> WeekCloseStep.ALLOCATE
+        !reconciled -> WeekCloseStep.RECONCILE
+        else -> WeekCloseStep.CLOSE
+    }
+    return WeekReadiness(
+        receivedMatches = receivedMatches,
+        allocationComplete = allocationComplete,
+        reconciled = reconciled,
+        isClosed = view.isClosed,
+        nextStep = nextStep,
+    )
+}

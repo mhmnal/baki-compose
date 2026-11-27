@@ -308,6 +308,15 @@ internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClos
     val alreadyAllocated = remember(repo.store, weekStart) {
         repo.store.shifts.any { shift -> weekStartOf(shift.date) == weekStart && shift.payouts.any { it.source == "statement:$weekStart" } }
     }
+    val readiness = remember(view, cents, allocationCapacity, alreadyAllocated) {
+        weekReadiness(
+            view = view,
+            enteredReceivedCents = cents ?: 0L,
+            remainingCapacityCents = allocationCapacity,
+            alreadyAllocated = alreadyAllocated,
+            closedReceivedCents = if (view.isClosed) view.received else 0L,
+        )
+    }
     BakiSheet(
         onDismiss = onDismiss,
         footer = {
@@ -364,6 +373,17 @@ internal fun WeekCloseSheet(repo: BakiRepo, weekStart: String, initial: WeekClos
             }
             WeekCloseRow("Reconciled", if (view.statementReconciled) "yes" else "no")
             WeekCloseRow("Statement payout allocation", if (alreadyAllocated) "allocated" else "not allocated")
+            WeekCloseRow(
+                "Readiness",
+                when {
+                    view.isClosed -> "closed"
+                    readiness.readyToClose -> "ready to close"
+                    readiness.nextStep == WeekCloseStep.USE_STATEMENT -> "use statement amount"
+                    readiness.nextStep == WeekCloseStep.ALLOCATE -> "allocate payout"
+                    readiness.nextStep == WeekCloseStep.RECONCILE -> "mark reconciled"
+                    else -> "incomplete"
+                },
+            )
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
                 if (!view.isClosed && !repo.readOnly && statementWeeklyCents > 0L) {
                     TextButton(
