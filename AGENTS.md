@@ -5,12 +5,12 @@ Read [STATUS.md](STATUS.md) first for current release, data and pending installs
 ## Current handoff — 27 November 2026
 
 ```text
-Version       0.64.7
-Code          266
+Version       0.64.8
+Code          267
 Tests         244, 0 failures (full suite)
-R8 APK        dist/baki-compose-0.64.7.apk
-SHA-256       d7c1126627dd737fc16b1aad81f153e186b9363c4d197b7949a16efe3ee24916
-Unminified    dist/baki-compose-0.64.7-unminified.apk
+R8 APK        dist/baki-compose-0.64.8.apk
+SHA-256       pending
+Unminified    dist/baki-compose-0.64.8-unminified.apk
 Phone         0.64.7 installed; Shifts receipt trial
 Desktop       0.64.7 installed; design + G6 + week-close actions
 ```
@@ -162,7 +162,7 @@ If the 6 GB service still gets killed by its cap, do not raise it blindly. The s
 
 ## Next work
 
-1. Cut 0.64.8 with G6, material grammar and week-close actions; build R8 only through the guarded script.
+1. Build/publish 0.64.8 through the guarded R8 script; install when ADB is connected.
 2. Trial Shifts weekly receipts on phone.
 3. Mark or unlink Celcomdigi’s remaining payment.
 4. Run a 6+ hour shift soak with screen off.
