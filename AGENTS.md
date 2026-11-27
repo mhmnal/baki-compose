@@ -10,7 +10,7 @@ Code          267
 Tests         244, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.64.8.apk
 SHA-256       5c5d42feb19b967fc01530e12fab12775ea84000ae21e23e2b6de807612fee14
-Unminified    dist/baki-compose-0.64.8-unminified.apk
+Unminified    not built; R8 APK is the release
 Phone         0.64.7 installed; 0.64.8 pending ADB/install
 Desktop       0.64.8 installed; G6 + week-close actions
 ```
