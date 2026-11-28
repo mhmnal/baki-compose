@@ -1130,6 +1130,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
     val netCents = (net * 100).toLong()
     val accent = if (onBreak) scheme.secondary else scheme.primary
 
+    Column(Modifier.fillMaxWidth()) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = InstrumentShape,
@@ -1261,6 +1262,7 @@ fun LiveCard(repo: BakiRepo, live: LiveShift, onPayout: () -> Unit, onPayouts: (
                 colors = ButtonDefaults.buttonColors(containerColor = scheme.errorContainer, contentColor = scheme.onErrorContainer),
             ) { Text(if (ending) "Ending…" else "End", style = MaterialTheme.typography.labelLargeEmphasized) }
         }
+    }
     }
 }
 
