@@ -9,10 +9,10 @@ Version       0.71.0
 Code          275
 Tests         253, 0 failures (full suite)
 R8 APK        dist/baki-compose-0.71.0.apk
-SHA-256       pending
+SHA-256       28e7793cae8712b7ebf258b1b362ec3137c7933e5ee2c547c9dcd711a4271837
 Unminified    not built; R8 APK is the release
-Phone         0.70.0 installed; 0.71.0 pending
-Desktop       0.70.0 installed; 0.71.0 pending
+Phone         0.71.0 installed; live overlap fixed
+Desktop       0.71.0 installed; live overlap fixed
 ```
 
 Standing decisions:
